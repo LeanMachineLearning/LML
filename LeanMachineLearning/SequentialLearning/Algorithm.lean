@@ -63,6 +63,19 @@ structure Algorithm (α R : Type*) [MeasurableSpace α] [MeasurableSpace R] wher
 instance (alg : Algorithm α R) (n : ℕ) : IsMarkovKernel (alg.policy n) := alg.h_policy n
 instance (alg : Algorithm α R) : IsProbabilityMeasure alg.p0 := alg.hp0
 
+structure Algorithm.AbsolutelyContinuous (alg alg₀ : Algorithm α R) : Prop where
+  p0 : alg.p0 ≪ alg₀.p0
+  policy n h : alg.policy n h ≪ alg₀.policy n h
+
+scoped notation:50 alg " ≪ₐ " alg₀ => Algorithm.AbsolutelyContinuous alg alg₀
+
+/-- An algorithm that receives observations in `E × R` created form an algorithm that receives
+observations in `R` by ignoring the additional information. -/
+def Algorithm.prod_left (E : Type*) [MeasurableSpace E] (alg : Algorithm α R) :
+    Algorithm α (E × R) where
+  policy n := (alg.policy n).comap (fun h i ↦ ((h i).1, (h i).2.2)) (by fun_prop)
+  p0 := alg.p0
+
 /-- A stochastic environment. -/
 -- ANCHOR: Environment
 structure Environment (α R : Type*) [MeasurableSpace α] [MeasurableSpace R] where
@@ -359,6 +372,15 @@ theorem isAlgEnvSeq_unique (h1 : IsAlgEnvSeq A₁ R₁ alg env P)
     P.map (fun ω n ↦ (A₁ n ω, R₁ n ω)) = P'.map (fun ω n ↦ (A₂ n ω, R₂ n ω)) := by
 -- ANCHOR_END: isAlgEnvSeq_unique
   rw [eq_trajMeasure_of_isAlgEnvSeq h1, eq_trajMeasure_of_isAlgEnvSeq h2]
+
+lemma IsAlgEnvSeq.identDistrib_trajectory (h1 : IsAlgEnvSeq A₁ R₁ alg env P)
+    (h2 : IsAlgEnvSeq A₂ R₂ alg env P') :
+    IdentDistrib (fun ω n ↦ (A₁ n ω, R₁ n ω)) (fun ω' n ↦ (A₂ n ω', R₂ n ω')) P P' where
+  aemeasurable_fst :=
+    (measurable_pi_iff.2 fun n ↦ (h1.measurable_A n).prodMk (h1.measurable_R n)).aemeasurable
+  aemeasurable_snd :=
+    (measurable_pi_iff.2 fun n ↦ (h2.measurable_A n).prodMk (h2.measurable_R n)).aemeasurable
+  map_eq := isAlgEnvSeq_unique h1 h2
 
 theorem isAlgEnvSeqUntil_unique (h1 : IsAlgEnvSeqUntil A₁ R₁ alg env P N)
     (h2 : IsAlgEnvSeqUntil A₂ R₂ alg env P' N) :
