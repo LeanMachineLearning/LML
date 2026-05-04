@@ -2,8 +2,9 @@ module  -- shake: keep-all
 
 public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
 public import LeanMachineLearning.MeasureTheory.Constructions.Polish.StandardBorel
-public import LeanMachineLearning.MeasureTheory.FullSupport
 public import LeanMachineLearning.MeasureTheory.Measurable
+public import LeanMachineLearning.MeasureTheory.Measure.AbsolutelyContinuous
+public import LeanMachineLearning.MeasureTheory.OuterMeasure.Basic
 public import LeanMachineLearning.Online.Bandit.Algorithms.ETC
 public import LeanMachineLearning.Online.Bandit.Algorithms.UCB
 public import LeanMachineLearning.Online.Bandit.Algorithms.TS
@@ -17,6 +18,7 @@ public import LeanMachineLearning.Probability.Independence.CondIndepFun
 public import LeanMachineLearning.Probability.Independence.IndepFun
 public import LeanMachineLearning.Probability.Independence.IndepInfinitePi
 public import LeanMachineLearning.Probability.Integrable
+public import LeanMachineLearning.Probability.Kernel.Composition.MeasureCompProd
 public import LeanMachineLearning.Probability.Kernel.IonescuTulcea.Traj
 public import LeanMachineLearning.Probability.Kernel.KernelSub
 public import LeanMachineLearning.Probability.Moments.SubGaussian

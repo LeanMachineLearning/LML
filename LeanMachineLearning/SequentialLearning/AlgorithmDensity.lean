@@ -5,7 +5,7 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
-public import LeanMachineLearning.MeasureTheory.FullSupport
+public import LeanMachineLearning.Probability.Kernel.Composition.MeasureCompProd
 public import LeanMachineLearning.Probability.WithDensity
 public import LeanMachineLearning.SequentialLearning.BayesStationaryEnv
 
@@ -98,7 +98,7 @@ lemma absolutelyContinuous_map_hist (h : IsAlgEnvSeq A R' alg env P)
     rw [Measure.compProd_congr (h.hasCondDistrib_step n).condDistrib_eq,
         Measure.compProd_congr (h₀.hasCondDistrib_step n).condDistrib_eq]
     apply Measure.AbsolutelyContinuous.compProd ih
-    filter_upwards with h' using Measure.AbsolutelyContinuous.kernel_compProd_left (hc.policy n h')
+    filter_upwards with h' using Measure.AbsolutelyContinuous.compProd_left_apply (hc.policy n h') _
 
 lemma hasLaw_hist_withDensity (h : IsAlgEnvSeq A R' alg env P) (h₀ : IsAlgEnvSeq A₀ R₀ alg₀ env P₀)
    (hc : alg ≪ₐ alg₀) (n : ℕ) : HasLaw (IsAlgEnvSeq.hist A R' n)
