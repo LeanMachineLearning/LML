@@ -189,11 +189,11 @@ lemma hasCondDistrib_env_hist (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
     have hE := h.measurable_E
     have hE₀ := h₀.measurable_E
     rw [condDistrib_ae_eq_iff_measure_eq_compProd _ h.measurable_E.aemeasurable,
-      ← compProd_map_condDistrib_swap hE (by fun_prop), h.hasLaw_env.map_eq,
+      ← map_swap_compProd_map_condDistrib (by fun_prop), h.hasLaw_env.map_eq,
       Measure.compProd_eq_compProd_withDensity (by fun_prop)
         (h.condDistrib_hist_eq_condDistrib_hist_withDensity h₀ hc n),
       Measure.map_swap_withDensity_fst (by fun_prop),
-      ← h₀.hasLaw_env.map_eq, compProd_map_condDistrib_swap hE₀ (by fun_prop),
+      ← h₀.hasLaw_env.map_eq, map_swap_compProd_map_condDistrib (by fun_prop),
       ← compProd_map_condDistrib (by fun_prop),
       ← Measure.withDensity_compProd_left (by fun_prop),
       ← (hasLaw_hist_withDensity h h₀ hc n).map_eq]

@@ -322,7 +322,9 @@ lemma HasCondDistrib.ae_hasCondDistrib_sectR [IsFiniteMeasure μ]
   have h_comp_fst : (condDistrib (f ∘ W) Z μ)
       =ᵐ[μ.map Z] (condDistrib W Z μ).map f :=
     condDistrib_comp Z hW hf
-  have h_nested := (Kernel.ae_eq_map_prod_iff_ae_condDistrib hfW).mp hcd.condDistrib_eq
+  have h_eq := hcd.condDistrib_eq
+  rw [(compProd_map_condDistrib hfW).symm] at h_eq
+  have h_nested := Measure.ae_ae_of_ae_compProd h_eq
   filter_upwards [h_prod, h_comp_pair, h_comp_fst, h_nested]
     with z h_prod_z h_pair_z h_fst_z h_nested_z
   refine ⟨hg.aemeasurable, hf.aemeasurable, ?_⟩
