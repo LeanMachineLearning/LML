@@ -38,8 +38,8 @@ def TS.initialPolicy (hK : 0 < K) (Q : Measure 𝓔) (κ : Kernel (𝓔 × Fin K
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   Q.map (IsBayesAlgEnvSeq.bestAction κ id)
 
-instance {hK : 0 < K} {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × Fin K) ℝ}
-    [IsMarkovKernel κ] : IsProbabilityMeasure (TS.initialPolicy hK Q κ) :=
+instance {hK : 0 < K} {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × Fin K) ℝ} :
+    IsProbabilityMeasure (TS.initialPolicy hK Q κ) :=
   Measure.isProbabilityMeasure_map (by fun_prop)
 
 noncomputable
