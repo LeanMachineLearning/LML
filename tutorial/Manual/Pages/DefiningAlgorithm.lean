@@ -115,7 +115,7 @@ All spaces of interest in machine learning are standard Borel, so this is not a 
 Given any algorithm and environment, there always exists a sequence of actions and feedback that satisfies `IsAlgEnvSeq` by the Ionescu-Tulcea theorem.
 However other constructions of such sequences are possible, and it is easier to work with generic sequences satisfying `IsAlgEnvSeq` than with a specific construction.
 Which sequence we choose does not matter for the results we prove, since all such sequences are equal in distribution, as stated by the following theorem.
-```anchor isAlgEnvSeq_unique (module := LeanMachineLearning.SequentialLearning.Algorithm)
+```anchor isAlgEnvSeq_unique (module := LeanMachineLearning.SequentialLearning.IonescuTulceaSpace)
 theorem isAlgEnvSeq_unique (h1 : IsAlgEnvSeq A₁ R₁ alg env P)
     (h2 : IsAlgEnvSeq A₂ R₂ alg env P') :
     P.map (fun ω n ↦ (A₁ n ω, R₁ n ω)) = P'.map (fun ω n ↦ (A₂ n ω, R₂ n ω)) := by
