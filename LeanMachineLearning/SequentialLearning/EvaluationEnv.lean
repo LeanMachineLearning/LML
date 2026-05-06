@@ -66,14 +66,14 @@ lemma feedbackFunZero_onlineEvalEnv [MeasurableSpace.SeparatesPoints R] :
     feedbackFunZero (onlineEvalEnv g hg) = g 0 := by
   have h_eq := ν0_eq_deterministic (onlineEvalEnv g hg)
   simpa only [onlineEvalEnv, ν0_obliviousEnv, Kernel.prodMkLeft_deterministic,
-    Kernel.deterministic_eq_deterministic_iff] using h_eq.symm
+    Kernel.deterministic_inj] using h_eq.symm
 
 @[simp]
 lemma feedbackFun_onlineEvalEnv [MeasurableSpace.SeparatesPoints R] (n : ℕ) :
     feedbackFun (onlineEvalEnv g hg) n = fun p ↦ g (n + 1) p.2 := by
   have h_eq := feedback_eq_deterministic (onlineEvalEnv g hg) n
   simpa only [onlineEvalEnv, feedback_obliviousEnv, Kernel.prodMkLeft_deterministic,
-    Kernel.deterministic_eq_deterministic_iff] using h_eq.symm
+    Kernel.deterministic_inj] using h_eq.symm
 
 section OnlineEvalEnv
 

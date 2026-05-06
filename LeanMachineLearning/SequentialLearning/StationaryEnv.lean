@@ -178,7 +178,7 @@ lemma feedbackCondAction_obliviousEnv (ν : ℕ → Kernel α R) [hν : ∀ n, I
   | zero => exact h_eq_zero.symm
   | succ n =>
     simp only [Nat.add_one_sub_one, obliviousEnv_feedback, add_tsub_cancel_right] at h_eq
-    rw [← Kernel.prodMkLeft_eq_prodMkLeft (γ := Iic n → α × R)]
+    rw [← Kernel.prodMkLeft_inj (γ := Iic n → α × R)]
     exact h_eq.symm
 
 /-- A stationary environment, in which the distribution of the next reward depends only on the last
