@@ -186,8 +186,8 @@ lemma hasCondDistrib_prod_right_iff [IsFiniteMeasure μ] [IsFiniteKernel κ] (X 
     rw [← Measure.map_prod_map _ _ (by fun_prop) (by fun_prop), Measure.map_id,
       Measure.map_dirac' (by fun_prop)]
 
-lemma hasLaw_of_hasCondDistrib_const [IsProbabilityMeasure μ] {Q : Measure Ω} [SFinite Q]
-    (h : HasCondDistrib Y X (Kernel.const _ Q) μ) : HasLaw Y Q μ := by
+lemma HasCondDistrib.hasLaw_of_const [IsProbabilityMeasure μ] {Q : Measure Ω} [SFinite Q]
+    (h : HasCondDistrib Y X (Kernel.const β Q) μ) : HasLaw Y Q μ := by
   obtain ⟨hY, hX, h⟩ := h
   refine ⟨hY, ?_⟩
   have h_snd : (μ.map (fun ω => (X ω, Y ω))).snd = Q := by
@@ -199,23 +199,19 @@ lemma hasLaw_of_hasCondDistrib_const [IsProbabilityMeasure μ] {Q : Measure Ω} 
     simp [MeasureTheory.Measure.map_apply_of_aemeasurable hX]
   rwa [Measure.snd_map_prodMk₀ hX] at h_snd
 
--- Replace `hasLaw_of_hasCondDistrib_const`?
-lemma HasCondDistrib.hasLaw_of_const {Q : Measure Ω}
-    [IsProbabilityMeasure μ] [SFinite Q]
-    (h : HasCondDistrib Y X (Kernel.const β Q) μ) : HasLaw Y Q μ :=
-  hasLaw_of_hasCondDistrib_const h
+lemma HasCondDistrib.indepFun_of_const [IsProbabilityMeasure μ] {Q : Measure Ω} [SFinite Q]
+    (h : HasCondDistrib Y X (Kernel.const β Q) μ) : IndepFun X Y μ := by
+  rw [indepFun_iff_condDistrib_eq_const h.aemeasurable_snd h.aemeasurable_fst,
+    h.hasLaw_of_const.map_eq]
+  exact h.condDistrib_eq
 
-lemma HasCondDistrib.swap_const {Q : Measure Ω}
-    [StandardBorelSpace β] [Nonempty β]
-    [IsProbabilityMeasure μ] [IsFiniteMeasure Q]
-    (h : HasCondDistrib Y X (Kernel.const β Q) μ) :
-    HasCondDistrib X Y (Kernel.const Ω (μ.map X)) μ := by
-  have h_indep : IndepFun X Y μ := by
-    rw [indepFun_iff_condDistrib_eq_const h.aemeasurable_snd h.aemeasurable_fst,
-      h.hasLaw_of_const.map_eq]
-    exact h.condDistrib_eq
-  exact ⟨h.aemeasurable_snd, h.aemeasurable_fst,
-    condDistrib_of_indepFun h_indep.symm h.aemeasurable_fst h.aemeasurable_snd⟩
+lemma HasCondDistrib.const_map_of_const [IsProbabilityMeasure μ] {Q : Measure Ω} [SFinite Q]
+    (h : HasCondDistrib Y X (Kernel.const β Q) μ) [StandardBorelSpace β] [Nonempty β] :
+    HasCondDistrib X Y (Kernel.const Ω (μ.map X)) μ where
+  aemeasurable_fst := h.aemeasurable_snd
+  aemeasurable_snd := h.aemeasurable_fst
+  condDistrib_eq :=
+    condDistrib_of_indepFun h.indepFun_of_const.symm h.aemeasurable_fst h.aemeasurable_snd
 
 lemma HasLaw.prod_of_hasCondDistrib {P : Measure β} [IsFiniteMeasure μ] [IsSFiniteKernel κ]
     (h1 : HasLaw X P μ) (h2 : HasCondDistrib Y X κ μ) :

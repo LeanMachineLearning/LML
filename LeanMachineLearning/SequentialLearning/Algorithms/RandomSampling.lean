@@ -57,7 +57,7 @@ lemma hasLaw_action (h : IsAlgEnvSeq A R (randomSampling μ) env P) (n : ℕ) :
     exact h.hasLaw_action_zero
   · push Not at hn
     obtain ⟨k, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hn
-    exact hasLaw_of_hasCondDistrib_const <| h.hasCondDistrib_action k
+    exact (h.hasCondDistrib_action k).hasLaw_of_const
 
 /-- Actions are mutually independent. -/
 lemma iIndep_action (h : IsAlgEnvSeq A R (randomSampling μ) env P) :
