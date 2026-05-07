@@ -5,6 +5,7 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
+public import LeanMachineLearning.Online.Bandit.SumRewards
 public import LeanMachineLearning.SequentialLearning.AlgorithmDensity
 public import LeanMachineLearning.SequentialLearning.Algorithms.Uniform
 
