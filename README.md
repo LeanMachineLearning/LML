@@ -8,7 +8,7 @@
 </div>
 
 
-Website: [https://leanmachinelearning.github.io/](https://leanmachinelearning.github.io/)
+Website: [https://leanmachinelearning.org/](https://leanmachinelearning.org/)
 
 ## Goals
 
@@ -24,7 +24,7 @@ Please see our [contribution guide](CONTRIBUTING.md) and [code of conduct](CODE_
 
 For discussions, you can reach out to us on the [Lean prover Zulip chat](https://leanprover.zulipchat.com/).
 
-You can also see the [roadmap](https://leanmachinelearning.github.io/roadmap) for ideas on what to work on.
+You can also see the [roadmap](https://leanmachinelearning.org/roadmap) for ideas on what to work on.
 
 ## Current state of the library
 

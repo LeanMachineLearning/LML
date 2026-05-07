@@ -19,7 +19,7 @@ authors := []
 shortTitle := "Lean Machine Learning"
 %%%
 
-These tutorial pages will guide you through using the [Lean Machine Learning](https://leanmachinelearning.github.io) library.
+These tutorial pages will guide you through using the [Lean Machine Learning](https://leanmachinelearning.org) library.
 
 {include 0 Manual.Pages.Installation}
 

@@ -46,10 +46,10 @@ The `h_policy` field records that the measure describing the next action is a pr
 If the algorithms actions are not random, we can use the `detAlgorithm` definition to build an algorithm from the data of a measurable function for the next action and a choice for the first action.
 
 ```anchor detAlgorithm (module := LeanMachineLearning.SequentialLearning.Deterministic)
-def detAlgorithm (nextAction : (n : ℕ) → (Iic n → α × R) → α)
-    (h_next : ∀ n, Measurable (nextAction n)) (action0 : α) :
+def detAlgorithm (nextA : (n : ℕ) → (Iic n → α × R) → α)
+    (h_next : ∀ n, Measurable (nextA n)) (action0 : α) :
     Algorithm α R where
-  policy n := Kernel.deterministic (nextAction n) (h_next n)
+  policy n := Kernel.deterministic (nextA n) (h_next n)
   p0 := Measure.dirac action0
 ```
 We can see here that we did not need to prove that the kernels are `IsMarkovKernel` and that the distribution of the first action is a probability measure.
@@ -70,15 +70,19 @@ structure Environment (α R : Type*) [MeasurableSpace α] [MeasurableSpace R] wh
 `ν0` gives the distribution of the first feedback given the first action, and `feedback` gives the distribution of the next feedback given the history and the next action.
 
 In many applications the feedback depends only on the last action and not on the prior history.
-We provide a `stationaryEnv` definition that builds an environment for those cases.
+We provide an `obliviousEnv` definition that builds an environment for those cases.
 
-```anchor stationaryEnv (module := LeanMachineLearning.SequentialLearning.StationaryEnv)
-def stationaryEnv (ν : Kernel α R) [IsMarkovKernel ν] : Environment α R where
-  feedback _ := ν.prodMkLeft _
-  ν0 := ν
+```anchor obliviousEnv (module := LeanMachineLearning.SequentialLearning.StationaryEnv)
+def obliviousEnv (ν : ℕ → Kernel α R) [∀ n, IsMarkovKernel (ν n)] : Environment α R where
+  feedback n := (ν (n + 1)).prodMkLeft _
+  ν0 := ν 0
 ```
-`ν.prodMkLeft _` is the kernel `ν` seen as a `Kernel ((Iic n → α × R) × α) R` by ignoring the history.
+`(ν (n + 1)).prodMkLeft _` is the kernel `ν (n + 1)` seen as a `Kernel ((Iic n → α × R) × α) R` by ignoring the history.
 
+If furthermore the feedback kernel does not change with time, we can use the `stationaryEnv` definition to build the environment.
+```anchor stationaryEnv (module := LeanMachineLearning.SequentialLearning.StationaryEnv)
+def stationaryEnv (ν : Kernel α R) [IsMarkovKernel ν] : Environment α R := obliviousEnv fun _ ↦ ν
+```
 
 
 # Sequences of actions and feedback, probability space

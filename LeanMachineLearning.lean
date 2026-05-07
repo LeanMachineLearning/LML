@@ -18,6 +18,8 @@ public import LeanMachineLearning.Probability.Independence.CondIndepFun
 public import LeanMachineLearning.Probability.Independence.IndepFun
 public import LeanMachineLearning.Probability.Independence.IndepInfinitePi
 public import LeanMachineLearning.Probability.Integrable
+public import LeanMachineLearning.Probability.Kernel.Basic
+public import LeanMachineLearning.Probability.Kernel.Composition.MapComap
 public import LeanMachineLearning.Probability.Kernel.Composition.MeasureCompProd
 public import LeanMachineLearning.Probability.Kernel.IonescuTulcea.Traj
 public import LeanMachineLearning.Probability.Kernel.KernelSub
@@ -30,6 +32,7 @@ public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
 public import LeanMachineLearning.SequentialLearning.Algorithms.Uniform
 public import LeanMachineLearning.SequentialLearning.BayesStationaryEnv
 public import LeanMachineLearning.SequentialLearning.Deterministic
+public import LeanMachineLearning.SequentialLearning.EvaluationEnv
 public import LeanMachineLearning.SequentialLearning.FiniteActions
 public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
 public import LeanMachineLearning.SequentialLearning.StationaryEnv

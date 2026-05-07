@@ -8,7 +8,7 @@ Fork the repository and create a new branch for your contribution. Make your cha
 
 ## What to contribute
 
-See the [Roadmap](https://leanmachinelearning.github.io/roadmap/).
+See the [Roadmap](https://leanmachinelearning.org/roadmap/).
 
 #### Finding tasks
 

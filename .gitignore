@@ -37,7 +37,15 @@ blueprint/src/web.pdf
 *.synctex.gz
 *.synctex.gz(busy)
 *.pdfsync
-## Verso
-/tutorial/.lake/
-/tutorial/html/
+
+## Website
 /home_page/
+
+## Tutorial
+/tutorial/.lake/
+/tutorial/_out/
+
+## Verso Blueprint
+/verso_blueprint/.lake/
+/verso_blueprint/.build/
+/verso_blueprint/_out/
