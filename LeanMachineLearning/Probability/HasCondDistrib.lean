@@ -224,31 +224,25 @@ lemma HasLaw.prod_of_hasCondDistrib {P : Measure β} [IsFiniteMeasure μ] [IsSFi
   rw [← h1.map_eq]
   exact h2.condDistrib_eq
 
--- Claude
-lemma HasCondDistrib.of_compProd [IsFiniteMeasure μ] [IsFiniteKernel κ]
-    {Z : α → Ω'} {η : Kernel (β × Ω) Ω'} [IsMarkovKernel η]
-    (h : HasCondDistrib (fun ω ↦ (Y ω, Z ω)) X (κ ⊗ₖ η) μ) :
-    HasCondDistrib Z (fun ω ↦ (X ω, Y ω)) η μ := by
-  have hY : AEMeasurable Y μ := h.aemeasurable_fst.fst
+lemma HasCondDistrib.of_compProd [IsFiniteMeasure μ] [IsFiniteKernel κ] {Z : α → Ω'}
+    {η : Kernel (β × Ω) Ω'} [IsMarkovKernel η]
+    (h : HasCondDistrib (fun a ↦ (Y a, Z a)) X (κ ⊗ₖ η) μ) :
+    HasCondDistrib Z (fun a ↦ (X a, Y a)) η μ := by
   have hZ : AEMeasurable Z μ := h.aemeasurable_fst.snd
   have hX : AEMeasurable X μ := h.aemeasurable_snd
-  refine ⟨hZ, by fun_prop, ?_⟩
-  have h_eq := h.condDistrib_eq
-  rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop) _] at h_eq ⊢
-  have h_assoc : (μ.map X ⊗ₘ κ ⊗ₘ η).map MeasurableEquiv.prodAssoc = μ.map X ⊗ₘ (κ ⊗ₖ η) :=
-    Measure.compProd_assoc'
-  calc μ.map (fun ω ↦ ((X ω, Y ω), Z ω))
-  _ = (μ.map (fun ω ↦ (X ω, Y ω, Z ω))).map MeasurableEquiv.prodAssoc.symm := by
-      rw [AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]; rfl
-  _ = (μ.map X ⊗ₘ (κ ⊗ₖ η)).map MeasurableEquiv.prodAssoc.symm := by rw [h_eq]
-  _ = μ.map X ⊗ₘ κ ⊗ₘ η := by
-      rw [← h_assoc, Measure.map_map (by fun_prop) (by fun_prop)]
-      simp only [MeasurableEquiv.symm_comp_self, Measure.map_id]
-  _ = μ.map (fun ω ↦ (X ω, Y ω)) ⊗ₘ η := by
-      have h_fst := h.fst
-      rw [Kernel.fst_compProd] at h_fst
-      have h_fst_eq := (condDistrib_ae_eq_iff_measure_eq_compProd X hY _).mp h_fst.condDistrib_eq
-      rw [h_fst_eq]
+  have hY : AEMeasurable Y μ := h.aemeasurable_fst.fst
+  refine ⟨hZ, (hX.prodMk hY), ?_⟩
+  have hc := h.condDistrib_eq
+  rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)] at hc ⊢
+  calc μ.map (fun a ↦ ((X a, Y a), Z a))
+  _ = (μ.map X ⊗ₘ (κ ⊗ₖ η)).map MeasurableEquiv.prodAssoc.symm := by
+      rw [← hc, AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
+      rfl
+  _ = μ.map X ⊗ₘ κ ⊗ₘ η :=
+      Measure.compProd_assoc
+  _ = μ.map (fun a ↦ (X a, Y a)) ⊗ₘ η := by
+      rw [← (condDistrib_ae_eq_iff_measure_eq_compProd X hY κ).1]
+      simpa using h.fst.condDistrib_eq
 
 lemma HasCondDistrib.prod [IsFiniteMeasure μ] [IsFiniteKernel κ]
     {Z : α → Ω'} {η : Kernel (β × Ω) Ω'} [IsFiniteKernel η]
