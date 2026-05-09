@@ -24,20 +24,20 @@ In general, both action and feedback can depend on the entire history up to the 
 The `Algorithm` structure is defined as follows:
 
 ```anchor Algorithm (module := LeanMachineLearning.SequentialLearning.Algorithm)
-structure Algorithm (α R : Type*) [MeasurableSpace α] [MeasurableSpace R] where
+structure Algorithm (𝓐 𝓨 : Type*) [MeasurableSpace 𝓐] [MeasurableSpace 𝓨] where
   /-- Policy or sampling rule: distribution of the next action. -/
-  policy : (n : ℕ) → Kernel (Iic n → α × R) α
+  policy : (n : ℕ) → Kernel (Iic n → 𝓐 × 𝓨) 𝓐
   [h_policy : ∀ n, IsMarkovKernel (policy n)]
   /-- Distribution of the first action. -/
-  p0 : Measure α
+  p0 : Measure 𝓐
   [hp0 : IsProbabilityMeasure p0]
 ```
 
-This structure refers to two types, the type of actions `α` and the type of feedback `R`.
+This structure refers to two types, the type of actions `𝓐` and the type of feedback `𝓨`.
 Both are measurable spaces, since we consider stochastic algorithms and environments.
 The interaction will start with the algorithm playing a first action, which is in general random with distribution `p0`.
 The field `hp0` registers that `p0` is a probability measure (and it is in square brackets to tell Lean to infer it automatically whenever possible).
-After time `n`, there is a history of actions and feedbacks `Iic n → α × R` (`n+1` pairs action and feedback).
+After time `n`, there is a history of actions and feedbacks `Iic n → 𝓐 × 𝓨` (`n+1` pairs action and feedback).
 So after time 0 (the processes are 0-indexed) the history contains the action at time 0 and the feedback that followed.
 The `policy` field contain for each time `n` a kernel from that history to the action space.
 That is, it maps every possible history to a random next action (and that map is measurable).
@@ -46,9 +46,9 @@ The `h_policy` field records that the measure describing the next action is a pr
 If the algorithms actions are not random, we can use the `detAlgorithm` definition to build an algorithm from the data of a measurable function for the next action and a choice for the first action.
 
 ```anchor detAlgorithm (module := LeanMachineLearning.SequentialLearning.Deterministic)
-def detAlgorithm (nextA : (n : ℕ) → (Iic n → α × R) → α)
-    (h_next : ∀ n, Measurable (nextA n)) (action0 : α) :
-    Algorithm α R where
+def detAlgorithm (nextA : (n : ℕ) → (Iic n → 𝓐 × 𝓨) → 𝓐)
+    (h_next : ∀ n, Measurable (nextA n)) (action0 : 𝓐) :
+    Algorithm 𝓐 𝓨 where
   policy n := Kernel.deterministic (nextA n) (h_next n)
   p0 := Measure.dirac action0
 ```
@@ -58,12 +58,12 @@ Lean knows that deterministic kernels are Markov.
 The `Environment` structure is the mirror of the `Algorithm` structure, with a kernel for the feedback instead of the actions and a kernel for the first feedback instead of the first action.
 
 ```anchor Environment (module := LeanMachineLearning.SequentialLearning.Algorithm)
-structure Environment (α R : Type*) [MeasurableSpace α] [MeasurableSpace R] where
+structure Environment (𝓐 𝓨 : Type*) [MeasurableSpace 𝓐] [MeasurableSpace 𝓨] where
   /-- Distribution of the next observation as function of the past history. -/
-  feedback : (n : ℕ) → Kernel ((Iic n → α × R) × α) R
+  feedback : (n : ℕ) → Kernel ((Iic n → 𝓐 × 𝓨) × 𝓐) 𝓨
   [h_feedback : ∀ n, IsMarkovKernel (feedback n)]
   /-- Distribution of the first observation given the first action. -/
-  ν0 : Kernel α R
+  ν0 : Kernel 𝓐 𝓨
   [hp0 : IsMarkovKernel ν0]
 ```
 
@@ -73,15 +73,15 @@ In many applications the feedback depends only on the last action and not on the
 We provide an `obliviousEnv` definition that builds an environment for those cases.
 
 ```anchor obliviousEnv (module := LeanMachineLearning.SequentialLearning.StationaryEnv)
-def obliviousEnv (ν : ℕ → Kernel α R) [∀ n, IsMarkovKernel (ν n)] : Environment α R where
+def obliviousEnv (ν : ℕ → Kernel 𝓐 𝓨) [∀ n, IsMarkovKernel (ν n)] : Environment 𝓐 𝓨 where
   feedback n := (ν (n + 1)).prodMkLeft _
   ν0 := ν 0
 ```
-`(ν (n + 1)).prodMkLeft _` is the kernel `ν (n + 1)` seen as a `Kernel ((Iic n → α × R) × α) R` by ignoring the history.
+`(ν (n + 1)).prodMkLeft _` is the kernel `ν (n + 1)` seen as a `Kernel ((Iic n → 𝓐 × 𝓨) × 𝓐) 𝓨` by ignoring the history.
 
 If furthermore the feedback kernel does not change with time, we can use the `stationaryEnv` definition to build the environment.
 ```anchor stationaryEnv (module := LeanMachineLearning.SequentialLearning.StationaryEnv)
-def stationaryEnv (ν : Kernel α R) [IsMarkovKernel ν] : Environment α R := obliviousEnv fun _ ↦ ν
+def stationaryEnv (ν : Kernel 𝓐 𝓨) [IsMarkovKernel ν] : Environment 𝓐 𝓨 := obliviousEnv fun _ ↦ ν
 ```
 
 
@@ -92,30 +92,29 @@ This is done by the `IsAlgEnvSeq` structure.
 
 ```anchor IsAlgEnvSeq (module := LeanMachineLearning.SequentialLearning.Algorithm)
 structure IsAlgEnvSeq
-    [StandardBorelSpace α] [Nonempty α] [StandardBorelSpace R] [Nonempty R]
-    (A : ℕ → Ω → α) (R' : ℕ → Ω → R) (alg : Algorithm α R) (env : Environment α R)
+    (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨) (alg : Algorithm 𝓐 𝓨) (env : Environment 𝓐 𝓨)
     (P : Measure Ω) [IsFiniteMeasure P] : Prop where
-  measurable_A n : Measurable (A n) := by fun_prop
-  measurable_R n : Measurable (R' n) := by fun_prop
+  measurable_action n : Measurable (A n) := by fun_prop
+  measurable_feedback n : Measurable (Y n) := by fun_prop
   hasLaw_action_zero : HasLaw (fun ω ↦ (A 0 ω)) alg.p0 P
-  hasCondDistrib_reward_zero : HasCondDistrib (R' 0) (A 0) env.ν0 P
+  hasCondDistrib_feedback_zero : HasCondDistrib (Y 0) (A 0) env.ν0 P
   hasCondDistrib_action n :
-    HasCondDistrib (A (n + 1)) (IsAlgEnvSeq.hist A R' n) (alg.policy n) P
-  hasCondDistrib_reward n :
-    HasCondDistrib (R' (n + 1)) (fun ω ↦ (IsAlgEnvSeq.hist A R' n ω, A (n + 1) ω))
+    HasCondDistrib (A (n + 1)) (IsAlgEnvSeq.hist A Y n) (alg.policy n) P
+  hasCondDistrib_feedback n :
+    HasCondDistrib (Y (n + 1)) (fun ω ↦ (IsAlgEnvSeq.hist A Y n ω, A (n + 1) ω))
       (env.feedback n) P
 ```
 
-This structure takes as input two sequences of random variables (two stochastic processes), `A` and `R'`, which represent the actions and feedback generated by the interaction of the algorithm with the environment.
+This structure takes as input two sequences of random variables (two stochastic processes), `A` and `Y`, which represent the actions and feedback generated by the interaction of the algorithm with the environment.
 It states that those sequences are measurable and that they have the correct conditional distributions given by the algorithm and environment.
 The measurable space `Ω` and the measure `P` are not imposed: they can be chosen as we want, as long as the conditions of `IsAlgEnvSeq` are satisfied.
-This definition requires `α` and `R` to be nonempty standard Borel spaces, because Mathlib's theory about conditional distributions requires those assumptions.
+This definition requires `𝓐` and `𝓨` to be nonempty standard Borel spaces, because Mathlib's theory about conditional distributions requires those assumptions.
 All spaces of interest in machine learning are standard Borel, so this is not a restriction.
 
 Given any algorithm and environment, there always exists a sequence of actions and feedback that satisfies `IsAlgEnvSeq` by the Ionescu-Tulcea theorem.
 However other constructions of such sequences are possible, and it is easier to work with generic sequences satisfying `IsAlgEnvSeq` than with a specific construction.
 Which sequence we choose does not matter for the results we prove, since all such sequences are equal in distribution, as stated by the following theorem.
-```anchor isAlgEnvSeq_unique (module := LeanMachineLearning.SequentialLearning.Algorithm)
+```anchor isAlgEnvSeq_unique (module := LeanMachineLearning.SequentialLearning.IonescuTulceaSpace)
 theorem isAlgEnvSeq_unique (h1 : IsAlgEnvSeq A₁ R₁ alg env P)
     (h2 : IsAlgEnvSeq A₂ R₂ alg env P') :
     P.map (fun ω n ↦ (A₁ n ω, R₁ n ω)) = P'.map (fun ω n ↦ (A₂ n ω, R₂ n ω)) := by
@@ -176,7 +175,7 @@ We can now state a theorem about the regret of UCB in a stochastic bandit enviro
 Let's first define the regret, which for stochastic bandits is the difference between the mean rewar that the algorithm would have obtained if it played always the best action, and the sum of mean rewards of the actions played.
 
 ```anchor regret (module := LeanMachineLearning.Online.Bandit.Regret)
-def regret (ν : Kernel α ℝ) (A : ℕ → Ω → α) (t : ℕ) (ω : Ω) : ℝ :=
+def regret (ν : Kernel 𝓐 ℝ) (A : ℕ → Ω → 𝓐) (t : ℕ) (ω : Ω) : ℝ :=
   t * (⨆ a, (ν a)[id]) - ∑ s ∈ range t, (ν (A s ω))[id]
 ```
 The quantity `(ν a)[id]` is the mean reward of action `a` in the environment defined by `ν`.
@@ -203,17 +202,17 @@ The theorem gives an upper bound on the expected regret of UCB at time `n`.
 
 # Building vs analyzing algorithms
 
-When building an algorithm, we describe it with functions from the history `(Iic n → α × R)` to the action space `α`.
+When building an algorithm, we describe it with functions from the history `(Iic n → 𝓐 × R)` to the action space `𝓐`.
 Thus, to construct UCB, we used the following empirical mean function.
 ```anchor empMean' (module := LeanMachineLearning.SequentialLearning.FiniteActions)
-def empMean' (n : ℕ) (h : Iic n → α × ℝ) (a : α) :=
+def empMean' (n : ℕ) (h : Iic n → 𝓐 × ℝ) (a : 𝓐) :=
   (sumRewards' n h a) / (pullCount' n h a)
 ```
 
-When analyzing an algorithm, we work with sequences of actions and rewards `A : ℕ → Ω → α` and `R' : ℕ → Ω → R` that satisfy `IsAlgEnvSeq`.
+When analyzing an algorithm, we work with sequences of actions and rewards `A : ℕ → Ω → 𝓐` and `R' : ℕ → Ω → R` that satisfy `IsAlgEnvSeq`.
 For the analysis, the empirical mean is defined as a stochastic process on the same probability space `Ω`.
 ```anchor empMean (module := LeanMachineLearning.SequentialLearning.FiniteActions)
-def empMean (A : ℕ → Ω → α) (R' : ℕ → Ω → ℝ) (a : α) (t : ℕ) (ω : Ω) : ℝ :=
+def empMean (A : ℕ → Ω → 𝓐) (R' : ℕ → Ω → ℝ) (a : 𝓐) (t : ℕ) (ω : Ω) : ℝ :=
   sumRewards A R' a t ω / pullCount A a t ω
 ```
 `empMean A R' a` is a stochastic process with type `ℕ → Ω → ℝ` that gives the empirical mean of action `a` at each time.
