@@ -56,8 +56,8 @@ theorem eq_trajMeasure_of_isAlgEnvSeq (h : IsAlgEnvSeq A₁ R₁ alg env P) :
   have h := Kernel.eq_trajMeasure (Y := fun n ω ↦ (A₁ n ω, R₁ n ω)) (P := P)
     (μ₀ := alg.p0 ⊗ₘ env.ν0) (κ := stepKernel alg env) (fun n ↦ ?_) ?_ (fun n ↦ ?_)
   · exact h
-  · have hA := h.measurable_A n
-    have hR := h.measurable_R n
+  · have hA := h.measurable_action n
+    have hR := h.measurable_feedback n
     fun_prop
   · simp only
     exact h.hasLaw_step_zero
@@ -326,9 +326,9 @@ lemma condDistrib_reward (alg : Algorithm α R) (env : Environment α R) (n : �
 lemma isAlgEnvSeq_trajMeasure (alg : Algorithm α R) (env : Environment α R) :
     IsAlgEnvSeq action reward alg env (trajMeasure alg env) where
   hasLaw_action_zero := hasLaw_action_zero alg env
-  hasCondDistrib_reward_zero := ⟨by fun_prop, by fun_prop, condDistrib_reward_zero alg env⟩
+  hasCondDistrib_feedback_zero := ⟨by fun_prop, by fun_prop, condDistrib_reward_zero alg env⟩
   hasCondDistrib_action n := ⟨by fun_prop, by fun_prop, condDistrib_action alg env n⟩
-  hasCondDistrib_reward n := ⟨by fun_prop, by fun_prop, condDistrib_reward alg env n⟩
+  hasCondDistrib_feedback n := ⟨by fun_prop, by fun_prop, condDistrib_reward alg env n⟩
 
 end Laws
 

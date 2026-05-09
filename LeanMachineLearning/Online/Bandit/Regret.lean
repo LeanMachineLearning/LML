@@ -88,7 +88,7 @@ lemma integral_regret_le_of_forall_integral_pullCount_le
     (h : IsAlgEnvSeq A R alg env P)
     (h_le : ∀ a, gap ν a ≠ 0 → ∫ ω, (pullCount A a n ω : ℝ) ∂P ≤ B a) :
     P[regret ν A n] ≤ ∑ a, gap ν a * B a := by
-  have hA := h.measurable_A
+  have hA := h.measurable_action
   rw [integral_regret_eq_sum_gap_mul_integral_pullCount hA]
   gcongr 1 with a
   by_cases h_gap : gap ν a = 0

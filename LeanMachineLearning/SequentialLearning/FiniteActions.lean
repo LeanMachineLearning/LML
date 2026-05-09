@@ -877,26 +877,27 @@ lemma measurable_empMean' [MeasurableSingletonClass α] (n : ℕ) (a : α) :
 lemma IsAlgEnvSeq.isPredictable_sumRewards [StandardBorelSpace α] [Nonempty α] {R' : ℕ → Ω → ℝ}
     {alg : Algorithm α ℝ} {env : Environment α ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : α) :
-    IsPredictable (IsAlgEnvSeq.filtration h.measurable_A h.measurable_R) (sumRewards A R' a) := by
+    IsPredictable (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
+      (sumRewards A R' a) := by
   rw [isPredictable_iff_measurable_add_one]
   constructor
   · simp only [sumRewards_zero]
     fun_prop
   refine fun n ↦ measurable_fun_sum _ fun i hi ↦ Measurable.ite ?_ ?_ (by fun_prop)
   · refine (measurableSet_singleton a).preimage ?_
-    have h_meas_i := IsAlgEnvSeq.adapted_action h.measurable_A h.measurable_R i
+    have h_meas_i := IsAlgEnvSeq.adapted_action h.measurable_action h.measurable_feedback i
     simp only [mem_range] at hi
-    exact h_meas_i.mono ((IsAlgEnvSeq.filtration h.measurable_A h.measurable_R).mono (by lia))
-      le_rfl
-  · have h_meas_i := IsAlgEnvSeq.adapted_reward h.measurable_A h.measurable_R i
+    exact h_meas_i.mono ((IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback).mono
+      (by lia)) le_rfl
+  · have h_meas_i := IsAlgEnvSeq.adapted_reward h.measurable_action h.measurable_feedback i
     simp only [mem_range] at hi
-    exact h_meas_i.mono ((IsAlgEnvSeq.filtration h.measurable_A h.measurable_R).mono (by lia))
-      le_rfl
+    exact h_meas_i.mono ((IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback).mono
+      (by lia)) le_rfl
 
 lemma IsAlgEnvSeq.adapted_sumRewards_add_one [StandardBorelSpace α] [Nonempty α] {R' : ℕ → Ω → ℝ}
     {alg : Algorithm α ℝ} {env : Environment α ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : α) :
-    Adapted (IsAlgEnvSeq.filtration h.measurable_A h.measurable_R)
+    Adapted (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
       (fun n ↦ sumRewards A R' a (n + 1)) := by
   have h_predictable := h.isPredictable_sumRewards a
   rw [isPredictable_iff_measurable_add_one] at h_predictable
@@ -928,17 +929,18 @@ end CopiedFromPR
 lemma IsAlgEnvSeq.isPredictable_empMean [StandardBorelSpace α] [Nonempty α] {R' : ℕ → Ω → ℝ}
     {alg : Algorithm α ℝ} {env : Environment α ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : α) :
-    IsPredictable (IsAlgEnvSeq.filtration h.measurable_A h.measurable_R) (empMean A R' a) := by
+    IsPredictable (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
+      (empMean A R' a) := by
   unfold empMean
   refine StronglyMeasurable.div₀' ?_ ?_
   · exact h.isPredictable_sumRewards a
-  · have h_meas := (isPredictable_pullCount h.measurable_A h.measurable_R a).measurable
+  · have h_meas := (isPredictable_pullCount h.measurable_action h.measurable_feedback a).measurable
     fun_prop
 
 lemma IsAlgEnvSeq.adapted_empMean_add_one [StandardBorelSpace α] [Nonempty α] {R' : ℕ → Ω → ℝ}
     {alg : Algorithm α ℝ} {env : Environment α ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : α) :
-    Adapted (IsAlgEnvSeq.filtration h.measurable_A h.measurable_R)
+    Adapted (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
       (fun n ↦ empMean A R' a (n + 1)) := by
   have h_predictable := h.isPredictable_empMean a
   rw [isPredictable_iff_measurable_add_one] at h_predictable

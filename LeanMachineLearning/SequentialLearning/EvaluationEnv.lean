@@ -90,8 +90,8 @@ lemma hascondDistrib_reward_onlineEvalEnv
 lemma reward_onlineEvalEnv_ae_eq_eval_action
     (h : IsAlgEnvSeq A R' alg (onlineEvalEnv g hg) P) (n : ℕ) :
     R' n =ᵐ[P] g n ∘ A n :=
-  ae_eq_of_condDistrib_eq_deterministic (hg n) (h.measurable_A n).aemeasurable
-    (h.measurable_R n).aemeasurable (hascondDistrib_reward_onlineEvalEnv h n).condDistrib_eq
+  ae_eq_of_condDistrib_eq_deterministic (hg n) (h.measurable_action n).aemeasurable
+    (h.measurable_feedback n).aemeasurable (hascondDistrib_reward_onlineEvalEnv h n).condDistrib_eq
 
 lemma forall_reward_onlineEvalEnv_ae_eq_eval_action
     (h : IsAlgEnvSeq A R' alg (onlineEvalEnv g hg) P) :

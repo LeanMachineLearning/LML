@@ -299,10 +299,10 @@ lemma _root_.Learning.IsAlgEnvSeq.law_sumRewards_unique
     (h1 : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     (h2 : IsAlgEnvSeq A₂ R₂ alg (stationaryEnv ν) P') :
     P.map (sumRewards A R a n) = P'.map (sumRewards A₂ R₂ a n) := by
-  have hA := h1.measurable_A
-  have hR := h1.measurable_R
-  have hA2 := h2.measurable_A
-  have hR2 := h2.measurable_R
+  have hA := h1.measurable_action
+  have hR := h1.measurable_feedback
+  have hA2 := h2.measurable_action
+  have hR2 := h2.measurable_feedback
   have h_unique := isAlgEnvSeq_unique h1 h2
   rw [sumRewards_eq_comp, sumRewards_eq_comp, ← Measure.map_map, h_unique, Measure.map_map,
     ← sumRewards_eq_comp]
@@ -320,10 +320,10 @@ lemma _root_.Learning.IsAlgEnvSeq.law_pullCount_sumRewards_unique'
     (h2 : IsAlgEnvSeq A₂ R₂ alg (stationaryEnv ν) P') :
     IdentDistrib (fun ω a ↦ (pullCount A a n ω, sumRewards A R a n ω))
       (fun ω a ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω)) P P' := by
-  have hA := h1.measurable_A
-  have hR := h1.measurable_R
-  have hA2 := h2.measurable_A
-  have hR2 := h2.measurable_R
+  have hA := h1.measurable_action
+  have hR := h1.measurable_feedback
+  have hA2 := h2.measurable_action
+  have hR2 := h2.measurable_feedback
   constructor
   · refine Measurable.aemeasurable ?_
     rw [measurable_pi_iff]
@@ -375,8 +375,8 @@ lemma prob_pullCount_prod_sumRewards_mem_le [Countable α]
     P {ω | (pullCount A a n ω, sumRewards A R a n ω) ∈ s} ≤
       ∑ k ∈ (range (n + 1)).filter (· ∈ Prod.fst '' s),
         streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} := by
-  have hA := h.measurable_A
-  have hR := h.measurable_R
+  have hA := h.measurable_action
+  have hR := h.measurable_feedback
   calc P {ω | (pullCount A a n ω, sumRewards A R a n ω) ∈ s}
   _ = (P.map (fun ω ↦ (pullCount A a n ω, sumRewards A R a n ω))) s := by
       rw [Measure.map_apply (by fun_prop) hs]; rfl
@@ -432,8 +432,8 @@ lemma probReal_sumRewards_le_sumRewards_le [Fintype α] (h : IsAlgEnvSeq A R alg
         sumRewards A R (bestArm ν) n ω ≤ sumRewards A R a n ω} ≤
       (streamMeasure ν).real
         {ω | ∑ i ∈ range m₁, ω i (bestArm ν) ≤ ∑ i ∈ range m₂, ω i a} := by
-  have hA := h.measurable_A
-  have hR := h.measurable_R
+  have hA := h.measurable_action
+  have hR := h.measurable_feedback
   refine le_trans (le_of_eq ?_)
     (ArrayModel.probReal_sumRewards_le_sumRewards_le (alg := alg) a n m₁ m₂)
   let s := {p : ℕ × ℕ × ℝ × ℝ | p.1 = m₁ ∧ p.2.1 = m₂ ∧ p.2.2.1 ≤ p.2.2.2}

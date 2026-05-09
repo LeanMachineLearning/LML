@@ -51,8 +51,8 @@ omit [DecidableEq α] in
 lemma condDistrib_reward'' [Countable α]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (n : ℕ) :
     𝓛[fun ω ↦ R n ω.1 | fun ω ↦ A n ω.1; 𝔓] =ᵐ[(𝔓).map (fun ω ↦ A n ω.1)] ν := by
-  have hA := h.measurable_A
-  have hR := h.measurable_R
+  have hA := h.measurable_action
+  have hR := h.measurable_feedback
   have h_ra' : 𝓛[R n | A n; P] =ᵐ[P.map (A n)] ν := h.condDistrib_reward_stationaryEnv n
   have h_law : (𝔓).map (fun ω ↦ A n ω.1) = P.map (A n) := by
     change ((𝔓).map (A n ∘ Prod.fst)) = _
@@ -69,8 +69,8 @@ lemma reward_cond_action [Countable α]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) (n : ℕ)
     (hμa : (𝔓).map (fun ω ↦ A n ω.1) {a} ≠ 0) :
     𝓛[fun ω ↦ R n ω.1 | fun ω ↦ A n ω.1 ← a; 𝔓] = ν a := by
-  have hA := h.measurable_A
-  have hR := h.measurable_R
+  have hA := h.measurable_action
+  have hR := h.measurable_feedback
   have h_ra : 𝓛[fun ω ↦ R n ω.1 | fun ω ↦ A n ω.1; 𝔓] =ᵐ[(𝔓).map (fun ω ↦ A n ω.1)] ν :=
     condDistrib_reward'' h n
   have h_eq := condDistrib_ae_eq_cond (μ := 𝔓)
@@ -83,12 +83,12 @@ lemma reward_cond_action [Countable α]
 
 lemma condIndepFun_reward_stepsUntil_action' [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) (m n : ℕ) :
-    R n ⟂ᵢ[A n, h.measurable_A n; P] {ω | stepsUntil A a m ω = ↑n}.indicator (fun _ ↦ 1) := by
+    R n ⟂ᵢ[A n, h.measurable_action n; P] {ω | stepsUntil A a m ω = ↑n}.indicator (fun _ ↦ 1) := by
   -- the indicator of `stepsUntil ... = n` is a function of `hist (n-1)` and `action n`.
   -- It thus suffices to use the independence of `reward n` and `hist (n-1)` conditionally
   -- on `action n`.
-  have hA := h.measurable_A
-  have hR := h.measurable_R
+  have hA := h.measurable_action
+  have hR := h.measurable_feedback
   by_cases hn : n = 0
   · have h_indep : R 0 ⟂ᵢ[A 0, hA 0; P] A 0 :=
       condIndepFun_self_right (by fun_prop) (by fun_prop)
@@ -103,10 +103,10 @@ lemma condIndepFun_reward_stepsUntil_action' [StandardBorelSpace Ω]
 lemma condIndepFun_reward_stepsUntil_action [StandardBorelSpace Ω] [Countable α]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     (a : α) (m n : ℕ) :
-    CondIndepFun (mα.comap (fun ω ↦ A n ω.1)) ((h.measurable_A n).comp measurable_fst).comap_le
+    CondIndepFun (mα.comap (fun ω ↦ A n ω.1)) ((h.measurable_action n).comp measurable_fst).comap_le
       (fun ω ↦ R n ω.1) ({ω | stepsUntil A a m ω.1 = ↑n}.indicator (fun _ ↦ 1)) 𝔓 := by
-  have hA := h.measurable_A
-  have hR := h.measurable_R
+  have hA := h.measurable_action
+  have hR := h.measurable_feedback
   exact condIndepFun_fst_prod (ν := streamMeasure ν)
     (measurable_indicator_stepsUntil_eq hA hR a m n) (by fun_prop) (by fun_prop)
     (condIndepFun_reward_stepsUntil_action' h a m n)
@@ -115,8 +115,8 @@ lemma reward_cond_stepsUntil [StandardBorelSpace Ω] [Countable α]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) (m n : ℕ)
     (hm : m ≠ 0) (hμn : 𝔓 ((fun ω ↦ stepsUntil A a m ω.1) ⁻¹' {↑n}) ≠ 0) :
     𝓛[fun ω ↦ R n ω.1 | fun ω ↦ stepsUntil A a m ω.1 ← ↑n; 𝔓] = ν a := by
-  have hA := h.measurable_A
-  have hR := h.measurable_R
+  have hA := h.measurable_action
+  have hR := h.measurable_feedback
   have hμna :
       𝔓 ((fun ω ↦ stepsUntil A a m ω.1) ⁻¹' {↑n} ∩ (fun ω ↦ A n ω.1) ⁻¹' {a}) ≠ 0 := by
     suffices ((fun ω : Ω × (ℕ → α → ℝ) ↦
@@ -161,8 +161,8 @@ theorem condDistrib_rewardByCount_stepsUntil [StandardBorelSpace Ω] [Countable 
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) (m : ℕ) (hm : m ≠ 0) :
     condDistrib (rewardByCount A R a m) (fun ω ↦ stepsUntil A a m ω.1) 𝔓
       =ᵐ[(𝔓).map (fun ω ↦ stepsUntil A a m ω.1)] Kernel.const _ (ν a) := by
-  have hA := h.measurable_A
-  have hR := h.measurable_R
+  have hA := h.measurable_action
+  have hR := h.measurable_feedback
   refine (condDistrib_ae_eq_cond (μ := 𝔓)
     (X := fun ω ↦ stepsUntil A a m ω.1) (by fun_prop) (by fun_prop)).trans ?_
   rw [Filter.EventuallyEq, ae_iff_of_countable]
@@ -193,10 +193,11 @@ theorem condDistrib_rewardByCount_stepsUntil [StandardBorelSpace Ω] [Countable 
 lemma hasLaw_rewardByCount [StandardBorelSpace Ω] [Countable α]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) (m : ℕ) (hm : m ≠ 0) :
     HasLaw (rewardByCount A R a m) (ν a) 𝔓 where
-  aemeasurable := (measurable_rewardByCount h.measurable_A h.measurable_R a m).aemeasurable
+  aemeasurable :=
+    (measurable_rewardByCount h.measurable_action h.measurable_feedback a m).aemeasurable
   map_eq := by
-    have hA := h.measurable_A
-    have hR := h.measurable_R
+    have hA := h.measurable_action
+    have hR := h.measurable_feedback
     have h_condDistrib :
         condDistrib (rewardByCount A R a m) (fun ω ↦ stepsUntil A a m ω.1) 𝔓
         =ᵐ[(𝔓).map (fun ω ↦ stepsUntil A a m ω.1)]
@@ -216,14 +217,17 @@ lemma identDistrib_rewardByCount [StandardBorelSpace Ω] [Countable α]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) (n m : ℕ)
     (hn : n ≠ 0) (hm : m ≠ 0) :
     IdentDistrib (rewardByCount A R a n) (rewardByCount A R a m) 𝔓 𝔓 where
-  aemeasurable_fst := (measurable_rewardByCount h.measurable_A h.measurable_R a n).aemeasurable
-  aemeasurable_snd := (measurable_rewardByCount h.measurable_A h.measurable_R a m).aemeasurable
+  aemeasurable_fst :=
+    (measurable_rewardByCount h.measurable_action h.measurable_feedback a n).aemeasurable
+  aemeasurable_snd :=
+    (measurable_rewardByCount h.measurable_action h.measurable_feedback a m).aemeasurable
   map_eq := by rw [(hasLaw_rewardByCount h a n hn).map_eq, (hasLaw_rewardByCount h a m hm).map_eq]
 
 lemma identDistrib_rewardByCount_id [StandardBorelSpace Ω] [Countable α]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : α) (n : ℕ) (hn : n ≠ 0) :
     IdentDistrib (rewardByCount A R a n) id 𝔓 (ν a) where
-  aemeasurable_fst := (measurable_rewardByCount h.measurable_A h.measurable_R a n).aemeasurable
+  aemeasurable_fst :=
+    (measurable_rewardByCount h.measurable_action h.measurable_feedback a n).aemeasurable
   aemeasurable_snd := Measurable.aemeasurable <| by fun_prop
   map_eq := by rw [(hasLaw_rewardByCount h a n hn).map_eq, Measure.map_id]
 

@@ -94,7 +94,7 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
 lemma hasLaw_action_zero_of_IsAlgEnvSeqUntil [h_det : IsDeterministicAlg alg]
     (h : IsAlgEnvSeqUntil A R' alg env P N) :
     HasLaw (A 0) (Measure.dirac (actionZero alg)) P where
-  aemeasurable := have hA := h.measurable_A; by fun_prop
+  aemeasurable := have hA := h.measurable_action; by fun_prop
   map_eq := (h.hasLaw_action_zero).map_eq.trans (p0_eq_dirac alg)
 
 lemma action_zero_of_IsAlgEnvSeqUntil [h_det : IsDeterministicAlg alg]
@@ -102,14 +102,14 @@ lemma action_zero_of_IsAlgEnvSeqUntil [h_det : IsDeterministicAlg alg]
     A 0 =ᵐ[P] fun _ ↦ actionZero alg := by
   have h_eq : ∀ᵐ x ∂(P.map (A 0)), x = actionZero alg := by
     simp [(hasLaw_action_zero_of_IsAlgEnvSeqUntil h).map_eq]
-  have hA := h.measurable_A
+  have hA := h.measurable_action
   exact ae_of_ae_map (by fun_prop) h_eq
 
 lemma action_ae_eq_of_IsAlgEnvSeqUntil [h_det : IsDeterministicAlg alg]
     (h : IsAlgEnvSeqUntil A R' alg env P N) (hn : n < N) :
     A (n + 1) =ᵐ[P] fun ω ↦ nextAction alg n (IsAlgEnvSeq.hist A R' n ω) := by
-  have hA := h.measurable_A
-  have hR' := h.measurable_R
+  have hA := h.measurable_action
+  have hR' := h.measurable_feedback
   have h_eq := (h.hasCondDistrib_action n hn).condDistrib_eq
   rw [policy_eq_deterministic alg n] at h_eq
   refine ae_eq_of_condDistrib_eq_deterministic (by fun_prop : Measurable (nextAction alg n))
@@ -117,7 +117,7 @@ lemma action_ae_eq_of_IsAlgEnvSeqUntil [h_det : IsDeterministicAlg alg]
 
 lemma hasLaw_action_zero [h_det : IsDeterministicAlg alg] (h : IsAlgEnvSeq A R' alg env P) :
     HasLaw (A 0) (Measure.dirac (actionZero alg)) P where
-  aemeasurable := have hA := h.measurable_A; by fun_prop
+  aemeasurable := have hA := h.measurable_action; by fun_prop
   map_eq := (h.hasLaw_action_zero).map_eq.trans (p0_eq_dirac alg)
 
 lemma action_zero_ae_eq [h_det : IsDeterministicAlg alg] (h : IsAlgEnvSeq A R' alg env P) :
@@ -186,14 +186,14 @@ lemma hasCondDistrib_reward_zero [h_det : IsDeterministicEnv env]
     HasCondDistrib (R' 0) (A 0)
       (Kernel.deterministic (feedbackFunZero env) (measurable_feedbackFunZero env)) P := by
   rw [← ν0_eq_deterministic]
-  exact h.hasCondDistrib_reward_zero
+  exact h.hasCondDistrib_feedback_zero
 
 lemma hasCondDistrib_reward [h_det : IsDeterministicEnv env]
     (h : IsAlgEnvSeq A R' alg env P) (n : ℕ) :
     HasCondDistrib (R' (n + 1)) (fun ω ↦ (IsAlgEnvSeq.hist A R' n ω, A (n + 1) ω))
       (Kernel.deterministic (feedbackFun env n) (measurable_feedbackFun env n)) P := by
   rw [← feedback_eq_deterministic]
-  exact h.hasCondDistrib_reward n
+  exact h.hasCondDistrib_feedback n
 
 end IsDeterministicEnv
 

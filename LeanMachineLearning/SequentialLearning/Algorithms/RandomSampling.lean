@@ -62,7 +62,7 @@ lemma hasLaw_action (h : IsAlgEnvSeq A R (randomSampling μ) env P) (n : ℕ) :
 /-- Actions are mutually independent. -/
 lemma iIndep_action (h : IsAlgEnvSeq A R (randomSampling μ) env P) :
     iIndepFun A P := by
-  have hA := h.measurable_A
+  have hA := h.measurable_action
   rw [iIndepFun_nat_iff_forall_indepFun (by fun_prop)]
   intro n
   have condDistrib_eq := (h.hasCondDistrib_action n).condDistrib_eq
@@ -72,7 +72,7 @@ lemma iIndep_action (h : IsAlgEnvSeq A R (randomSampling μ) env P) :
   · have meas_fst : Measurable (fun (f : Iic n → α × β) ↦ (fun i ↦ (f i).1)) := by
       fun_prop
     exact (condDistrib_eq.comp meas_fst measurable_id).symm
-  · exact (IsAlgEnvSeq.measurable_hist (h.measurable_A) (h.measurable_R) n).aemeasurable
+  · exact (IsAlgEnvSeq.measurable_hist (h.measurable_action) (h.measurable_feedback) n).aemeasurable
 
 end randomSampling
 

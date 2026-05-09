@@ -66,16 +66,16 @@ variable {hK : 0 < K} {m : ℕ} {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν]
 lemma isAlgEnvSeqUntil_roundRobinAlgorithm [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) :
     IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P (K * m - 1) where
-  measurable_A := h.measurable_A
-  measurable_R := h.measurable_R
+  measurable_action := h.measurable_action
+  measurable_feedback := h.measurable_feedback
   hasLaw_action_zero := h.hasLaw_action_zero
-  hasCondDistrib_reward_zero := h.hasCondDistrib_reward_zero
+  hasCondDistrib_feedback_zero := h.hasCondDistrib_feedback_zero
   hasCondDistrib_action n hn := by
     convert h.hasCondDistrib_action n using 1
     simp only [roundRobinAlgorithm, detAlgorithm_policy, etcAlgorithm]
     congr 1 with h
     simp [ETC.nextArm, hn]
-  hasCondDistrib_reward n _ := h.hasCondDistrib_reward n
+  hasCondDistrib_feedback n _ := h.hasCondDistrib_feedback n
 
 section AlgorithmBehavior
 
@@ -229,7 +229,7 @@ lemma expectation_pullCount_le [Nonempty (Fin K)]
     (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m ≤ n) :
     P[fun ω ↦ (pullCount A a n ω : ℝ)]
       ≤ m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / (4 * σ2)) := by
-  have hA := h.measurable_A
+  have hA := h.measurable_action
   have : (fun ω ↦ (pullCount A a n ω : ℝ))
       =ᵐ[P] fun ω ↦ m + (n - K * m) * {ω' | A (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
     filter_upwards [pullCount_of_ge h a hm hn] with ω h

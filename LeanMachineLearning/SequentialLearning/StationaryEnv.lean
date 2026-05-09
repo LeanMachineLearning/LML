@@ -80,13 +80,13 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
 
 lemma hasCondDistrib_reward [IsObliviousEnv env] (h : IsAlgEnvSeq A R' alg env P) (n : ℕ) :
     HasCondDistrib (R' n) (A n) (feedbackCondAction env n) P := by
-  have hA := h.measurable_A
-  have hR' := h.measurable_R
+  have hA := h.measurable_action
+  have hR' := h.measurable_feedback
   cases n with
-  | zero => rw [← ν0_eq_feedbackCondAction]; exact h.hasCondDistrib_reward_zero
+  | zero => rw [← ν0_eq_feedbackCondAction]; exact h.hasCondDistrib_feedback_zero
   | succ n =>
     refine ⟨by fun_prop, by fun_prop, ?_⟩
-    have h_eq := (h.hasCondDistrib_reward n).condDistrib_eq
+    have h_eq := (h.hasCondDistrib_feedback n).condDistrib_eq
     rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)] at h_eq ⊢
     have : P.map (A (n + 1)) =
         (P.map (fun x ↦ (IsAlgEnvSeq.hist A R' n x, A (n + 1) x))).snd := by
@@ -100,29 +100,29 @@ lemma hasCondDistrib_reward [IsObliviousEnv env] (h : IsAlgEnvSeq A R' alg env P
 given the action at time `n + 1`. -/
 lemma condIndepFun_reward_hist_action [StandardBorelSpace Ω]
         [IsObliviousEnv env] (h : IsAlgEnvSeq A R' alg env P) (n : ℕ) :
-    R' (n + 1) ⟂ᵢ[A (n + 1), h.measurable_A _ ; P] IsAlgEnvSeq.hist A R' n := by
-  have hA := h.measurable_A
-  have hR' := h.measurable_R
+    R' (n + 1) ⟂ᵢ[A (n + 1), h.measurable_action _ ; P] IsAlgEnvSeq.hist A R' n := by
+  have hA := h.measurable_action
+  have hR' := h.measurable_feedback
   refine condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkLeft
     (η := feedbackCondAction env (n + 1))
     (by fun_prop) (by fun_prop) (by fun_prop) ?_
   refine HasCondDistrib.condDistrib_eq ?_
   rw [← feedback_eq_feedbackCondAction]
-  exact h.hasCondDistrib_reward n
+  exact h.hasCondDistrib_feedback n
 
 lemma condIndepFun_reward_hist_action_action [StandardBorelSpace Ω]
     [IsObliviousEnv env] (h : IsAlgEnvSeq A R' alg env P) (n : ℕ) :
-    R' (n + 1) ⟂ᵢ[A (n + 1), h.measurable_A (n + 1); P]
+    R' (n + 1) ⟂ᵢ[A (n + 1), h.measurable_action (n + 1); P]
       (fun ω ↦ (IsAlgEnvSeq.hist A R' n ω, A (n + 1) ω)) := by
-  have h_indep : R' (n + 1) ⟂ᵢ[A (n + 1), h.measurable_A (n + 1); P] IsAlgEnvSeq.hist A R' n :=
+  have h_indep : R' (n + 1) ⟂ᵢ[A (n + 1), h.measurable_action (n + 1); P] IsAlgEnvSeq.hist A R' n :=
     condIndepFun_reward_hist_action h n
-  have hA := h.measurable_A
-  have hR' := h.measurable_R
+  have hA := h.measurable_action
+  have hR' := h.measurable_feedback
   exact h_indep.prod_right (by fun_prop) (by fun_prop) (by fun_prop)
 
 lemma condIndepFun_reward_hist_action_action' [StandardBorelSpace Ω]
         [IsObliviousEnv env] (h : IsAlgEnvSeq A R' alg env P) (n : ℕ) (hn : n ≠ 0) :
-    R' n ⟂ᵢ[A n, h.measurable_A n; P] (fun ω ↦ (IsAlgEnvSeq.hist A R' (n - 1) ω, A n ω)) := by
+    R' n ⟂ᵢ[A n, h.measurable_action n; P] (fun ω ↦ (IsAlgEnvSeq.hist A R' (n - 1) ω, A n ω)) := by
   have := condIndepFun_reward_hist_action_action h (n - 1)
   grind
 
@@ -214,18 +214,18 @@ lemma condDistrib_reward_stationaryEnv
 given the action at time `n + 1`. -/
 lemma condIndepFun_reward_hist_action [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R' alg (stationaryEnv ν) P) (n : ℕ) :
-    R' (n + 1) ⟂ᵢ[A (n + 1), h.measurable_A _ ; P] hist A R' n :=
+    R' (n + 1) ⟂ᵢ[A (n + 1), h.measurable_action _ ; P] hist A R' n :=
   IsObliviousEnv.condIndepFun_reward_hist_action h n
 
 lemma condIndepFun_reward_hist_action_action [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R' alg (stationaryEnv ν) P) (n : ℕ) :
-    R' (n + 1) ⟂ᵢ[A (n + 1), h.measurable_A (n + 1); P]
+    R' (n + 1) ⟂ᵢ[A (n + 1), h.measurable_action (n + 1); P]
       (fun ω ↦ (hist A R' n ω, A (n + 1) ω)) :=
   IsObliviousEnv.condIndepFun_reward_hist_action_action h n
 
 lemma condIndepFun_reward_hist_action_action' [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R' alg (stationaryEnv ν) P) (n : ℕ) (hn : n ≠ 0) :
-    R' n ⟂ᵢ[A n, h.measurable_A n; P] (fun ω ↦ (hist A R' (n - 1) ω, A n ω)) :=
+    R' n ⟂ᵢ[A n, h.measurable_action n; P] (fun ω ↦ (hist A R' (n - 1) ω, A n ω)) :=
   IsObliviousEnv.condIndepFun_reward_hist_action_action' h n hn
 
 end IsAlgEnvSeq

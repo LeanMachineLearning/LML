@@ -1224,9 +1224,9 @@ lemma hasCondDistrib_reward (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovK
 lemma isAlgEnvSeq_arrayMeasure (alg : Algorithm α R) (ν : Kernel α R) [IsMarkovKernel ν] :
     IsAlgEnvSeq (action alg) (reward alg) alg (stationaryEnv ν) (arrayMeasure ν) where
   hasLaw_action_zero := hasLaw_action_zero alg ν
-  hasCondDistrib_reward_zero := hasCondDistrib_reward_zero alg ν
+  hasCondDistrib_feedback_zero := hasCondDistrib_reward_zero alg ν
   hasCondDistrib_action := hasCondDistrib_action alg ν
-  hasCondDistrib_reward := hasCondDistrib_reward alg ν
+  hasCondDistrib_feedback := hasCondDistrib_reward alg ν
 
 end Laws
 
