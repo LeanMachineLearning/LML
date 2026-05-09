@@ -53,13 +53,13 @@ jobs:
 
       - name: Build Verso Documentation
         run: |
-          ./scripts/build_tutorial.sh
+          ./build_tutorial.sh
 
       - name: Compile blueprint and documentation
         uses: leanprover-community/docgen-action@7b5b9a1822650bd45aaeb4182d94bceba2030f89 # 2026-04-14
         with:
           homepage: home_page
-          blueprint: true
+          blueprint: false
           build-page: false
           deploy: false
 
