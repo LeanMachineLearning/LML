@@ -233,9 +233,9 @@ lemma condExp_reward_obliviousEnv_ae_eq_integral_id {alg : Algorithm E E}
     (h : IsAlgEnvSeq X G alg (obliviousEnv ν) P)
     (n : ℕ) (h_int : Integrable (G n) P) :
     P[G n | MeasurableSpace.comap (X n) inferInstance] =ᵐ[P] fun ω ↦ (ν n (X n ω))[id] := by
-  have h_obl : HasCondDistrib (G n) (X n) (ν n) P := h.hasCondDistrib_reward_obliviousEnv n
-  have h_ae := ae_of_ae_map (h.measurable_A n).aemeasurable h_obl.condDistrib_eq
-  have h_ae' := condExp_ae_eq_integral_condDistrib' (h.measurable_A n) h_int
+  have h_obl : HasCondDistrib (G n) (X n) (ν n) P := h.hasCondDistrib_feedback_obliviousEnv n
+  have h_ae := ae_of_ae_map (h.measurable_action n).aemeasurable h_obl.condDistrib_eq
+  have h_ae' := condExp_ae_eq_integral_condDistrib' (h.measurable_action n) h_int
   filter_upwards [h_ae, h_ae'] with ω hω hω'
   rw [hω', hω]
   congr
@@ -340,10 +340,11 @@ lemma sfdsf (h : IsAlgEnvSeq X G alg (obliviousEnv gradKernel) P)
     (hX_lp : ∀ n, MemLp (X n) 2 P) (y : E) (n : ℕ) :
     P[fun ω ↦ ⟪X n ω - y, G n ω⟫] = P[fun ω ↦ ⟪X n ω - y, ∇ (f n) (X n ω)⟫] := by
   let M n := MeasurableSpace.comap (X n) inferInstance
-  have h_obl : HasCondDistrib (G n) (X n) (gradKernel n) P := h.hasCondDistrib_reward_obliviousEnv n
+  have h_obl : HasCondDistrib (G n) (X n) (gradKernel n) P :=
+    h.hasCondDistrib_feedback_obliviousEnv n
   calc P[fun ω ↦ ⟪X n ω - y, G n ω⟫]
   _ = P[fun ω ↦ P[fun ω' ↦ ⟪X n ω' - y, G n ω'⟫ | M n] ω] := by
-    rw [integral_condExp (h.measurable_A _).comap_le]
+    rw [integral_condExp (h.measurable_action _).comap_le]
   _ = P[fun ω ↦ ⟪X n ω - y, P[G n | M n] ω⟫] := by
     refine integral_congr_ae ?_
     refine condExp_inner_of_stronglyMeasurable_left ?_ ?_ ?_

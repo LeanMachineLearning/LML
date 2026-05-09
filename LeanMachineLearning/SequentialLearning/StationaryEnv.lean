@@ -78,14 +78,14 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {n N : ℕ}
   {ν : ℕ → Kernel 𝓐 𝓨} [∀ n, IsMarkovKernel (ν n)]
 
-lemma hasCOndDistrib_reward_hist_action [IsObliviousEnv env]
+lemma hasCondDistrib_feedback_hist_action [IsObliviousEnv env]
     (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
     HasCondDistrib (Y (n + 1)) (fun ω ↦ (IsAlgEnvSeq.hist A Y n ω, A (n + 1) ω))
       ((feedbackCondAction env (n + 1)).prodMkLeft _) P := by
   have hA := h.measurable_action
   have hR' := h.measurable_feedback
   refine ⟨by fun_prop, by fun_prop, ?_⟩
-  have h_eq := (h.hasCondDistrib_reward n).condDistrib_eq
+  have h_eq := (h.hasCondDistrib_feedback n).condDistrib_eq
   rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)] at h_eq ⊢
   simpa only [feedback_eq_feedbackCondAction] using h_eq
 
@@ -209,11 +209,11 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
 
 namespace IsAlgEnvSeq
 
-/-- The conditional distribution of the reward at time `n` given the action at time `n` is `ν`. -/
-lemma hasCondDistrib_reward_obliviousEnv {ν : ℕ → Kernel α R} [∀ n, IsMarkovKernel (ν n)]
+/-- The conditional distribution of the feedback at time `n` given the action at time `n` is `ν`. -/
+lemma hasCondDistrib_feedback_obliviousEnv {ν : ℕ → Kernel 𝓐 𝓨} [∀ n, IsMarkovKernel (ν n)]
     (h : IsAlgEnvSeq A Y alg (obliviousEnv ν) P) (n : ℕ) :
     HasCondDistrib (Y n) (A n) (ν n) P := by
-  simpa using IsObliviousEnv.hasCondDistrib_reward h n
+  simpa using IsObliviousEnv.hasCondDistrib_feedback h n
 
 /-- The conditional distribution of the feedback at time `n` given the action at time `n` is `ν`. -/
 lemma hasCondDistrib_feedback_stationaryEnv
