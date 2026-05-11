@@ -284,6 +284,13 @@ lemma onlineRegret_gradientStep_le (x g : ℕ → E) (y : E) (η : ℝ)
       (2 * η)⁻¹ * ‖x 0 - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, ‖g i‖ ^ 2 := by
   simpa [onlineRegret, inner_sub_left] using lem14dot1 x g y η hη hx n
 
+lemma apply_avg_sub_le_onlineRegret_linearizedLoss [CompleteSpace E] {f : E → ℝ}
+    (hf : ConvexOn ℝ .univ f) (hdf : Differentiable ℝ f)
+    (x : ℕ → E) (y : E) (n : ℕ) (hn : n ≠ 0) :
+    f ((n : ℝ)⁻¹ • ∑ i ∈ range n, x i) - f y ≤
+      (n : ℝ)⁻¹ * (onlineRegret (linearizedLoss (fun _ ↦ f) x) y x n) := by
+  simpa [onlineRegret, linearizedLoss, ← inner_sub_left] using hf.todo'2 hdf x y n hn
+
 end OnlineRegret
 
 variable [SecondCountableTopology E] [CompleteSpace E]
@@ -317,14 +324,6 @@ lemma action_ae_eq_sub_sum (h_seq : IsAlgEnvSeq X G (gradientStep γ x₀) env P
   | succ n ih => rw [hω n, Finset.sum_range_succ, ← sub_sub]; congr
 
 end Definition
-
-omit [SecondCountableTopology E] in
-lemma apply_avg_sub_le_onlineRegret_linearizedLoss {f : E → ℝ}
-    (hf : ConvexOn ℝ .univ f) (hdf : Differentiable ℝ f)
-    (x : ℕ → E) (y : E) (n : ℕ) (hn : n ≠ 0) :
-    f ((n : ℝ)⁻¹ • ∑ i ∈ range n, x i) - f y ≤
-      (n : ℝ)⁻¹ * (onlineRegret (linearizedLoss (fun _ ↦ f) x) y x n) := by
-  simpa [onlineRegret, linearizedLoss, ← inner_sub_left] using hf.todo'2 hdf x y n hn
 
 namespace GradientStep
 
