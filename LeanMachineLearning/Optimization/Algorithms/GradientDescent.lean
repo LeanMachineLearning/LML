@@ -419,6 +419,47 @@ lemma integral_apply_avg_le {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (hdf : D
     refine le_of_eq ?_
     field
 
+lemma integral_apply_avg_const_div_sqrt {f : E → ℝ}
+    (hf : ConvexOn ℝ .univ f) (hdf : Differentiable ℝ f)
+    (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ f x)
+    {D L : ℝ} (hD_pos : 0 < D) (hL_pos : 0 < L)
+    {y : E} (hxy_le : ‖x₀ - y‖ ≤ D) (hG_le : ∀ n ω, ‖G n ω‖ ≤ L)
+    (h_int : ∀ n, Integrable (fun ω ↦ f (X n ω)) P)
+    {n : ℕ} (hn : n ≠ 0)
+    (h_int_avg : Integrable (fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ Finset.range n, X i ω)) P)
+    (h : IsAlgEnvSeq X G (gradientStep (fun _ ↦ D / (L * √n)) x₀) (obliviousEnv gradKernel) P) :
+    P[fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ Finset.range n, X i ω) - f y] ≤ D * L / √n := by
+  let η := D / (L * √n)
+  have hG_lp n : MemLp (G n) 2 P := by
+    refine MemLp.mono (g := fun _ ↦ L) (memLp_const _)
+      (have := h.measurable_feedback; by fun_prop) (ae_of_all _ fun ω ↦ ?_)
+    simpa [abs_of_nonneg hL_pos.le] using hG_le n ω
+  calc P[fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ Finset.range n, X i ω) - f y]
+  _ ≤ (2 * η * n)⁻¹ * ‖x₀ - y‖ ^ 2 +
+      (η / (2 * n)) * ∑ i ∈ Finset.range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
+    refine integral_apply_avg_le hf hdf ?_ h_unbiased hG_lp h h_int y n hn h_int_avg
+    positivity
+  _ ≤ (2 * η * n)⁻¹ * D ^ 2 + (η / 2) * L ^ 2 := by
+    gcongr 1
+    · gcongr
+    · field_simp
+      rw [mul_assoc]
+      gcongr
+      calc ∑ x ∈ range n, ∫ ω, ‖G x ω‖ ^ 2 ∂P
+      _ ≤ ∑ x ∈ range n, ∫ ω, L ^ 2 ∂P := by
+        gcongr with i hi
+        · exact (hG_lp i).integrable_norm_pow (by simp)
+        · simp
+        intro ω
+        mono
+        positivity
+      _ = n * L ^ 2 := by simp
+  _ = D * L / √n := by
+    simp only [mul_inv_rev, inv_div, η]
+    field_simp
+    rw [Real.sq_sqrt (by positivity)]
+    ring
+
 end GradientStep
 
 end Learning
