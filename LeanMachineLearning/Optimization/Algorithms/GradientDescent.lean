@@ -124,8 +124,7 @@ lemma memLp_gradient (h : IsAlgEnvSeq X G alg (obliviousEnv ν) P)
   have h_ae := h.condExp_feedback_obliviousEnv_ae_eq_integral_id n
       ((h_memLp n).integrable (by simp))
   refine h_lp.ae_eq <| h_ae.trans ?_
-  simp_rw [← h_unbiased]
-  rfl
+  simp [← h_unbiased]
 
 lemma integral_inner_eq_integral_inner_gradient
     (h : IsAlgEnvSeq X G alg (obliviousEnv ν) P)
