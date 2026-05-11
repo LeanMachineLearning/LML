@@ -5,6 +5,8 @@ Authors: Rémy Degenne
 -/
 module
 
+public import LeanMachineLearning.MeasureTheory.Function.ConditionalExpectation.PullOut
+public import LeanMachineLearning.MeasureTheory.Function.L2Space
 public import LeanMachineLearning.SequentialLearning.Deterministic
 public import LeanMachineLearning.SequentialLearning.EvaluationEnv
 public import Mathlib
@@ -18,48 +20,6 @@ public import Mathlib
 
 open MeasureTheory ProbabilityTheory Filter Real Finset
 open scoped Gradient ENNReal NNReal RealInnerProductSpace
-
-section Aux
-
-variable {E Ω : Type*} {mE : MeasurableSpace E} {mΩ : MeasurableSpace Ω} {P : Measure Ω}
-    [NormedAddCommGroup E]
-
-theorem _root_.MeasureTheory.MemLp.eLpNorm_rpow_norm_lt_top
-    {f : Ω → E} {p : ℝ≥0∞}
-    (hf : MemLp f p P) (hp_zero : p ≠ 0) (hp_top : p ≠ ∞) :
-    eLpNorm (fun x ↦ ‖f x‖ ^ p.toReal) 1 P < ∞ := by
-  simpa [eLpNorm_one_eq_lintegral_enorm, enorm_rpow_of_nonneg] using
-    (hf.integrable_enorm_rpow hp_zero hp_top).hasFiniteIntegral
-
-lemma _root_.MeasureTheory.MemLp.integrable_inner [InnerProductSpace ℝ E]
-    {f g : Ω → E}
-    (hf : MemLp f 2 P) (hg : MemLp g 2 P) :
-    Integrable (fun ω ↦ ⟪f ω, g ω⟫) P := by
-  rw [← memLp_one_iff_integrable]
-  constructor
-  · exact hf.aestronglyMeasurable.inner hg.aestronglyMeasurable
-  have h x : ‖⟪f x, g x⟫‖ ≤ ‖‖f x‖ ^ (2 : ℝ) + ‖g x‖ ^ (2 : ℝ)‖ := by
-    norm_cast
-    calc ‖⟪f x, g x⟫‖ ≤ ‖f x‖ * ‖g x‖ := norm_inner_le_norm _ _
-      _ ≤ 2 * ‖f x‖ * ‖g x‖ := by
-        gcongr
-        exact le_mul_of_one_le_left (norm_nonneg _) one_le_two
-      _ ≤ ‖‖f x‖ ^ 2 + ‖g x‖ ^ 2‖ := (two_mul_le_add_sq _ _).trans (le_abs_self _)
-  refine (eLpNorm_mono h).trans_lt ((eLpNorm_add_le ?_ ?_ le_rfl).trans_lt ?_)
-  · exact (hf.norm.aemeasurable.pow_const _).aestronglyMeasurable
-  · exact (hg.norm.aemeasurable.pow_const _).aestronglyMeasurable
-  rw [ENNReal.add_lt_top]
-  exact ⟨hf.eLpNorm_rpow_norm_lt_top (by simp) (by simp),
-    hg.eLpNorm_rpow_norm_lt_top (by simp) (by simp)⟩
-
-theorem condExp_inner_of_stronglyMeasurable_left {Ω : Type*} {m mΩ : MeasurableSpace Ω}
-    [InnerProductSpace ℝ E] [CompleteSpace E] {μ : Measure Ω} {X g : Ω → E}
-    (hX : StronglyMeasurable[m] X) (hXg : Integrable (fun ω ↦ ⟪X ω, g ω⟫) μ) (hg : Integrable g μ) :
-    μ[fun ω ↦ ⟪X ω, g ω⟫ | m] =ᵐ[μ] fun ω ↦ ⟪X ω, μ[g | m] ω⟫ := by
-  filter_upwards [condExp_bilin_of_stronglyMeasurable_left (innerSL ℝ) hX hXg hg] with ω hω
-  simpa [innerSL_apply_apply] using hω
-
-end Aux
 
 namespace Learning
 
