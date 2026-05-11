@@ -187,19 +187,6 @@ end OnlineRegret
 variable [SecondCountableTopology E] [CompleteSpace E]
   {f : ℕ → E → ℝ} {hf : ∀ n, Measurable (∇ (f n))}
 
-omit [MeasurableSub₂ E] in
-lemma condExp_reward_obliviousEnv_ae_eq_integral_id {alg : Algorithm E E}
-    {ν : ℕ → Kernel E E} [∀ n, IsMarkovKernel (ν n)]
-    (h : IsAlgEnvSeq X G alg (obliviousEnv ν) P)
-    (n : ℕ) (h_int : Integrable (G n) P) :
-    P[G n | MeasurableSpace.comap (X n) inferInstance] =ᵐ[P] fun ω ↦ (ν n (X n ω))[id] := by
-  have h_obl : HasCondDistrib (G n) (X n) (ν n) P := h.hasCondDistrib_feedback_obliviousEnv n
-  have h_ae := ae_of_ae_map (h.measurable_action n).aemeasurable h_obl.condDistrib_eq
-  have h_ae' := condExp_ae_eq_integral_condDistrib' (h.measurable_action n) h_int
-  filter_upwards [h_ae, h_ae'] with ω hω hω'
-  rw [hω', hω]
-  congr
-
 /-- Online gradient descent with step sizes `γ : ℕ → ℝ` and initial point `x₀ : E`,
 without projection.
 
@@ -256,7 +243,7 @@ lemma memLp_gradient {alg : Algorithm E E}
     MemLp (fun ω ↦ ∇ (f n) (X n ω)) 2 P := by
   let M n := MeasurableSpace.comap (X n) inferInstance
   have h_lp : MemLp P[G n | M n] 2 P := (h_memLp n).condExp (m := M n)
-  have h_ae := condExp_reward_obliviousEnv_ae_eq_integral_id h n
+  have h_ae := h.condExp_feedback_obliviousEnv_ae_eq_integral_id n
       ((h_memLp n).integrable (by simp))
   refine h_lp.ae_eq <| h_ae.trans ?_
   simp_rw [← h_unbiased]
@@ -314,7 +301,7 @@ lemma sfdsf (h : IsAlgEnvSeq X G alg (obliviousEnv gradKernel) P)
     · exact MemLp.integrable_inner ((hX_lp n).sub (memLp_const _)) (h_memLp n)
     · exact (h_memLp n).integrable (by simp)
   _ = P[fun ω ↦ ⟪X n ω - y, (gradKernel n (X n ω))[id]⟫] := by
-    have h_ae := condExp_reward_obliviousEnv_ae_eq_integral_id h n
+    have h_ae := h.condExp_feedback_obliviousEnv_ae_eq_integral_id n
       ((h_memLp n).integrable (by simp))
     refine integral_congr_ae ?_
     filter_upwards [h_ae] with ω hω using by rw [hω]
