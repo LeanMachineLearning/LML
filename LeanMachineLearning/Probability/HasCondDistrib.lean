@@ -253,29 +253,22 @@ lemma HasCondDistrib.prod [IsFiniteMeasure μ] [IsFiniteKernel κ]
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
   rfl
 
-lemma HasCondDistrib.ae_hasCondDistrib_sectR [IsFiniteMeasure μ]
-    [StandardBorelSpace β] [Nonempty β]
-    {W : α → Ω'} {Z : α → γ}
-    {f : Ω' → β} {g : Ω' → Ω}
-    {η : Kernel (γ × β) Ω} [IsFiniteKernel η]
-    (hf : Measurable f) (hg : Measurable g)
-    (hW : AEMeasurable W μ)
-    (hcd : HasCondDistrib (g ∘ W) (fun a ↦ (Z a, (f (W a)))) η μ) :
+lemma HasCondDistrib.ae_hasCondDistrib_sectR [IsFiniteMeasure μ] [StandardBorelSpace β] [Nonempty β]
+    {W : α → Ω'} {Z : α → γ} {f : Ω' → β} {g : Ω' → Ω} {η : Kernel (γ × β) Ω} [IsFiniteKernel η]
+    (hf : Measurable f) (hg : Measurable g) (hW : AEMeasurable W μ)
+    (hcd : HasCondDistrib (g ∘ W) (fun a ↦ (Z a, f (W a))) η μ) :
     ∀ᵐ z ∂(μ.map Z), HasCondDistrib g f (η.sectR z) (condDistrib W Z μ z) := by
-  have hfW := hf.comp_aemeasurable hW
-  have h_eq : (condDistrib (g ∘ W) (fun ω ↦ (Z ω, (f ∘ W) ω)) μ)
-      =ᵐ[μ.map Z ⊗ₘ condDistrib (f ∘ W) Z μ] η := by
-    rw [compProd_map_condDistrib (X := Z) hfW]
+  have h_eq : (condDistrib (g ∘ W) (fun a ↦ (Z a, f (W a))) μ)
+      =ᵐ[μ.map Z ⊗ₘ (condDistrib W Z μ).map f] η := by
+    rw [← Measure.compProd_congr (condDistrib_comp Z hW hf),
+        compProd_map_condDistrib (X := Z) (hf.comp_aemeasurable hW)]
     exact hcd.condDistrib_eq
   filter_upwards [
-    condDistrib_condDistrib_ae_eq_sectR_condDistrib hf hg hW hcd.aemeasurable_snd.fst,
-    condDistrib_comp Z hW hf,
-    Measure.ae_ae_of_ae_compProd h_eq] with z h_tower h_fst h_nested
+    ae_condDistrib_condDistrib_ae_eq_sectR_condDistrib hf hg hW hcd.aemeasurable_snd.fst,
+    Measure.ae_ae_of_ae_compProd h_eq] with z ht hn
   refine ⟨hg.aemeasurable, hf.aemeasurable, ?_⟩
-  refine h_tower.trans ?_
-  have h_meas : (condDistrib W Z μ z).map f = condDistrib (f ∘ W) Z μ z := by
-    rw [← Kernel.map_apply _ hf, ← h_fst]
-  rw [h_meas]
-  exact h_nested.mono fun b hb ↦ by simp only [Kernel.sectR_apply]; exact hb
+  apply ht.trans
+  rw [← Kernel.map_apply _ hf]
+  exact hn.mono (fun _ hb ↦ hb)
 
 end ProbabilityTheory

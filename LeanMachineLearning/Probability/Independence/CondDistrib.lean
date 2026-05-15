@@ -47,34 +47,27 @@ lemma condDistrib_prod_left [StandardBorelSpace β] [Nonempty β]
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
   rfl
 
-lemma condDistrib_condDistrib_ae_eq_sectR_condDistrib [StandardBorelSpace β] [Nonempty β]
-    {f : Ω' → β} {g : Ω' → Ω}
-    (hf : Measurable f) (hg : Measurable g)
-    (hZ : AEMeasurable Z μ) (hT : AEMeasurable T μ) :
+lemma ae_condDistrib_condDistrib_ae_eq_sectR_condDistrib [StandardBorelSpace β] [Nonempty β]
+    {f : Ω' → β} {g : Ω' → Ω} (hf : Measurable f) (hg : Measurable g) (hZ : AEMeasurable Z μ)
+    (hT : AEMeasurable T μ) :
     ∀ᵐ t ∂(μ.map T),
-      condDistrib g f (condDistrib Z T μ t)
-        =ᵐ[(condDistrib Z T μ t).map f]
-          (condDistrib (g ∘ Z) (fun a ↦ (T a, f (Z a))) μ).sectR t := by
-  have hfZ := hf.comp_aemeasurable hZ
-  have hgZ := hg.comp_aemeasurable hZ
+      condDistrib g f (condDistrib Z T μ t) =ᵐ[(condDistrib Z T μ t).map f]
+        (condDistrib (g ∘ Z) (fun a ↦ (T a, f (Z a))) μ).sectR t := by
   filter_upwards [
-    condDistrib_prod_left hfZ hgZ hT,
+    condDistrib_prod_left (hf.comp_aemeasurable hZ) (hg.comp_aemeasurable hZ) hT,
     condDistrib_comp T hZ (hf.prodMk hg),
     condDistrib_comp T hZ hf] with t h_prod h_pair h_fst
   rw [condDistrib_ae_eq_iff_measure_eq_compProd f hg.aemeasurable]
   calc (condDistrib Z T μ t).map (fun w ↦ (f w, g w))
-  _ = ((condDistrib Z T μ).map (fun w ↦ (f w, g w))) t :=
-      (Kernel.map_apply _ (hf.prodMk hg) t).symm
-  _ = condDistrib (fun ω ↦ ((f ∘ Z) ω, (g ∘ Z) ω)) T μ t := h_pair.symm
-  _ = (condDistrib (f ∘ Z) T μ ⊗ₖ condDistrib (g ∘ Z) (fun ω ↦ (T ω, (f ∘ Z) ω)) μ) t := h_prod
+  _ = condDistrib (fun ω ↦ ((f ∘ Z) ω, (g ∘ Z) ω)) T μ t := by
+      rw [← Kernel.map_apply _ (hf.prodMk hg)]
+      exact h_pair.symm
   _ = condDistrib (f ∘ Z) T μ t
-        ⊗ₘ (condDistrib (g ∘ Z) (fun ω ↦ (T ω, (f ∘ Z) ω)) μ).sectR t :=
-      Kernel.compProd_apply_eq_compProd_sectR _ _ t
-  _ = ((condDistrib Z T μ).map f) t
-        ⊗ₘ (condDistrib (g ∘ Z) (fun ω ↦ (T ω, (f ∘ Z) ω)) μ).sectR t := by rw [h_fst]
+        ⊗ₘ (condDistrib (g ∘ Z) (fun ω ↦ (T ω, (f ∘ Z) ω)) μ).sectR t := by
+      rw [h_prod, Kernel.compProd_apply_eq_compProd_sectR]
   _ = (condDistrib Z T μ t).map f
         ⊗ₘ (condDistrib (g ∘ Z) (fun ω ↦ (T ω, (f ∘ Z) ω)) μ).sectR t := by
-      rw [Kernel.map_apply _ hf]
+      rw [h_fst, Kernel.map_apply _ hf]
 
 lemma condDistrib_prod_self_left [StandardBorelSpace β] [Nonempty β] [StandardBorelSpace γ]
     [Nonempty γ]
