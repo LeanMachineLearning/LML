@@ -64,8 +64,9 @@ variable {P : Measure Ω} [IsProbabilityMeasure P]
 lemma hasCondDistrib_action (hK : 0 < K) (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm hK Q κ) E A R' P)
     (n : ℕ) : HasCondDistrib (A (n + 1)) (IsAlgEnvSeq.hist A R' n)
       (condDistrib (bestAction κ E) (IsAlgEnvSeq.hist A R' n) P) P where
-  aemeasurable_fst := (h.measurable_A (n + 1)).aemeasurable
-  aemeasurable_snd := (IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).aemeasurable
+  aemeasurable_fst := (h.measurable_action (n + 1)).aemeasurable
+  aemeasurable_snd :=
+    (IsAlgEnvSeq.measurable_hist h.measurable_action h.measurable_feedback n).aemeasurable
   condDistrib_eq := by
     have hm : Measurable (bestAction κ id) := by fun_prop
     calc
@@ -258,9 +259,9 @@ lemma integral_sum_range_actionMean_bestAction_sub_ucb_bestAction_le {alg : Algo
   let F := {ω | ∃ t < n, pullCount A (bestAction κ E ω) t ω ≠ 0 ∧
     empMean A R' (bestAction κ E ω) t ω - actionMean κ E (bestAction κ E ω) ω ≤
       -√(2 * σ2 * Real.log (1 / δ) / (pullCount A (bestAction κ E ω) t ω))}
-  have := h.measurable_A
+  have := h.measurable_action
   have := h.measurable_E
-  have := h.measurable_R
+  have := h.measurable_feedback
   have hF : MeasurableSet F := by measurability
   have : Integrable (fun ω ↦ actionMean κ E (bestAction κ E ω) ω) P :=
       IsBayesAlgEnvSeq.integrable_uncurry_actionMean_comp (by fun_prop) (by fun_prop) hm
@@ -305,9 +306,9 @@ lemma integral_sum_range_ucb_action_sub_actionMean_action_le {alg : Algorithm (F
   · simp [hn, hlu, mul_nonneg]
   let F := {ω | ∃ t < n, ∃ a, pullCount A a t ω ≠ 0 ∧
     √(2 * σ2 * Real.log (1 / δ) / pullCount A a t ω) ≤ empMean A R' a t ω - actionMean κ E a ω}
-  have := h.measurable_A
+  have := h.measurable_action
   have := h.measurable_E
-  have := h.measurable_R
+  have := h.measurable_feedback
   have hF : MeasurableSet F := by measurability
   have : ∀ t, Integrable (fun ω ↦ actionMean κ E (A t ω) ω) P :=
     fun t ↦ IsBayesAlgEnvSeq.integrable_uncurry_actionMean_comp (by fun_prop) (by fun_prop) hm
@@ -363,9 +364,9 @@ lemma integral_ucb_action_eq_integral_ucb_bestAction (hK : 0 < K)
     (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm hK Q κ) E A R' P) (n : ℕ) :
     P[fun ω ↦ ucb A R' l u σ2 δ (A n ω) n ω] =
       P[fun ω ↦ ucb A R' l u σ2 δ (bestAction κ E ω) n ω] := by
-  have := h.measurable_A
+  have := h.measurable_action
   have := h.measurable_E
-  have := h.measurable_R
+  have := h.measurable_feedback
   by_cases hn : n = 0
   · simp [hn]
   obtain ⟨n, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hn
@@ -390,12 +391,13 @@ lemma integral_regret_eq_add (hK : 0 < K) (h : IsBayesAlgEnvSeq Q κ (tsAlgorith
       P[fun ω ↦ ∑ t ∈ range n,
         (ucb A R' l u σ2 δ (A t ω) t ω - actionMean κ E (A t ω) ω)] := by
   have hua (t : ℕ) : Integrable (fun ω ↦ ucb A R' l u σ2 δ (A t ω) t ω) P :=
-    integrable_uncurry_ucb_comp h.measurable_A h.measurable_R (h.measurable_A t) measurable_const
+    integrable_uncurry_ucb_comp h.measurable_action h.measurable_feedback (h.measurable_action t)
+      measurable_const
   have hub (t : ℕ) : Integrable (fun ω ↦ ucb A R' l u σ2 δ (bestAction κ E ω) t ω) P :=
-    integrable_uncurry_ucb_comp h.measurable_A h.measurable_R
+    integrable_uncurry_ucb_comp h.measurable_action h.measurable_feedback
       (IsBayesAlgEnvSeq.measurable_bestAction h.measurable_E) measurable_const
   have haa (t : ℕ) : Integrable (fun ω ↦ actionMean κ E (A t ω) ω) P :=
-    IsBayesAlgEnvSeq.integrable_uncurry_actionMean_comp h.measurable_E (h.measurable_A t) hm
+    IsBayesAlgEnvSeq.integrable_uncurry_actionMean_comp h.measurable_E (h.measurable_action t) hm
   have hab : Integrable (fun ω ↦ actionMean κ E (bestAction κ E ω) ω) P :=
       IsBayesAlgEnvSeq.integrable_uncurry_actionMean_comp h.measurable_E
         (IsBayesAlgEnvSeq.measurable_bestAction h.measurable_E) hm

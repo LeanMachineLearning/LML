@@ -75,7 +75,7 @@ lemma HasCondDistrib.snd {Y : α → Ω × Ω'} {κ : Kernel β (Ω × Ω')} [Is
   rw [Kernel.snd_eq]
   exact HasCondDistrib.comp h measurable_snd
 
-/-- Rename to `HasCondDistrib.comp_right`? -/
+-- TODO: Rename to `HasCondDistrib.comp_right`?
 lemma HasCondDistrib.comp_right' [IsFiniteMeasure μ] [IsFiniteKernel κ] {f : γ → β}
     (hf : Measurable f) {Z : α → γ} (h : HasCondDistrib Y Z (κ.comap f hf) μ) :
     HasCondDistrib Y (f ∘ Z) κ μ := by

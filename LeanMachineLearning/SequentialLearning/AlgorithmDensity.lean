@@ -52,28 +52,28 @@ variable {P : Measure Ω} [IsFiniteMeasure P]
 
 lemma hasLaw_hist_zero (h : IsAlgEnvSeq A R' alg env P) : HasLaw (hist A R' 0)
     ((P.map (step A R' 0)).map (MeasurableEquiv.piUnique (fun _ : Iic 0 ↦ α × R)).symm) P where
-  aemeasurable := (measurable_hist h.measurable_A h.measurable_R 0).aemeasurable
+  aemeasurable := (measurable_hist h.measurable_action h.measurable_feedback 0).aemeasurable
   map_eq := by
     have he : (MeasurableEquiv.piUnique (fun _ : Iic 0 ↦ α × R)).symm ∘ step A R' 0 =
         hist A R' 0 := by
       funext _ ⟨0, _⟩
       rfl
     rw [← he]
-    have hA := h.measurable_A
-    have hR := h.measurable_R
+    have hA := h.measurable_action
+    have hR := h.measurable_feedback
     exact (Measure.map_map (by fun_prop) (by fun_prop)).symm
 
 lemma hasLaw_hist_succ (h : IsAlgEnvSeq A R' alg env P) (n : ℕ) : HasLaw (hist A R' (n + 1))
     ((P.map (hist A R' n) ⊗ₘ condDistrib (step A R' (n + 1)) (hist A R' n) P).map
         (MeasurableEquiv.IicSuccProd (fun _ ↦ α × R) n).symm) P where
-  aemeasurable := (measurable_hist h.measurable_A h.measurable_R (n + 1)).aemeasurable
+  aemeasurable := (measurable_hist h.measurable_action h.measurable_feedback (n + 1)).aemeasurable
   map_eq := by
     have he : (MeasurableEquiv.IicSuccProd (fun _ ↦ α × R) n).symm ∘
         (fun ω ↦ (hist A R' n ω, step A R' (n + 1) ω)) = hist A R' (n + 1) := by
       funext ω
       exact (MeasurableEquiv.IicSuccProd (fun _ ↦ α × R) n).symm_apply_apply (hist A R' (n + 1) ω)
-    have hA := h.measurable_A
-    have hR := h.measurable_R
+    have hA := h.measurable_action
+    have hR := h.measurable_feedback
     rw [← he, ← Measure.map_map (by fun_prop) (by fun_prop)]
     congr
     exact (compProd_map_condDistrib (by fun_prop)).symm
@@ -103,7 +103,8 @@ lemma absolutelyContinuous_map_hist (h : IsAlgEnvSeq A R' alg env P)
 lemma hasLaw_hist_withDensity (h : IsAlgEnvSeq A R' alg env P) (h₀ : IsAlgEnvSeq A₀ R₀ alg₀ env P₀)
    (hc : alg ≪ₐ alg₀) (n : ℕ) : HasLaw (IsAlgEnvSeq.hist A R' n)
       ((P₀.map (IsAlgEnvSeq.hist A₀ R₀ n)).withDensity (alg.density alg₀ n)) P where
-  aemeasurable := (IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).aemeasurable
+  aemeasurable :=
+    (IsAlgEnvSeq.measurable_hist h.measurable_action h.measurable_feedback n).aemeasurable
   map_eq := by
     induction n with
     | zero =>
@@ -159,12 +160,13 @@ lemma hasLaw_hist_withDensity (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
     (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ R₀ P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) :
     HasLaw (IsAlgEnvSeq.hist A R' n)
       ((P₀.map (IsAlgEnvSeq.hist A₀ R₀ n)).withDensity (alg.density alg₀ n)) P where
-  aemeasurable := (IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).aemeasurable
+  aemeasurable :=
+    (IsAlgEnvSeq.measurable_hist h.measurable_action h.measurable_feedback n).aemeasurable
   map_eq := by
-    have hA := h.measurable_A
-    have hR := h.measurable_R
-    have hA₀ := h₀.measurable_A
-    have hR₀ := h₀.measurable_R
+    have hA := h.measurable_action
+    have hR := h.measurable_feedback
+    have hA₀ := h₀.measurable_action
+    have hR₀ := h₀.measurable_feedback
     have hE := h.measurable_E
     have hE₀ := h₀.measurable_E
     rw [← condDistrib_comp_map hE.aemeasurable (by fun_prop), h.hasLaw_env.map_eq,
@@ -180,12 +182,13 @@ lemma hasCondDistrib_env_hist (h : IsBayesAlgEnvSeq Q κ alg E A R' P)
     HasCondDistrib E (IsAlgEnvSeq.hist A R' n)
       (condDistrib E₀ (IsAlgEnvSeq.hist A₀ R₀ n) P₀) P where
   aemeasurable_fst := h.measurable_E.aemeasurable
-  aemeasurable_snd := (IsAlgEnvSeq.measurable_hist h.measurable_A h.measurable_R n).aemeasurable
+  aemeasurable_snd :=
+    (IsAlgEnvSeq.measurable_hist h.measurable_action h.measurable_feedback n).aemeasurable
   condDistrib_eq := by
-    have hA := h.measurable_A
-    have hR := h.measurable_R
-    have hA₀ := h₀.measurable_A
-    have hR₀ := h₀.measurable_R
+    have hA := h.measurable_action
+    have hR := h.measurable_feedback
+    have hA₀ := h₀.measurable_action
+    have hR₀ := h₀.measurable_feedback
     have hE := h.measurable_E
     have hE₀ := h₀.measurable_E
     rw [condDistrib_ae_eq_iff_measure_eq_compProd _ h.measurable_E.aemeasurable,

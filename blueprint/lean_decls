@@ -12,10 +12,10 @@ Learning.IsAlgEnvSeq.filtrationAction
 Learning.IsAlgEnvSeq.adapted_step
 Learning.IsAlgEnvSeq.adapted_hist
 Learning.IsAlgEnvSeq.adapted_action
-Learning.IsAlgEnvSeq.adapted_reward
+Learning.IsAlgEnvSeq.adapted_feedback
 Learning.isAlgEnvSeq_unique
-Learning.IsAlgEnvSeq.condDistrib_reward_stationaryEnv
-Learning.IsAlgEnvSeq.condIndepFun_reward_hist_action
+Learning.IsAlgEnvSeq.condDistrib_feedback_stationaryEnv
+Learning.IsAlgEnvSeq.condIndepFun_feedback_hist_action
 ProbabilityTheory.Kernel.traj
 ProbabilityTheory.Kernel.trajMeasure
 Learning.IT.step
@@ -26,13 +26,13 @@ Learning.IT.adapted_hist
 ProbabilityTheory.Kernel.condDistrib_trajMeasure
 Learning.IsAlgEnvSeq.hasLaw_step_zero
 Learning.IT.action
-Learning.IT.reward
+Learning.IT.feedback
 Learning.IT.adapted_action
-Learning.IT.adapted_reward
+Learning.IT.adapted_feedback
 Learning.IT.condDistrib_action
-Learning.IT.condDistrib_reward
+Learning.IT.condDistrib_feedback
 Learning.IT.hasLaw_action_zero
-Learning.IT.condDistrib_reward_zero
+Learning.IT.condDistrib_feedback_zero
 Learning.IT.isAlgEnvSeq_trajMeasure
 Learning.pullCount
 Learning.pullCount_zero
@@ -105,7 +105,6 @@ ProbabilityTheory.HasSubgaussianMGF.add_of_indepFun
 ProbabilityTheory.HasSubgaussianMGF.measure_ge_le
 ProbabilityTheory.HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun
 ProbabilityTheory.HasSubgaussianMGF.measure_sum_le_sum_le'
-# Bandits.ArrayModel.identDistrib_pullCount_prod_sumRewards
 Bandits.ArrayModel.identDistrib_sum_range_snd
 Bandits.ArrayModel.prob_pullCount_prod_sumRewards_mem_le
 Bandits.prob_pullCount_prod_sumRewards_mem_le
