@@ -22,15 +22,6 @@ namespace Bandits
 
 namespace ArrayModel
 
-lemma sum_Icc_one_eq_sum_range {m : ℕ} {f : ℕ → ℝ} :
-    ∑ i ∈ Icc 1 m, f (i - 1) = ∑ i ∈ range m, f i := by
-  have h : Icc 1 m = (range m).image (· + 1) := by
-    ext x; simp only [mem_Icc, mem_image, mem_range]; constructor
-    · intro ⟨h1, h2⟩; exact ⟨x - 1, by omega, by omega⟩
-    · rintro ⟨a, ha, rfl⟩; omega
-  rw [h, Finset.sum_image (fun _ _ _ _ h => by omega)]
-  simp
-
 variable {𝓐 : Type*} {m𝓐 : MeasurableSpace 𝓐} [DecidableEq 𝓐] [Countable 𝓐]
   [StandardBorelSpace 𝓐] [Nonempty 𝓐]
   {alg : Algorithm 𝓐 ℝ} {ν : Kernel 𝓐 ℝ} [IsMarkovKernel ν]
@@ -38,129 +29,6 @@ variable {𝓐 : Type*} {m𝓐 : MeasurableSpace 𝓐} [DecidableEq 𝓐] [Count
 local notation "A" => action alg
 local notation "R" => reward alg
 local notation "𝔓" => arrayMeasure ν
-
-lemma identDistrib_pullCount_prod_sum_Icc_rewardByCount' (n : ℕ) :
-    IdentDistrib (fun ω a ↦ (pullCount A a n ω.1,
-        ∑ i ∈ Icc 1 (pullCount A a n ω.1), rewardByCount A R a i ω))
-      (fun ω a ↦ (pullCount A a n ω, ∑ i ∈ Icc 1 (pullCount A a n ω), ω.2 (i - 1) a))
-      ((𝔓).prod (streamMeasure ν)) 𝔓 where
-  aemeasurable_fst := by
-    refine Measurable.aemeasurable ?_
-    rw [measurable_pi_iff]
-    refine fun a ↦ Measurable.prod (by fun_prop) ?_
-    exact measurable_sum_Icc_of_le (n := n) (pullCount_le _ _) (by fun_prop) (by fun_prop)
-  aemeasurable_snd := by
-    refine Measurable.aemeasurable ?_
-    rw [measurable_pi_iff]
-    refine fun a ↦ Measurable.prod (by fun_prop) ?_
-    exact measurable_sum_Icc_of_le (n := n) (pullCount_le _ _) (by fun_prop) (by fun_prop)
-  map_eq := by
-    by_cases hn : n = 0
-    · simp [hn]
-    have h_eq (a : 𝓐) (i : ℕ) (ω : probSpace 𝓐 ℝ × (ℕ → 𝓐 → ℝ))
-        (hi : i ∈ Icc 1 (pullCount A a n ω.1)) :
-        rewardByCount A R a i ω = ω.1.2 (i - 1) a := by
-      rw [rewardByCount_of_stepsUntil_ne_top]
-      · simp only [reward_eq]
-        have h_exists : ∃ s, pullCount A a (s + 1) ω.1 = i :=
-          exists_pullCount_eq_of_le (n := n - 1) (by grind) (by grind)
-        have h_action : A (stepsUntil A a i ω.1).toNat ω.1 = a :=
-          action_stepsUntil («A» := A) (by grind) h_exists
-        congr!
-        rw [h_action, pullCount_stepsUntil (by grind) h_exists]
-      · have : stepsUntil A a (pullCount A a (n + 1) ω.1) ω.1 ≠ ⊤ := by
-          refine ne_top_of_le_ne_top ?_ (stepsUntil_pullCount_le _ _ _)
-          simp
-        refine ne_top_of_le_ne_top this ?_
-        refine stepsUntil_mono a ω.1 (by grind) ?_
-        simp only [mem_Icc] at hi
-        refine hi.2.trans ?_
-        exact pullCount_mono _ (by grind) _
-    have h_sum_eq (a : 𝓐) (ω : probSpace 𝓐 ℝ × (ℕ → 𝓐 → ℝ)) :
-        ∑ i ∈ Icc 1 (pullCount A a n ω.1), rewardByCount A R a i ω =
-        ∑ i ∈ Icc 1 (pullCount A a n ω.1), ω.1.2 (i - 1) a :=
-      Finset.sum_congr rfl fun i hi ↦ h_eq a i ω hi
-    simp_rw [h_sum_eq]
-    conv_rhs => rw [← Measure.fst_prod (μ := 𝔓) (ν := streamMeasure ν),
-      Measure.fst]
-    rw [AEMeasurable.map_map_of_aemeasurable _ (by fun_prop)]
-    · rfl
-    simp only [Measure.map_fst_prod, measure_univ, one_smul]
-    refine Measurable.aemeasurable ?_
-    rw [measurable_pi_iff]
-    refine fun a ↦ Measurable.prod (by fun_prop) ?_
-    exact measurable_sum_Icc_of_le (n := n) (pullCount_le _ _) (by fun_prop) (by fun_prop)
-
-lemma identDistrib_pullCount_prod_sum_Icc_rewardByCount (n : ℕ) :
-    IdentDistrib (fun ω a ↦ (pullCount A a n ω.1,
-        ∑ i ∈ Icc 1 (pullCount A a n ω.1), rewardByCount A R a i ω))
-      (fun ω a ↦ (pullCount A a n ω, ∑ i ∈ range (pullCount A a n ω), ω.2 i a))
-      ((𝔓).prod (streamMeasure ν)) 𝔓 := by
-  convert identDistrib_pullCount_prod_sum_Icc_rewardByCount' n using 2 with ω
-  rotate_left
-  · infer_instance
-  · infer_instance
-  ext a : 1
-  congr 1
-  exact sum_Icc_one_eq_sum_range.symm
-
-lemma identDistrib_pullCount_prod_sumRewards (n : ℕ) :
-    IdentDistrib (fun ω a ↦ (pullCount A a n ω, sumRewards A R a n ω))
-      (fun ω a ↦ (pullCount A a n ω, ∑ i ∈ range (pullCount A a n ω), ω.2 i a)) 𝔓 𝔓 := by
-  suffices IdentDistrib (fun ω a ↦ (pullCount A a n ω.1, sumRewards A R a n ω.1))
-      (fun ω a ↦ (pullCount A a n ω, ∑ i ∈ range (pullCount A a n ω), ω.2 i a))
-      ((𝔓).prod (streamMeasure ν)) 𝔓 by
-    -- todo: missing lemma about IdentDistrib?
-    constructor
-    · refine Measurable.aemeasurable ?_
-      fun_prop
-    · refine Measurable.aemeasurable ?_
-      rw [measurable_pi_iff]
-      refine fun a ↦ Measurable.prod (by fun_prop) ?_
-      exact measurable_sum_range_of_le (n := n) (pullCount_le _ _) (by fun_prop) (by fun_prop)
-    have h_eq := this.map_eq
-    nth_rw 1 [← Measure.fst_prod (μ := 𝔓) (ν := streamMeasure ν), Measure.fst,
-      Measure.map_map (by fun_prop) (by fun_prop)]
-    exact h_eq
-  simp_rw [← sum_rewardByCount_eq_sumRewards]
-  exact identDistrib_pullCount_prod_sum_Icc_rewardByCount n
-
-lemma identDistrib_pullCount_prod_sumRewards_arm (a : 𝓐) (n : ℕ) :
-    IdentDistrib (fun ω ↦ (pullCount A a n ω, sumRewards A R a n ω))
-      (fun ω ↦ (pullCount A a n ω, ∑ i ∈ range (pullCount A a n ω), ω.2 i a)) 𝔓 𝔓 := by
-  have h1 : (fun ω ↦ (pullCount A a n ω, sumRewards A R a n ω)) =
-    (fun p ↦ p a) ∘ (fun ω a ↦ (pullCount A a n ω, sumRewards A R a n ω)) := rfl
-  have h2 : (fun ω ↦ (pullCount A a n ω, ∑ i ∈ range (pullCount A a n ω), ω.2 i a)) =
-      (fun p ↦ p a) ∘
-        (fun ω a ↦ (pullCount A a n ω, ∑ i ∈ range (pullCount A a n ω), ω.2 i a)) := rfl
-  rw [h1, h2]
-  refine (identDistrib_pullCount_prod_sumRewards n).comp ?_
-  fun_prop
-
-lemma identDistrib_pullCount_prod_sumRewards_two_arms (a b : 𝓐) (n : ℕ) :
-    IdentDistrib (fun ω ↦ (pullCount A a n ω, pullCount A b n ω,
-        sumRewards A R a n ω, sumRewards A R b n ω))
-      (fun ω ↦ (pullCount A a n ω, pullCount A b n ω,
-        ∑ i ∈ range (pullCount A a n ω), ω.2 i a,
-        ∑ i ∈ range (pullCount A b n ω), ω.2 i b)) 𝔓 𝔓 := by
-  have h_ident := identDistrib_pullCount_prod_sumRewards (ν := ν) (alg := alg) n
-  exact h_ident.comp (u := fun p ↦ ((p a).1, (p b).1, (p a).2, (p b).2)) (by fun_prop)
-
-lemma identDistrib_sumRewards (n : ℕ) :
-    IdentDistrib (fun ω a ↦ sumRewards A R a n ω)
-      (fun ω a ↦ ∑ i ∈ range (pullCount A a n ω), ω.2 i a) 𝔓 𝔓 := by
-  have h_ident := identDistrib_pullCount_prod_sumRewards (ν := ν) (alg := alg) n
-  exact h_ident.comp (u := fun p a ↦ (p a).2) (by fun_prop)
-
-lemma identDistrib_sumRewards_arm (a : 𝓐) (n : ℕ) :
-    IdentDistrib (sumRewards A R a n)
-      (fun ω ↦ ∑ i ∈ range (pullCount A a n ω), ω.2 i a) 𝔓 𝔓 := by
-  have h1 : sumRewards A R a n = (fun p ↦ p a) ∘ (fun ω a ↦ sumRewards A R a n ω) := rfl
-  have h2 : (fun ω ↦ ∑ i ∈ range (pullCount A a n ω), ω.2 i a) =
-      (fun p ↦ p a) ∘ (fun ω a ↦ ∑ i ∈ range (pullCount A a n ω), ω.2 i a) := rfl
-  rw [h1, h2]
-  refine (identDistrib_sumRewards n).comp ?_
-  fun_prop
 
 omit [DecidableEq 𝓐] [StandardBorelSpace 𝓐] [Nonempty 𝓐] in
 lemma identDistrib_sum_range_snd (a : 𝓐) (k : ℕ) :
@@ -178,15 +46,7 @@ lemma prob_pullCount_prod_sumRewards_mem_le (a : 𝓐) (n : ℕ)
     𝔓 {ω | (pullCount A a n ω, sumRewards A R a n ω) ∈ s} ≤
       ∑ k ∈ (range (n + 1)).filter (· ∈ Prod.fst '' s),
         streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} := by
-  have h_ident := identDistrib_pullCount_prod_sumRewards_arm a n (ν := ν) (alg := alg)
-  have : 𝔓 {ω | (pullCount A a n ω, sumRewards A R a n ω) ∈ s} =
-      (𝔓).map (fun ω ↦ (pullCount A a n ω, sumRewards A R a n ω)) s := by
-    rw [Measure.map_apply (by fun_prop) hs]
-    rfl
-  rw [this, h_ident.map_eq, Measure.map_apply ?_ hs]
-  swap
-  · refine Measurable.prod (by fun_prop) ?_
-    exact measurable_sum_range_of_le (n := n) (pullCount_le _ _) (by fun_prop) (by fun_prop)
+  simp_rw [sumRewards_eq]
   calc 𝔓 ((fun ω ↦ (pullCount A a n ω, ∑ i ∈ range (pullCount A a n ω), ω.2 i a)) ⁻¹' s)
   _ ≤ 𝔓 {ω | ∃ k ≤ n, (k, ∑ i ∈ range k, ω.2 i a) ∈ s} := by
     refine measure_mono fun ω hω ↦ ?_
@@ -229,25 +89,10 @@ lemma prob_sumRewards_le_sumRewards_le [Fintype 𝓐] (a : 𝓐) (n m₁ m₂ : 
         sumRewards A R (bestArm ν) n ω ≤ sumRewards A R a n ω} ≤
       streamMeasure ν
         {ω | ∑ i ∈ range m₁, ω i (bestArm ν) ≤ ∑ i ∈ range m₂, ω i a} := by
-  have h_ident := identDistrib_pullCount_prod_sumRewards_two_arms (bestArm ν) a n
-    (ν := ν) (alg := alg)
-  let s := {p : ℕ × ℕ × ℝ × ℝ | p.1 = m₁ ∧ p.2.1 = m₂ ∧ p.2.2.1 ≤ p.2.2.2}
-  have hs : MeasurableSet s := by simp only [measurableSet_setOf, s]; fun_prop
+  simp_rw [sumRewards_eq]
   calc 𝔓 {ω | pullCount A (bestArm ν) n ω = m₁ ∧ pullCount A a n ω = m₂ ∧
-      sumRewards A R (bestArm ν) n ω ≤ sumRewards A R a n ω}
-  _ = 𝔓 ((fun ω ↦ (pullCount A (bestArm ν) n ω, pullCount A a n ω,
-        sumRewards A R (bestArm ν) n ω, sumRewards A R a n ω)) ⁻¹'
-        {p | p.1 = m₁ ∧ p.2.1 = m₂ ∧ p.2.2.1 ≤ p.2.2.2}) := rfl
-  _ = 𝔓 ((fun ω ↦ (pullCount A (bestArm ν) n ω, pullCount A a n ω,
-        ∑ i ∈ range (pullCount A (bestArm ν) n ω), ω.2 i (bestArm ν),
-        ∑ i ∈ range (pullCount A a n ω), ω.2 i a)) ⁻¹'
-        {p | p.1 = m₁ ∧ p.2.1 = m₂ ∧ p.2.2.1 ≤ p.2.2.2}) := by
-      rw [← Measure.map_apply (by fun_prop) hs, h_ident.map_eq,
-        Measure.map_apply _ hs]
-      refine Measurable.prod (by fun_prop) (Measurable.prod (by fun_prop) ?_)
-      refine Measurable.prod ?_ ?_
-      · exact measurable_sum_range_of_le (n := n) (pullCount_le _ _) (by fun_prop) (by fun_prop)
-      · exact measurable_sum_range_of_le (n := n) (pullCount_le _ _) (by fun_prop) (by fun_prop)
+      ∑ i ∈ range (pullCount A (bestArm ν) n ω), ω.2 i (bestArm ν) ≤
+        ∑ i ∈ range (pullCount A a n ω), ω.2 i a}
   _ ≤ 𝔓 ((fun ω ↦ (∑ i ∈ range m₁, ω.2 i (bestArm ν), ∑ i ∈ range m₂, ω.2 i a)) ⁻¹'
         {p | p.1 ≤ p.2}) := by
       refine measure_mono fun ω hω ↦ ?_
@@ -367,6 +212,35 @@ lemma _root_.Learning.IsAlgEnvSeq.law_pullCount_sumRewards_unique
     P.map (fun ω ↦ (pullCount A a n ω, sumRewards A R a n ω)) =
       P'.map (fun ω ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω)) :=
   ((h1.law_pullCount_sumRewards_unique' h2 (n := n)).comp (u := fun f ↦ f a) (by fun_prop)).map_eq
+
+lemma _root_.Learning.IsAlgEnvSeq.identDistrib_pullCount_sumRewards
+    (h1 : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+    (h2 : IsAlgEnvSeq A₂ R₂ alg (stationaryEnv ν) P') :
+    IdentDistrib (fun ω n a ↦ (pullCount A a n ω, sumRewards A R a n ω))
+      (fun ω' n a ↦ (pullCount A₂ a n ω', sumRewards A₂ R₂ a n ω')) P P' := by
+  let f (τ : ℕ → 𝓐 × ℝ) (n : ℕ) (a : 𝓐) : ℕ × ℝ :=
+    (∑ i ∈ range n, if (τ i).1 = a then 1 else 0,
+     ∑ i ∈ range n, if (τ i).1 = a then (τ i).2 else 0)
+  have hc1 : (fun ω n a ↦ (pullCount A a n ω, sumRewards A R a n ω)) =
+      f ∘ (fun ω n ↦ (A n ω, R n ω)) := by
+    ext ω n a : 3
+    simp_rw [Function.comp, f, pullCount, card_filter, sumRewards]
+  have hc2 : (fun ω' n a ↦ (pullCount A₂ a n ω', sumRewards A₂ R₂ a n ω')) =
+      f ∘ (fun ω' n ↦ (A₂ n ω', R₂ n ω')) := by
+    ext ω' n a : 3
+    simp_rw [Function.comp, f, pullCount, card_filter, sumRewards]
+  have hf : Measurable f := by
+    simp_rw [f, measurable_pi_iff]
+    intro n a
+    apply Measurable.prod
+    · dsimp only
+      exact measurable_sum _
+        (fun _ _ ↦ Measurable.ite (by measurability) (by fun_prop) (by fun_prop))
+    · dsimp only
+      exact measurable_sum _
+        (fun _ _ ↦ Measurable.ite (by measurability) (by fun_prop) (by fun_prop))
+  rw [hc1, hc2]
+  exact (h1.identDistrib_trajectory h2).comp hf
 
 -- this is what we will use for UCB
 lemma prob_pullCount_prod_sumRewards_mem_le [Countable 𝓐]

@@ -192,6 +192,17 @@ lemma measurable_uncurry_pullCount [MeasurableEq 𝓐]
   fun_prop
 
 @[fun_prop]
+lemma measurable_uncurry_pullCount_comp [Countable 𝓐] [MeasurableSingletonClass 𝓐]
+    (hA : ∀ n, Measurable (A n)) {f : Ω → 𝓐} (hf : Measurable f) {g : Ω → ℕ} (hg : Measurable g) :
+    Measurable (fun ω ↦ pullCount A (f ω) (g ω) ω) := by
+  change Measurable ((fun aω ↦ pullCount A aω.1 (g aω.2) aω.2) ∘ fun ω ↦ (f ω, ω))
+  apply Measurable.comp _ (by fun_prop)
+  refine measurable_from_prod_countable_right fun a ↦ ?_
+  change Measurable ((fun tω ↦ pullCount A a tω.1 tω.2) ∘ fun ω ↦ (g ω, ω))
+  apply Measurable.comp _ (by fun_prop)
+  exact measurable_from_prod_countable_right (fun t ↦ measurable_pullCount hA a t)
+
+@[fun_prop]
 lemma measurable_pullCount' [MeasurableSingletonClass 𝓐] (n : ℕ) (a : 𝓐) :
     Measurable (fun h : Iic n → 𝓐 × R ↦ pullCount' n h a) := by
   simp_rw [pullCount'_eq_sum]
@@ -200,6 +211,7 @@ lemma measurable_pullCount' [MeasurableSingletonClass 𝓐] (n : ℕ) (a : 𝓐)
     exact (measurableSet_singleton _).preimage (by fun_prop)
   fun_prop
 
+@[fun_prop]
 lemma measurable_uncurry_pullCount' [MeasurableEq 𝓐] (n : ℕ) :
     Measurable (fun p : (Iic n → 𝓐 × R) × 𝓐 ↦ pullCount' n p.1 p.2) := by
   simp_rw [pullCount'_eq_sum]
@@ -731,6 +743,19 @@ lemma sum_pullCount [Fintype 𝓐] {ω : Ω} : ∑ a, pullCount A a t ω = t := 
   rw [sum_pullCount_mul]
   simp
 
+lemma sum_comp_pullCount [Fintype 𝓐] [AddCommMonoid R] (f : ℕ → R) (t : ℕ) (ω : Ω) :
+    ∑ s ∈ range t, f (pullCount A (A s ω) s ω) = ∑ a, ∑ j ∈ range (pullCount A a t ω), f j := by
+  induction t with
+  | zero => simp
+  | succ n ih =>
+    have hf : f (pullCount A (A n ω) n ω) =
+      ∑ a, if A n ω = a then f (pullCount A a n ω) else 0 := by simp
+    simp_rw [sum_range_succ, ih, hf, ← sum_add_distrib, pullCount_add_one]
+    congr 1 with a
+    split_ifs
+    · simp [sum_range_succ]
+    · simp
+
 section SumRewards
 
 /-- Sum of rewards obtained when pulling action `a` up to time `t` (exclusive). -/
@@ -853,9 +878,29 @@ lemma measurable_sumRewards [MeasurableSingletonClass 𝓐] {R' : ℕ → Ω →
   fun_prop
 
 @[fun_prop]
+lemma measurable_uncurry_sumRewards_comp [Countable 𝓐] [MeasurableSingletonClass 𝓐]
+    {R' : ℕ → Ω → ℝ} (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) {f : Ω → 𝓐}
+    (hf : Measurable f) {g : Ω → ℕ} (hg : Measurable g) :
+    Measurable (fun ω ↦ sumRewards A R' (f ω) (g ω) ω) := by
+  change Measurable ((fun aω ↦ sumRewards A R' aω.1 (g aω.2) aω.2) ∘ fun ω ↦ (f ω, ω))
+  apply Measurable.comp _ (by fun_prop)
+  refine measurable_from_prod_countable_right fun a ↦ ?_
+  change Measurable ((fun tω ↦ sumRewards A R' a tω.1 tω.2) ∘ fun ω ↦ (g ω, ω))
+  apply Measurable.comp _ (by fun_prop)
+  exact measurable_from_prod_countable_right (fun t ↦ measurable_sumRewards hA hR' a t)
+
+@[fun_prop]
 lemma measurable_empMean [MeasurableSingletonClass 𝓐] {R' : ℕ → Ω → ℝ} (hA : ∀ n, Measurable (A n))
     (hR' : ∀ n, Measurable (R' n)) (a : 𝓐) (n : ℕ) :
     Measurable (empMean A R' a n) := by
+  unfold empMean
+  fun_prop
+
+@[fun_prop]
+lemma measurable_uncurry_empMean_comp [Countable 𝓐] [MeasurableSingletonClass 𝓐] {R' : ℕ → Ω → ℝ}
+    (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) {f : Ω → 𝓐} (hf : Measurable f)
+    {g : Ω → ℕ} (hg : Measurable g) :
+    Measurable (fun ω ↦ empMean A R' (f ω) (g ω) ω) := by
   unfold empMean
   fun_prop
 
@@ -869,8 +914,24 @@ lemma measurable_sumRewards' [MeasurableSingletonClass 𝓐] (n : ℕ) (a : 𝓐
   fun_prop
 
 @[fun_prop]
+lemma measurable_uncurry_sumRewards' [MeasurableEq 𝓐] (n : ℕ) :
+    Measurable (fun p : (Iic n → 𝓐 × ℝ) × 𝓐 ↦ sumRewards' n p.1 p.2) := by
+  simp_rw [sumRewards']
+  have h_meas s : Measurable (fun p : (Iic n → 𝓐 × ℝ) × 𝓐 ↦
+      if (p.1 s).1 = p.2 then (p.1 s).2 else 0) := by
+    refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
+    exact measurableSet_eq_fun (by fun_prop) (by fun_prop)
+  fun_prop
+
+@[fun_prop]
 lemma measurable_empMean' [MeasurableSingletonClass 𝓐] (n : ℕ) (a : 𝓐) :
     Measurable (fun h ↦ empMean' n h a) := by
+  unfold empMean'
+  fun_prop
+
+@[fun_prop]
+lemma measurable_uncurry_empMean' [MeasurableEq 𝓐] (n : ℕ) :
+    Measurable (fun p : (Iic n → 𝓐 × ℝ) × 𝓐 ↦ empMean' n p.1 p.2) := by
   unfold empMean'
   fun_prop
 

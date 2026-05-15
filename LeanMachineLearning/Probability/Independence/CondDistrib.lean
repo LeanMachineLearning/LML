@@ -28,6 +28,16 @@ section CondDistrib
 
 variable [IsFiniteMeasure μ]
 
+lemma map_swap_compProd_map_condDistrib (hY : AEMeasurable Y μ) :
+    (μ.map X ⊗ₘ condDistrib Y X μ).map Prod.swap = μ.map (fun a ↦ (Y a, X a)) := by
+  by_cases hX : AEMeasurable X μ
+  · rw [compProd_map_condDistrib hY,
+      AEMeasurable.map_map_of_aemeasurable measurable_swap.aemeasurable (hX.prodMk hY)]
+    rfl
+  · have hYX : ¬ AEMeasurable (fun a ↦ (Y a, X a)) μ :=
+      fun h ↦ hX (measurable_snd.comp_aemeasurable h)
+    simp [hX, hYX]
+
 lemma condDistrib_prod_left [StandardBorelSpace β] [Nonempty β]
     (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) (hT : AEMeasurable T μ) :
     condDistrib (fun ω ↦ (X ω, Y ω)) T μ

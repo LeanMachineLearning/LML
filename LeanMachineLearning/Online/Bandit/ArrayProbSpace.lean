@@ -277,6 +277,16 @@ lemma reward_eq [DecidableEq 𝓐] (alg : Algorithm 𝓐 R) (n : ℕ) :
     rw [hist_eq]
     rfl
 
+lemma sumRewards_eq [DecidableEq 𝓐] (alg : Algorithm 𝓐 ℝ) (a : 𝓐) (n : ℕ) (ω : probSpace 𝓐 ℝ) :
+    sumRewards (action alg) (reward alg) a n ω =
+      ∑ i ∈ range (pullCount (action alg) a n ω), ω.2 i a := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    by_cases ha : action alg n ω = a
+    · simp [ha, sumRewards_add_one, pullCount_add_one, sum_range_succ, ih, reward_eq]
+    · simp [ha, sumRewards_add_one, pullCount_eq_pullCount_of_action_ne, ih]
+
 section Measurability
 
 lemma measurable_action_add_one' [DecidableEq 𝓐] {alg : Algorithm 𝓐 R}
