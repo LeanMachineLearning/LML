@@ -78,6 +78,17 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {n N : ℕ}
   {ν : ℕ → Kernel 𝓐 𝓨} [∀ n, IsMarkovKernel (ν n)]
 
+lemma hasCondDistrib_feedback_hist_action [IsObliviousEnv env]
+    (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
+    HasCondDistrib (Y (n + 1)) (fun ω ↦ (IsAlgEnvSeq.hist A Y n ω, A (n + 1) ω))
+      ((feedbackCondAction env (n + 1)).prodMkLeft _) P := by
+  have hA := h.measurable_action
+  have hR' := h.measurable_feedback
+  refine ⟨by fun_prop, by fun_prop, ?_⟩
+  have h_eq := (h.hasCondDistrib_feedback n).condDistrib_eq
+  rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)] at h_eq ⊢
+  simpa only [feedback_eq_feedbackCondAction] using h_eq
+
 lemma hasCondDistrib_feedback [IsObliviousEnv env] (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
     HasCondDistrib (Y n) (A n) (feedbackCondAction env n) P := by
   have hA := h.measurable_action
@@ -199,6 +210,12 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
 namespace IsAlgEnvSeq
 
 /-- The conditional distribution of the feedback at time `n` given the action at time `n` is `ν`. -/
+lemma hasCondDistrib_feedback_obliviousEnv {ν : ℕ → Kernel 𝓐 𝓨} [∀ n, IsMarkovKernel (ν n)]
+    (h : IsAlgEnvSeq A Y alg (obliviousEnv ν) P) (n : ℕ) :
+    HasCondDistrib (Y n) (A n) (ν n) P := by
+  simpa using IsObliviousEnv.hasCondDistrib_feedback h n
+
+/-- The conditional distribution of the feedback at time `n` given the action at time `n` is `ν`. -/
 lemma hasCondDistrib_feedback_stationaryEnv
     (h : IsAlgEnvSeq A Y alg (stationaryEnv ν) P) (n : ℕ) :
     HasCondDistrib (Y n) (A n) ν P := by
@@ -209,6 +226,21 @@ lemma condDistrib_feedback_stationaryEnv
     (h : IsAlgEnvSeq A Y alg (stationaryEnv ν) P) (n : ℕ) :
     condDistrib (Y n) (A n) P =ᵐ[P.map (A n)] ν :=
   (hasCondDistrib_feedback_stationaryEnv h n).condDistrib_eq
+
+-- todo: generalize to IsObliviousEnv
+lemma condExp_feedback_obliviousEnv_ae_eq_integral_id {E : Type*}
+    [NormedAddCommGroup E] [NormedSpace ℝ E] [SecondCountableTopology E] [CompleteSpace E]
+    {mE : MeasurableSpace E} [BorelSpace E]
+    {alg : Algorithm 𝓐 E} {Y : ℕ → Ω → E}
+    {ν : ℕ → Kernel 𝓐 E} [∀ n, IsMarkovKernel (ν n)]
+    (h : IsAlgEnvSeq A Y alg (obliviousEnv ν) P) (n : ℕ) (h_int : Integrable (Y n) P) :
+    P[Y n | m𝓐.comap (A n)] =ᵐ[P] fun ω ↦ (ν n (A n ω))[id] := by
+  have h_obl : HasCondDistrib (Y n) (A n) (ν n) P := h.hasCondDistrib_feedback_obliviousEnv n
+  have h_ae : ∀ᵐ ω ∂P, 𝓛[Y n | A n; P] (A n ω) = ν n (A n ω) :=
+    ae_of_ae_map (h.measurable_action n).aemeasurable h_obl.condDistrib_eq
+  have h_ae' : P[Y n | m𝓐.comap (A n)] =ᵐ[P] fun ω ↦ ∫ y, y ∂𝓛[Y n | A n; P] (A n ω) :=
+    condExp_ae_eq_integral_condDistrib' (h.measurable_action n) h_int
+  filter_upwards [h_ae, h_ae'] with ω hω hω' using by simp [hω', hω]
 
 /-- The feedback at time `n + 1` is conditionally independent of the history up to time `n`
 given the action at time `n + 1`. -/

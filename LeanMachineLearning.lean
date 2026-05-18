@@ -9,6 +9,7 @@ public import LeanMachineLearning.Online.Bandit.ArrayProbSpace
 public import LeanMachineLearning.Online.Bandit.Regret
 public import LeanMachineLearning.Online.Bandit.RewardByCountMeasure
 public import LeanMachineLearning.Online.Bandit.SumRewards
+public import LeanMachineLearning.Optimization.Algorithms.GradientDescent
 public import LeanMachineLearning.Probability.HasCondDistrib
 public import LeanMachineLearning.Probability.Independence.CondDistrib
 public import LeanMachineLearning.Probability.Independence.CondIndepFun
