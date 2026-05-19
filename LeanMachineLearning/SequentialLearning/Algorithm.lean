@@ -55,6 +55,19 @@ structure Algorithm (𝓐 𝓨 : Type*) [MeasurableSpace 𝓐] [MeasurableSpace 
 instance (alg : Algorithm 𝓐 𝓨) (n : ℕ) : IsMarkovKernel (alg.policy n) := alg.h_policy n
 instance (alg : Algorithm 𝓐 𝓨) : IsProbabilityMeasure alg.p0 := alg.hp0
 
+structure Algorithm.AbsolutelyContinuous (alg alg₀ : Algorithm 𝓐 𝓨) : Prop where
+  p0 : alg.p0 ≪ alg₀.p0
+  policy n h : alg.policy n h ≪ alg₀.policy n h
+
+scoped notation:50 alg " ≪ₐ " alg₀ => Algorithm.AbsolutelyContinuous alg alg₀
+
+/-- An algorithm that receives observations in `E × R` created form an algorithm that receives
+observations in `R` by ignoring the additional information. -/
+def Algorithm.prod_left (E : Type*) [MeasurableSpace E] (alg : Algorithm 𝓐 𝓨) :
+    Algorithm 𝓐 (E × 𝓨) where
+  policy n := (alg.policy n).comap (fun h i ↦ ((h i).1, (h i).2.2)) (by fun_prop)
+  p0 := alg.p0
+
 /-- A stochastic environment. -/
 -- ANCHOR: Environment
 structure Environment (𝓐 𝓨 : Type*) [MeasurableSpace 𝓐] [MeasurableSpace 𝓨] where

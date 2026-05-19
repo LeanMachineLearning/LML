@@ -47,6 +47,24 @@ lemma condDistrib_prod_left [StandardBorelSpace β] [Nonempty β]
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
   rfl
 
+lemma condDistrib_condDistrib_ae_eq_sectR_condDistrib [StandardBorelSpace β] [Nonempty β]
+    {f : Ω' → β} {g : Ω' → Ω} (hf : Measurable f) (hg : Measurable g) (hZ : AEMeasurable Z μ)
+    (hT : AEMeasurable T μ) :
+    ∀ᵐ t ∂(μ.map T),
+      condDistrib g f (condDistrib Z T μ t) =ᵐ[(condDistrib Z T μ t).map f]
+        (condDistrib (g ∘ Z) (fun a ↦ (T a, (f ∘ Z) a)) μ).sectR t := by
+  filter_upwards [
+    condDistrib_prod_left (hf.comp_aemeasurable hZ) (hg.comp_aemeasurable hZ) hT,
+    condDistrib_comp T hZ (hf.prodMk hg), condDistrib_comp T hZ hf] with t h_prod h_pair h_fst
+  rw [condDistrib_ae_eq_iff_measure_eq_compProd f hg.aemeasurable]
+  calc (condDistrib Z T μ t).map (fun ω' ↦ (f ω', g ω'))
+  _ = condDistrib (fun a ↦ ((f ∘ Z) a, (g ∘ Z) a)) T μ t := by
+      rw [← Kernel.map_apply _ (hf.prodMk hg)]
+      exact h_pair.symm
+  _ = (condDistrib Z T μ t).map f
+        ⊗ₘ (condDistrib (g ∘ Z) (fun a ↦ (T a, (f ∘ Z) a)) μ).sectR t := by
+      rw [h_prod, Kernel.compProd_apply_eq_compProd_sectR, h_fst, Kernel.map_apply _ hf]
+
 lemma condDistrib_prod_self_left [StandardBorelSpace β] [Nonempty β] [StandardBorelSpace γ]
     [Nonempty γ]
     (hX : AEMeasurable X μ) (hT : AEMeasurable T μ) :
