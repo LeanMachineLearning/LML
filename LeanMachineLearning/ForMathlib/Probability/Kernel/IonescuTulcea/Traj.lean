@@ -5,7 +5,7 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
-public import LeanMachineLearning.Probability.HasCondDistrib
+public import LeanMachineLearning.ForMathlib.Probability.HasCondDistrib
 public import Mathlib.Probability.Kernel.IonescuTulcea.Traj
 public import Mathlib.Probability.Process.FiniteDimensionalLaws
 

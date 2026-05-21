@@ -5,8 +5,8 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
-public import LeanMachineLearning.MeasureTheory.Measurable
-public import LeanMachineLearning.Probability.Kernel.IonescuTulcea.Traj
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Measurable
+public import LeanMachineLearning.ForMathlib.Probability.Kernel.IonescuTulcea.Traj
 
 /-!
 # Algorithms and environments

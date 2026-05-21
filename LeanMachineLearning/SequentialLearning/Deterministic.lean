@@ -5,7 +5,7 @@ Authors: Rémy Degenne
 -/
 module
 
-public import LeanMachineLearning.Probability.Kernel.Basic
+public import LeanMachineLearning.ForMathlib.Probability.Kernel.Basic
 public import LeanMachineLearning.SequentialLearning.Algorithm
 
 /-!

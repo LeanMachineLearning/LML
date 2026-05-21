@@ -5,7 +5,7 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
-public import LeanMachineLearning.Probability.Independence.CondDistrib
+public import LeanMachineLearning.ForMathlib.Probability.Independence.CondDistrib
 public import Mathlib.Probability.HasLaw
 
 /-!
