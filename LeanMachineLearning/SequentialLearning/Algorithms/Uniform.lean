@@ -10,7 +10,7 @@ public import LeanMachineLearning.SequentialLearning.AlgorithmDensity
 
 /-! # The Uniform algorithm
 
-We introduce an algorithm that chooses actions uniformly at random.
+An algorithm that chooses actions uniformly at random in every situation.
 
 ## Main definitions
 
