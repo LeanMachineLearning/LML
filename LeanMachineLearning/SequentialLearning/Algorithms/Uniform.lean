@@ -30,7 +30,7 @@ open scoped Algorithm
 
 namespace Bandits
 
-variable {𝓨 : Type*} {K : ℕ}
+variable {𝓨 : Type*} {m𝓨 : MeasurableSpace 𝓨} {K : ℕ}
 
 /-- The Uniform algorithm: actions are chosen uniformly at random. -/
 noncomputable
