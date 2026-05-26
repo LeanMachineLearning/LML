@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Rémy Degenne. All rights reserved.
+Copyright (c) 2026 Paulo Rauber. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Rémy Degenne, Paulo Rauber
+Authors: Paulo Rauber
 -/
 module
 
@@ -65,11 +65,11 @@ lemma compProd_withDensity_withDensity [SFinite μ] {κ : Kernel α β} [IsSFini
   rw [compProd_withDensity hg, compProd_withDensity_left hf]
   exact (withDensity_mul _ (hf.comp measurable_fst) hg).symm
 
-/-- A proof based on `compProd_congr` requires `IsSFiniteKernel (η.withDensity fun _ b ↦ f b)`. -/
 lemma compProd_eq_compProd_withDensity_comp_snd [SFinite μ] {κ η : Kernel α β} [IsSFiniteKernel κ]
     [IsSFiniteKernel η] {f : β → ℝ≥0∞} (hf : Measurable f)
     (h : κ =ᵐ[μ] η.withDensity (fun _ b ↦ f b)) :
     μ ⊗ₘ κ = (μ ⊗ₘ η).withDensity (fun ab ↦ f ab.2) := by
+  /- A proof based on `compProd_congr` requires `IsSFiniteKernel (η.withDensity fun _ b ↦ f b)`. -/
   refine ext_of_lintegral _ fun g hg ↦ ?_
   calc ∫⁻ ab, g ab ∂(μ ⊗ₘ κ)
       = ∫⁻ a, ∫⁻ b, g (a, b) ∂κ a ∂μ :=
@@ -79,8 +79,7 @@ lemma compProd_eq_compProd_withDensity_comp_snd [SFinite μ] {κ η : Kernel α 
         filter_upwards [h] with a ha
         rw [ha, Kernel.withDensity_apply _ (by fun_prop)]
     _ = ∫⁻ a, ∫⁻ b, f b * g (a, b) ∂η a ∂μ := by
-        congr
-        ext a
+        congr with a
         exact lintegral_withDensity_eq_lintegral_mul _ hf (by fun_prop)
     _ = ∫⁻ ab, f ab.2 * g ab ∂(μ ⊗ₘ η) :=
         (lintegral_compProd ((hf.comp measurable_snd).mul hg)).symm
@@ -91,15 +90,14 @@ end MeasureTheory.Measure
 
 namespace ProbabilityTheory.Kernel
 
-lemma bind_withDensity_eq_withDensity_bind {κ : Kernel α β} [IsSFiniteKernel κ] {f : β → ℝ≥0∞}
+lemma comp_withDensity_eq_withDensity_comp {κ : Kernel α β} [IsSFiniteKernel κ] {f : β → ℝ≥0∞}
     (hf : Measurable f) : (κ.withDensity (fun _ b ↦ f b)) ∘ₘ μ = (κ ∘ₘ μ).withDensity f := by
   refine Measure.ext_of_lintegral _ fun g hg ↦ ?_
   calc ∫⁻ b, g b ∂((κ.withDensity (fun _ b ↦ f b)) ∘ₘ μ)
       = ∫⁻ a, ∫⁻ b, g b ∂(κ.withDensity (fun _ b ↦ f b)) a ∂μ :=
         Measure.lintegral_bind (measurable _).aemeasurable hg.aemeasurable
     _ = ∫⁻ a, ∫⁻ b, f b * g b ∂κ a ∂μ := by
-        congr
-        ext a
+        congr with a
         exact lintegral_withDensity _ (by fun_prop) _ hg
     _ = ∫⁻ b, f b * g b ∂(κ ∘ₘ μ) :=
         (Measure.lintegral_bind (measurable _).aemeasurable (hf.mul hg).aemeasurable).symm
