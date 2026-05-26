@@ -6,6 +6,7 @@ Authors: Paulo Rauber
 module
 
 public import LeanMachineLearning.Online.Bandit.SumRewards
+public import LeanMachineLearning.SequentialLearning.AlgorithmDensityBayes
 public import LeanMachineLearning.SequentialLearning.Algorithms.Uniform
 
 /-! # The Thompson Sampling Algorithm -/
