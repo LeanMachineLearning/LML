@@ -39,7 +39,7 @@ Given observed data points and function values, this set contains all points `x`
 the maximum observed value is at most the minimum Lipschitz upper bound across all observations.
 The upper bound at `x` from observation `i` is `f(xᵢ) + κ · d(xᵢ, x)`, where `κ` is the
 Lipschitz constant. -/
-def potential_max : Set α :=
+def potential_max :=
   {x | Tuple.max (fun i ↦ (data i).2) ≤ Tuple.min (fun i ↦ (data i).2 + κ * dist (data i).1 x)}
 
 lemma measurableSet_potential_max_prod :
