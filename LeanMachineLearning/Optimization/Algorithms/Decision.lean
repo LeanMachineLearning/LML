@@ -66,4 +66,4 @@ variable (h : ∀ n (data : Iic n → α × β), μ (decision n data) ≠ 0)
 noncomputable def Decision : Algorithm α β where
   policy _ := decision_kernel μ measurableSet_decision_prod
   p0 := μ
-  h_policy n := ⟨fun data => cond_isProbabilityMeasure (h n data)⟩
+  h_policy n := ⟨fun data ↦ cond_isProbabilityMeasure (h n data)⟩
