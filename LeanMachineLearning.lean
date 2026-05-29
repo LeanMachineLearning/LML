@@ -4,6 +4,7 @@ public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.Measura
 public import LeanMachineLearning.MeasureTheory.Constructions.Polish.StandardBorel
 public import LeanMachineLearning.MeasureTheory.Measurable
 public import LeanMachineLearning.Online.Bandit.Algorithms.ETC
+public import LeanMachineLearning.Online.Bandit.Algorithms.LinUCB
 public import LeanMachineLearning.Online.Bandit.Algorithms.UCB
 public import LeanMachineLearning.Online.Bandit.ArrayProbSpace
 public import LeanMachineLearning.Online.Bandit.Regret
