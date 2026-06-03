@@ -225,6 +225,41 @@ lemma forall_index_le_index_arm [Nonempty (Fin K)]
 
 end AlgorithmBehavior
 
+omit [IsMarkovKernel ν] in
+/-- If the LinUCB confidence inequalities hold for a comparator arm and the selected arm, and the
+selected arm has maximal LinUCB index, then instantaneous regret is controlled by the selected
+arm's LinUCB width. -/
+lemma mean_sub_mean_arm_le_two_mul_width (a : Fin K)
+    (h_best : (ν a)[id] ≤ index A R reg β x a n ω)
+    (h_arm : estimatedReward A R reg x (A n ω) n ω -
+        √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
+    (h_le : index A R reg β x a n ω ≤ index A R reg β x (A n ω) n ω) :
+    (ν a)[id] - (ν (A n ω))[id] ≤
+      2 * (√(β (n + 1)) * width A reg x (A n ω) n ω) := by
+  rw [sub_le_iff_le_add']
+  calc
+    (ν a)[id] ≤ index A R reg β x a n ω := h_best
+    _ ≤ index A R reg β x (A n ω) n ω := h_le
+    _ ≤ (ν (A n ω))[id] +
+        2 * (√(β (n + 1)) * width A reg x (A n ω) n ω) := by
+      rw [index, two_mul, ← add_assoc]
+      gcongr
+      rwa [sub_le_iff_le_add] at h_arm
+
+omit [IsMarkovKernel ν] in
+/-- The gap of the selected arm is bounded by twice its LinUCB bonus whenever the usual confidence
+inequalities hold and the selected arm has maximal LinUCB index. -/
+lemma gap_arm_le_two_mul_width [Nonempty (Fin K)]
+    (h_best : (ν (bestArm ν))[id] ≤ index A R reg β x (bestArm ν) n ω)
+    (h_arm : estimatedReward A R reg x (A n ω) n ω -
+        √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
+    (h_le : index A R reg β x (bestArm ν) n ω ≤
+      index A R reg β x (A n ω) n ω) :
+    gap ν (A n ω) ≤ 2 * (√(β (n + 1)) * width A reg x (A n ω) n ω) := by
+  rw [gap_eq_bestArm_sub]
+  exact mean_sub_mean_arm_le_two_mul_width (A := A) (R := R) (reg := reg) (β := β) (x := x)
+    (ν := ν) (a := bestArm ν) h_best h_arm h_le
+
 end LinUCB
 
 end Bandits
