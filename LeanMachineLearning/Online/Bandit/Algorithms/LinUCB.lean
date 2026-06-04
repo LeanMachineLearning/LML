@@ -260,6 +260,21 @@ lemma gap_arm_le_two_mul_width [Nonempty (Fin K)]
   exact mean_sub_mean_arm_le_two_mul_width (A := A) (R := R) (reg := reg) (β := β) (x := x)
     (ν := ν) (a := bestArm ν) h_best h_arm h_le
 
+/-- Almost surely, the selected arm's gap is bounded by twice its LinUCB bonus whenever the usual
+confidence inequalities hold almost surely. -/
+lemma gap_arm_ae_le_two_mul_width [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (hn : n ≠ 0)
+    (h_best : ∀ᵐ ω ∂P, (ν (bestArm ν))[id] ≤ index A R reg β x (bestArm ν) n ω)
+    (h_arm : ∀ᵐ ω ∂P, estimatedReward A R reg x (A n ω) n ω -
+        √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id]) :
+    ∀ᵐ ω ∂P,
+      gap ν (A n ω) ≤ 2 * (√(β (n + 1)) * width A reg x (A n ω) n ω) := by
+  filter_upwards [h_best, h_arm, index_le_index_arm h (bestArm ν) hn] with
+    ω h_bestω h_armω h_leω
+  exact gap_arm_le_two_mul_width (A := A) (R := R) (reg := reg) (β := β) (x := x)
+    (ν := ν) h_bestω h_armω h_leω
+
 end LinUCB
 
 end Bandits
