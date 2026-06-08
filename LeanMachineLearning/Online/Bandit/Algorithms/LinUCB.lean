@@ -292,6 +292,54 @@ lemma forall_gap_arm_le_two_mul_width [Nonempty (Fin K)]
   exact gap_arm_le_two_mul_width (A := A) (R := R) (reg := reg) (β := β) (x := x)
     (ν := ν) (n := n) (ω := ω) (h_bestω n hn) (h_armω n hn) (h_leω n hn)
 
+omit [IsMarkovKernel ν] in
+/-- If every realized gap up to horizon `n` is bounded pointwise, then regret up to `n` is bounded
+by the corresponding sum of pointwise bounds. -/
+lemma regret_le_sum_of_gap_bound (B : ℕ → ℝ)
+    (hB : ∀ t, t ∈ range n → gap ν (A t ω) ≤ B t) :
+    regret ν A n ω ≤ ∑ t ∈ range n, B t := by
+  rw [regret_eq_sum_gap]
+  exact sum_le_sum hB
+
+omit [IsMarkovKernel ν] in
+/-- A pathwise cumulative-regret bound obtained by summing the positive-time LinUCB width bound.
+
+The time-zero gap is left unchanged because the current LinUCB max-index theorem applies only at
+positive times. -/
+lemma regret_le_sum_width_of_forall_gap_le
+    (h_gap : ∀ t, t ∈ range n → t ≠ 0 →
+      gap ν (A t ω) ≤ 2 * (√(β (t + 1)) * width A reg x (A t ω) t ω)) :
+    regret ν A n ω ≤
+      ∑ t ∈ range n,
+        if t = 0 then gap ν (A 0 ω)
+        else 2 * (√(β (t + 1)) * width A reg x (A t ω) t ω) := by
+  refine regret_le_sum_of_gap_bound (A := A) (ν := ν) (n := n) (ω := ω)
+    (B := fun t ↦
+      if t = 0 then gap ν (A 0 ω)
+      else 2 * (√(β (t + 1)) * width A reg x (A t ω) t ω)) ?_
+  intro t ht
+  by_cases ht0 : t = 0
+  · simp [ht0]
+  · simpa [ht0] using h_gap t ht ht0
+
+/-- Almost surely, the cumulative regret is bounded by the sum of LinUCB width terms whenever the
+usual confidence inequalities hold almost surely at every positive time. -/
+lemma regret_ae_le_sum_width [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_best : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      (ν (bestArm ν))[id] ≤ index A R reg β x (bestArm ν) n ω)
+    (h_arm : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      estimatedReward A R reg x (A n ω) n ω -
+        √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id]) :
+    ∀ᵐ ω ∂P,
+      regret ν A n ω ≤
+        ∑ t ∈ range n,
+          if t = 0 then gap ν (A 0 ω)
+          else 2 * (√(β (t + 1)) * width A reg x (A t ω) t ω) := by
+  filter_upwards [forall_gap_arm_le_two_mul_width h h_best h_arm] with ω h_gapω
+  exact regret_le_sum_width_of_forall_gap_le (A := A) (reg := reg) (β := β)
+    (x := x) (ν := ν) (n := n) (ω := ω) fun t ht ht0 ↦ h_gapω t ht0
+
 end LinUCB
 
 end Bandits
