@@ -350,6 +350,17 @@ lemma sum_positive_bonus_le_two_mul_sqrt_sum_sq :
         (fun t ↦ if t = 0 then 0 else √(β (t + 1)))
         (fun t ↦ if t = 0 then 0 else width A reg x (A t ω) t ω)
 
+/-- The squared beta factor in the Cauchy-Schwarz bound simplifies when the confidence schedule is
+nonnegative. -/
+lemma sum_sqrt_beta_sq_eq (hβ : ∀ t, 0 ≤ β (t + 1)) :
+    (∑ t ∈ range n, if t = 0 then 0 else √(β (t + 1)) ^ 2) =
+      ∑ t ∈ range n, if t = 0 then 0 else β (t + 1) := by
+  refine sum_congr rfl ?_
+  intro t ht
+  by_cases ht0 : t = 0
+  · simp [ht0]
+  · simp [ht0, Real.sq_sqrt (hβ t)]
+
 /-- Almost surely, the cumulative regret is bounded by the sum of LinUCB width terms whenever the
 usual confidence inequalities hold almost surely at every positive time. -/
 lemma regret_ae_le_sum_width [Nonempty (Fin K)]
@@ -401,6 +412,25 @@ lemma regret_ae_le_initial_add_cauchy [Nonempty (Fin K)]
   rw [hsplit]
   exact add_le_add_right (sum_positive_bonus_le_two_mul_sqrt_sum_sq (A := A)
     (reg := reg) (β := β) (x := x) (n := n) (ω := ω)) _
+
+/-- Almost surely, cumulative regret is bounded by the initial gap plus a Cauchy-Schwarz bound whose
+beta factor has been simplified using nonnegativity of the confidence schedule. -/
+lemma regret_ae_le_initial_add_cauchy_simplified [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_best : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      (ν (bestArm ν))[id] ≤ index A R reg β x (bestArm ν) n ω)
+    (h_arm : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      estimatedReward A R reg x (A n ω) n ω -
+        √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
+    (hβ : ∀ t, 0 ≤ β (t + 1)) :
+    ∀ᵐ ω ∂P,
+      regret ν A n ω ≤
+        (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) +
+          2 * (√(∑ t ∈ range n, if t = 0 then 0 else β (t + 1)) *
+            √(∑ t ∈ range n, (if t = 0 then 0 else width A reg x (A t ω) t ω) ^ 2)) := by
+  filter_upwards [regret_ae_le_initial_add_cauchy (A := A) (R := R) (reg := reg) (β := β)
+    (x := x) (ν := ν) (n := n) h h_best h_arm] with ω h_regret
+  simpa [sum_sqrt_beta_sq_eq (β := β) (n := n) hβ] using h_regret
 
 end LinUCB
 
