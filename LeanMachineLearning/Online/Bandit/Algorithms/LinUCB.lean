@@ -322,6 +322,34 @@ lemma regret_le_sum_width_of_forall_gap_le
   · simp [ht0]
   · simpa [ht0] using h_gap t ht ht0
 
+omit [IsMarkovKernel ν] in
+/-- Cauchy-Schwarz bound for the positive-time LinUCB bonus sum. -/
+lemma sum_positive_bonus_le_two_mul_sqrt_sum_sq :
+    (∑ t ∈ range n,
+      if t = 0 then 0
+      else 2 * (√(β (t + 1)) * width A reg x (A t ω) t ω)) ≤
+      2 * (√(∑ t ∈ range n, (if t = 0 then 0 else √(β (t + 1))) ^ 2) *
+        √(∑ t ∈ range n, (if t = 0 then 0 else width A reg x (A t ω) t ω) ^ 2)) := by
+  calc
+    (∑ t ∈ range n,
+      if t = 0 then 0
+      else 2 * (√(β (t + 1)) * width A reg x (A t ω) t ω))
+        = 2 * ∑ t ∈ range n,
+          (if t = 0 then 0 else √(β (t + 1))) *
+            (if t = 0 then 0 else width A reg x (A t ω) t ω) := by
+          rw [mul_sum]
+          refine sum_congr rfl ?_
+          intro t ht
+          by_cases ht0 : t = 0
+          · simp [ht0]
+          · simp [ht0]
+    _ ≤ 2 * (√(∑ t ∈ range n, (if t = 0 then 0 else √(β (t + 1))) ^ 2) *
+        √(∑ t ∈ range n, (if t = 0 then 0 else width A reg x (A t ω) t ω) ^ 2)) := by
+      gcongr
+      exact Real.sum_mul_le_sqrt_mul_sqrt (range n)
+        (fun t ↦ if t = 0 then 0 else √(β (t + 1)))
+        (fun t ↦ if t = 0 then 0 else width A reg x (A t ω) t ω)
+
 /-- Almost surely, the cumulative regret is bounded by the sum of LinUCB width terms whenever the
 usual confidence inequalities hold almost surely at every positive time. -/
 lemma regret_ae_le_sum_width [Nonempty (Fin K)]
@@ -339,6 +367,40 @@ lemma regret_ae_le_sum_width [Nonempty (Fin K)]
   filter_upwards [forall_gap_arm_le_two_mul_width h h_best h_arm] with ω h_gapω
   exact regret_le_sum_width_of_forall_gap_le (A := A) (reg := reg) (β := β)
     (x := x) (ν := ν) (n := n) (ω := ω) fun t ht ht0 ↦ h_gapω t ht0
+
+/-- Almost surely, cumulative regret is bounded by the initial gap plus a Cauchy-Schwarz bound on
+the positive-time LinUCB width terms. -/
+lemma regret_ae_le_initial_add_cauchy [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_best : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      (ν (bestArm ν))[id] ≤ index A R reg β x (bestArm ν) n ω)
+    (h_arm : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      estimatedReward A R reg x (A n ω) n ω -
+        √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id]) :
+    ∀ᵐ ω ∂P,
+      regret ν A n ω ≤
+        (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) +
+          2 * (√(∑ t ∈ range n, (if t = 0 then 0 else √(β (t + 1))) ^ 2) *
+            √(∑ t ∈ range n, (if t = 0 then 0 else width A reg x (A t ω) t ω) ^ 2)) := by
+  filter_upwards [regret_ae_le_sum_width h h_best h_arm] with ω h_regret
+  refine h_regret.trans ?_
+  have hsplit :
+      (∑ t ∈ range n,
+        if t = 0 then gap ν (A 0 ω)
+        else 2 * (√(β (t + 1)) * width A reg x (A t ω) t ω)) =
+        (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) +
+          ∑ t ∈ range n,
+            if t = 0 then 0
+            else 2 * (√(β (t + 1)) * width A reg x (A t ω) t ω) := by
+    rw [← sum_add_distrib]
+    refine sum_congr rfl ?_
+    intro t ht
+    by_cases ht0 : t = 0
+    · simp [ht0]
+    · simp [ht0]
+  rw [hsplit]
+  exact add_le_add_right (sum_positive_bonus_le_two_mul_sqrt_sum_sq (A := A)
+    (reg := reg) (β := β) (x := x) (n := n) (ω := ω)) _
 
 end LinUCB
 
