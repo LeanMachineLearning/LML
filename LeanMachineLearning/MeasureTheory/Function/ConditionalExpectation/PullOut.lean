@@ -25,6 +25,8 @@ theorem condExp_inner_of_stronglyMeasurable_left {Ω : Type*} {m mΩ : Measurabl
     (hX : StronglyMeasurable[m] X) (hXg : Integrable (fun ω ↦ ⟪X ω, g ω⟫) μ) (hg : Integrable g μ) :
     μ[fun ω ↦ ⟪X ω, g ω⟫ | m] =ᵐ[μ] fun ω ↦ ⟪X ω, μ[g | m] ω⟫ := by
   filter_upwards [condExp_bilin_of_stronglyMeasurable_left (innerSL ℝ) hX hXg hg] with ω hω
-  simpa [innerSL_apply_apply] using hω
+  convert hω
+  · rfl
+  · rfl
 
 end MeasureTheory

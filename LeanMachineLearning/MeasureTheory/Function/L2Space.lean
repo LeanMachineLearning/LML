@@ -23,8 +23,9 @@ lemma MemLp.eLpNorm_rpow_norm_lt_top [SeminormedAddCommGroup E]
     {f : Ω → E} {p : ℝ≥0∞}
     (hf : MemLp f p P) (hp_zero : p ≠ 0) (hp_top : p ≠ ∞) :
     eLpNorm (fun x ↦ ‖f x‖ ^ p.toReal) 1 P < ∞ := by
-  simpa [eLpNorm_one_eq_lintegral_enorm, Real.enorm_rpow_of_nonneg] using
-    (hf.integrable_enorm_rpow hp_zero hp_top).hasFiniteIntegral
+  simp only [eLpNorm_one_eq_lintegral_enorm, norm_nonneg, ENNReal.toReal_nonneg,
+    Real.enorm_rpow_of_nonneg, enorm_norm]
+  exact (hf.integrable_enorm_rpow hp_zero hp_top).hasFiniteIntegral
 
 lemma MemLp.integrable_inner [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     {f g : Ω → E}
