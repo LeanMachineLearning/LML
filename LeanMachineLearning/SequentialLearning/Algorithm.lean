@@ -294,7 +294,7 @@ def IsAlgEnvSeq.filtrationAction
         refine le_sup_of_le_left ?_
         rw [← measurable_iff_comap_le]
         suffices Measurable[IsAlgEnvSeq.filtration hA hY 0] (A 0) from
-          this.mono ((IsAlgEnvSeq.filtration hA hY).mono zero_le') le_rfl
+          this.mono ((IsAlgEnvSeq.filtration hA hY).mono zero_le) le_rfl
         exact adapted_action hA hY 0
     have hm : m ≠ 0 := by grind
     simp only [hn, hm, ↓reduceIte]

@@ -77,6 +77,7 @@ lemma prob_pullCount_mem_and_sumRewards_mem_le (a : 𝓐) (n : ℕ)
   · simp [h_empty]
   convert prob_pullCount_prod_sumRewards_mem_le a n (hs.prod hB) (ν := ν) (alg := alg)
     with _ _ _ k hk
+  · rfl
   · ext n
     have : ∃ x, x ∈ B := h_nonempty
     simp [this]
@@ -276,6 +277,7 @@ lemma prob_pullCount_mem_and_sumRewards_mem_le [Countable 𝓐]
   rcases Set.eq_empty_or_nonempty B with h_empty | h_nonempty
   · simp [h_empty]
   convert prob_pullCount_prod_sumRewards_mem_le h (hs.prod hB) (ν := ν) (alg := alg) with _ _ _ k hk
+  · rfl
   · ext n
     have : ∃ x, x ∈ B := h_nonempty
     simp [this]
@@ -290,7 +292,9 @@ lemma prob_sumRewards_mem_le [Countable 𝓐] (h : IsAlgEnvSeq A R alg (stationa
       ∑ k ∈ range (n + 1), streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ B} := by
   classical
   have h_le := prob_pullCount_mem_and_sumRewards_mem_le h .univ hB (a := a) (n := n)
-  simpa using h_le
+  simp only [Set.mem_univ, true_and, filter_true] at h_le
+  convert h_le
+  rfl
 
 lemma prob_pullCount_eq_and_sumRewards_mem_le [Countable 𝓐]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)

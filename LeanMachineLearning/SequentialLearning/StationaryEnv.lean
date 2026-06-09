@@ -148,11 +148,9 @@ def obliviousEnv (ν : ℕ → Kernel 𝓐 𝓨) [∀ n, IsMarkovKernel (ν n)] 
   ν0 := ν 0
 -- ANCHOR_END: obliviousEnv
 
-@[simp]
 lemma feedback_obliviousEnv (ν : ℕ → Kernel 𝓐 𝓨) [∀ n, IsMarkovKernel (ν n)] (n : ℕ) :
     (obliviousEnv ν).feedback n = (ν (n + 1)).prodMkLeft _ := by simp [obliviousEnv]
 
-@[simp]
 lemma ν0_obliviousEnv (ν : ℕ → Kernel 𝓐 𝓨) [∀ n, IsMarkovKernel (ν n)] :
     (obliviousEnv ν).ν0 = ν 0 := by simp [obliviousEnv]
 

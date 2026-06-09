@@ -598,7 +598,9 @@ lemma measurable_comap_indicator_stepsUntil_eq [MeasurableSingletonClass 𝓐]
       exact measurable_const
     have h_meas := adapted_pullCount_add_one hA hR' a (n - 1)
     have : 1 ≤ n := by grind
-    simpa [Nat.sub_add_cancel this] using h_meas
+    convert h_meas using 1
+    · rfl
+    · simp [Nat.sub_add_cancel this]
 
 lemma measurable_indicator_stepsUntil_eq [MeasurableSingletonClass 𝓐]
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : 𝓐) (m n : ℕ) :

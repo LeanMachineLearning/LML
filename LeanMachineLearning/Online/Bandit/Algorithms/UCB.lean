@@ -102,7 +102,7 @@ lemma ucbWidth_eq_ucbWidth' (c : ℝ) (a : Fin K) (n : ℕ) (ω : Ω) (hn : n �
 lemma arm_zero [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
     A 0 =ᵐ[P] fun _ ↦ ⟨0, hK⟩ :=
-  RoundRobin.action_zero ((isAlgEnvSeqUntil_roundRobinAlgorithm h).mono zero_le')
+  RoundRobin.action_zero ((isAlgEnvSeqUntil_roundRobinAlgorithm h).mono zero_le)
 
 lemma arm_ae_eq_ucbNextArm [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (n : ℕ) :
@@ -415,7 +415,7 @@ lemma some_sum_eq_zero [Nonempty (Fin K)]
     grind
   · rwa [h_arm]
   · rw [h_arm]
-    exact zero_le'.trans_lt hC_lt
+    exact zero_le.trans_lt hC_lt
   refine lt_irrefl (8 * c * σ2 * log (n + 1) / gap ν a ^ 2) ?_
   refine hC'.trans_lt (lt_of_lt_of_le ?_ (h.trans ?_))
   · rw [h_arm]

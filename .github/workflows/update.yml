@@ -1,22 +1,39 @@
 name: Update Dependencies
 
 on:
-  # schedule:             # Sets a schedule to trigger the workflow
-  #   - cron: "0 8 * * *" # Every day at 08:00 AM UTC (see https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule)
-  workflow_dispatch:    # Allows the workflow to be triggered manually via the GitHub interface
+  schedule:
+    - cron: "0 */6 * * *"   # Check for updates every six hours
+  workflow_dispatch:
 
 jobs:
-  update_lean:
+  bump:
     runs-on: ubuntu-latest
     permissions:
-      contents: write      # Grants permission to push changes to the repository
-      issues: write        # Grants permission to create or update issues
-      pull-requests: write # Grants permission to create or update pull requests
+      contents: write
+      pull-requests: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-      - name: Update project
-        uses: Seasawher/lean-update@main
+      - uses: actions/checkout@v6
+
+      - name: Bump to latest mathlib
+        id: bump
+        uses: leanprover-community/downstream-reports/.github/actions/bump-to-latest@main
+
+      - name: Open or update PR
+        if: steps.bump.outputs.updated == 'true'
+        uses: leanprover-community/downstream-reports/.github/actions/open-bump-pr@main
         with:
-          on_update_succeeds: pr # Create a pull request if the update succeeds
-          on_update_fails: issue # Create an issue if the update fails
+          title:          ${{ steps.bump.outputs.pr-title }}
+          message:        ${{ steps.bump.outputs.bump-description }}
+          commit-message: ${{ steps.bump.outputs.commit-message }}
+
+  open-issue:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Open or update incompatibility issue and PR
+        uses: leanprover-community/downstream-reports/.github/actions/track-incompatibility@main

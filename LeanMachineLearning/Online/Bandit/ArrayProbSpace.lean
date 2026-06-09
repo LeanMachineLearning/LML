@@ -608,6 +608,8 @@ lemma indepFun_fst_add_one_aux (ν : Kernel 𝓐 R) [IsMarkovKernel ν] (n : ℕ
     have h := h_indep.indepFun_finset₀ {n + 1} (Iic n) (by simp)
       (fun i ↦ (measurable_pi_apply i).aemeasurable)
     convert h.comp (measurable_pi_apply ⟨n + 1, by simp⟩) measurable_id using 1
+    · rfl
+    · rfl
   rw [indepFun_iff_measure_inter_preimage_eq_mul]
   intro s t hs ht
   let X : (ℕ → I) × (ℕ → 𝓐 → R) → I := fun ω ↦ ω.1 (n + 1)
@@ -910,6 +912,9 @@ lemma indepFun_snd_hist_cond [Countable 𝓐] (alg : Algorithm 𝓐 R)
       fun ω ↦ (ω.1, fun k b ↦ if b = a then if m ≠ 0 then ω.2 (min k (m - 1)) b
         else Nonempty.some inferInstance else ω.2 k b) by
     convert this using 1
+    · rfl
+    · rfl
+    · rfl
     congr with ω
     simp only [Set.mem_preimage, Set.mem_singleton_iff, Prod.mk.injEq, Set.indicator_apply,
       Set.mem_setOf_eq, ite_eq_left_iff, not_and, zero_ne_one, imp_false,
@@ -1230,6 +1235,7 @@ lemma hasCondDistrib_reward (alg : Algorithm 𝓐 R) (ν : Kernel 𝓐 R) [IsMar
     rw [hist_eq _ _ n]
   · simp only [reward]
     rw [hist_eq _ _ n]
+  · rfl
 
 lemma isAlgEnvSeq_arrayMeasure (alg : Algorithm 𝓐 R) (ν : Kernel 𝓐 R) [IsMarkovKernel ν] :
     IsAlgEnvSeq (action alg) (reward alg) alg (stationaryEnv ν) (arrayMeasure ν) where

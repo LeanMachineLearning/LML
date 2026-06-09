@@ -59,8 +59,7 @@ theorem eq_trajMeasure_of_isAlgEnvSeq (h : IsAlgEnvSeq A₁ R₁ alg env P) :
   · have hA := h.measurable_action n
     have hR := h.measurable_feedback n
     fun_prop
-  · simp only
-    exact h.hasLaw_step_zero
+  · exact h.hasLaw_step_zero
   · exact h.hasCondDistrib_step n
 
 lemma eq_trajMeasure_map_frestrictLe_of_isAlgEnvSeqUntil
@@ -207,7 +206,7 @@ def filtrationAction (𝓐 𝓨 : Type*) [MeasurableSpace 𝓐] [MeasurableSpace
         refine le_sup_of_le_left ?_
         rw [← measurable_iff_comap_le]
         suffices Measurable[IT.filtration 𝓐 𝓨 0] (action 0) from
-          this.mono ((IT.filtration 𝓐 𝓨).mono zero_le') le_rfl
+          this.mono ((IT.filtration 𝓐 𝓨).mono zero_le) le_rfl
         exact adapted_action 0
     have hm : m ≠ 0 := by grind
     simp only [hn, hm, ↓reduceIte]
