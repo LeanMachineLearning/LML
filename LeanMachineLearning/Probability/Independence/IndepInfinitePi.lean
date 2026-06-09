@@ -7,6 +7,9 @@ module
 
 public import Mathlib.Probability.Independence.InfinitePi
 
+/-! # Lemmas about independence and infinite products
+-/
+
 @[expose] public section
 
 open MeasureTheory Measure ProbabilityTheory Set Function

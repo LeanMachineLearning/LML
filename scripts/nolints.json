@@ -1,1 +1,3 @@
-[]
+[["defsWithUnderscore", "ProbabilityTheory.instPartialOrderFiniteMeasure_leanMachineLearning"],
+["defsWithUnderscore", "ProbabilityTheory.instSubFiniteMeasure_leanMachineLearning"],
+["defsWithUnderscore", "ProbabilityTheory.Kernel.instSubOfDecidableIsSFiniteKernel_leanMachineLearning"]]

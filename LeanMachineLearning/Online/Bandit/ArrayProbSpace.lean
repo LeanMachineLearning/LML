@@ -443,7 +443,7 @@ end Congruence
 
 section MeasurabilityAdvanced
 
-lemma measurable_hist_todo [Countable 𝓐] (alg : Algorithm 𝓐 R) (n : ℕ) :
+lemma measurable_hist_comap [Countable 𝓐] (alg : Algorithm 𝓐 R) (n : ℕ) :
     Measurable[MeasurableSpace.comap (fun ω ↦ (fun (i : Iic n) ↦ ω.1 i, ω.2)) inferInstance]
       (hist alg · n) := by
   have h_eq : (hist alg · n) =
@@ -628,7 +628,7 @@ lemma indepFun_fst_add_one_aux (ν : Kernel 𝓐 R) [IsMarkovKernel ν] (n : ℕ
     simp only [X, Y, Set.preimage_inter, Set.preimage_preimage]
     by_cases h : ω₁ (n + 1) ∈ s
     · simp [h]
-      grind
+      congr
     · simp [h]
   simp_rw [hY_fst, hX_fst, hXY]
   -- Factor the integral using independence
@@ -648,7 +648,7 @@ variable [StandardBorelSpace R] [Nonempty R]
 lemma indepFun_fst_add_one_hist [Countable 𝓐] (alg : Algorithm 𝓐 R)
     (ν : Kernel 𝓐 R) [IsMarkovKernel ν] (n : ℕ) :
     IndepFun (fun ω ↦ ω.1 (n + 1)) (hist alg · n) (arrayMeasure ν) :=
-  (indepFun_fst_add_one_aux ν n).of_measurable_right (measurable_hist_todo alg n)
+  (indepFun_fst_add_one_aux ν n).of_measurable_right (measurable_hist_comap alg n)
 
 -- proved by Claude
 omit [Nonempty 𝓐] [StandardBorelSpace 𝓐] [StandardBorelSpace R] in
@@ -868,7 +868,7 @@ lemma indepFun_snd_apply_pullCount_action [Countable 𝓐] (alg : Algorithm 𝓐
         pullCount (action alg) a (n + 1) ω = m}).indicator (fun _ ↦ 1) :=
   (indepFun_snd_apply_aux ν a m).of_measurable_right (measurable_stepsUntil alg a m n)
 
-lemma indepFun_todo {𝓐 β γ δ : Type*} {m𝓐 : MeasurableSpace 𝓐} {mβ : MeasurableSpace β}
+lemma indepFun_cond_comp {𝓐 β γ δ : Type*} {m𝓐 : MeasurableSpace 𝓐} {mβ : MeasurableSpace β}
     {mγ : MeasurableSpace γ} {mδ : MeasurableSpace δ} [MeasurableSingletonClass δ] {μ : Measure 𝓐}
     {X : 𝓐 → β} {Y : 𝓐 → γ} (hXY : X ⟂ᵢ[μ] Y) (hY : Measurable Y)
     {Z : γ → δ} (hZ : Measurable Z) (z : δ) :
@@ -919,7 +919,7 @@ lemma indepFun_snd_hist_cond [Countable 𝓐] (alg : Algorithm 𝓐 R)
   have h_meas := measurable_stepsUntil alg a m n
   obtain ⟨f, hf, hf_eq⟩ := h_meas.exists_eq_measurable_comp
   simp_rw [hf_eq]
-  refine indepFun_todo (Z := f) (z := 1) ?_ ?_ hf
+  refine indepFun_cond_comp (Z := f) (z := 1) ?_ ?_ hf
   · exact indepFun_snd_apply_aux ν a m
   · refine Measurable.prodMk (by fun_prop) ?_
     simp_rw [measurable_pi_iff]
@@ -1191,8 +1191,8 @@ lemma hasCondDistrib_reward' (alg : Algorithm 𝓐 R) (ν : Kernel 𝓐 R) [IsMa
     let e : ((𝓐 × ℕ) × (Iic n → 𝓐 × R)) ≃ᵐ ((𝓐 × (Iic n → 𝓐 × R)) × ℕ) :=
     { toFun := fun x ↦ ((x.1.1, x.2), x.1.2)
       invFun := fun x ↦ ((x.1.1, x.2), x.1.2)
-      measurable_toFun := by fun_prop
-      measurable_invFun := by fun_prop }
+      measurable_toFun := by simp only [Equiv.coe_fn_mk]; fun_prop
+      measurable_invFun := by simp only [Equiv.symm_mk, Equiv.coe_fn_mk]; fun_prop }
     exact this.comp_right e
   suffices HasCondDistrib R' (fun ω ↦ (A ω, P ω)) (ν.prodMkRight _) (arrayMeasure ν) by
     have h_indep : H ⟂ᵢ[(fun ω ↦ (A ω, P ω)), (by fun_prop); arrayMeasure ν] R' :=

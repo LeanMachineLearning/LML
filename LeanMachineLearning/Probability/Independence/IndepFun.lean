@@ -8,6 +8,9 @@ module
 public import Mathlib.Probability.IdentDistrib
 public import Mathlib.Probability.Independence.InfinitePi
 
+/-! # Lemmas about independence
+-/
+
 @[expose] public section
 
 open MeasureTheory Finset

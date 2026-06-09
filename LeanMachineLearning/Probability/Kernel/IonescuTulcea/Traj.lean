@@ -9,6 +9,9 @@ public import LeanMachineLearning.Probability.HasCondDistrib
 public import Mathlib.Probability.Kernel.IonescuTulcea.Traj
 public import Mathlib.Probability.Process.FiniteDimensionalLaws
 
+/-! # Lemmas about `traj` and `trajMeasure`
+-/
+
 @[expose] public section
 
 open Filter Finset Function MeasurableEquiv MeasurableSpace MeasureTheory Preorder ProbabilityTheory

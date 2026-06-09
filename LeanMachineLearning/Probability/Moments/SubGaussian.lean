@@ -7,6 +7,9 @@ module
 
 public import Mathlib.Probability.Moments.SubGaussian
 
+/-! # Lemmas about sub-Gaussian random variables
+-/
+
 @[expose] public section
 
 open MeasureTheory Real
@@ -114,18 +117,18 @@ lemma measure_sum_le_sum_le [IsFiniteMeasure μ]
     (cX := ∑ i ∈ s, cX i) (cY := ∑ j ∈ t, cY j) ?_ ?_ h_indep_sum ?_).trans_eq ?_
   · suffices HasSubgaussianMGF (fun ω ↦ ∑ i ∈ s, (X i ω - μ[X i])) (∑ i ∈ s, cX i) μ by
       convert this
-      rw [integral_finset_sum _ hX_int, Finset.sum_sub_distrib]
+      rw [integral_finsetSum _ hX_int, Finset.sum_sub_distrib]
     refine sum_of_iIndepFun ?_ hX_subG
     exact hX_indep.comp (g := fun i x ↦ x - μ[X i]) (by fun_prop)
   · suffices HasSubgaussianMGF (fun ω ↦ ∑ j ∈ t, (Y j ω - μ[Y j])) (∑ j ∈ t, cY j) μ by
       convert this
-      rw [integral_finset_sum _ hY_int, Finset.sum_sub_distrib]
+      rw [integral_finsetSum _ hY_int, Finset.sum_sub_distrib]
     refine sum_of_iIndepFun ?_ hY_subG
     exact hY_indep.comp (g := fun i x ↦ x - μ[Y i]) (by fun_prop)
-  · rwa [integral_finset_sum _ hX_int, integral_finset_sum _ hY_int]
+  · rwa [integral_finsetSum _ hX_int, integral_finsetSum _ hY_int]
   · congr
-    · rw [integral_finset_sum _ hY_int]
-    · rw [integral_finset_sum _ hX_int]
+    · rw [integral_finsetSum _ hY_int]
+    · rw [integral_finsetSum _ hX_int]
 
 lemma measure_sum_le_sum_le' [IsFiniteMeasure μ]
     (hX_indep : iIndepFun X μ) (hY_indep : iIndepFun Y μ)

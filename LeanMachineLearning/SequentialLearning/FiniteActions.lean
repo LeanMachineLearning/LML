@@ -233,11 +233,16 @@ lemma adapted_pullCount_add_one [MeasurableSingletonClass 𝓐]
   rw [← measurable_iff_comap_le]
   exact measurable_comp_comap _ (measurable_pullCount' n a)
 
+lemma stronglyAdapted_pullCount_add_one [MeasurableSingletonClass 𝓐]
+    (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : 𝓐) :
+    StronglyAdapted (IsAlgEnvSeq.filtration hA hR') (fun n ↦ pullCount A a (n + 1)) :=
+  (adapted_pullCount_add_one hA hR' a).stronglyAdapted
+
 lemma isPredictable_pullCount [MeasurableSingletonClass 𝓐]
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : 𝓐) :
-    IsPredictable (IsAlgEnvSeq.filtration hA hR') (pullCount A a) := by
-  rw [isPredictable_iff_measurable_add_one]
-  refine ⟨?_, adapted_pullCount_add_one hA hR' a⟩
+    IsStronglyPredictable (IsAlgEnvSeq.filtration hA hR') (pullCount A a) := by
+  rw [IsStronglyPredictable.iff_measurable_add_one]
+  refine ⟨?_, stronglyAdapted_pullCount_add_one hA hR' a⟩
   simp only [pullCount_zero]
   fun_prop
 
@@ -385,7 +390,7 @@ lemma action_stepsUntil (hm : m ≠ 0) (h_exists : ∃ s, pullCount A a (s + 1) 
   have h_spec := Nat.find_spec h_exists
   have h_spec' n := Nat.find_min h_exists (m := n)
   by_cases h_zero : Nat.find h_exists = 0
-  · simp only [h_zero, zero_add, not_lt_zero', IsEmpty.forall_iff, implies_true] at *
+  · simp only [h_zero, zero_add, not_lt_zero, IsEmpty.forall_iff, implies_true] at *
     by_contra h_ne
     rw [← zero_add 1, pullCount_eq_pullCount_of_action_ne h_ne] at h_spec
     simp only [pullCount_zero] at h_spec
@@ -592,7 +597,8 @@ lemma measurable_comap_indicator_stepsUntil_eq [MeasurableSingletonClass 𝓐]
     · simp only [hn, pullCount_zero]
       exact measurable_const
     have h_meas := adapted_pullCount_add_one hA hR' a (n - 1)
-    grind
+    have : 1 ≤ n := by grind
+    simpa [Nat.sub_add_cancel this] using h_meas
 
 lemma measurable_indicator_stepsUntil_eq [MeasurableSingletonClass 𝓐]
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : 𝓐) (m n : ℕ) :
@@ -938,13 +944,14 @@ lemma measurable_uncurry_empMean' [MeasurableEq 𝓐] (n : ℕ) :
 lemma IsAlgEnvSeq.isPredictable_sumRewards [StandardBorelSpace 𝓐] [Nonempty 𝓐] {R' : ℕ → Ω → ℝ}
     {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
-    IsPredictable (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
+    IsStronglyPredictable (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
       (sumRewards A R' a) := by
-  rw [isPredictable_iff_measurable_add_one]
+  rw [IsStronglyPredictable.iff_measurable_add_one]
   constructor
   · simp only [sumRewards_zero]
     fun_prop
-  refine fun n ↦ measurable_fun_sum _ fun i hi ↦ Measurable.ite ?_ ?_ (by fun_prop)
+  refine fun n ↦ Measurable.stronglyMeasurable ?_
+  refine measurable_fun_sum _ fun i hi ↦ Measurable.ite ?_ ?_ (by fun_prop)
   · refine (measurableSet_singleton a).preimage ?_
     have h_meas_i := IsAlgEnvSeq.adapted_action h.measurable_action h.measurable_feedback i
     simp only [mem_range] at hi
@@ -955,14 +962,21 @@ lemma IsAlgEnvSeq.isPredictable_sumRewards [StandardBorelSpace 𝓐] [Nonempty �
     exact h_meas_i.mono ((IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback).mono
       (by lia)) le_rfl
 
+lemma IsAlgEnvSeq.stronglyAdapted_sumRewards_add_one [StandardBorelSpace 𝓐] [Nonempty 𝓐]
+    {R' : ℕ → Ω → ℝ} {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ}
+    (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
+    StronglyAdapted (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
+      (fun n ↦ sumRewards A R' a (n + 1)) := by
+  have h_predictable := h.isPredictable_sumRewards a
+  rw [IsStronglyPredictable.iff_measurable_add_one] at h_predictable
+  exact h_predictable.2
+
 lemma IsAlgEnvSeq.adapted_sumRewards_add_one [StandardBorelSpace 𝓐] [Nonempty 𝓐] {R' : ℕ → Ω → ℝ}
     {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
     Adapted (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
-      (fun n ↦ sumRewards A R' a (n + 1)) := by
-  have h_predictable := h.isPredictable_sumRewards a
-  rw [isPredictable_iff_measurable_add_one] at h_predictable
-  exact h_predictable.2
+      (fun n ↦ sumRewards A R' a (n + 1)) :=
+  (h.stronglyAdapted_sumRewards_add_one a).adapted
 
 section CopiedFromPR
 
@@ -990,7 +1004,7 @@ end CopiedFromPR
 lemma IsAlgEnvSeq.isPredictable_empMean [StandardBorelSpace 𝓐] [Nonempty 𝓐] {R' : ℕ → Ω → ℝ}
     {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
-    IsPredictable (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
+    IsStronglyPredictable (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
       (empMean A R' a) := by
   unfold empMean
   refine StronglyMeasurable.div₀' ?_ ?_
@@ -998,14 +1012,21 @@ lemma IsAlgEnvSeq.isPredictable_empMean [StandardBorelSpace 𝓐] [Nonempty 𝓐
   · have h_meas := (isPredictable_pullCount h.measurable_action h.measurable_feedback a).measurable
     fun_prop
 
+lemma IsAlgEnvSeq.stronglyAdapted_empMean_add_one [StandardBorelSpace 𝓐] [Nonempty 𝓐]
+    {R' : ℕ → Ω → ℝ} {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ}
+    (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
+    StronglyAdapted (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
+      (fun n ↦ empMean A R' a (n + 1)) := by
+  have h_predictable := h.isPredictable_empMean a
+  rw [IsStronglyPredictable.iff_measurable_add_one] at h_predictable
+  exact h_predictable.2
+
 lemma IsAlgEnvSeq.adapted_empMean_add_one [StandardBorelSpace 𝓐] [Nonempty 𝓐] {R' : ℕ → Ω → ℝ}
     {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
     Adapted (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
-      (fun n ↦ empMean A R' a (n + 1)) := by
-  have h_predictable := h.isPredictable_empMean a
-  rw [isPredictable_iff_measurable_add_one] at h_predictable
-  exact h_predictable.2
+      (fun n ↦ empMean A R' a (n + 1)) :=
+  (h.stronglyAdapted_empMean_add_one a).adapted
 
 end SumRewards
 

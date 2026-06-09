@@ -75,7 +75,7 @@ lemma integral_regret_eq_sum_gap_mul_integral_pullCount
     (hA : ∀ n, Measurable (A n)) :
     P[regret ν A n] = ∑ a, gap ν a * P[fun ω ↦ (pullCount A a n ω : ℝ)] := by
   simp_rw [regret_eq_sum_pullCount_mul_gap]
-  rw [integral_finset_sum]
+  rw [integral_finsetSum]
   swap; · exact fun i _ ↦ (integrable_pullCount hA i n).mul_const _
   congr with a
   rw [integral_mul_const, mul_comm]

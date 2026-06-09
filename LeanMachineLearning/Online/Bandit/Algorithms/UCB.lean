@@ -246,7 +246,7 @@ lemma prob_ucbIndex_le [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
     grind
   _ ≤ ∑ k ∈ Icc 1 n, (1 : ℝ≥0∞) / (n + 1) ^ c := by
     gcongr with k hk
-    exact todo hν hσ2 hc a n k (by grind)
+    exact prob_avg_add_sqrt_log_le hν hσ2 hc a n k (by grind)
   _ ≤ (n + 1) * (1 : ℝ≥0∞) / (n + 1) ^ c := by
     simp only [one_div, sum_const, Nat.card_Icc, add_tsub_cancel_right, nsmul_eq_mul, mul_one]
     rw [div_eq_mul_inv ((n : ℝ≥0∞) + 1)]
@@ -289,7 +289,7 @@ lemma prob_ucbIndex_ge [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
     grind
   _ ≤ ∑ k ∈ Icc 1 n, (1 : ℝ≥0∞) / (n + 1) ^ c := by
     gcongr with k hk
-    exact todo' hν hσ2 hc a n k (by grind)
+    exact prob_avg_sub_sqrt_log_ge hν hσ2 hc a n k (by grind)
   _ ≤ (n + 1) * (1 : ℝ≥0∞) / (n + 1) ^ c := by
     simp only [one_div, sum_const, Nat.card_Icc, add_tsub_cancel_right, nsmul_eq_mul, mul_one]
     rw [div_eq_mul_inv ((n : ℝ≥0∞) + 1)]
@@ -513,7 +513,7 @@ lemma expectation_pullCount_le' [Nonempty (Fin K)]
     simp only [id_eq, Nat.cast_sum]
     rw [lintegral_add_left (by fun_prop), lintegral_add_left (by fun_prop)]
     simp only [lintegral_const, measure_univ, mul_one]
-    rw [lintegral_finset_sum _ (by fun_prop), lintegral_finset_sum _ (by fun_prop)]
+    rw [lintegral_finsetSum _ (by fun_prop), lintegral_finsetSum _ (by fun_prop)]
     gcongr with k hk k hk
     · rw [← lintegral_indicator_one]
       swap; · exact h_set_2 _

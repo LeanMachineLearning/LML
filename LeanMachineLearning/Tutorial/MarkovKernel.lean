@@ -8,6 +8,9 @@ module
 public import Mathlib.Probability.Kernel.Composition.Lemmas
 public import Mathlib.Tactic.Recall
 
+/-! # Tutorial source file for Markov kernels
+-/
+
 @[expose] public section
 
 open MeasureTheory ProbabilityTheory
@@ -53,5 +56,3 @@ example (κ : Kernel 𝓧 𝓨) [IsFiniteKernel κ] :
 example (κ : Kernel 𝓧 𝓨) [IsFiniteKernel κ] (x : 𝓧) :
     IsFiniteMeasure (κ x) := inferInstance
 -- ANCHOR_END: Markov
-
-lemma todo : 0 = 0 := rfl

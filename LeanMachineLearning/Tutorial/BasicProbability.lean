@@ -9,6 +9,9 @@ public import Mathlib.Probability.Distributions.Gaussian.Real
 public import Mathlib.Probability.Independence.Basic
 public import Mathlib.Probability.Moments.Basic
 
+/-! # Tutorial source file for basic probability
+-/
+
 @[expose] public section
 
 open MeasureTheory ProbabilityTheory

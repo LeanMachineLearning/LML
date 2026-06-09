@@ -9,10 +9,10 @@ public import Mathlib.MeasureTheory.Function.FactorsThrough
 public import Mathlib.Probability.Independence.Basic
 public import Mathlib.Probability.Independence.Conditional
 
-@[expose] public section
-
 /-! # Laws of `stepsUntil` and `rewardByCount`
 -/
+
+@[expose] public section
 
 open MeasureTheory ProbabilityTheory Finset
 open scoped ENNReal NNReal

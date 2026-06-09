@@ -7,6 +7,9 @@ module
 
 public import Mathlib.Probability.IdentDistrib
 
+/-! # Lemmas about integrable functions
+-/
+
 @[expose] public section
 
 open ProbabilityTheory

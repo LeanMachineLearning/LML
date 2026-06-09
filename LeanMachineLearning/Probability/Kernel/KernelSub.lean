@@ -9,7 +9,7 @@ public import Mathlib.MeasureTheory.Measure.SubFinite
 public import Mathlib.Probability.Kernel.RadonNikodym
 
 /-!
-# Kernels substraction
+# Kernel substraction
 
 -/
 

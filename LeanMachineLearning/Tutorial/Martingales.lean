@@ -9,6 +9,8 @@ public import Mathlib.Probability.Martingale.Convergence
 public import Mathlib.Probability.Martingale.OptionalStopping
 public import Mathlib.Probability.Martingale.OptionalSampling
 
+/-! # Tutorial source file for martingales -/
+
 @[expose] public section
 
 open Filter

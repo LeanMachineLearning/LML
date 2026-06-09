@@ -7,6 +7,9 @@ module
 
 public import Mathlib.Probability.Kernel.Basic
 
+/-! # Basic lemmas about Markov kernels
+-/
+
 @[expose] public section
 
 open MeasureTheory

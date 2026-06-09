@@ -7,6 +7,9 @@ module
 
 public import Mathlib.Probability.Kernel.Composition.MapComap
 
+/-! # Lemmas about map and comap of Markov kernels
+-/
+
 @[expose] public section
 
 namespace ProbabilityTheory.Kernel
