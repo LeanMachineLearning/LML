@@ -174,7 +174,7 @@ lemma integral_sum_sub_le_integral_sum_inner (hf : ∀ n, ConvexOn ℝ .univ (f 
     (y : E) (n : ℕ) :
     P[fun ω ↦ ∑ i ∈ Finset.range n, (f i (X i ω) - f i y)] ≤
       P[fun ω ↦ ∑ i ∈ Finset.range n, ⟪X i ω - y, G i ω⟫] := by
-  rw [integral_finset_sum, integral_finset_sum]
+  rw [integral_finsetSum, integral_finsetSum]
   rotate_left
   · refine fun i hi ↦ MemLp.integrable_inner ?_ (h_memLp i)
     exact (hX_lp i).sub (memLp_const _)
@@ -196,7 +196,7 @@ lemma integral_apply_avg_sub_le_integral_sum_sub
     rw [← integral_const_mul]
     gcongr
     · exact h_int_avg.sub (integrable_const _)
-    · refine Integrable.const_mul (integrable_finset_sum _ fun i hi ↦ ?_) _
+    · refine Integrable.const_mul (integrable_finsetSum _ fun i hi ↦ ?_) _
       exact (h_int i).sub (integrable_const _)
     exact fun ω ↦ hf.todo'3 _ y n hn
   _ ≤ (n : ℝ)⁻¹ * P[fun ω ↦ ∑ i ∈ Finset.range n, ⟪X i ω - y, G i ω⟫] := by
@@ -351,21 +351,21 @@ lemma integral_sum_inner_le (hη : 0 < η) (h_memLp : ∀ n, MemLp (G n) 2 P)
   calc P[fun ω ↦ ∑ i ∈ Finset.range n, ⟪X i ω - y, G i ω⟫]
   _ ≤ ∫ ω, (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, ‖G i ω‖ ^ 2 ∂P := by
     refine integral_mono_ae ?_ ?_ ?_
-    · refine integrable_finset_sum _ fun i hi ↦ MemLp.integrable_inner ?_ (h_memLp i)
+    · refine integrable_finsetSum _ fun i hi ↦ MemLp.integrable_inner ?_ (h_memLp i)
       exact (memLp_X h h_memLp i).sub (memLp_const _)
     · refine Integrable.add (integrable_const _) (Integrable.const_mul ?_ _)
-      exact integrable_finset_sum _ fun i hi ↦ (h_memLp i).integrable_norm_pow (by simp)
+      exact integrable_finsetSum _ fun i hi ↦ (h_memLp i).integrable_norm_pow (by simp)
     · filter_upwards [action_gradientStep_ae_all_eq h] with ω hω
       refine (lem14dot1 _ _ y η hη hω.2 n).trans_eq ?_
       congr
       exact hω.1
   _ = (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
-    rw [integral_add, integral_const_mul, integral_const_mul, integral_finset_sum]
+    rw [integral_add, integral_const_mul, integral_const_mul, integral_finsetSum]
     · simp
     · exact fun i hi ↦ (h_memLp i).integrable_norm_pow (by simp)
     · exact integrable_const _
     · refine Integrable.const_mul ?_ _
-      exact integrable_finset_sum _ fun i hi ↦ (h_memLp i).integrable_norm_pow (by simp)
+      exact integrable_finsetSum _ fun i hi ↦ (h_memLp i).integrable_norm_pow (by simp)
 
 end Linear
 
@@ -409,7 +409,7 @@ lemma integral_apply_avg_le {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (hdf : D
     rw [← integral_const_mul]
     gcongr
     · exact h_int_avg.sub (integrable_const _)
-    · refine Integrable.const_mul (integrable_finset_sum _ fun i hi ↦ ?_) _
+    · refine Integrable.const_mul (integrable_finsetSum _ fun i hi ↦ ?_) _
       exact (h_int i).sub (integrable_const _)
     exact fun ω ↦ hf.todo'3 _ y n hn
   _ ≤ (2 * η * n)⁻¹ * ‖x₀ - y‖ ^ 2 +

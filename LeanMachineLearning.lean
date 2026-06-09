@@ -2,6 +2,8 @@ module  -- shake: keep-all
 
 public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
 public import LeanMachineLearning.MeasureTheory.Constructions.Polish.StandardBorel
+public import LeanMachineLearning.MeasureTheory.Function.ConditionalExpectation.PullOut
+public import LeanMachineLearning.MeasureTheory.Function.L2Space
 public import LeanMachineLearning.MeasureTheory.Measurable
 public import LeanMachineLearning.Online.Bandit.Algorithms.ETC
 public import LeanMachineLearning.Online.Bandit.Algorithms.UCB
