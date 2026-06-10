@@ -131,11 +131,9 @@ end IsObliviousEnv
 /-- An oblivious environment, in which the distribution of the next feedback depends only on
 the last action, but in a possibly time-dependent manner. -/
 @[simps]
--- ANCHOR: obliviousEnv
 def obliviousEnv (ν : ℕ → Kernel 𝓐 𝓨) [∀ n, IsMarkovKernel (ν n)] : Environment 𝓐 𝓨 where
   feedback n := (ν (n + 1)).prodMkLeft _
   ν0 := ν 0
--- ANCHOR_END: obliviousEnv
 
 lemma feedback_obliviousEnv (ν : ℕ → Kernel 𝓐 𝓨) [∀ n, IsMarkovKernel (ν n)] (n : ℕ) :
     (obliviousEnv ν).feedback n = (ν (n + 1)).prodMkLeft _ := by simp [obliviousEnv]
@@ -170,9 +168,7 @@ lemma feedbackCondAction_obliviousEnv (ν : ℕ → Kernel 𝓐 𝓨) [hν : ∀
 
 /-- A stationary environment, in which the distribution of the next feedback depends only on the
 last action. -/
--- ANCHOR: stationaryEnv
 def stationaryEnv (ν : Kernel 𝓐 𝓨) [IsMarkovKernel ν] : Environment 𝓐 𝓨 := obliviousEnv fun _ ↦ ν
--- ANCHOR_END: stationaryEnv
 
 @[simp]
 lemma feedback_stationaryEnv (ν : Kernel 𝓐 𝓨) [IsMarkovKernel ν] (n : ℕ) :

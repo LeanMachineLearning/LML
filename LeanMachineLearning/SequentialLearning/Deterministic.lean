@@ -37,10 +37,6 @@ measurable functions.
   according to the measurable function `nextA` (with proof of measurability `h_next`),
   with initial action `action0`.
 
-## Notes
-
-The `ANCHOR` comments are used to mark code that appears in the tutorials.
-
 -/
 
 @[expose] public section
@@ -205,13 +201,11 @@ variable {nextA : (n : ℕ) → (Iic n → 𝓐 × 𝓨) → 𝓐} {h_next : ∀
 /-- A deterministic algorithm, which chooses the action given by the function `nextAction`. -/
 @[simps]
 noncomputable
--- ANCHOR: detAlgorithm
 def detAlgorithm (nextA : (n : ℕ) → (Iic n → 𝓐 × 𝓨) → 𝓐)
     (h_next : ∀ n, Measurable (nextA n)) (action0 : 𝓐) :
     Algorithm 𝓐 𝓨 where
   policy n := Kernel.deterministic (nextA n) (h_next n)
   p0 := Measure.dirac action0
--- ANCHOR_END: detAlgorithm
 
 instance : IsDeterministicAlg (detAlgorithm nextA h_next action0) where
   exists_action0 := ⟨action0, rfl⟩

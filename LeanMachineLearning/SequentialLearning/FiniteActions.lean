@@ -777,17 +777,13 @@ def sumRewards' (n : ℕ) (h : Iic n → 𝓐 × ℝ) (a : 𝓐) :=
 
 /-- Empirical mean reward obtained when pulling action `a` up to time `t` (exclusive). -/
 noncomputable
--- ANCHOR: empMean
 def empMean (A : ℕ → Ω → 𝓐) (R' : ℕ → Ω → ℝ) (a : 𝓐) (t : ℕ) (ω : Ω) : ℝ :=
   sumRewards A R' a t ω / pullCount A a t ω
--- ANCHOR_END: empMean
 
 /-- Empirical mean of arm `a` at time `n`. -/
 noncomputable
--- ANCHOR: empMean'
 def empMean' (n : ℕ) (h : Iic n → 𝓐 × ℝ) (a : 𝓐) :=
   (sumRewards' n h a) / (pullCount' n h a)
--- ANCHOR_END: empMean'
 
 @[simp]
 lemma sumRewards_zero {R' : ℕ → Ω → ℝ} : sumRewards A R' a 0 = 0 := by ext; simp [sumRewards]

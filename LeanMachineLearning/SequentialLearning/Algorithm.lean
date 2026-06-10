@@ -27,10 +27,6 @@ an algorithm interacting with an environment.
 * `prod_left alg`: an `Algorithm 𝓐 (𝓧 × 𝓨)` obtained from an algorithm `alg : Algorithm 𝓐 𝓨` by
   ignoring the `𝓧` component of each observation.
 
-## Notes
-
-The `ANCHOR` comments are used to mark code that appears in the tutorials.
-
 -/
 
 @[expose] public section
@@ -44,7 +40,6 @@ namespace Learning
 variable {𝓐 𝓨 Ω : Type*} {m𝓐 : MeasurableSpace 𝓐} {m𝓨 : MeasurableSpace 𝓨} {mΩ : MeasurableSpace Ω}
 
 /-- A stochastic, sequential algorithm. -/
--- ANCHOR: Algorithm
 structure Algorithm (𝓐 𝓨 : Type*) [MeasurableSpace 𝓐] [MeasurableSpace 𝓨] where
   /-- Policy or sampling rule: distribution of the next action. -/
   policy : (n : ℕ) → Kernel (Iic n → 𝓐 × 𝓨) 𝓐
@@ -52,7 +47,6 @@ structure Algorithm (𝓐 𝓨 : Type*) [MeasurableSpace 𝓐] [MeasurableSpace 
   /-- Distribution of the first action. -/
   p0 : Measure 𝓐
   [hp0 : IsProbabilityMeasure p0]
--- ANCHOR_END: Algorithm
 
 instance (alg : Algorithm 𝓐 𝓨) (n : ℕ) : IsMarkovKernel (alg.policy n) := alg.h_policy n
 instance (alg : Algorithm 𝓐 𝓨) : IsProbabilityMeasure alg.p0 := alg.hp0
@@ -65,7 +59,6 @@ def Algorithm.prodLeft (𝓧 : Type*) [MeasurableSpace 𝓧] (alg : Algorithm �
   p0 := alg.p0
 
 /-- A stochastic environment. -/
--- ANCHOR: Environment
 structure Environment (𝓐 𝓨 : Type*) [MeasurableSpace 𝓐] [MeasurableSpace 𝓨] where
   /-- Distribution of the next observation as function of the past history. -/
   feedback : (n : ℕ) → Kernel ((Iic n → 𝓐 × 𝓨) × 𝓐) 𝓨
@@ -73,7 +66,6 @@ structure Environment (𝓐 𝓨 : Type*) [MeasurableSpace 𝓐] [MeasurableSpac
   /-- Distribution of the first observation given the first action. -/
   ν0 : Kernel 𝓐 𝓨
   [hp0 : IsMarkovKernel ν0]
--- ANCHOR_END: Environment
 
 instance (env : Environment 𝓐 𝓨) (n : ℕ) : IsMarkovKernel (env.feedback n) := env.h_feedback n
 instance (env : Environment 𝓐 𝓨) : IsMarkovKernel env.ν0 := env.hp0
@@ -133,7 +125,6 @@ variable [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [No
 
 /-- An algorithm-environment sequence: a sequence of actions and feedbacks generated
 by an algorithm interacting with an environment. -/
--- ANCHOR: IsAlgEnvSeq
 structure IsAlgEnvSeq
     (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨) (alg : Algorithm 𝓐 𝓨) (env : Environment 𝓐 𝓨)
     (P : Measure Ω) [IsFiniteMeasure P] : Prop where
@@ -146,7 +137,6 @@ structure IsAlgEnvSeq
   hasCondDistrib_feedback n :
     HasCondDistrib (Y (n + 1)) (fun ω ↦ (IsAlgEnvSeq.hist A Y n ω, A (n + 1) ω))
       (env.feedback n) P
--- ANCHOR_END: IsAlgEnvSeq
 
 /-- An algorithm-environment sequence: a sequence of actions and feedbacks generated
 by an algorithm interacting with an environment. -/

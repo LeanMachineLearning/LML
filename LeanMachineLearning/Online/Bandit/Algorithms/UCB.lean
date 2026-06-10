@@ -26,7 +26,6 @@ variable {K : ℕ}
 
 section Algorithm
 
--- ANCHOR: UCB_def
 /-- The exploration bonus of the UCB algorithm, which corresponds to the width of
 a confidence interval. -/
 noncomputable def ucbWidth' (c : ℝ) (n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fin K) : ℝ :=
@@ -52,7 +51,6 @@ lemma UCB.measurable_nextArm (hK : 0 < K) (c : ℝ) (n : ℕ) : Measurable (next
 noncomputable
 def ucbAlgorithm (hK : 0 < K) (c : ℝ) : Algorithm (Fin K) ℝ :=
   detAlgorithm (UCB.nextArm hK c) (by fun_prop) ⟨0, hK⟩
--- ANCHOR_END: UCB_def
 end Algorithm
 
 namespace UCB
@@ -573,14 +571,12 @@ lemma expectation_pullCount_le [Nonempty (Fin K)]
   ring
 
 /-- Regret bound for the UCB algorithm. -/
--- ANCHOR: UCB.regret_le
 lemma regret_le [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (hσ2 : σ2 ≠ 0) (hc : 0 < c) (n : ℕ) :
     P[regret ν A n] ≤
       ∑ a, (8 * c * σ2 * log (n + 1) / gap ν a + gap ν a * (2 + 2 * (constSum c n).toReal)) := by
--- ANCHOR_END: UCB.regret_le
   refine (integral_regret_le_of_forall_integral_pullCount_le h
     (fun a h_gap ↦ expectation_pullCount_le h hν hσ2 hc a
       (lt_of_le_of_ne' gap_nonneg h_gap) n)).trans_eq ?_
