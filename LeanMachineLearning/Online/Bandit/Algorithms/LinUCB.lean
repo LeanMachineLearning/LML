@@ -475,6 +475,46 @@ lemma regret_ae_le_initial_add_sqrt_width_bound [Nonempty (Fin K)]
   exact regret_le_initial_add_cauchy_of_width_sq_le (A := A) (reg := reg) (β := β)
     (x := x) (ν := ν) (n := n) (ω := ω) W h_regret hWω hW_nonneg
 
+omit [IsMarkovKernel ν] in
+/-- If the beta sum is bounded by `B`, then the regret bound can use `√B` in place of the square
+root of the beta sum. -/
+lemma regret_le_initial_add_sqrt_bounds_of_beta_sum_le (B W : ℝ)
+    (h_regret :
+      regret ν A n ω ≤
+        (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) +
+          2 * (√(∑ t ∈ range n, if t = 0 then 0 else β (t + 1)) * √W))
+    (hB : (∑ t ∈ range n, if t = 0 then 0 else β (t + 1)) ≤ B)
+    (_hB_nonneg : 0 ≤ B) :
+    regret ν A n ω ≤
+      (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) + 2 * (√B * √W) := by
+  refine h_regret.trans ?_
+  gcongr
+
+/-- Almost surely, cumulative regret is bounded by the initial gap plus
+`2 * √B * √W` whenever the beta sum is bounded by `B` and the squared LinUCB widths are almost
+surely bounded by `W`. -/
+lemma regret_ae_le_initial_add_sqrt_bounds [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_best : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      (ν (bestArm ν))[id] ≤ index A R reg β x (bestArm ν) n ω)
+    (h_arm : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      estimatedReward A R reg x (A n ω) n ω -
+        √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
+    (hβ : ∀ t, 0 ≤ β (t + 1)) (B W : ℝ)
+    (hB : (∑ t ∈ range n, if t = 0 then 0 else β (t + 1)) ≤ B)
+    (hB_nonneg : 0 ≤ B)
+    (hW : ∀ᵐ ω ∂P,
+      (∑ t ∈ range n, (if t = 0 then 0 else width A reg x (A t ω) t ω) ^ 2) ≤ W)
+    (hW_nonneg : 0 ≤ W) :
+    ∀ᵐ ω ∂P,
+      regret ν A n ω ≤
+        (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) + 2 * (√B * √W) := by
+  filter_upwards [regret_ae_le_initial_add_sqrt_width_bound (A := A) (R := R)
+    (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_best h_arm hβ W hW
+    hW_nonneg] with ω h_regret
+  exact regret_le_initial_add_sqrt_bounds_of_beta_sum_le (A := A) (β := β) (ν := ν)
+    (n := n) (ω := ω) B W h_regret hB hB_nonneg
+
 end LinUCB
 
 end Bandits
