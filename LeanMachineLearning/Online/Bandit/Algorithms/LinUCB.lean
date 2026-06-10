@@ -127,6 +127,11 @@ noncomputable def width (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (a : Fin K) (n : ℕ) (ω : Ω) : ℝ :=
   √(dotProduct (x a) (Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (x a)))
 
+/-- The accumulated squared LinUCB widths over positive times before horizon `n`. -/
+noncomputable def widthSqSum (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
+  ∑ t ∈ range n, (if t = 0 then 0 else width A reg x (A t ω) t ω) ^ 2
+
 /-- The process-level LinUCB optimistic index. -/
 noncomputable def index (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     (reg : ℝ) (β : ℕ → ℝ) (x : Fin K → Feature d) (a : Fin K)
@@ -441,12 +446,12 @@ lemma regret_le_initial_add_cauchy_of_width_sq_le (W : ℝ)
         (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) +
           2 * (√(∑ t ∈ range n, if t = 0 then 0 else β (t + 1)) *
             √(∑ t ∈ range n, (if t = 0 then 0 else width A reg x (A t ω) t ω) ^ 2)))
-    (hW : (∑ t ∈ range n,
-      (if t = 0 then 0 else width A reg x (A t ω) t ω) ^ 2) ≤ W)
+    (hW : widthSqSum A reg x n ω ≤ W)
     (_hW_nonneg : 0 ≤ W) :
     regret ν A n ω ≤
       (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) +
         2 * (√(∑ t ∈ range n, if t = 0 then 0 else β (t + 1)) * √W) := by
+  rw [widthSqSum] at hW
   refine h_regret.trans ?_
   gcongr
 
@@ -462,8 +467,7 @@ lemma regret_ae_le_initial_add_sqrt_width_bound [Nonempty (Fin K)]
       estimatedReward A R reg x (A n ω) n ω -
         √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
     (hβ : ∀ t, 0 ≤ β (t + 1)) (W : ℝ)
-    (hW : ∀ᵐ ω ∂P,
-      (∑ t ∈ range n, (if t = 0 then 0 else width A reg x (A t ω) t ω) ^ 2) ≤ W)
+    (hW : ∀ᵐ ω ∂P, widthSqSum A reg x n ω ≤ W)
     (hW_nonneg : 0 ≤ W) :
     ∀ᵐ ω ∂P,
       regret ν A n ω ≤
@@ -503,8 +507,7 @@ lemma regret_ae_le_initial_add_sqrt_bounds [Nonempty (Fin K)]
     (hβ : ∀ t, 0 ≤ β (t + 1)) (B W : ℝ)
     (hB : (∑ t ∈ range n, if t = 0 then 0 else β (t + 1)) ≤ B)
     (hB_nonneg : 0 ≤ B)
-    (hW : ∀ᵐ ω ∂P,
-      (∑ t ∈ range n, (if t = 0 then 0 else width A reg x (A t ω) t ω) ^ 2) ≤ W)
+    (hW : ∀ᵐ ω ∂P, widthSqSum A reg x n ω ≤ W)
     (hW_nonneg : 0 ≤ W) :
     ∀ᵐ ω ∂P,
       regret ν A n ω ≤
@@ -538,6 +541,14 @@ lemma beta_sum_le_nat_mul_of_monotone
     _ = (n : ℝ) * β n := by
       simp [sum_const, nsmul_eq_mul]
 
+omit [IsMarkovKernel ν] in
+/-- The initial-gap sum is just the time-zero gap when the horizon is positive, and zero when the
+horizon is zero. -/
+lemma initial_gap_sum_eq :
+    (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) =
+      if n = 0 then 0 else gap ν (A 0 ω) := by
+  cases n <;> simp
+
 /-- Almost surely, cumulative regret is bounded by the initial gap plus
 `2 * √(n * β n) * √W` whenever the squared LinUCB widths are almost surely bounded by `W` and `β`
 is nonnegative and monotone. -/
@@ -549,8 +560,7 @@ lemma regret_ae_le_initial_add_sqrt_nat_mul_beta_width_bound [Nonempty (Fin K)]
       estimatedReward A R reg x (A n ω) n ω -
         √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
     (hβ : ∀ t, 0 ≤ β (t + 1)) (hβ_mono : Monotone β) (W : ℝ)
-    (hW : ∀ᵐ ω ∂P,
-      (∑ t ∈ range n, (if t = 0 then 0 else width A reg x (A t ω) t ω) ^ 2) ≤ W)
+    (hW : ∀ᵐ ω ∂P, widthSqSum A reg x n ω ≤ W)
     (hW_nonneg : 0 ≤ W) :
     ∀ᵐ ω ∂P,
       regret ν A n ω ≤
@@ -567,6 +577,27 @@ lemma regret_ae_le_initial_add_sqrt_nat_mul_beta_width_bound [Nonempty (Fin K)]
       have htime : n - 1 + 1 = n := by grind
       simpa [htime] using hβ (n - 1)
     positivity
+
+/-- Almost surely, cumulative regret is bounded by the simplified initial-gap term plus
+`2 * √(n * β n) * √W` whenever the squared LinUCB widths are almost surely bounded by `W` and `β`
+is nonnegative and monotone. -/
+lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_width_bound [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_best : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      (ν (bestArm ν))[id] ≤ index A R reg β x (bestArm ν) n ω)
+    (h_arm : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      estimatedReward A R reg x (A n ω) n ω -
+        √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
+    (hβ : ∀ t, 0 ≤ β (t + 1)) (hβ_mono : Monotone β) (W : ℝ)
+    (hW : ∀ᵐ ω ∂P, widthSqSum A reg x n ω ≤ W)
+    (hW_nonneg : 0 ≤ W) :
+    ∀ᵐ ω ∂P,
+      regret ν A n ω ≤
+        (if n = 0 then 0 else gap ν (A 0 ω)) + 2 * (√((n : ℝ) * β n) * √W) := by
+  filter_upwards [regret_ae_le_initial_add_sqrt_nat_mul_beta_width_bound (A := A) (R := R)
+    (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_best h_arm hβ hβ_mono W hW
+    hW_nonneg] with ω h_regret
+  simpa [initial_gap_sum_eq (A := A) (ν := ν) (n := n) (ω := ω)] using h_regret
 
 end LinUCB
 
