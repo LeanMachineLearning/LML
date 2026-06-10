@@ -42,8 +42,8 @@ blueprint/src/web.pdf
 /home_page/
 
 ## Tutorial
-/tutorial/.lake/
-/tutorial/_out/
+/LMLTutorial/.lake/
+/LMLTutorial/_out/
 
 ## Verso Blueprint
 /verso_blueprint/.lake/
