@@ -1,1 +1,0 @@
-window.searchPagePath = "search/";

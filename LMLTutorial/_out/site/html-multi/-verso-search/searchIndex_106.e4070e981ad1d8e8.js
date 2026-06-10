@@ -1,1 +1,0 @@
-window.docContents[106].resolve({"/Markov-Kernels/#Lean-Machine-Learning--Markov-Kernels--Composition":{"contents":"TODO: describe the various ways to compose or take products of kernels.\n\n\n","context":"Lean Machine Learning\u0009Markov Kernels","header":"3.3. Composition","id":"/Markov-Kernels/#Lean-Machine-Learning--Markov-Kernels--Composition"}});
