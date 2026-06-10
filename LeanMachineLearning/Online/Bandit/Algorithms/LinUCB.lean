@@ -515,6 +515,59 @@ lemma regret_ae_le_initial_add_sqrt_bounds [Nonempty (Fin K)]
   exact regret_le_initial_add_sqrt_bounds_of_beta_sum_le (A := A) (β := β) (ν := ν)
     (n := n) (ω := ω) B W h_regret hB hB_nonneg
 
+/-- If the confidence-radius schedule is nonnegative and monotone, the positive-time beta sum is
+bounded by the horizon times the terminal beta value. -/
+lemma beta_sum_le_nat_mul_of_monotone
+    (hβ_mono : Monotone β) (hβ : ∀ t, 0 ≤ β (t + 1)) :
+    (∑ t ∈ range n, if t = 0 then 0 else β (t + 1)) ≤ (n : ℝ) * β n := by
+  calc
+    (∑ t ∈ range n, if t = 0 then 0 else β (t + 1))
+      ≤ ∑ _t ∈ range n, β n := by
+        refine sum_le_sum ?_
+        intro t ht
+        by_cases ht0 : t = 0
+        · rw [if_pos ht0]
+          have hn_pos : 0 < n := by
+            simpa [ht0] using mem_range.mp ht
+          have hn_beta : 0 ≤ β n := by
+            have htime : n - 1 + 1 = n := by grind
+            simpa [htime] using hβ (n - 1)
+          exact hn_beta
+        · rw [if_neg ht0]
+          exact hβ_mono (Nat.succ_le_iff.mpr (mem_range.mp ht))
+    _ = (n : ℝ) * β n := by
+      simp [sum_const, nsmul_eq_mul]
+
+/-- Almost surely, cumulative regret is bounded by the initial gap plus
+`2 * √(n * β n) * √W` whenever the squared LinUCB widths are almost surely bounded by `W` and `β`
+is nonnegative and monotone. -/
+lemma regret_ae_le_initial_add_sqrt_nat_mul_beta_width_bound [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_best : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      (ν (bestArm ν))[id] ≤ index A R reg β x (bestArm ν) n ω)
+    (h_arm : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      estimatedReward A R reg x (A n ω) n ω -
+        √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
+    (hβ : ∀ t, 0 ≤ β (t + 1)) (hβ_mono : Monotone β) (W : ℝ)
+    (hW : ∀ᵐ ω ∂P,
+      (∑ t ∈ range n, (if t = 0 then 0 else width A reg x (A t ω) t ω) ^ 2) ≤ W)
+    (hW_nonneg : 0 ≤ W) :
+    ∀ᵐ ω ∂P,
+      regret ν A n ω ≤
+        (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) +
+          2 * (√((n : ℝ) * β n) * √W) := by
+  refine regret_ae_le_initial_add_sqrt_bounds (A := A) (R := R) (reg := reg) (β := β)
+    (x := x) (ν := ν) (n := n) h h_best h_arm hβ ((n : ℝ) * β n) W
+    (beta_sum_le_nat_mul_of_monotone (β := β) (n := n) hβ_mono hβ) ?_
+    hW hW_nonneg
+  by_cases hn : n = 0
+  · simp [hn]
+  · have hn_pos : 0 < n := Nat.pos_of_ne_zero hn
+    have hn_beta : 0 ≤ β n := by
+      have htime : n - 1 + 1 = n := by grind
+      simpa [htime] using hβ (n - 1)
+    positivity
+
 end LinUCB
 
 end Bandits
