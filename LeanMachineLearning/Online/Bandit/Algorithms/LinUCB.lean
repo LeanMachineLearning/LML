@@ -128,6 +128,12 @@ noncomputable def responseVector (A : ℕ → Ω → Fin K) (R : ℕ → Ω → 
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : Feature d :=
   ∑ s ∈ range n, R s ω • x (A s ω)
 
+/-- The initial response vector before any rewards are included. -/
+lemma responseVector_zero (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
+    (x : Fin K → Feature d) (ω : Ω) :
+    responseVector A R x 0 ω = 0 := by
+  simp [responseVector]
+
 /-- The process-level regularized least-squares estimate. -/
 noncomputable def thetaHat (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : Feature d :=
