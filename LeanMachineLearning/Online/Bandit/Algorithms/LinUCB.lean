@@ -141,18 +141,22 @@ noncomputable def widthSqSum (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
   ∑ t ∈ range n, (if t = 0 then 0 else width A reg x (A t ω) t ω) ^ 2
 
+/-- The accumulated quadratic forms corresponding to the positive-time LinUCB widths. -/
+noncomputable def quadraticWidthSum (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
+  ∑ t ∈ range n,
+    if t = 0 then 0 else
+      dotProduct (x (A t ω))
+        (Matrix.mulVec (designMatrix A reg x t ω)⁻¹ (x (A t ω)))
+
 /-- The accumulated squared widths equal the accumulated quadratic forms, provided each positive
 time quadratic form is nonnegative. -/
 lemma widthSqSum_eq_sum_quadratic_form
     (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
       0 ≤ dotProduct (x (A t ω))
         (Matrix.mulVec (designMatrix A reg x t ω)⁻¹ (x (A t ω)))) :
-    widthSqSum A reg x n ω =
-      ∑ t ∈ range n,
-        if t = 0 then 0 else
-          dotProduct (x (A t ω))
-            (Matrix.mulVec (designMatrix A reg x t ω)⁻¹ (x (A t ω))) := by
-  rw [widthSqSum]
+    widthSqSum A reg x n ω = quadraticWidthSum A reg x n ω := by
+  rw [widthSqSum, quadraticWidthSum]
   refine sum_congr rfl ?_
   intro t ht
   by_cases ht0 : t = 0
@@ -168,11 +172,7 @@ lemma widthSqSum_le_of_sum_quadratic_form_le {W : ℝ}
     (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
       0 ≤ dotProduct (x (A t ω))
         (Matrix.mulVec (designMatrix A reg x t ω)⁻¹ (x (A t ω))))
-    (h_quad_le :
-      (∑ t ∈ range n,
-        if t = 0 then 0 else
-          dotProduct (x (A t ω))
-            (Matrix.mulVec (designMatrix A reg x t ω)⁻¹ (x (A t ω)))) ≤ W) :
+    (h_quad_le : quadraticWidthSum A reg x n ω ≤ W) :
     widthSqSum A reg x n ω ≤ W := by
   rw [widthSqSum_eq_sum_quadratic_form (A := A) (reg := reg) (x := x)
     (n := n) (ω := ω) h_nonneg]
