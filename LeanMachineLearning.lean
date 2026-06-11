@@ -3,8 +3,11 @@ module  -- shake: keep-all --deprecated_module: ignore
 public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
 public import LeanMachineLearning.MeasureTheory.Constructions.Polish.StandardBorel
 public import LeanMachineLearning.MeasureTheory.Measurable
+public import LeanMachineLearning.MeasureTheory.Measure.AbsolutelyContinuous
+public import LeanMachineLearning.MeasureTheory.OuterMeasure.Basic
 public import LeanMachineLearning.Online.Bandit.Algorithms.ETC
 public import LeanMachineLearning.Online.Bandit.Algorithms.UCB
+public import LeanMachineLearning.Online.Bandit.Algorithms.TS
 public import LeanMachineLearning.Online.Bandit.ArrayProbSpace
 public import LeanMachineLearning.Online.Bandit.Regret
 public import LeanMachineLearning.Online.Bandit.RewardByCountMeasure
@@ -24,8 +27,11 @@ public import LeanMachineLearning.Probability.Moments.SubGaussian
 public import LeanMachineLearning.Probability.WithDensity
 public import LeanMachineLearning.SequentialLearning.Algorithm
 public import LeanMachineLearning.SequentialLearning.AlgorithmDensity
+public import LeanMachineLearning.SequentialLearning.AlgorithmDensityBayes
 public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling
 public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
+public import LeanMachineLearning.SequentialLearning.Algorithms.Uniform
+public import LeanMachineLearning.SequentialLearning.BayesStationaryEnv
 public import LeanMachineLearning.SequentialLearning.Deterministic
 public import LeanMachineLearning.SequentialLearning.EvaluationEnv
 public import LeanMachineLearning.SequentialLearning.FiniteActions

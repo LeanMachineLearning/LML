@@ -79,6 +79,8 @@ lemma measurable_density [MeasurableSpace.CountablyGenerated 𝓐] (alg alg₀ :
 
 end Algorithm
 
+open scoped Algorithm
+
 namespace IsAlgEnvSeq
 
 variable {Ω : Type*} [MeasurableSpace Ω]
@@ -91,8 +93,6 @@ variable {Ω₀ : Type*} [MeasurableSpace Ω₀]
 variable {alg₀ : Algorithm 𝓐 𝓨}
 variable {A₀ : ℕ → Ω₀ → 𝓐} {Y₀ : ℕ → Ω₀ → 𝓨}
 variable {P₀ : Measure Ω₀} [IsProbabilityMeasure P₀]
-
-open scoped Algorithm
 
 lemma absolutelyContinuous_map_hist (h : IsAlgEnvSeq A Y alg env P)
     (h₀ : IsAlgEnvSeq A₀ Y₀ alg₀ env P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) :
