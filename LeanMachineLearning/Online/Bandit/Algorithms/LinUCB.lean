@@ -141,6 +141,27 @@ noncomputable def widthSqSum (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
   ∑ t ∈ range n, (if t = 0 then 0 else width A reg x (A t ω) t ω) ^ 2
 
+/-- The accumulated squared widths equal the accumulated quadratic forms, provided each positive
+time quadratic form is nonnegative. -/
+lemma widthSqSum_eq_sum_quadratic_form
+    (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ dotProduct (x (A t ω))
+        (Matrix.mulVec (designMatrix A reg x t ω)⁻¹ (x (A t ω)))) :
+    widthSqSum A reg x n ω =
+      ∑ t ∈ range n,
+        if t = 0 then 0 else
+          dotProduct (x (A t ω))
+            (Matrix.mulVec (designMatrix A reg x t ω)⁻¹ (x (A t ω))) := by
+  rw [widthSqSum]
+  refine sum_congr rfl ?_
+  intro t ht
+  by_cases ht0 : t = 0
+  · simp [ht0]
+  · rw [if_neg ht0]
+    rw [if_neg ht0]
+    exact width_sq_eq_quadratic_form (A := A) (reg := reg) (x := x) (a := A t ω)
+      (n := t) (ω := ω) (h_nonneg t ht ht0)
+
 /-- The process-level LinUCB optimistic index. -/
 noncomputable def index (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     (reg : ℝ) (β : ℕ → ℝ) (x : Fin K → Feature d) (a : Fin K)
