@@ -29,24 +29,30 @@ section Algorithm
 
 namespace LinUCB
 
+/-- Feature vectors for finite-dimensional linear bandits. -/
 abbrev Feature (d : ℕ) := Fin d → ℝ
 
+/-- History-level regularized design matrix for LinUCB. -/
 noncomputable def designMatrix' (reg : ℝ) (x : Fin K → Feature d)
     (n : ℕ) (h : Iic n → Fin K × ℝ) : Matrix (Fin d) (Fin d) ℝ :=
   reg • 1 + ∑ s : Iic n, Matrix.vecMulVec (x (h s).1) (x (h s).1)
 
+/-- History-level response vector for LinUCB. -/
 noncomputable def responseVector' (x : Fin K → Feature d)
     (n : ℕ) (h : Iic n → Fin K × ℝ) : Feature d :=
   ∑ s : Iic n, (h s).2 • x (h s).1
 
+/-- History-level regularized least-squares estimate. -/
 noncomputable def thetaHat' (reg : ℝ) (x : Fin K → Feature d)
     (n : ℕ) (h : Iic n → Fin K × ℝ) : Feature d :=
   Matrix.mulVec (designMatrix' reg x n h)⁻¹ (responseVector' x n h)
 
+/-- History-level estimated reward of an arm. -/
 noncomputable def estimatedReward' (reg : ℝ) (x : Fin K → Feature d)
     (n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fin K) : ℝ :=
   dotProduct (thetaHat' reg x n h) (x a)
 
+/-- History-level elliptical confidence width of an arm. -/
 noncomputable def width' (reg : ℝ) (x : Fin K → Feature d)
     (n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fin K) : ℝ :=
   √(dotProduct (x a) (Matrix.mulVec (designMatrix' reg x n h)⁻¹ (x a)))
@@ -65,7 +71,6 @@ open Classical in
 /-- Arm pulled by finite-action LinUCB at time `n + 1`. -/
 noncomputable def nextArm (hK : 0 < K) (reg : ℝ) (β : ℕ → ℝ)
     (x : Fin K → Feature d)
-    (_h_index : ∀ n a, Measurable (fun h ↦ index' reg β x n h a))
     (n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   measurableArgmax (fun h a ↦ index' reg β x n h a) h
@@ -75,7 +80,7 @@ lemma measurable_nextArm (hK : 0 < K) (reg : ℝ) (β : ℕ → ℝ)
     (x : Fin K → Feature d)
     (h_index : ∀ n a, Measurable (fun h ↦ index' reg β x n h a))
     (n : ℕ) :
-    Measurable (nextArm hK reg β x h_index n) := by
+    Measurable (nextArm hK reg β x n) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   exact measurable_measurableArgmax fun a ↦ h_index n a
 
@@ -86,7 +91,7 @@ noncomputable def linUCBAlgorithm (hK : 0 < K) (reg : ℝ) (β : ℕ → ℝ)
     (x : Fin K → LinUCB.Feature d)
     (h_index : ∀ n a, Measurable (fun h ↦ LinUCB.index' reg β x n h a)) :
     Algorithm (Fin K) ℝ :=
-  detAlgorithm (LinUCB.nextArm hK reg β x h_index) (by fun_prop) ⟨0, hK⟩
+  detAlgorithm (LinUCB.nextArm hK reg β x) (by fun_prop) ⟨0, hK⟩
 
 end Algorithm
 
@@ -106,6 +111,12 @@ section AlgorithmBehavior
 noncomputable def designMatrix (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : Matrix (Fin d) (Fin d) ℝ :=
   reg • 1 + ∑ s ∈ range n, Matrix.vecMulVec (x (A s ω)) (x (A s ω))
+
+/-- The design matrix update after observing one additional action. -/
+lemma designMatrix_succ (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (ω : Ω) :
+    designMatrix A reg x (n + 1) ω =
+      designMatrix A reg x n ω + Matrix.vecMulVec (x (A n ω)) (x (A n ω)) := by
+  simp [designMatrix, sum_range_succ, add_assoc]
 
 /-- The process-level reward-feature vector built from history up to time `n` excluded. -/
 noncomputable def responseVector (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
@@ -237,7 +248,7 @@ lemma arm_ae_eq_linUCBNextArm [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
     (n : ℕ) :
     A (n + 1) =ᵐ[P]
-      fun ω ↦ nextArm hK reg β x h_index n (IsAlgEnvSeq.hist A R n ω) := by
+      fun ω ↦ nextArm hK reg β x n (IsAlgEnvSeq.hist A R n ω) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   exact h.action_detAlgorithm_ae_eq n
 
@@ -246,7 +257,7 @@ lemma arm_ae_all_eq [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P) :
     ∀ᵐ ω ∂P,
       ∀ n, A (n + 1) ω =
-        nextArm hK reg β x h_index n (IsAlgEnvSeq.hist A R n ω) := by
+        nextArm hK reg β x n (IsAlgEnvSeq.hist A R n ω) := by
   simp_rw [ae_all_iff]
   exact fun n ↦ arm_ae_eq_linUCBNextArm h n
 
@@ -493,7 +504,7 @@ lemma regret_le_initial_add_cauchy_of_width_sq_le (W : ℝ)
           2 * (√(∑ t ∈ range n, if t = 0 then 0 else β (t + 1)) *
             √(∑ t ∈ range n, (if t = 0 then 0 else width A reg x (A t ω) t ω) ^ 2)))
     (hW : widthSqSum A reg x n ω ≤ W)
-    (_hW_nonneg : 0 ≤ W) :
+    :
     regret ν A n ω ≤
       (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) +
         2 * (√(∑ t ∈ range n, if t = 0 then 0 else β (t + 1)) * √W) := by
@@ -513,8 +524,7 @@ lemma regret_ae_le_initial_add_sqrt_width_bound [Nonempty (Fin K)]
       estimatedReward A R reg x (A n ω) n ω -
         √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
     (hβ : ∀ t, 0 ≤ β (t + 1)) (W : ℝ)
-    (hW : ∀ᵐ ω ∂P, widthSqSum A reg x n ω ≤ W)
-    (hW_nonneg : 0 ≤ W) :
+    (hW : ∀ᵐ ω ∂P, widthSqSum A reg x n ω ≤ W) :
     ∀ᵐ ω ∂P,
       regret ν A n ω ≤
         (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) +
@@ -523,7 +533,7 @@ lemma regret_ae_le_initial_add_sqrt_width_bound [Nonempty (Fin K)]
     (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_best h_arm hβ, hW] with
     ω h_regret hWω
   exact regret_le_initial_add_cauchy_of_width_sq_le (A := A) (reg := reg) (β := β)
-    (x := x) (ν := ν) (n := n) (ω := ω) W h_regret hWω hW_nonneg
+    (x := x) (ν := ν) (n := n) (ω := ω) W h_regret hWω
 
 omit [IsMarkovKernel ν] in
 /-- If the beta sum is bounded by `B`, then the regret bound can use `√B` in place of the square
@@ -534,7 +544,7 @@ lemma regret_le_initial_add_sqrt_bounds_of_beta_sum_le (B W : ℝ)
         (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) +
           2 * (√(∑ t ∈ range n, if t = 0 then 0 else β (t + 1)) * √W))
     (hB : (∑ t ∈ range n, if t = 0 then 0 else β (t + 1)) ≤ B)
-    (_hB_nonneg : 0 ≤ B) :
+    :
     regret ν A n ω ≤
       (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) + 2 * (√B * √W) := by
   refine h_regret.trans ?_
@@ -552,17 +562,15 @@ lemma regret_ae_le_initial_add_sqrt_bounds [Nonempty (Fin K)]
         √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
     (hβ : ∀ t, 0 ≤ β (t + 1)) (B W : ℝ)
     (hB : (∑ t ∈ range n, if t = 0 then 0 else β (t + 1)) ≤ B)
-    (hB_nonneg : 0 ≤ B)
-    (hW : ∀ᵐ ω ∂P, widthSqSum A reg x n ω ≤ W)
-    (hW_nonneg : 0 ≤ W) :
+    (hW : ∀ᵐ ω ∂P, widthSqSum A reg x n ω ≤ W) :
     ∀ᵐ ω ∂P,
       regret ν A n ω ≤
         (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) + 2 * (√B * √W) := by
   filter_upwards [regret_ae_le_initial_add_sqrt_width_bound (A := A) (R := R)
     (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_best h_arm hβ W hW
-    hW_nonneg] with ω h_regret
+    ] with ω h_regret
   exact regret_le_initial_add_sqrt_bounds_of_beta_sum_le (A := A) (β := β) (ν := ν)
-    (n := n) (ω := ω) B W h_regret hB hB_nonneg
+    (n := n) (ω := ω) B W h_regret hB
 
 /-- If the confidence-radius schedule is nonnegative and monotone, the positive-time beta sum is
 bounded by the horizon times the terminal beta value. -/
@@ -606,23 +614,14 @@ lemma regret_ae_le_initial_add_sqrt_nat_mul_beta_width_bound [Nonempty (Fin K)]
       estimatedReward A R reg x (A n ω) n ω -
         √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
     (hβ : ∀ t, 0 ≤ β (t + 1)) (hβ_mono : Monotone β) (W : ℝ)
-    (hW : ∀ᵐ ω ∂P, widthSqSum A reg x n ω ≤ W)
-    (hW_nonneg : 0 ≤ W) :
+    (hW : ∀ᵐ ω ∂P, widthSqSum A reg x n ω ≤ W) :
     ∀ᵐ ω ∂P,
       regret ν A n ω ≤
         (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) +
           2 * (√((n : ℝ) * β n) * √W) := by
-  refine regret_ae_le_initial_add_sqrt_bounds (A := A) (R := R) (reg := reg) (β := β)
+  exact regret_ae_le_initial_add_sqrt_bounds (A := A) (R := R) (reg := reg) (β := β)
     (x := x) (ν := ν) (n := n) h h_best h_arm hβ ((n : ℝ) * β n) W
-    (beta_sum_le_nat_mul_of_monotone (β := β) (n := n) hβ_mono hβ) ?_
-    hW hW_nonneg
-  by_cases hn : n = 0
-  · simp [hn]
-  · have hn_pos : 0 < n := Nat.pos_of_ne_zero hn
-    have hn_beta : 0 ≤ β n := by
-      have htime : n - 1 + 1 = n := by grind
-      simpa [htime] using hβ (n - 1)
-    positivity
+    (beta_sum_le_nat_mul_of_monotone (β := β) (n := n) hβ_mono hβ) hW
 
 /-- Almost surely, cumulative regret is bounded by the simplified initial-gap term plus
 `2 * √(n * β n) * √W` whenever the squared LinUCB widths are almost surely bounded by `W` and `β`
@@ -635,14 +634,13 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_width_bound [Nonempty (Fin 
       estimatedReward A R reg x (A n ω) n ω -
         √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
     (hβ : ∀ t, 0 ≤ β (t + 1)) (hβ_mono : Monotone β) (W : ℝ)
-    (hW : ∀ᵐ ω ∂P, widthSqSum A reg x n ω ≤ W)
-    (hW_nonneg : 0 ≤ W) :
+    (hW : ∀ᵐ ω ∂P, widthSqSum A reg x n ω ≤ W) :
     ∀ᵐ ω ∂P,
       regret ν A n ω ≤
         (if n = 0 then 0 else gap ν (A 0 ω)) + 2 * (√((n : ℝ) * β n) * √W) := by
   filter_upwards [regret_ae_le_initial_add_sqrt_nat_mul_beta_width_bound (A := A) (R := R)
     (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_best h_arm hβ hβ_mono W hW
-    hW_nonneg] with ω h_regret
+    ] with ω h_regret
   simpa [initial_gap_sum_eq (A := A) (ν := ν) (n := n) (ω := ω)] using h_regret
 
 end LinUCB
