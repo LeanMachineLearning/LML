@@ -127,6 +127,15 @@ noncomputable def width (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (a : Fin K) (n : ℕ) (ω : Ω) : ℝ :=
   √(dotProduct (x a) (Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (x a)))
 
+/-- Squaring the LinUCB width recovers the quadratic form inside the square root, provided that
+quadratic form is nonnegative. -/
+lemma width_sq_eq_quadratic_form (a : Fin K)
+    (h_nonneg : 0 ≤
+      dotProduct (x a) (Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (x a))) :
+    width A reg x a n ω ^ 2 =
+      dotProduct (x a) (Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (x a)) := by
+  simp [width, Real.sq_sqrt h_nonneg]
+
 /-- The accumulated squared LinUCB widths over positive times before horizon `n`. -/
 noncomputable def widthSqSum (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
