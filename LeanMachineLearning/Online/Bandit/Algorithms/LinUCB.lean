@@ -112,6 +112,11 @@ noncomputable def designMatrix (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : Matrix (Fin d) (Fin d) ℝ :=
   reg • 1 + ∑ s ∈ range n, Matrix.vecMulVec (x (A s ω)) (x (A s ω))
 
+/-- The initial design matrix before any actions are included. -/
+lemma designMatrix_zero (reg : ℝ) (x : Fin K → Feature d) (ω : Ω) :
+    designMatrix A reg x 0 ω = reg • 1 := by
+  simp [designMatrix]
+
 /-- The design matrix update after observing one additional action. -/
 lemma designMatrix_succ (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (ω : Ω) :
     designMatrix A reg x (n + 1) ω =
