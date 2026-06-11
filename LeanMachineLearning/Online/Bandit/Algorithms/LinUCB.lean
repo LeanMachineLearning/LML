@@ -134,6 +134,13 @@ lemma responseVector_zero (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     responseVector A R x 0 ω = 0 := by
   simp [responseVector]
 
+/-- The response-vector update after observing one additional reward. -/
+lemma responseVector_succ (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
+    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) :
+    responseVector A R x (n + 1) ω =
+      responseVector A R x n ω + R n ω • x (A n ω) := by
+  simp [responseVector, sum_range_succ]
+
 /-- The process-level regularized least-squares estimate. -/
 noncomputable def thetaHat (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : Feature d :=
