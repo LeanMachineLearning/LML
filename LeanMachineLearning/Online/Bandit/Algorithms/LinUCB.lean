@@ -162,6 +162,22 @@ lemma widthSqSum_eq_sum_quadratic_form
     exact width_sq_eq_quadratic_form (A := A) (reg := reg) (x := x) (a := A t ω)
       (n := t) (ω := ω) (h_nonneg t ht ht0)
 
+/-- A quadratic-form sum bound implies the corresponding bound on `widthSqSum`. This is the shape
+expected from a later elliptical-potential argument. -/
+lemma widthSqSum_le_of_sum_quadratic_form_le {W : ℝ}
+    (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ dotProduct (x (A t ω))
+        (Matrix.mulVec (designMatrix A reg x t ω)⁻¹ (x (A t ω))))
+    (h_quad_le :
+      (∑ t ∈ range n,
+        if t = 0 then 0 else
+          dotProduct (x (A t ω))
+            (Matrix.mulVec (designMatrix A reg x t ω)⁻¹ (x (A t ω)))) ≤ W) :
+    widthSqSum A reg x n ω ≤ W := by
+  rw [widthSqSum_eq_sum_quadratic_form (A := A) (reg := reg) (x := x)
+    (n := n) (ω := ω) h_nonneg]
+  exact h_quad_le
+
 /-- The process-level LinUCB optimistic index. -/
 noncomputable def index (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     (reg : ℝ) (β : ℕ → ℝ) (x : Fin K → Feature d) (a : Fin K)
