@@ -1,23 +1,19 @@
 set -x -e
 
-# Build tutorial
-cd tutorial
 lake build
-lake exe manual --output _out/site
-mkdir -p _out/site/html-multi/static
-cp static_files/* _out/site/html-multi/static
-cd ..
 
-cd verso_blueprint
-lake exe cache get
-lake build
-lake exe blueprint-gen --output _out/site
-mkdir -p _out/site/html-multi/static
-cp static_files/* _out/site/html-multi/static
-cd ..
+# Build tutorial
+lake exe tutorial --output LMLTutorial/_out/site
+mkdir -p LMLTutorial/_out/site/html-multi/static
+cp LMLTutorial/static_files/* LMLTutorial/_out/site/html-multi/static
+
+# Build docs
+lake exe docs --output LMLDocs/_out/site
+mkdir -p LMLDocs/_out/site/html-multi/static
+cp LMLDocs/static_files/* LMLDocs/_out/site/html-multi/static
 
 # Copy outputs to home_page
 mkdir -p home_page/tutorial
-cp -r tutorial/_out/site/html-multi/* home_page/tutorial
-mkdir -p home_page/verso_blueprint
-cp -r verso_blueprint/_out/site/html-multi/* home_page/verso_blueprint
+cp -r LMLTutorial/_out/site/html-multi/* home_page/tutorial
+mkdir -p home_page/defdocs
+cp -r LMLDocs/_out/site/html-multi/* home_page/defdocs

@@ -16,4 +16,4 @@ def config : RenderConfig := {
   issueLink := some "https://github.com/LeanMachineLearning/LML/issues",
 }
 
-def main := manualMain (%doc LMLTutorial.Front) (config := config)
+def main := manualMain (%doc LMLDocs.Front) (config := config)
