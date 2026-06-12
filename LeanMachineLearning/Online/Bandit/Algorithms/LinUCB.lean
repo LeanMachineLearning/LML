@@ -164,25 +164,35 @@ lemma estimatedReward_zero (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     estimatedReward A R reg x a 0 ω = 0 := by
   simp [estimatedReward, thetaHat_zero]
 
+/-- The quadratic form `x_aᵀ V_n⁻¹ x_a` underlying the LinUCB confidence width. -/
+noncomputable def widthQuadraticForm (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (a : Fin K) (n : ℕ) (ω : Ω) : ℝ :=
+  dotProduct (x a) (Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (x a))
+
+/-- The initial width quadratic form is induced by the inverse regularized identity. -/
+lemma widthQuadraticForm_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (a : Fin K) (ω : Ω) :
+    widthQuadraticForm A reg x a 0 ω =
+      dotProduct (x a) (Matrix.mulVec (reg • 1)⁻¹ (x a)) := by
+  simp [widthQuadraticForm, designMatrix_zero]
+
 /-- The process-level elliptical confidence width. -/
 noncomputable def width (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (a : Fin K) (n : ℕ) (ω : Ω) : ℝ :=
-  √(dotProduct (x a) (Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (x a)))
+  √(widthQuadraticForm A reg x a n ω)
 
 /-- The initial width is the quadratic form induced by the inverse regularized identity. -/
 lemma width_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (a : Fin K) (ω : Ω) :
     width A reg x a 0 ω =
       √(dotProduct (x a) (Matrix.mulVec (reg • 1)⁻¹ (x a))) := by
-  simp [width, designMatrix_zero]
+  simp [width, widthQuadraticForm_zero]
 
 /-- Squaring the LinUCB width recovers the quadratic form inside the square root, provided that
 quadratic form is nonnegative. -/
 lemma width_sq_eq_quadratic_form (a : Fin K)
-    (h_nonneg : 0 ≤
-      dotProduct (x a) (Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (x a))) :
-    width A reg x a n ω ^ 2 =
-      dotProduct (x a) (Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (x a)) := by
+    (h_nonneg : 0 ≤ widthQuadraticForm A reg x a n ω) :
+    width A reg x a n ω ^ 2 = widthQuadraticForm A reg x a n ω := by
   simp [width, Real.sq_sqrt h_nonneg]
 
 /-- The accumulated squared LinUCB widths over positive times before horizon `n`. -/
@@ -215,9 +225,7 @@ lemma widthSqSum_succ_of_ne_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
 noncomputable def quadraticWidthSum (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
   ∑ t ∈ range n,
-    if t = 0 then 0 else
-      dotProduct (x (A t ω))
-        (Matrix.mulVec (designMatrix A reg x t ω)⁻¹ (x (A t ω)))
+    if t = 0 then 0 else widthQuadraticForm A reg x (A t ω) t ω
 
 /-- No positive-time quadratic width forms are accumulated at horizon zero. -/
 lemma quadraticWidthSum_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
@@ -230,18 +238,14 @@ lemma quadraticWidthSum_succ (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) :
     quadraticWidthSum A reg x (n + 1) ω =
       quadraticWidthSum A reg x n ω +
-        if n = 0 then 0 else
-          dotProduct (x (A n ω))
-            (Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (x (A n ω))) := by
+        if n = 0 then 0 else widthQuadraticForm A reg x (A n ω) n ω := by
   simp [quadraticWidthSum, sum_range_succ]
 
 /-- At positive times, advancing the horizon adds the selected arm's quadratic width form. -/
 lemma quadraticWidthSum_succ_of_ne_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
     quadraticWidthSum A reg x (n + 1) ω =
-      quadraticWidthSum A reg x n ω +
-        dotProduct (x (A n ω))
-          (Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (x (A n ω))) := by
+      quadraticWidthSum A reg x n ω + widthQuadraticForm A reg x (A n ω) n ω := by
   simp [quadraticWidthSum_succ, hn]
 
 /-- If the squared-width and quadratic-form accumulators agree through a positive time and the
@@ -249,8 +253,7 @@ next quadratic form is nonnegative, then they still agree after adding the next 
 lemma widthSqSum_eq_quadraticWidthSum_succ_of_ne_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) (hn : n ≠ 0)
     (h_eq : widthSqSum A reg x n ω = quadraticWidthSum A reg x n ω)
-    (h_nonneg : 0 ≤ dotProduct (x (A n ω))
-      (Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (x (A n ω)))) :
+    (h_nonneg : 0 ≤ widthQuadraticForm A reg x (A n ω) n ω) :
     widthSqSum A reg x (n + 1) ω = quadraticWidthSum A reg x (n + 1) ω := by
   rw [widthSqSum_succ_of_ne_zero (A := A) (reg := reg) (x := x) (n := n) (ω := ω) hn,
     quadraticWidthSum_succ_of_ne_zero (A := A) (reg := reg) (x := x) (n := n)
@@ -262,8 +265,7 @@ lemma widthSqSum_eq_quadraticWidthSum_succ_of_ne_zero (A : ℕ → Ω → Fin K)
 time quadratic form is nonnegative. -/
 lemma widthSqSum_eq_sum_quadratic_form
     (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
-      0 ≤ dotProduct (x (A t ω))
-        (Matrix.mulVec (designMatrix A reg x t ω)⁻¹ (x (A t ω)))) :
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω) :
     widthSqSum A reg x n ω = quadraticWidthSum A reg x n ω := by
   rw [widthSqSum, quadraticWidthSum]
   refine sum_congr rfl ?_
@@ -279,8 +281,7 @@ lemma widthSqSum_eq_sum_quadratic_form
 expected from a later elliptical-potential argument. -/
 lemma widthSqSum_le_of_sum_quadratic_form_le {W : ℝ}
     (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
-      0 ≤ dotProduct (x (A t ω))
-        (Matrix.mulVec (designMatrix A reg x t ω)⁻¹ (x (A t ω))))
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
     (h_quad_le : quadraticWidthSum A reg x n ω ≤ W) :
     widthSqSum A reg x n ω ≤ W := by
   rw [widthSqSum_eq_sum_quadratic_form (A := A) (reg := reg) (x := x)
@@ -346,7 +347,8 @@ lemma estimatedReward_eq_estimatedReward' (reg : ℝ) (x : Fin K → Feature d)
 lemma width_eq_width' (reg : ℝ) (x : Fin K → Feature d)
     (a : Fin K) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
     width A reg x a n ω = width' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) a := by
-  simp [width, width', designMatrix_eq_designMatrix' (A := A) (R := R) reg x n ω hn]
+  simp [width, widthQuadraticForm, width',
+    designMatrix_eq_designMatrix' (A := A) (R := R) reg x n ω hn]
 
 lemma index_eq_index' (reg : ℝ) (β : ℕ → ℝ) (x : Fin K → Feature d)
     (a : Fin K) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
