@@ -196,6 +196,14 @@ lemma widthSqSum_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
     widthSqSum A reg x 0 ω = 0 := by
   simp [widthSqSum]
 
+/-- Advancing the horizon adds the next positive-time squared width term. -/
+lemma widthSqSum_succ (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) :
+    widthSqSum A reg x (n + 1) ω =
+      widthSqSum A reg x n ω +
+        (if n = 0 then 0 else width A reg x (A n ω) n ω) ^ 2 := by
+  simp [widthSqSum, sum_range_succ]
+
 /-- The accumulated quadratic forms corresponding to the positive-time LinUCB widths. -/
 noncomputable def quadraticWidthSum (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
