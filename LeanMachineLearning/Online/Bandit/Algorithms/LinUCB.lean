@@ -169,6 +169,13 @@ noncomputable def width (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (a : Fin K) (n : ℕ) (ω : Ω) : ℝ :=
   √(dotProduct (x a) (Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (x a)))
 
+/-- The initial width is the quadratic form induced by the inverse regularized identity. -/
+lemma width_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (a : Fin K) (ω : Ω) :
+    width A reg x a 0 ω =
+      √(dotProduct (x a) (Matrix.mulVec (reg • 1)⁻¹ (x a))) := by
+  simp [width, designMatrix_zero]
+
 /-- Squaring the LinUCB width recovers the quadratic form inside the square root, provided that
 quadratic form is nonnegative. -/
 lemma width_sq_eq_quadratic_form (a : Fin K)
