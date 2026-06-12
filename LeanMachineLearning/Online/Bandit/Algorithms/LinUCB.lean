@@ -235,6 +235,15 @@ lemma quadraticWidthSum_succ (A : ℕ → Ω → Fin K) (reg : ℝ)
             (Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (x (A n ω))) := by
   simp [quadraticWidthSum, sum_range_succ]
 
+/-- At positive times, advancing the horizon adds the selected arm's quadratic width form. -/
+lemma quadraticWidthSum_succ_of_ne_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
+    quadraticWidthSum A reg x (n + 1) ω =
+      quadraticWidthSum A reg x n ω +
+        dotProduct (x (A n ω))
+          (Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (x (A n ω))) := by
+  simp [quadraticWidthSum_succ, hn]
+
 /-- The accumulated squared widths equal the accumulated quadratic forms, provided each positive
 time quadratic form is nonnegative. -/
 lemma widthSqSum_eq_sum_quadratic_form
