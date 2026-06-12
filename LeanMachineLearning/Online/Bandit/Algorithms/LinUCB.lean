@@ -226,6 +226,13 @@ noncomputable def index (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     (n : ℕ) (ω : Ω) : ℝ :=
   estimatedReward A R reg x a n ω + √(β (n + 1)) * width A reg x a n ω
 
+/-- At time zero, the LinUCB index is only the confidence bonus because the estimated reward is
+zero. -/
+lemma index_zero (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
+    (reg : ℝ) (β : ℕ → ℝ) (x : Fin K → Feature d) (a : Fin K) (ω : Ω) :
+    index A R reg β x a 0 ω = √(β 1) * width A reg x a 0 ω := by
+  simp [index, estimatedReward_zero]
+
 lemma designMatrix_eq_designMatrix' (reg : ℝ) (x : Fin K → Feature d) (n : ℕ)
     (ω : Ω) (hn : n ≠ 0) :
     designMatrix A reg x n ω =
