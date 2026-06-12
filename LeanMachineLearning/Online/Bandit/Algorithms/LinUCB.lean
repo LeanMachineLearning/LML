@@ -244,6 +244,20 @@ lemma quadraticWidthSum_succ_of_ne_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
           (Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (x (A n ω))) := by
   simp [quadraticWidthSum_succ, hn]
 
+/-- If the squared-width and quadratic-form accumulators agree through a positive time and the
+next quadratic form is nonnegative, then they still agree after adding the next term. -/
+lemma widthSqSum_eq_quadraticWidthSum_succ_of_ne_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) (hn : n ≠ 0)
+    (h_eq : widthSqSum A reg x n ω = quadraticWidthSum A reg x n ω)
+    (h_nonneg : 0 ≤ dotProduct (x (A n ω))
+      (Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (x (A n ω)))) :
+    widthSqSum A reg x (n + 1) ω = quadraticWidthSum A reg x (n + 1) ω := by
+  rw [widthSqSum_succ_of_ne_zero (A := A) (reg := reg) (x := x) (n := n) (ω := ω) hn,
+    quadraticWidthSum_succ_of_ne_zero (A := A) (reg := reg) (x := x) (n := n)
+      (ω := ω) hn, h_eq]
+  rw [width_sq_eq_quadratic_form (A := A) (reg := reg) (x := x) (a := A n ω)
+    (n := n) (ω := ω) h_nonneg]
+
 /-- The accumulated squared widths equal the accumulated quadratic forms, provided each positive
 time quadratic form is nonnegative. -/
 lemma widthSqSum_eq_sum_quadratic_form
