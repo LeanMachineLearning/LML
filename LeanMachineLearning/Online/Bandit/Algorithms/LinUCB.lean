@@ -146,10 +146,23 @@ noncomputable def thetaHat (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : Feature d :=
   Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (responseVector A R x n ω)
 
+/-- The initial least-squares estimate is zero because no reward-feature observations have been
+included yet. -/
+lemma thetaHat_zero (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
+    (reg : ℝ) (x : Fin K → Feature d) (ω : Ω) :
+    thetaHat A R reg x 0 ω = 0 := by
+  simp [thetaHat, responseVector_zero]
+
 /-- The process-level estimated linear reward. -/
 noncomputable def estimatedReward (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     (reg : ℝ) (x : Fin K → Feature d) (a : Fin K) (n : ℕ) (ω : Ω) : ℝ :=
   dotProduct (thetaHat A R reg x n ω) (x a)
+
+/-- The initial estimated reward is zero for every arm. -/
+lemma estimatedReward_zero (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
+    (reg : ℝ) (x : Fin K → Feature d) (a : Fin K) (ω : Ω) :
+    estimatedReward A R reg x a 0 ω = 0 := by
+  simp [estimatedReward, thetaHat_zero]
 
 /-- The process-level elliptical confidence width. -/
 noncomputable def width (A : ℕ → Ω → Fin K) (reg : ℝ)
