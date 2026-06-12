@@ -204,6 +204,12 @@ noncomputable def quadraticWidthSum (A : ℕ → Ω → Fin K) (reg : ℝ)
       dotProduct (x (A t ω))
         (Matrix.mulVec (designMatrix A reg x t ω)⁻¹ (x (A t ω)))
 
+/-- No positive-time quadratic width forms are accumulated at horizon zero. -/
+lemma quadraticWidthSum_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (ω : Ω) :
+    quadraticWidthSum A reg x 0 ω = 0 := by
+  simp [quadraticWidthSum]
+
 /-- The accumulated squared widths equal the accumulated quadratic forms, provided each positive
 time quadratic form is nonnegative. -/
 lemma widthSqSum_eq_sum_quadratic_form
