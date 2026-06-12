@@ -240,6 +240,14 @@ lemma index_zero (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     index A R reg β x a 0 ω = √(β 1) * width A reg x a 0 ω := by
   simp [index, estimatedReward_zero]
 
+/-- At time zero, the LinUCB index is the confidence schedule times the initial quadratic-form
+width. -/
+lemma index_zero_eq_initial_quadratic_form (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
+    (reg : ℝ) (β : ℕ → ℝ) (x : Fin K → Feature d) (a : Fin K) (ω : Ω) :
+    index A R reg β x a 0 ω =
+      √(β 1) * √(dotProduct (x a) (Matrix.mulVec (reg • 1)⁻¹ (x a))) := by
+  simp [index_zero, width_zero]
+
 lemma designMatrix_eq_designMatrix' (reg : ℝ) (x : Fin K → Feature d) (n : ℕ)
     (ω : Ω) (hn : n ≠ 0) :
     designMatrix A reg x n ω =
