@@ -43,9 +43,11 @@ variable {𝓐 𝓨 Ω : Type*} {m𝓐 : MeasurableSpace 𝓐} {m𝓨 : Measurab
 structure Algorithm (𝓐 𝓨 : Type*) [MeasurableSpace 𝓐] [MeasurableSpace 𝓨] where
   /-- Policy or sampling rule: distribution of the next action. -/
   policy : (n : ℕ) → Kernel (Iic n → 𝓐 × 𝓨) 𝓐
+  /-- The policy is a Markov kernel. -/
   [h_policy : ∀ n, IsMarkovKernel (policy n)]
   /-- Distribution of the first action. -/
   p0 : Measure 𝓐
+  /-- The first action distribution is a probability measure. -/
   [hp0 : IsProbabilityMeasure p0]
 
 instance (alg : Algorithm 𝓐 𝓨) (n : ℕ) : IsMarkovKernel (alg.policy n) := alg.h_policy n
@@ -53,6 +55,7 @@ instance (alg : Algorithm 𝓐 𝓨) : IsProbabilityMeasure alg.p0 := alg.hp0
 
 /-- An algorithm with observations in `𝓧 × 𝓨` obtained from an algorithm with observations in `𝓨`
 by ignoring the `𝓧` component of each observation. -/
+@[simps]
 def Algorithm.prodLeft (𝓧 : Type*) [MeasurableSpace 𝓧] (alg : Algorithm 𝓐 𝓨) :
     Algorithm 𝓐 (𝓧 × 𝓨) where
   policy n := (alg.policy n).comap (fun h i ↦ ((h i).1, (h i).2.2)) (by fun_prop)
@@ -62,9 +65,11 @@ def Algorithm.prodLeft (𝓧 : Type*) [MeasurableSpace 𝓧] (alg : Algorithm �
 structure Environment (𝓐 𝓨 : Type*) [MeasurableSpace 𝓐] [MeasurableSpace 𝓨] where
   /-- Distribution of the next observation as function of the past history. -/
   feedback : (n : ℕ) → Kernel ((Iic n → 𝓐 × 𝓨) × 𝓐) 𝓨
+  /-- The feedback kernels are Markov kernels. -/
   [h_feedback : ∀ n, IsMarkovKernel (feedback n)]
   /-- Distribution of the first observation given the first action. -/
   ν0 : Kernel 𝓐 𝓨
+  /-- The initial observation kernel is a Markov kernel. -/
   [hp0 : IsMarkovKernel ν0]
 
 instance (env : Environment 𝓐 𝓨) (n : ℕ) : IsMarkovKernel (env.feedback n) := env.h_feedback n
@@ -77,6 +82,9 @@ def stepKernel (alg : Algorithm 𝓐 𝓨) (env : Environment 𝓐 𝓨) (n : �
     Kernel (Iic n → 𝓐 × 𝓨) (𝓐 × 𝓨) :=
   alg.policy n ⊗ₖ env.feedback n
 deriving IsMarkovKernel
+
+lemma stepKernel_def (alg : Algorithm 𝓐 𝓨) (env : Environment 𝓐 𝓨) (n : ℕ) :
+    stepKernel alg env n = alg.policy n ⊗ₖ env.feedback n := rfl
 
 @[simp]
 lemma fst_stepKernel (alg : Algorithm 𝓐 𝓨) (env : Environment 𝓐 𝓨) (n : ℕ) :
@@ -128,12 +136,19 @@ by an algorithm interacting with an environment. -/
 structure IsAlgEnvSeq
     (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨) (alg : Algorithm 𝓐 𝓨) (env : Environment 𝓐 𝓨)
     (P : Measure Ω) [IsFiniteMeasure P] : Prop where
+  /-- The action sequence is measurable. -/
   measurable_action n : Measurable (A n) := by fun_prop
+  /-- The feedback sequence is measurable. -/
   measurable_feedback n : Measurable (Y n) := by fun_prop
+  /-- The first action has the correct law. -/
   hasLaw_action_zero : HasLaw (fun ω ↦ (A 0 ω)) alg.p0 P
+  /-- The first feedback has the correct conditional distribution. -/
   hasCondDistrib_feedback_zero : HasCondDistrib (Y 0) (A 0) env.ν0 P
+  /-- The next action has the correct conditional distribution given the history. -/
   hasCondDistrib_action n :
     HasCondDistrib (A (n + 1)) (IsAlgEnvSeq.hist A Y n) (alg.policy n) P
+  /-- The next feedback has the correct conditional distribution given the history and
+  next action. -/
   hasCondDistrib_feedback n :
     HasCondDistrib (Y (n + 1)) (fun ω ↦ (IsAlgEnvSeq.hist A Y n ω, A (n + 1) ω))
       (env.feedback n) P
@@ -143,12 +158,19 @@ by an algorithm interacting with an environment. -/
 structure IsAlgEnvSeqUntil
     (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨) (alg : Algorithm 𝓐 𝓨) (env : Environment 𝓐 𝓨)
     (P : Measure Ω) [IsFiniteMeasure P] (N : ℕ) : Prop where
+  /-- The action sequence is measurable. -/
   measurable_action n : Measurable (A n) := by fun_prop
+  /-- The feedback sequence is measurable. -/
   measurable_feedback n : Measurable (Y n) := by fun_prop
+  /-- The first action has the correct law. -/
   hasLaw_action_zero : HasLaw (fun ω ↦ (A 0 ω)) alg.p0 P
+  /-- The first feedback has the correct conditional distribution. -/
   hasCondDistrib_feedback_zero : HasCondDistrib (Y 0) (A 0) env.ν0 P
+  /-- The next action has the correct conditional distribution given the history. -/
   hasCondDistrib_action n (hn : n < N) :
     HasCondDistrib (A (n + 1)) (IsAlgEnvSeq.hist A Y n) (alg.policy n) P
+  /-- The next feedback has the correct conditional distribution given the history and
+  next action. -/
   hasCondDistrib_feedback n (hn : n < N) :
     HasCondDistrib (Y (n + 1)) (fun ω ↦ (IsAlgEnvSeq.hist A Y n ω, A (n + 1) ω))
       (env.feedback n) P

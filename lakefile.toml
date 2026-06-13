@@ -26,16 +26,7 @@ name = "LeanMachineLearning"
 name = "LMLTutorial"
 globs = ["LMLTutorial.*"]
 
-[[lean_lib]]
-name = "LMLDocs"
-globs = ["LMLDocs.*"]
-
 [[lean_exe]]
 name = "tutorial"
 srcDir = "LMLTutorial/"
 root = "Tutorial"
-
-[[lean_exe]]
-name = "docs"
-srcDir = "LMLDocs/"
-root = "Docs"

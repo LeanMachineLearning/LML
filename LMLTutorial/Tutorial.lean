@@ -1,6 +1,13 @@
+/-
+Copyright (c) 2026 Rémy Degenne. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Rémy Degenne
+-/
 import VersoManual
-
 import LMLTutorial.Front
+
+set_option linter.style.header false
+set_option linter.style.setOption false
 
 open Verso.Genre.Manual Verso.Output.Html
 
