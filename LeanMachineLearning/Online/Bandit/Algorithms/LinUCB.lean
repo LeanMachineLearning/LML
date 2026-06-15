@@ -402,6 +402,103 @@ lemma widthSqSum_succ_eq_add_widthQuadraticForm' (reg : ℝ) (x : Fin K → Feat
   rw [widthSqSum_succ_of_ne_zero (A := A) (reg := reg) (x := x) (n := n) (ω := ω) hn]
   rw [width_sq_eq_widthQuadraticForm' (A := A) (R := R) reg x (A n ω) n ω hn h_nonneg]
 
+/-- At positive process times, advancing `quadraticWidthSum` adds the matching history-level
+quadratic form. -/
+lemma quadraticWidthSum_succ_eq_add_widthQuadraticForm' (reg : ℝ) (x : Fin K → Feature d)
+    (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
+    quadraticWidthSum A reg x (n + 1) ω =
+      quadraticWidthSum A reg x n ω +
+        widthQuadraticForm' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) (A n ω) := by
+  rw [quadraticWidthSum_succ_of_ne_zero (A := A) (reg := reg) (x := x) (n := n)
+    (ω := ω) hn]
+  rw [widthQuadraticForm_eq_widthQuadraticForm' (A := A) (R := R) reg x (A n ω) n ω hn]
+
+/-- The history-level quadratic-form accumulator aligned with process times.
+
+The term at process time `t = 0` is set to zero, matching the convention used by `widthSqSum` and
+`quadraticWidthSum`. At positive process time `t`, the history available to LinUCB is
+`IsAlgEnvSeq.hist A R (t - 1) ω`. -/
+noncomputable def historyQuadraticWidthSum (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
+    (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
+  ∑ t ∈ range n,
+    if t = 0 then 0 else
+      widthQuadraticForm' reg x (t - 1) (IsAlgEnvSeq.hist A R (t - 1) ω) (A t ω)
+
+/-- No positive-time history-level quadratic width forms are accumulated at horizon zero. -/
+lemma historyQuadraticWidthSum_zero (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
+    (reg : ℝ) (x : Fin K → Feature d) (ω : Ω) :
+    historyQuadraticWidthSum A R reg x 0 ω = 0 := by
+  simp [historyQuadraticWidthSum]
+
+/-- Advancing the horizon adds the next positive-time history-level quadratic width form. -/
+lemma historyQuadraticWidthSum_succ (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
+    (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (ω : Ω) :
+    historyQuadraticWidthSum A R reg x (n + 1) ω =
+      historyQuadraticWidthSum A R reg x n ω +
+        if n = 0 then 0 else
+          widthQuadraticForm' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) (A n ω) := by
+  simp [historyQuadraticWidthSum, sum_range_succ]
+
+/-- At positive process times, advancing the history-level quadratic accumulator adds the selected
+arm's history-level quadratic width form. -/
+lemma historyQuadraticWidthSum_succ_of_ne_zero (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
+    (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
+    historyQuadraticWidthSum A R reg x (n + 1) ω =
+      historyQuadraticWidthSum A R reg x n ω +
+        widthQuadraticForm' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) (A n ω) := by
+  simp [historyQuadraticWidthSum_succ, hn]
+
+/-- The process-level quadratic-width accumulator equals the history-level accumulator aligned with
+the same process times. -/
+lemma quadraticWidthSum_eq_historyQuadraticWidthSum (reg : ℝ) (x : Fin K → Feature d)
+    (n : ℕ) (ω : Ω) :
+    quadraticWidthSum A reg x n ω = historyQuadraticWidthSum A R reg x n ω := by
+  rw [quadraticWidthSum, historyQuadraticWidthSum]
+  refine sum_congr rfl ?_
+  intro t ht
+  by_cases ht0 : t = 0
+  · simp [ht0]
+  · rw [if_neg ht0, if_neg ht0]
+    exact widthQuadraticForm_eq_widthQuadraticForm' (A := A) (R := R) reg x (A t ω) t ω ht0
+
+/-- The squared-width accumulator equals the history-level quadratic-form accumulator whenever the
+positive-time history-level quadratic forms are nonnegative. -/
+lemma widthSqSum_eq_historyQuadraticWidthSum
+    (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm' reg x (t - 1) (IsAlgEnvSeq.hist A R (t - 1) ω) (A t ω)) :
+    widthSqSum A reg x n ω = historyQuadraticWidthSum A R reg x n ω := by
+  have h_process_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω := by
+    intro t ht ht0
+    exact (widthQuadraticForm_nonneg_iff_widthQuadraticForm' (A := A) (R := R) reg x
+      (A t ω) t ω ht0).2 (h_nonneg t ht ht0)
+  rw [widthSqSum_eq_sum_quadratic_form (A := A) (reg := reg) (x := x)
+    (n := n) (ω := ω) h_process_nonneg]
+  exact quadraticWidthSum_eq_historyQuadraticWidthSum (A := A) (R := R) reg x n ω
+
+/-- A bound on the history-level quadratic-form accumulator implies the corresponding bound on
+`widthSqSum`, provided the positive-time history-level quadratic forms are nonnegative. -/
+lemma widthSqSum_le_of_history_quadratic_width_sum_le {W : ℝ}
+    (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm' reg x (t - 1) (IsAlgEnvSeq.hist A R (t - 1) ω) (A t ω))
+    (h_hist_le : historyQuadraticWidthSum A R reg x n ω ≤ W) :
+    widthSqSum A reg x n ω ≤ W := by
+  rw [widthSqSum_eq_historyQuadraticWidthSum (A := A) (R := R) (reg := reg) (x := x)
+    (n := n) (ω := ω) h_nonneg]
+  exact h_hist_le
+
+omit [IsProbabilityMeasure P] in
+/-- Almost surely, a history-level quadratic-form bound gives the `widthSqSum` bound consumed by
+the regret chain. -/
+lemma widthSqSum_ae_le_of_history_quadratic_width_sum_ae_le {W : ℝ}
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm' reg x (t - 1) (IsAlgEnvSeq.hist A R (t - 1) ω) (A t ω))
+    (h_hist_le : ∀ᵐ ω ∂P, historyQuadraticWidthSum A R reg x n ω ≤ W) :
+    ∀ᵐ ω ∂P, widthSqSum A reg x n ω ≤ W := by
+  filter_upwards [h_nonneg, h_hist_le] with ω h_nonnegω h_hist_leω
+  exact widthSqSum_le_of_history_quadratic_width_sum_le (A := A) (R := R) (reg := reg)
+    (x := x) (n := n) (ω := ω) h_nonnegω h_hist_leω
+
 lemma index_eq_index' (reg : ℝ) (β : ℕ → ℝ) (x : Fin K → Feature d)
     (a : Fin K) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
     index A R reg β x a n ω =
@@ -809,6 +906,28 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_width_bound [Nonempty (Fin 
     (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_best h_arm hβ hβ_mono W hW
     ] with ω h_regret
   simpa [initial_gap_sum_eq (A := A) (ν := ν) (n := n) (ω := ω)] using h_regret
+
+/-- Almost surely, cumulative regret is bounded by the simplified initial-gap term plus
+`2 * √(n * β n) * √W` whenever a history-level quadratic-form bound supplies the future
+elliptical-potential input. -/
+lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_history_quadratic_bound [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_best : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      (ν (bestArm ν))[id] ≤ index A R reg β x (bestArm ν) n ω)
+    (h_arm : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      estimatedReward A R reg x (A n ω) n ω -
+        √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
+    (hβ : ∀ t, 0 ≤ β (t + 1)) (hβ_mono : Monotone β) (W : ℝ)
+    (h_quad_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm' reg x (t - 1) (IsAlgEnvSeq.hist A R (t - 1) ω) (A t ω))
+    (hW : ∀ᵐ ω ∂P, historyQuadraticWidthSum A R reg x n ω ≤ W) :
+    ∀ᵐ ω ∂P,
+      regret ν A n ω ≤
+        (if n = 0 then 0 else gap ν (A 0 ω)) + 2 * (√((n : ℝ) * β n) * √W) := by
+  exact regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_width_bound (A := A) (R := R)
+    (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_best h_arm hβ hβ_mono W
+    (widthSqSum_ae_le_of_history_quadratic_width_sum_ae_le (A := A) (R := R)
+      (reg := reg) (x := x) (n := n) (P := P) (W := W) h_quad_nonneg hW)
 
 end LinUCB
 
