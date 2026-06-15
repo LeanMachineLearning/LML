@@ -261,6 +261,47 @@ lemma quadraticWidthSum_succ_of_ne_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
       quadraticWidthSum A reg x n ω + widthQuadraticForm A reg x (A n ω) n ω := by
   simp [quadraticWidthSum_succ, hn]
 
+/-- The accumulated capped quadratic forms corresponding to the positive-time LinUCB widths. -/
+noncomputable def cappedQuadraticWidthSum (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
+  ∑ t ∈ range n,
+    if t = 0 then 0 else min 1 (widthQuadraticForm A reg x (A t ω) t ω)
+
+/-- No positive-time capped quadratic width forms are accumulated at horizon zero. -/
+lemma cappedQuadraticWidthSum_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (ω : Ω) :
+    cappedQuadraticWidthSum A reg x 0 ω = 0 := by
+  simp [cappedQuadraticWidthSum]
+
+/-- Advancing the horizon adds the next positive-time capped quadratic width form. -/
+lemma cappedQuadraticWidthSum_succ (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) :
+    cappedQuadraticWidthSum A reg x (n + 1) ω =
+      cappedQuadraticWidthSum A reg x n ω +
+        if n = 0 then 0 else min 1 (widthQuadraticForm A reg x (A n ω) n ω) := by
+  simp [cappedQuadraticWidthSum, sum_range_succ]
+
+/-- At positive times, advancing the horizon adds the selected arm's capped quadratic width form. -/
+lemma cappedQuadraticWidthSum_succ_of_ne_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
+    cappedQuadraticWidthSum A reg x (n + 1) ω =
+      cappedQuadraticWidthSum A reg x n ω + min 1 (widthQuadraticForm A reg x (A n ω) n ω) := by
+  simp [cappedQuadraticWidthSum_succ, hn]
+
+/-- If every positive-time process-level quadratic width form is at most `1`, then the uncapped
+and capped process-level quadratic-width accumulators agree. -/
+lemma quadraticWidthSum_eq_cappedQuadraticWidthSum
+    (h_le_one : ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1) :
+    quadraticWidthSum A reg x n ω = cappedQuadraticWidthSum A reg x n ω := by
+  rw [quadraticWidthSum, cappedQuadraticWidthSum]
+  refine sum_congr rfl ?_
+  intro t ht
+  by_cases ht0 : t = 0
+  · simp [ht0]
+  · rw [if_neg ht0, if_neg ht0]
+    exact (min_eq_right (h_le_one t ht ht0)).symm
+
 /-- If the squared-width and quadratic-form accumulators agree through a positive time and the
 next quadratic form is nonnegative, then they still agree after adding the next term. -/
 lemma widthSqSum_eq_quadraticWidthSum_succ_of_ne_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
@@ -300,6 +341,38 @@ lemma widthSqSum_le_of_sum_quadratic_form_le {W : ℝ}
   rw [widthSqSum_eq_sum_quadratic_form (A := A) (reg := reg) (x := x)
     (n := n) (ω := ω) h_nonneg]
   exact h_quad_le
+
+/-- A capped process-level quadratic-form sum bound implies the corresponding bound on
+`widthSqSum`, provided the positive-time process-level quadratic forms are nonnegative and at most
+`1`. -/
+lemma widthSqSum_le_of_capped_quadratic_width_sum_le {W : ℝ}
+    (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (h_capped_le : cappedQuadraticWidthSum A reg x n ω ≤ W) :
+    widthSqSum A reg x n ω ≤ W := by
+  rw [widthSqSum_eq_sum_quadratic_form (A := A) (reg := reg) (x := x)
+    (n := n) (ω := ω) h_nonneg]
+  rw [quadraticWidthSum_eq_cappedQuadraticWidthSum (A := A) (reg := reg) (x := x)
+    (n := n) (ω := ω) h_le_one]
+  exact h_capped_le
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, a capped process-level quadratic-form sum bound implies the corresponding bound
+on `widthSqSum`, provided the positive-time process-level quadratic forms are almost surely
+nonnegative and at most `1`. -/
+lemma widthSqSum_ae_le_of_capped_quadratic_width_sum_ae_le {W : ℝ}
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (h_capped_le : ∀ᵐ ω ∂P, cappedQuadraticWidthSum A reg x n ω ≤ W) :
+    ∀ᵐ ω ∂P, widthSqSum A reg x n ω ≤ W := by
+  filter_upwards [h_nonneg, h_le_one, h_capped_le] with
+    ω h_nonnegω h_le_oneω h_capped_leω
+  exact widthSqSum_le_of_capped_quadratic_width_sum_le (A := A) (reg := reg) (x := x)
+    (n := n) (ω := ω) h_nonnegω h_le_oneω h_capped_leω
 
 /-- The process-level LinUCB optimistic index. -/
 noncomputable def index (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
@@ -484,6 +557,21 @@ lemma historyCappedQuadraticWidthSum_succ_of_ne_zero
         min 1
           (widthQuadraticForm' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) (A n ω)) := by
   simp [historyCappedQuadraticWidthSum_succ, hn]
+
+/-- The process-level capped quadratic-width accumulator equals the history-level capped
+accumulator aligned with the same process times. -/
+lemma cappedQuadraticWidthSum_eq_historyCappedQuadraticWidthSum (reg : ℝ)
+    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) :
+    cappedQuadraticWidthSum A reg x n ω =
+      historyCappedQuadraticWidthSum A R reg x n ω := by
+  rw [cappedQuadraticWidthSum, historyCappedQuadraticWidthSum]
+  refine sum_congr rfl ?_
+  intro t ht
+  by_cases ht0 : t = 0
+  · simp [ht0]
+  · rw [if_neg ht0, if_neg ht0]
+    exact congrArg (fun q : ℝ ↦ min 1 q)
+      (widthQuadraticForm_eq_widthQuadraticForm' (A := A) (R := R) reg x (A t ω) t ω ht0)
 
 /-- If every positive-time history-level quadratic width form is at most `1`, then the uncapped and
 capped history-level accumulators agree. -/
@@ -1165,6 +1253,35 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_history_quadratic_bo
     (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_best h_arm hβ hβ_mono W
     (widthSqSum_ae_le_of_capped_history_quadratic_width_sum_ae_le (A := A) (R := R)
       (reg := reg) (x := x) (n := n) (P := P) (W := W) h_quad_nonneg h_quad_le_one hW)
+
+/-- Almost surely, cumulative regret is bounded by the simplified initial-gap term plus
+`2 * √(n * β n) * √W` whenever a capped process-level quadratic-width sum bound holds almost
+surely and every positive-time process-level quadratic width form is almost surely nonnegative and
+at most `1`.
+
+This is the direct interface for an elliptical-potential lemma stated using the process-level design
+matrices `designMatrix A reg x t ω`. -/
+lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_quadratic_bound
+    [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_best : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      (ν (bestArm ν))[id] ≤ index A R reg β x (bestArm ν) n ω)
+    (h_arm : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      estimatedReward A R reg x (A n ω) n ω -
+        √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
+    (hβ : ∀ t, 0 ≤ β (t + 1)) (hβ_mono : Monotone β) (W : ℝ)
+    (h_quad_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_quad_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (hW : ∀ᵐ ω ∂P, cappedQuadraticWidthSum A reg x n ω ≤ W) :
+    ∀ᵐ ω ∂P,
+      regret ν A n ω ≤
+        (if n = 0 then 0 else gap ν (A 0 ω)) + 2 * (√((n : ℝ) * β n) * √W) := by
+  exact regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_width_bound (A := A) (R := R)
+    (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_best h_arm hβ hβ_mono W
+    (widthSqSum_ae_le_of_capped_quadratic_width_sum_ae_le (A := A) (reg := reg)
+      (x := x) (n := n) (P := P) (W := W) h_quad_nonneg h_quad_le_one hW)
 
 end LinUCB
 
