@@ -448,6 +448,58 @@ lemma historyQuadraticWidthSum_succ_of_ne_zero (A : ℕ → Ω → Fin K) (R : �
         widthQuadraticForm' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) (A n ω) := by
   simp [historyQuadraticWidthSum_succ, hn]
 
+/-- The capped history-level quadratic-form accumulator aligned with process times.
+
+This is the accumulator shape that commonly appears in elliptical-potential statements:
+each positive-time quadratic width form is capped at `1`. -/
+noncomputable def historyCappedQuadraticWidthSum (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
+    (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
+  ∑ t ∈ range n,
+    if t = 0 then 0 else
+      min 1 (widthQuadraticForm' reg x (t - 1) (IsAlgEnvSeq.hist A R (t - 1) ω) (A t ω))
+
+/-- No positive-time capped history-level quadratic width forms are accumulated at horizon zero. -/
+lemma historyCappedQuadraticWidthSum_zero (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
+    (reg : ℝ) (x : Fin K → Feature d) (ω : Ω) :
+    historyCappedQuadraticWidthSum A R reg x 0 ω = 0 := by
+  simp [historyCappedQuadraticWidthSum]
+
+/-- Advancing the horizon adds the next positive-time capped history-level quadratic width form. -/
+lemma historyCappedQuadraticWidthSum_succ (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
+    (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (ω : Ω) :
+    historyCappedQuadraticWidthSum A R reg x (n + 1) ω =
+      historyCappedQuadraticWidthSum A R reg x n ω +
+        if n = 0 then 0 else
+          min 1
+            (widthQuadraticForm' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) (A n ω)) := by
+  simp [historyCappedQuadraticWidthSum, sum_range_succ]
+
+/-- At positive process times, advancing the capped history-level quadratic accumulator adds the
+selected arm's capped history-level quadratic width form. -/
+lemma historyCappedQuadraticWidthSum_succ_of_ne_zero
+    (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
+    (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
+    historyCappedQuadraticWidthSum A R reg x (n + 1) ω =
+      historyCappedQuadraticWidthSum A R reg x n ω +
+        min 1
+          (widthQuadraticForm' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) (A n ω)) := by
+  simp [historyCappedQuadraticWidthSum_succ, hn]
+
+/-- If every positive-time history-level quadratic width form is at most `1`, then the uncapped and
+capped history-level accumulators agree. -/
+lemma historyQuadraticWidthSum_eq_historyCappedQuadraticWidthSum
+    (h_le_one : ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm' reg x (t - 1) (IsAlgEnvSeq.hist A R (t - 1) ω) (A t ω) ≤ 1) :
+    historyQuadraticWidthSum A R reg x n ω =
+      historyCappedQuadraticWidthSum A R reg x n ω := by
+  rw [historyQuadraticWidthSum, historyCappedQuadraticWidthSum]
+  refine sum_congr rfl ?_
+  intro t ht
+  by_cases ht0 : t = 0
+  · simp [ht0]
+  · rw [if_neg ht0, if_neg ht0]
+    exact (min_eq_right (h_le_one t ht ht0)).symm
+
 /-- The process-level quadratic-width accumulator equals the history-level accumulator aligned with
 the same process times. -/
 lemma quadraticWidthSum_eq_historyQuadraticWidthSum (reg : ℝ) (x : Fin K → Feature d)
@@ -512,6 +564,75 @@ def HistoryQuadraticWidthBound (A : ℕ → Ω → Fin K) (R : ℕ → Ω → �
   (∀ t, t ∈ range n → t ≠ 0 →
     0 ≤ widthQuadraticForm' reg x (t - 1) (IsAlgEnvSeq.hist A R (t - 1) ω) (A t ω)) ∧
     historyQuadraticWidthSum A R reg x n ω ≤ W
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Build the packaged history-level quadratic-width input from its two component facts. -/
+lemma historyQuadraticWidthBound_of_nonneg_and_sum_le {W : ℝ}
+    (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm' reg x (t - 1) (IsAlgEnvSeq.hist A R (t - 1) ω) (A t ω))
+    (h_sum_le : historyQuadraticWidthSum A R reg x n ω ≤ W) :
+    HistoryQuadraticWidthBound A R reg x n ω W := by
+  exact ⟨h_nonneg, h_sum_le⟩
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- The packaged history-level quadratic-width input is monotone in the numeric bound. -/
+lemma historyQuadraticWidthBound_mono {W W' : ℝ}
+    (h_bound : HistoryQuadraticWidthBound A R reg x n ω W) (hW : W ≤ W') :
+    HistoryQuadraticWidthBound A R reg x n ω W' := by
+  exact ⟨h_bound.1, h_bound.2.trans hW⟩
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, build the packaged history-level quadratic-width input from its two component
+facts. -/
+lemma historyQuadraticWidthBound_ae_of_nonneg_and_sum_ae_le {W : ℝ}
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm' reg x (t - 1) (IsAlgEnvSeq.hist A R (t - 1) ω) (A t ω))
+    (h_sum_le : ∀ᵐ ω ∂P, historyQuadraticWidthSum A R reg x n ω ≤ W) :
+    ∀ᵐ ω ∂P, HistoryQuadraticWidthBound A R reg x n ω W := by
+  filter_upwards [h_nonneg, h_sum_le] with ω h_nonnegω h_sum_leω
+  exact historyQuadraticWidthBound_of_nonneg_and_sum_le (A := A) (R := R)
+    (reg := reg) (x := x) (n := n) (ω := ω) h_nonnegω h_sum_leω
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, the packaged history-level quadratic-width input is monotone in the numeric
+bound. -/
+lemma historyQuadraticWidthBound_ae_mono {W W' : ℝ}
+    (h_bound : ∀ᵐ ω ∂P, HistoryQuadraticWidthBound A R reg x n ω W) (hW : W ≤ W') :
+    ∀ᵐ ω ∂P, HistoryQuadraticWidthBound A R reg x n ω W' := by
+  filter_upwards [h_bound] with ω h_boundω
+  exact historyQuadraticWidthBound_mono (A := A) (R := R) (reg := reg) (x := x)
+    (n := n) (ω := ω) h_boundω hW
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- A capped quadratic-width sum bound gives the packaged history-level input whenever every
+positive-time quadratic width form is nonnegative and at most `1`. -/
+lemma historyQuadraticWidthBound_of_capped_sum_le {W : ℝ}
+    (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm' reg x (t - 1) (IsAlgEnvSeq.hist A R (t - 1) ω) (A t ω))
+    (h_le_one : ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm' reg x (t - 1) (IsAlgEnvSeq.hist A R (t - 1) ω) (A t ω) ≤ 1)
+    (h_capped_le : historyCappedQuadraticWidthSum A R reg x n ω ≤ W) :
+    HistoryQuadraticWidthBound A R reg x n ω W := by
+  refine historyQuadraticWidthBound_of_nonneg_and_sum_le (A := A) (R := R)
+    (reg := reg) (x := x) (n := n) (ω := ω) h_nonneg ?_
+  rw [historyQuadraticWidthSum_eq_historyCappedQuadraticWidthSum (A := A) (R := R)
+    (reg := reg) (x := x) (n := n) (ω := ω) h_le_one]
+  exact h_capped_le
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, a capped quadratic-width sum bound gives the packaged history-level input
+whenever every positive-time quadratic width form is almost surely nonnegative and at most `1`. -/
+lemma historyQuadraticWidthBound_ae_of_capped_sum_ae_le {W : ℝ}
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm' reg x (t - 1) (IsAlgEnvSeq.hist A R (t - 1) ω) (A t ω))
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm' reg x (t - 1) (IsAlgEnvSeq.hist A R (t - 1) ω) (A t ω) ≤ 1)
+    (h_capped_le : ∀ᵐ ω ∂P, historyCappedQuadraticWidthSum A R reg x n ω ≤ W) :
+    ∀ᵐ ω ∂P, HistoryQuadraticWidthBound A R reg x n ω W := by
+  filter_upwards [h_nonneg, h_le_one, h_capped_le] with
+    ω h_nonnegω h_le_oneω h_capped_leω
+  exact historyQuadraticWidthBound_of_capped_sum_le (A := A) (R := R) (reg := reg)
+    (x := x) (n := n) (ω := ω) h_nonnegω h_le_oneω h_capped_leω
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The packaged history-level quadratic-width input implies the `widthSqSum` bound consumed by the
