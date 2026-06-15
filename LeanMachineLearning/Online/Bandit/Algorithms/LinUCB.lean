@@ -364,6 +364,14 @@ lemma widthQuadraticForm_eq_widthQuadraticForm' (reg : ℝ) (x : Fin K → Featu
   simp [widthQuadraticForm, widthQuadraticForm',
     designMatrix_eq_designMatrix' (A := A) (R := R) reg x n ω hn]
 
+/-- At positive process times, nonnegativity of the process-level width quadratic form is
+equivalent to nonnegativity of the matching history-level width quadratic form. -/
+lemma widthQuadraticForm_nonneg_iff_widthQuadraticForm' (reg : ℝ) (x : Fin K → Feature d)
+    (a : Fin K) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
+    0 ≤ widthQuadraticForm A reg x a n ω ↔
+      0 ≤ widthQuadraticForm' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) a := by
+  rw [widthQuadraticForm_eq_widthQuadraticForm' (A := A) (R := R) reg x a n ω hn]
+
 lemma width_eq_width' (reg : ℝ) (x : Fin K → Feature d)
     (a : Fin K) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
     width A reg x a n ω = width' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) a := by
