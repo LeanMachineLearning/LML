@@ -378,6 +378,18 @@ lemma width_eq_width' (reg : ℝ) (x : Fin K → Feature d)
   simp [width, width', widthQuadraticForm_eq_widthQuadraticForm' (A := A) (R := R) reg x a n
     ω hn]
 
+/-- At positive process times, squaring the process-level width recovers the matching history-level
+quadratic form when that history-level quadratic form is nonnegative. -/
+lemma width_sq_eq_widthQuadraticForm' (reg : ℝ) (x : Fin K → Feature d)
+    (a : Fin K) (n : ℕ) (ω : Ω) (hn : n ≠ 0)
+    (h_nonneg :
+      0 ≤ widthQuadraticForm' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) a) :
+    width A reg x a n ω ^ 2 =
+      widthQuadraticForm' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) a := by
+  rw [width_eq_width' (A := A) (R := R) reg x a n ω hn]
+  exact width'_sq_eq_quadratic_form reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) a
+    h_nonneg
+
 lemma index_eq_index' (reg : ℝ) (β : ℕ → ℝ) (x : Fin K → Feature d)
     (a : Fin K) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
     index A R reg β x a n ω =
