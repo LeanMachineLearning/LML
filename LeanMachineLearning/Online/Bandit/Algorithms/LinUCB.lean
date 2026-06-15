@@ -390,6 +390,18 @@ lemma width_sq_eq_widthQuadraticForm' (reg : ℝ) (x : Fin K → Feature d)
   exact width'_sq_eq_quadratic_form reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) a
     h_nonneg
 
+/-- At positive process times, advancing `widthSqSum` adds the matching history-level quadratic
+form when that history-level quadratic form is nonnegative. -/
+lemma widthSqSum_succ_eq_add_widthQuadraticForm' (reg : ℝ) (x : Fin K → Feature d)
+    (n : ℕ) (ω : Ω) (hn : n ≠ 0)
+    (h_nonneg :
+      0 ≤ widthQuadraticForm' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) (A n ω)) :
+    widthSqSum A reg x (n + 1) ω =
+      widthSqSum A reg x n ω +
+        widthQuadraticForm' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) (A n ω) := by
+  rw [widthSqSum_succ_of_ne_zero (A := A) (reg := reg) (x := x) (n := n) (ω := ω) hn]
+  rw [width_sq_eq_widthQuadraticForm' (A := A) (R := R) reg x (A n ω) n ω hn h_nonneg]
+
 lemma index_eq_index' (reg : ℝ) (β : ℕ → ℝ) (x : Fin K → Feature d)
     (a : Fin K) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
     index A R reg β x a n ω =
