@@ -62,6 +62,14 @@ noncomputable def width' (reg : ℝ) (x : Fin K → Feature d)
     (n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fin K) : ℝ :=
   √(widthQuadraticForm' reg x n h a)
 
+/-- Squaring the history-level LinUCB width recovers its quadratic form, provided that quadratic
+form is nonnegative. -/
+lemma width'_sq_eq_quadratic_form (reg : ℝ) (x : Fin K → Feature d)
+    (n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fin K)
+    (h_nonneg : 0 ≤ widthQuadraticForm' reg x n h a) :
+    width' reg x n h a ^ 2 = widthQuadraticForm' reg x n h a := by
+  simp [width', Real.sq_sqrt h_nonneg]
+
 /-- LinUCB optimistic index of an arm.
 
 The parameter `β` is a confidence-radius schedule. Since `h : Iic n → Fin K × ℝ`
