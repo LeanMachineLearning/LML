@@ -67,7 +67,7 @@ lemma MeasurableEquiv.coe_refl {α : Type*} {mα : MeasurableSpace α} :
     (MeasurableEquiv.refl α : α → α) = id := rfl
 
 set_option backward.isDefEq.respectTransparency false in
-theorem hasLaw_Iic_of_forall_hasCondDistrib' [∀ n, StandardBorelSpace (X n)] [∀ n, Nonempty (X n)]
+lemma hasLaw_Iic_of_forall_hasCondDistrib' [∀ n, StandardBorelSpace (X n)] [∀ n, Nonempty (X n)]
     {Y : (n : ℕ) → Ω → X n} (h0 : HasLaw (Y 0) μ₀ P) {N n : ℕ}
     (h_condDistrib : ∀ n < N, HasCondDistrib (Y (n + 1)) (fun ω ↦ fun i : Iic n ↦ Y i ω) (κ n) P)
     (hn : n ≤ N) :
@@ -121,7 +121,7 @@ theorem hasLaw_Iic_of_forall_hasCondDistrib' [∀ n, StandardBorelSpace (X n)] [
     congr
     simp [MeasurableEquiv.coe_refl]
 
-theorem hasLaw_Iic_of_forall_hasCondDistrib [∀ n, StandardBorelSpace (X n)] [∀ n, Nonempty (X n)]
+lemma hasLaw_Iic_of_forall_hasCondDistrib [∀ n, StandardBorelSpace (X n)] [∀ n, Nonempty (X n)]
     {Y : (n : ℕ) → Ω → X n} (h0 : HasLaw (Y 0) μ₀ P)
     (h_condDistrib : ∀ n, HasCondDistrib (Y (n + 1)) (fun ω ↦ fun i : Iic n ↦ Y i ω) (κ n) P)
     (n : ℕ) :
@@ -136,7 +136,7 @@ lemma trajMeasure_map_frestrictLe (n : ℕ) :
   rw [trajMeasure, ← Measure.deterministic_comp_eq_map (by fun_prop), Measure.comp_assoc,
     Kernel.deterministic_comp_eq_map, traj_map_frestrictLe]
 
-theorem eq_trajMeasure_map_frestrictLe [∀ n, StandardBorelSpace (X n)] [∀ n, Nonempty (X n)]
+lemma eq_trajMeasure_map_frestrictLe [∀ n, StandardBorelSpace (X n)] [∀ n, Nonempty (X n)]
     {Y : (n : ℕ) → Ω → X n}
     (h0 : HasLaw (Y 0) μ₀ P) {N : ℕ}
     (h_condDistrib : ∀ n < N, HasCondDistrib (Y (n + 1)) (fun ω ↦ fun i : Iic n ↦ Y i ω) (κ n) P) :
@@ -146,7 +146,7 @@ theorem eq_trajMeasure_map_frestrictLe [∀ n, StandardBorelSpace (X n)] [∀ n,
 
 -- todo: switch to `HasLaw`
 /-- Uniqueness of `trajMeasure`. -/
-theorem eq_trajMeasure [∀ n, StandardBorelSpace (X n)] [∀ n, Nonempty (X n)]
+lemma eq_trajMeasure [∀ n, StandardBorelSpace (X n)] [∀ n, Nonempty (X n)]
     {Y : (n : ℕ) → Ω → X n} (hY_meas : ∀ n, Measurable (Y n))
     (h0 : HasLaw (Y 0) μ₀ P)
     (h_condDistrib : ∀ n, HasCondDistrib (Y (n + 1)) (fun ω ↦ fun i : Iic n ↦ Y i ω) (κ n) P) :

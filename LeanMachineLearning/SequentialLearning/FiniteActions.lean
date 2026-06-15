@@ -641,7 +641,7 @@ lemma measurableSet_stepsUntil_eq [MeasurableSingletonClass 𝓐]
   exact measurable_comap_indicator_stepsUntil_eq hA hR' a m n
 
 /-- `stepsUntil a m` is a stopping time with respect to the filtration `filtrationAction`. -/
-theorem isStoppingTime_stepsUntil_filtrationAction [MeasurableSingletonClass 𝓐]
+lemma isStoppingTime_stepsUntil_filtrationAction [MeasurableSingletonClass 𝓐]
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : 𝓐) (m : ℕ) :
     IsStoppingTime (IsAlgEnvSeq.filtrationAction hA hR') (stepsUntil A a m) := by
   refine isStoppingTime_of_measurableSet_eq fun n ↦ ?_
@@ -980,7 +980,7 @@ section CopiedFromPR
 
 open Set
 
-theorem _root_.MeasureTheory.StronglyMeasurable.div₀' {𝓐 β : Type*}
+lemma _root_.MeasureTheory.StronglyMeasurable.div₀' {𝓐 β : Type*}
     {m𝓐 : MeasurableSpace 𝓐} [TopologicalSpace β]
     [GroupWithZero β] [ContinuousMul β] [ContinuousInv₀ β]
     [TopologicalSpace.PseudoMetrizableSpace β]

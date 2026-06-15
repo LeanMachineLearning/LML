@@ -157,7 +157,7 @@ lemma reward_cond_stepsUntil [StandardBorelSpace Ω] [Countable 𝓐]
 
 /-- The conditional distribution of the reward received at the `m`-th pull of action `a`
 given the time at which number of pulls is `m` is the constant kernel with value `ν a`. -/
-theorem condDistrib_rewardByCount_stepsUntil [StandardBorelSpace Ω] [Countable 𝓐]
+lemma condDistrib_rewardByCount_stepsUntil [StandardBorelSpace Ω] [Countable 𝓐]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : 𝓐) (m : ℕ) (hm : m ≠ 0) :
     condDistrib (rewardByCount A R a m) (fun ω ↦ stepsUntil A a m ω.1) 𝔓
       =ᵐ[(𝔓).map (fun ω ↦ stepsUntil A a m ω.1)] Kernel.const _ (ν a) := by

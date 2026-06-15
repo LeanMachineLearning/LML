@@ -212,7 +212,7 @@ lemma FiniteMeasure.sub_def (μ ν : FiniteMeasure α) :
   rfl
 
 @[simp, norm_cast]
-theorem FiniteMeasure.toMeasure_sub (μ ν : FiniteMeasure α) : ↑(μ - ν) = (↑μ - ↑ν : Measure α) :=
+lemma FiniteMeasure.toMeasure_sub (μ ν : FiniteMeasure α) : ↑(μ - ν) = (↑μ - ↑ν : Measure α) :=
   rfl
 
 instance : CanonicallyOrderedAdd (FiniteMeasure α) where

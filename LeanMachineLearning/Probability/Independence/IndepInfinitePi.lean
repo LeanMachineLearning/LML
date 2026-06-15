@@ -19,7 +19,7 @@ namespace MeasurableSpace
 variable {δ : Type*} {X : δ → Type*} [m : ∀ a, MeasurableSpace (X a)] {α : Type*}
 
 -- Mathlib/MeasureTheory/MeasurableSpace/Constructions.lean
-theorem comap_pi {g : α → ∀ a, X a} : pi.comap g = ⨆ a, (m a).comap (fun x ↦ g x a) := by
+lemma comap_pi {g : α → ∀ a, X a} : pi.comap g = ⨆ a, (m a).comap (fun x ↦ g x a) := by
   simp_rw [pi, comap_iSup, comap_comp, comp_def]
 
 end MeasurableSpace
