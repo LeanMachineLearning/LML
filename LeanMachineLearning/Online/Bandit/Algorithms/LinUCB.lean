@@ -52,10 +52,15 @@ noncomputable def estimatedReward' (reg : ℝ) (x : Fin K → Feature d)
     (n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fin K) : ℝ :=
   dotProduct (thetaHat' reg x n h) (x a)
 
+/-- History-level quadratic form underlying the LinUCB confidence width. -/
+noncomputable def widthQuadraticForm' (reg : ℝ) (x : Fin K → Feature d)
+    (n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fin K) : ℝ :=
+  dotProduct (x a) (Matrix.mulVec (designMatrix' reg x n h)⁻¹ (x a))
+
 /-- History-level elliptical confidence width of an arm. -/
 noncomputable def width' (reg : ℝ) (x : Fin K → Feature d)
     (n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fin K) : ℝ :=
-  √(dotProduct (x a) (Matrix.mulVec (designMatrix' reg x n h)⁻¹ (x a)))
+  √(widthQuadraticForm' reg x n h a)
 
 /-- LinUCB optimistic index of an arm.
 
@@ -344,11 +349,18 @@ lemma estimatedReward_eq_estimatedReward' (reg : ℝ) (x : Fin K → Feature d)
       estimatedReward' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) a := by
   simp [estimatedReward, estimatedReward', thetaHat_eq_thetaHat' (A := A) (R := R) reg x n ω hn]
 
+lemma widthQuadraticForm_eq_widthQuadraticForm' (reg : ℝ) (x : Fin K → Feature d)
+    (a : Fin K) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
+    widthQuadraticForm A reg x a n ω =
+      widthQuadraticForm' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) a := by
+  simp [widthQuadraticForm, widthQuadraticForm',
+    designMatrix_eq_designMatrix' (A := A) (R := R) reg x n ω hn]
+
 lemma width_eq_width' (reg : ℝ) (x : Fin K → Feature d)
     (a : Fin K) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
     width A reg x a n ω = width' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) a := by
-  simp [width, widthQuadraticForm, width',
-    designMatrix_eq_designMatrix' (A := A) (R := R) reg x n ω hn]
+  simp [width, width', widthQuadraticForm_eq_widthQuadraticForm' (A := A) (R := R) reg x a n
+    ω hn]
 
 lemma index_eq_index' (reg : ℝ) (β : ℕ → ℝ) (x : Fin K → Feature d)
     (a : Fin K) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
