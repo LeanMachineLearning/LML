@@ -445,6 +445,78 @@ lemma widthQuadraticForm_nonneg_iff_widthQuadraticForm' (reg : ℝ) (x : Fin K �
       0 ≤ widthQuadraticForm' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) a := by
   rw [widthQuadraticForm_eq_widthQuadraticForm' (A := A) (R := R) reg x a n ω hn]
 
+/-- At positive process times, the process-level quadratic width form is at most `1` iff the
+matching history-level quadratic width form is at most `1`. -/
+lemma widthQuadraticForm_le_one_iff_widthQuadraticForm' (reg : ℝ) (x : Fin K → Feature d)
+    (a : Fin K) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
+    widthQuadraticForm A reg x a n ω ≤ 1 ↔
+      widthQuadraticForm' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) a ≤ 1 := by
+  rw [widthQuadraticForm_eq_widthQuadraticForm' (A := A) (R := R) reg x a n ω hn]
+
+/-- The all-positive-times process-level nonnegativity assumption is equivalent to the matching
+history-level nonnegativity assumption. -/
+lemma widthQuadraticForm_all_nonneg_iff_history (reg : ℝ) (x : Fin K → Feature d)
+    (n : ℕ) (ω : Ω) :
+    (∀ t, t ∈ range n → t ≠ 0 → 0 ≤ widthQuadraticForm A reg x (A t ω) t ω) ↔
+      ∀ t, t ∈ range n → t ≠ 0 →
+        0 ≤ widthQuadraticForm' reg x (t - 1) (IsAlgEnvSeq.hist A R (t - 1) ω) (A t ω) := by
+  constructor
+  · intro h t ht ht0
+    exact (widthQuadraticForm_nonneg_iff_widthQuadraticForm' (A := A) (R := R) reg x
+      (A t ω) t ω ht0).1 (h t ht ht0)
+  · intro h t ht ht0
+    exact (widthQuadraticForm_nonneg_iff_widthQuadraticForm' (A := A) (R := R) reg x
+      (A t ω) t ω ht0).2 (h t ht ht0)
+
+/-- The all-positive-times process-level `≤ 1` assumption is equivalent to the matching
+history-level `≤ 1` assumption. -/
+lemma widthQuadraticForm_all_le_one_iff_history (reg : ℝ) (x : Fin K → Feature d)
+    (n : ℕ) (ω : Ω) :
+    (∀ t, t ∈ range n → t ≠ 0 → widthQuadraticForm A reg x (A t ω) t ω ≤ 1) ↔
+      ∀ t, t ∈ range n → t ≠ 0 →
+        widthQuadraticForm' reg x (t - 1) (IsAlgEnvSeq.hist A R (t - 1) ω) (A t ω) ≤ 1 := by
+  constructor
+  · intro h t ht ht0
+    exact (widthQuadraticForm_le_one_iff_widthQuadraticForm' (A := A) (R := R) reg x
+      (A t ω) t ω ht0).1 (h t ht ht0)
+  · intro h t ht ht0
+    exact (widthQuadraticForm_le_one_iff_widthQuadraticForm' (A := A) (R := R) reg x
+      (A t ω) t ω ht0).2 (h t ht ht0)
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, process-level all-positive-times nonnegativity is equivalent to the matching
+history-level nonnegativity assumption. -/
+lemma widthQuadraticForm_ae_all_nonneg_iff_history (reg : ℝ) (x : Fin K → Feature d)
+    (n : ℕ) :
+    (∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω) ↔
+      ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+        0 ≤ widthQuadraticForm' reg x (t - 1) (IsAlgEnvSeq.hist A R (t - 1) ω) (A t ω) := by
+  constructor
+  · intro h
+    filter_upwards [h] with ω hω
+    exact (widthQuadraticForm_all_nonneg_iff_history (A := A) (R := R) reg x n ω).1 hω
+  · intro h
+    filter_upwards [h] with ω hω
+    exact (widthQuadraticForm_all_nonneg_iff_history (A := A) (R := R) reg x n ω).2 hω
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, the process-level all-positive-times `≤ 1` assumption is equivalent to the
+matching history-level `≤ 1` assumption. -/
+lemma widthQuadraticForm_ae_all_le_one_iff_history (reg : ℝ) (x : Fin K → Feature d)
+    (n : ℕ) :
+    (∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1) ↔
+      ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+        widthQuadraticForm' reg x (t - 1) (IsAlgEnvSeq.hist A R (t - 1) ω) (A t ω) ≤ 1 := by
+  constructor
+  · intro h
+    filter_upwards [h] with ω hω
+    exact (widthQuadraticForm_all_le_one_iff_history (A := A) (R := R) reg x n ω).1 hω
+  · intro h
+    filter_upwards [h] with ω hω
+    exact (widthQuadraticForm_all_le_one_iff_history (A := A) (R := R) reg x n ω).2 hω
+
 lemma width_eq_width' (reg : ℝ) (x : Fin K → Feature d)
     (a : Fin K) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
     width A reg x a n ω = width' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) a := by
@@ -572,6 +644,32 @@ lemma cappedQuadraticWidthSum_eq_historyCappedQuadraticWidthSum (reg : ℝ)
   · rw [if_neg ht0, if_neg ht0]
     exact congrArg (fun q : ℝ ↦ min 1 q)
       (widthQuadraticForm_eq_widthQuadraticForm' (A := A) (R := R) reg x (A t ω) t ω ht0)
+
+/-- A process-level capped quadratic-width sum bound is equivalent to the matching history-level
+capped quadratic-width sum bound. -/
+lemma cappedQuadraticWidthSum_le_iff_historyCappedQuadraticWidthSum_le
+    (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (ω : Ω) (W : ℝ) :
+    cappedQuadraticWidthSum A reg x n ω ≤ W ↔
+      historyCappedQuadraticWidthSum A R reg x n ω ≤ W := by
+  rw [cappedQuadraticWidthSum_eq_historyCappedQuadraticWidthSum (A := A) (R := R)
+    reg x n ω]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, a process-level capped quadratic-width sum bound is equivalent to the matching
+history-level capped quadratic-width sum bound. -/
+lemma cappedQuadraticWidthSum_ae_le_iff_historyCappedQuadraticWidthSum_ae_le
+    (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (W : ℝ) :
+    (∀ᵐ ω ∂P, cappedQuadraticWidthSum A reg x n ω ≤ W) ↔
+      ∀ᵐ ω ∂P, historyCappedQuadraticWidthSum A R reg x n ω ≤ W := by
+  constructor
+  · intro h
+    filter_upwards [h] with ω hω
+    exact (cappedQuadraticWidthSum_le_iff_historyCappedQuadraticWidthSum_le
+      (A := A) (R := R) reg x n ω W).1 hω
+  · intro h
+    filter_upwards [h] with ω hω
+    exact (cappedQuadraticWidthSum_le_iff_historyCappedQuadraticWidthSum_le
+      (A := A) (R := R) reg x n ω W).2 hω
 
 /-- If every positive-time history-level quadratic width form is at most `1`, then the uncapped and
 capped history-level accumulators agree. -/
