@@ -68,7 +68,7 @@ noncomputable
 def TS.policy (hK : 0 < K) (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × Fin K) ℝ)
     [IsMarkovKernel κ] (n : ℕ) : Kernel (Iic n → (Fin K) × ℝ) (Fin K) :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  (IT.bayesTrajMeasurePosterior Q κ (uniformAlgorithm hK) n).map (bestAction κ id)
+  (IT.bayesTrajMeasurePosterior Q κ uniformAlgorithm n).map (bestAction κ id)
 
 instance {hK : 0 < K} {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × Fin K) ℝ}
     [IsMarkovKernel κ] {n : ℕ} : IsMarkovKernel (TS.policy hK Q κ n) :=
@@ -113,13 +113,13 @@ lemma hasCondDistrib_action (hK : 0 < K) (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm
     have hm : Measurable (bestAction κ id) := by fun_prop
     calc
       _ =ᵐ[P.map (IsAlgEnvSeq.hist A R n)]
-          (IT.bayesTrajMeasurePosterior Q κ (uniformAlgorithm hK) n).map (bestAction κ id) :=
+          (IT.bayesTrajMeasurePosterior Q κ uniformAlgorithm n).map (bestAction κ id) :=
           (h.hasCondDistrib_action' n).condDistrib_eq
       _ =ᵐ[P.map (IsAlgEnvSeq.hist A R n)]
           (condDistrib E (IsAlgEnvSeq.hist A R n) P).map (bestAction κ id) := by
           filter_upwards [(h.hasCondDistrib_env_hist
-            (IT.isBayesAlgEnvSeq_bayesTrajMeasure Q κ (uniformAlgorithm hK))
-            (absolutelyContinuous_uniformAlgorithm hK _) n).condDistrib_eq] with _ hc
+            (IT.isBayesAlgEnvSeq_bayesTrajMeasure Q κ uniformAlgorithm)
+            absolutelyContinuous_uniformAlgorithm n).condDistrib_eq] with _ hc
           simp_rw [Kernel.map_apply _ hm, IT.bayesTrajMeasurePosterior, hc]
       _ =ᵐ[P.map (IsAlgEnvSeq.hist A R n)]
           condDistrib (bestAction κ E) (IsAlgEnvSeq.hist A R n) P :=

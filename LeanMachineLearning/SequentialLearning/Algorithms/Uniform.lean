@@ -7,6 +7,7 @@ module
 
 public import LeanMachineLearning.MeasureTheory.Measure.AbsolutelyContinuous
 public import LeanMachineLearning.SequentialLearning.AlgorithmDensity
+public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling
 
 /-! # The Uniform algorithm
 
@@ -14,11 +15,11 @@ An algorithm that chooses actions uniformly at random in every situation.
 
 ## Main definitions
 
-* `uniformAlgorithm hK`: a uniform algorithm with actions in `Fin K` given `hK : 0 < K`.
+* `uniformAlgorithm`: a uniform algorithm with actions in a finite non-empty type `𝓐`.
 
 ## Main results
 
-* `absolutelyContinuous_uniformAlgorithm`: every algorithm with actions in `Fin K` is absolutely
+* `absolutelyContinuous_uniformAlgorithm`: every algorithm with actions in `𝓐` is absolutely
   continuous with respect to the uniform algorithm with the same type of feedback.
 -/
 
@@ -28,24 +29,19 @@ open MeasureTheory ProbabilityTheory Learning
 
 open scoped Algorithm
 
-namespace Bandits
+namespace Learning
 
-variable {𝓨 : Type*} {m𝓨 : MeasurableSpace 𝓨} {K : ℕ}
+variable {𝓐 𝓨 : Type*} {m𝓐 : MeasurableSpace 𝓐} {m𝓨 : MeasurableSpace 𝓨}
 
 /-- The Uniform algorithm: actions are chosen uniformly at random. -/
 noncomputable
-def uniformAlgorithm (hK : 0 < K) : Algorithm (Fin K) 𝓨 :=
-  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  have : IsProbabilityMeasure (uniformOn (Set.univ : Set (Fin K))) :=
-    isProbabilityMeasure_uniformOn Set.finite_univ Set.univ_nonempty
-  { policy _ := Kernel.const _ (uniformOn Set.univ)
-    p0 := uniformOn Set.univ }
+def uniformAlgorithm [Finite 𝓐] [Nonempty 𝓐] : Algorithm 𝓐 𝓨 := randomSampling (uniformOn Set.univ)
 
-lemma absolutelyContinuous_uniformAlgorithm (hK : 0 < K) (alg : Algorithm (Fin K) 𝓨) :
-    alg ≪ₐ uniformAlgorithm hK where
+lemma absolutelyContinuous_uniformAlgorithm [Finite 𝓐] [Nonempty 𝓐] {alg : Algorithm 𝓐 𝓨} :
+    alg ≪ₐ uniformAlgorithm where
   p0 := Measure.absolutelyContinuous_of_measure_singleton_ne_zero
     (by simp [uniformAlgorithm, uniformOn, ← pos_iff_ne_zero, cond_pos_of_inter_ne_zero])
   policy n h := Measure.absolutelyContinuous_of_measure_singleton_ne_zero
     (by simp [uniformAlgorithm, uniformOn, ← pos_iff_ne_zero, cond_pos_of_inter_ne_zero])
 
-end Bandits
+end Learning
