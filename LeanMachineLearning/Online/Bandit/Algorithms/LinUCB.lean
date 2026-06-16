@@ -374,6 +374,83 @@ lemma widthSqSum_ae_le_of_capped_quadratic_width_sum_ae_le {W : ℝ}
   exact widthSqSum_le_of_capped_quadratic_width_sum_le (A := A) (reg := reg) (x := x)
     (n := n) (ω := ω) h_nonnegω h_le_oneω h_capped_leω
 
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- The process-level capped quadratic-width input expected from an elliptical-potential argument.
+
+It packages the three facts needed to turn a capped process-level quadratic-width estimate into the
+`widthSqSum` estimate used by the regret chain:
+
+* each positive-time process-level quadratic width form is nonnegative;
+* each positive-time process-level quadratic width form is at most `1`;
+* their capped process-level accumulated sum is bounded by `W`. -/
+def CappedQuadraticWidthBound (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) (W : ℝ) : Prop :=
+  (∀ t, t ∈ range n → t ≠ 0 → 0 ≤ widthQuadraticForm A reg x (A t ω) t ω) ∧
+    (∀ t, t ∈ range n → t ≠ 0 → widthQuadraticForm A reg x (A t ω) t ω ≤ 1) ∧
+      cappedQuadraticWidthSum A reg x n ω ≤ W
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Build the packaged process-level capped quadratic-width input from its component facts. -/
+lemma cappedQuadraticWidthBound_of_nonneg_le_one_and_sum_le {W : ℝ}
+    (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (h_sum_le : cappedQuadraticWidthSum A reg x n ω ≤ W) :
+    CappedQuadraticWidthBound A reg x n ω W := by
+  exact ⟨h_nonneg, h_le_one, h_sum_le⟩
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- The packaged process-level capped quadratic-width input is monotone in the numeric bound. -/
+lemma cappedQuadraticWidthBound_mono {W W' : ℝ}
+    (h_bound : CappedQuadraticWidthBound A reg x n ω W) (hW : W ≤ W') :
+    CappedQuadraticWidthBound A reg x n ω W' := by
+  exact ⟨h_bound.1, h_bound.2.1, h_bound.2.2.trans hW⟩
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, build the packaged process-level capped quadratic-width input from its component
+facts. -/
+lemma cappedQuadraticWidthBound_ae_of_nonneg_le_one_and_sum_ae_le {W : ℝ}
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (h_sum_le : ∀ᵐ ω ∂P, cappedQuadraticWidthSum A reg x n ω ≤ W) :
+    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W := by
+  filter_upwards [h_nonneg, h_le_one, h_sum_le] with
+    ω h_nonnegω h_le_oneω h_sum_leω
+  exact cappedQuadraticWidthBound_of_nonneg_le_one_and_sum_le (A := A) (reg := reg)
+    (x := x) (n := n) (ω := ω) h_nonnegω h_le_oneω h_sum_leω
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, the packaged process-level capped quadratic-width input is monotone in the
+numeric bound. -/
+lemma cappedQuadraticWidthBound_ae_mono {W W' : ℝ}
+    (h_bound : ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W) (hW : W ≤ W') :
+    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W' := by
+  filter_upwards [h_bound] with ω h_boundω
+  exact cappedQuadraticWidthBound_mono (A := A) (reg := reg) (x := x) (n := n)
+    (ω := ω) h_boundω hW
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- The packaged process-level capped quadratic-width input implies the `widthSqSum` bound consumed
+by the regret chain. -/
+lemma widthSqSum_le_of_capped_quadratic_width_bound {W : ℝ}
+    (h_bound : CappedQuadraticWidthBound A reg x n ω W) :
+    widthSqSum A reg x n ω ≤ W := by
+  exact widthSqSum_le_of_capped_quadratic_width_sum_le (A := A) (reg := reg) (x := x)
+    (n := n) (ω := ω) h_bound.1 h_bound.2.1 h_bound.2.2
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, the packaged process-level capped quadratic-width input implies the `widthSqSum`
+bound consumed by the regret chain. -/
+lemma widthSqSum_ae_le_of_capped_quadratic_width_bound_ae {W : ℝ}
+    (h_bound : ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W) :
+    ∀ᵐ ω ∂P, widthSqSum A reg x n ω ≤ W := by
+  filter_upwards [h_bound] with ω h_boundω
+  exact widthSqSum_le_of_capped_quadratic_width_bound (A := A) (reg := reg) (x := x)
+    (n := n) (ω := ω) (W := W) h_boundω
+
 /-- The process-level LinUCB optimistic index. -/
 noncomputable def index (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     (reg : ℝ) (β : ℕ → ℝ) (x : Fin K → Feature d) (a : Fin K)
@@ -1380,6 +1457,29 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_quadratic_bound
     (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_best h_arm hβ hβ_mono W
     (widthSqSum_ae_le_of_capped_quadratic_width_sum_ae_le (A := A) (reg := reg)
       (x := x) (n := n) (P := P) (W := W) h_quad_nonneg h_quad_le_one hW)
+
+/-- Almost surely, cumulative regret is bounded by the simplified initial-gap term plus
+`2 * √(n * β n) * √W` whenever the packaged process-level capped quadratic-width input holds
+almost surely.
+
+This is the compact theorem a process-level elliptical-potential lemma should feed into directly. -/
+lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_quadratic_width_bound
+    [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_best : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      (ν (bestArm ν))[id] ≤ index A R reg β x (bestArm ν) n ω)
+    (h_arm : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      estimatedReward A R reg x (A n ω) n ω -
+        √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
+    (hβ : ∀ t, 0 ≤ β (t + 1)) (hβ_mono : Monotone β) (W : ℝ)
+    (h_bound : ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W) :
+    ∀ᵐ ω ∂P,
+      regret ν A n ω ≤
+        (if n = 0 then 0 else gap ν (A 0 ω)) + 2 * (√((n : ℝ) * β n) * √W) := by
+  exact regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_width_bound (A := A) (R := R)
+    (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_best h_arm hβ hβ_mono W
+    (widthSqSum_ae_le_of_capped_quadratic_width_bound_ae (A := A) (reg := reg)
+      (x := x) (n := n) (P := P) (W := W) h_bound)
 
 end LinUCB
 
