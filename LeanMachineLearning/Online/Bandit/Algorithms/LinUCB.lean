@@ -426,6 +426,66 @@ lemma cappedQuadraticWidthSum_le_ellipticalPotential_zero
     ellipticalPotential_zero (A := A) (reg := reg) (x := x) (ω := ω) hdet]
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- One-step increment of the log-determinant elliptical potential. -/
+noncomputable def ellipticalPotentialIncrement (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
+  ellipticalPotential A reg x (n + 1) ω - ellipticalPotential A reg x n ω
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- If the next capped quadratic width term is bounded by the next log-determinant potential
+increment, then the cumulative capped-sum/log-det inequality advances by one step. -/
+lemma cappedQuadraticWidthSum_succ_le_ellipticalPotential
+    (h_prev : cappedQuadraticWidthSum A reg x n ω ≤ ellipticalPotential A reg x n ω)
+    (h_step :
+      (if n = 0 then 0 else min 1 (widthQuadraticForm A reg x (A n ω) n ω)) ≤
+        ellipticalPotentialIncrement A reg x n ω) :
+    cappedQuadraticWidthSum A reg x (n + 1) ω ≤ ellipticalPotential A reg x (n + 1) ω := by
+  rw [cappedQuadraticWidthSum_succ (A := A) (reg := reg) (x := x) (n := n) (ω := ω)]
+  calc
+    cappedQuadraticWidthSum A reg x n ω +
+        (if n = 0 then 0 else min 1 (widthQuadraticForm A reg x (A n ω) n ω))
+      ≤ ellipticalPotential A reg x n ω + ellipticalPotentialIncrement A reg x n ω := by
+        exact add_le_add h_prev h_step
+    _ = ellipticalPotential A reg x (n + 1) ω := by
+        simp [ellipticalPotentialIncrement]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- A per-step bound by log-determinant potential increments implies the cumulative
+elliptical-potential inequality. This is the induction shell for the future determinant-update
+proof. -/
+lemma cappedQuadraticWidthSum_le_ellipticalPotential_of_step_le
+    (hdet : designDet A reg x 0 ω ≠ 0) :
+    (∀ t, t ∈ range n →
+      (if t = 0 then 0 else min 1 (widthQuadraticForm A reg x (A t ω) t ω)) ≤
+        ellipticalPotentialIncrement A reg x t ω) →
+    cappedQuadraticWidthSum A reg x n ω ≤ ellipticalPotential A reg x n ω := by
+  induction n with
+  | zero =>
+      intro _
+      exact cappedQuadraticWidthSum_le_ellipticalPotential_zero (A := A) (reg := reg)
+        (x := x) (ω := ω) hdet
+  | succ n ih =>
+      intro h_step
+      refine cappedQuadraticWidthSum_succ_le_ellipticalPotential (A := A) (reg := reg)
+        (x := x) (n := n) (ω := ω) ?_ ?_
+      · exact ih fun t ht ↦ h_step t
+          (mem_range.mpr (Nat.lt_trans (mem_range.mp ht) (Nat.lt_succ_self n)))
+      · exact h_step n (by simp)
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, a per-step bound by log-determinant potential increments implies the cumulative
+elliptical-potential inequality. -/
+lemma cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_step_ae_le
+    (hdet : ∀ᵐ ω ∂P, designDet A reg x 0 ω ≠ 0)
+    (h_step : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      (if t = 0 then 0 else min 1 (widthQuadraticForm A reg x (A t ω) t ω)) ≤
+        ellipticalPotentialIncrement A reg x t ω) :
+    ∀ᵐ ω ∂P, cappedQuadraticWidthSum A reg x n ω ≤ ellipticalPotential A reg x n ω := by
+  filter_upwards [hdet, h_step] with ω hdetω h_stepω
+  exact cappedQuadraticWidthSum_le_ellipticalPotential_of_step_le (A := A) (reg := reg)
+    (x := x) (n := n) (ω := ω) hdetω h_stepω
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The process-level capped quadratic-width input expected from an elliptical-potential argument.
 
 It packages the three facts needed to turn a capped process-level quadratic-width estimate into the
@@ -542,6 +602,26 @@ lemma cappedQuadraticWidthBound_ae_of_ellipticalPotential_ae_le_bound {W : ℝ}
     ω h_nonnegω h_le_oneω h_ellipticalω h_potential_leω
   exact cappedQuadraticWidthBound_of_ellipticalPotential_le_bound (A := A) (reg := reg)
     (x := x) (n := n) (ω := ω) h_nonnegω h_le_oneω h_ellipticalω h_potential_leω
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, per-step bounds by log-determinant potential increments and a final constant
+bound on the potential give the packaged process-level capped quadratic-width input. -/
+lemma cappedQuadraticWidthBound_ae_of_ellipticalPotential_step_ae_le_bound {W : ℝ}
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (hdet : ∀ᵐ ω ∂P, designDet A reg x 0 ω ≠ 0)
+    (h_step : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      (if t = 0 then 0 else min 1 (widthQuadraticForm A reg x (A t ω) t ω)) ≤
+        ellipticalPotentialIncrement A reg x t ω)
+    (h_potential_le : ∀ᵐ ω ∂P, ellipticalPotential A reg x n ω ≤ W) :
+    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W := by
+  exact cappedQuadraticWidthBound_ae_of_ellipticalPotential_ae_le_bound (A := A)
+    (reg := reg) (x := x) (n := n) (P := P) (W := W) h_nonneg h_le_one
+    (cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_step_ae_le (A := A)
+      (reg := reg) (x := x) (n := n) (P := P) hdet h_step)
+    h_potential_le
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The packaged process-level capped quadratic-width input implies the `widthSqSum` bound consumed
