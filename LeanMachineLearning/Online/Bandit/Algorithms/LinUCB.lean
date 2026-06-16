@@ -401,10 +401,29 @@ lemma designDetRatio_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
   simp [designDetRatio, hdet]
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- One-step determinant ratio `det(V_{n+1}) / det(V_n)` for the process-level design matrices.
+
+This is the determinant-ratio target used by the matrix-determinant part of the elliptical
+potential lemma. -/
+noncomputable def designDetStepRatio (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
+  designDet A reg x (n + 1) ω / designDet A reg x n ω
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The log-determinant expression that appears in the elliptical-potential lemma. -/
 noncomputable def ellipticalPotential (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
   2 * Real.log (designDetRatio A reg x n ω)
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- One-step log-determinant potential term based on `det(V_{n+1}) / det(V_n)`.
+
+The future determinant-update proof should naturally establish the capped quadratic-width term is
+bounded by this quantity. A separate log/telescoping bridge then connects this one-step quantity to
+`ellipticalPotentialIncrement`. -/
+noncomputable def ellipticalPotentialStep (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
+  2 * Real.log (designDetStepRatio A reg x n ω)
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- At horizon zero, the log-determinant potential is zero when the initial design determinant is
@@ -484,6 +503,30 @@ lemma cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_step_ae_le
   filter_upwards [hdet, h_step] with ω hdetω h_stepω
   exact cappedQuadraticWidthSum_le_ellipticalPotential_of_step_le (A := A) (reg := reg)
     (x := x) (n := n) (ω := ω) hdetω h_stepω
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, per-step bounds by the one-step determinant-ratio potential imply the
+cumulative capped-sum/log-det inequality, provided the one-step determinant-ratio potential is
+bounded by the corresponding cumulative-potential increment.
+
+This separates the future elliptical-potential proof into two local obligations:
+
+* a matrix-determinant update bounding the selected arm's capped quadratic form by
+  `ellipticalPotentialStep`;
+* a log/telescoping bridge from `ellipticalPotentialStep` to `ellipticalPotentialIncrement`. -/
+lemma cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_stepPotential_ae_le
+    (hdet : ∀ᵐ ω ∂P, designDet A reg x 0 ω ≠ 0)
+    (h_step : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      (if t = 0 then 0 else min 1 (widthQuadraticForm A reg x (A t ω) t ω)) ≤
+        ellipticalPotentialStep A reg x t ω)
+    (h_step_le_increment : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      ellipticalPotentialStep A reg x t ω ≤ ellipticalPotentialIncrement A reg x t ω) :
+    ∀ᵐ ω ∂P, cappedQuadraticWidthSum A reg x n ω ≤ ellipticalPotential A reg x n ω := by
+  refine cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_step_ae_le (A := A)
+    (reg := reg) (x := x) (n := n) (P := P) hdet ?_
+  filter_upwards [h_step, h_step_le_increment] with ω h_stepω h_step_le_incrementω
+  intro t ht
+  exact (h_stepω t ht).trans (h_step_le_incrementω t ht)
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The process-level capped quadratic-width input expected from an elliptical-potential argument.
@@ -621,6 +664,33 @@ lemma cappedQuadraticWidthBound_ae_of_ellipticalPotential_step_ae_le_bound {W : 
     (reg := reg) (x := x) (n := n) (P := P) (W := W) h_nonneg h_le_one
     (cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_step_ae_le (A := A)
       (reg := reg) (x := x) (n := n) (P := P) hdet h_step)
+    h_potential_le
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, one-step determinant-ratio potential bounds, their bridge to cumulative
+potential increments, and a final constant bound on the potential give the packaged process-level
+capped quadratic-width input.
+
+This is the packaged form of the determinant-update interface: once the true matrix determinant
+lemma proves the `h_step` assumption and the log/telescoping algebra proves
+`h_step_le_increment`, the existing regret chain can consume the resulting bound. -/
+lemma cappedQuadraticWidthBound_ae_of_ellipticalPotential_stepPotential_ae_le_bound {W : ℝ}
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (hdet : ∀ᵐ ω ∂P, designDet A reg x 0 ω ≠ 0)
+    (h_step : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      (if t = 0 then 0 else min 1 (widthQuadraticForm A reg x (A t ω) t ω)) ≤
+        ellipticalPotentialStep A reg x t ω)
+    (h_step_le_increment : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      ellipticalPotentialStep A reg x t ω ≤ ellipticalPotentialIncrement A reg x t ω)
+    (h_potential_le : ∀ᵐ ω ∂P, ellipticalPotential A reg x n ω ≤ W) :
+    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W := by
+  exact cappedQuadraticWidthBound_ae_of_ellipticalPotential_ae_le_bound (A := A)
+    (reg := reg) (x := x) (n := n) (P := P) (W := W) h_nonneg h_le_one
+    (cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_stepPotential_ae_le (A := A)
+      (reg := reg) (x := x) (n := n) (P := P) hdet h_step h_step_le_increment)
     h_potential_le
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
