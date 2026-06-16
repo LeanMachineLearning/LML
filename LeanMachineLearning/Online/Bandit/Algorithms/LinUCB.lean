@@ -8,6 +8,8 @@ module
 public import LeanMachineLearning.Online.Bandit.SumRewards
 public import LeanMachineLearning.SequentialLearning.Deterministic
 public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
+public import Mathlib.Analysis.SpecialFunctions.Log.Deriv
+public import Mathlib.LinearAlgebra.Matrix.SchurComplement
 public import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 
 /-!
@@ -388,6 +390,22 @@ lemma designDet_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
   simp [designDet, designMatrix_zero]
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- The initial design determinant is `reg ^ d`. -/
+lemma designDet_zero_eq_reg_pow (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (ω : Ω) :
+    designDet A reg x 0 ω = reg ^ d := by
+  rw [designDet_zero]
+  simp
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- A nonzero regularization parameter gives a nonzero initial design determinant. -/
+lemma designDet_zero_ne_zero_of_reg_ne_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (ω : Ω) (hreg : reg ≠ 0) :
+    designDet A reg x 0 ω ≠ 0 := by
+  rw [designDet_zero_eq_reg_pow]
+  exact pow_ne_zero d hreg
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- Determinant ratio `det(V_n) / det(V_0)` for the process-level design matrices. -/
 noncomputable def designDetRatio (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
@@ -401,6 +419,15 @@ lemma designDetRatio_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
   simp [designDetRatio, hdet]
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- At horizon zero, the determinant ratio is positive when the initial design determinant is
+nonzero. -/
+lemma designDetRatio_zero_pos (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (ω : Ω) (hdet : designDet A reg x 0 ω ≠ 0) :
+    0 < designDetRatio A reg x 0 ω := by
+  rw [designDetRatio_zero (A := A) (reg := reg) (x := x) (ω := ω) hdet]
+  norm_num
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- One-step determinant ratio `det(V_{n+1}) / det(V_n)` for the process-level design matrices.
 
 This is the determinant-ratio target used by the matrix-determinant part of the elliptical
@@ -410,10 +437,208 @@ noncomputable def designDetStepRatio (A : ℕ → Ω → Fin K) (reg : ℝ)
   designDet A reg x (n + 1) ω / designDet A reg x n ω
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- The scalar determinant appearing in the rank-one determinant update is the quadratic form
+`uᵀ M u`. -/
+lemma det_one_add_replicateRow_mul_matrix_mul_replicateCol
+    (M : Matrix (Fin d) (Fin d) ℝ) (u : Feature d) :
+    (1 + Matrix.replicateRow Unit u * M * Matrix.replicateCol Unit u).det =
+      1 + dotProduct u (Matrix.mulVec M u) := by
+  have hsum :
+      (∑ j, (∑ i, u i * M i j) * u j) =
+        ∑ i, u i * ∑ j, M i j * u j := by
+    calc
+      (∑ j, (∑ i, u i * M i j) * u j)
+          = ∑ j, ∑ i, (u i * M i j) * u j := by
+              simp [Finset.sum_mul]
+      _ = ∑ i, ∑ j, (u i * M i j) * u j := by
+              rw [Finset.sum_comm]
+      _ = ∑ i, u i * ∑ j, M i j * u j := by
+              refine Finset.sum_congr rfl ?_
+              intro i _
+              rw [Finset.mul_sum]
+              refine Finset.sum_congr rfl ?_
+              intro j _
+              ring
+  rw [Matrix.det_unique]
+  simpa [Matrix.mul_apply, Matrix.replicateRow, Matrix.replicateCol, Matrix.mulVec,
+    dotProduct] using hsum
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Process-level matrix determinant update for the LinUCB design matrix.
+
+If `V_n` has nonzero determinant, then the rank-one update
+`V_{n+1} = V_n + x_{A_n} x_{A_n}ᵀ` satisfies
+`det(V_{n+1}) = det(V_n) * (1 + x_{A_n}ᵀ V_n⁻¹ x_{A_n})`. -/
+lemma designDet_succ_eq_mul_one_add_widthQuadraticForm
+    (hdet : designDet A reg x n ω ≠ 0) :
+    designDet A reg x (n + 1) ω =
+      designDet A reg x n ω * (1 + widthQuadraticForm A reg x (A n ω) n ω) := by
+  have hM : IsUnit (designMatrix A reg x n ω).det := by
+    simpa [designDet] using (isUnit_iff_ne_zero.mpr hdet)
+  calc
+    designDet A reg x (n + 1) ω =
+        (designMatrix A reg x n ω +
+          Matrix.vecMulVec (x (A n ω)) (x (A n ω))).det := by
+        simp [designDet, designMatrix_succ]
+    _ = (designMatrix A reg x n ω +
+        Matrix.replicateCol Unit (x (A n ω)) * Matrix.replicateRow Unit (x (A n ω))).det := by
+        rw [Matrix.vecMulVec_eq Unit]
+    _ = (designMatrix A reg x n ω).det *
+        (1 + Matrix.replicateRow Unit (x (A n ω)) *
+          (designMatrix A reg x n ω)⁻¹ * Matrix.replicateCol Unit (x (A n ω))).det := by
+        exact Matrix.det_add_replicateCol_mul_replicateRow (A := designMatrix A reg x n ω)
+          (ι := Unit) hM (x (A n ω)) (x (A n ω))
+    _ = designDet A reg x n ω * (1 + widthQuadraticForm A reg x (A n ω) n ω) := by
+        rw [designDet]
+        congr 1
+        exact det_one_add_replicateRow_mul_matrix_mul_replicateCol
+          (M := (designMatrix A reg x n ω)⁻¹) (u := x (A n ω))
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- If `det(V_n)` is nonzero and the selected quadratic form is nonnegative, then
+`det(V_{n+1})` is nonzero. -/
+lemma designDet_succ_ne_zero_of_widthQuadraticForm_nonneg
+    (hdet : designDet A reg x n ω ≠ 0)
+    (h_nonneg : 0 ≤ widthQuadraticForm A reg x (A n ω) n ω) :
+    designDet A reg x (n + 1) ω ≠ 0 := by
+  rw [designDet_succ_eq_mul_one_add_widthQuadraticForm (A := A) (reg := reg) (x := x)
+    (n := n) (ω := ω) hdet]
+  exact mul_ne_zero hdet (ne_of_gt (by linarith))
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Starting from a nonzero initial determinant, nonnegative selected quadratic forms preserve
+nonzero design determinants up to any fixed time. -/
+lemma designDet_ne_zero_of_initial_and_widthQuadraticForm_nonneg_lt
+    (m : ℕ) (hdet0 : designDet A reg x 0 ω ≠ 0)
+    (h_nonneg : ∀ t, t < m → 0 ≤ widthQuadraticForm A reg x (A t ω) t ω) :
+    designDet A reg x m ω ≠ 0 := by
+  induction m with
+  | zero => exact hdet0
+  | succ m ih =>
+      exact designDet_succ_ne_zero_of_widthQuadraticForm_nonneg (A := A) (reg := reg)
+        (x := x) (n := m) (ω := ω)
+        (ih fun t ht ↦ h_nonneg t (Nat.lt_trans ht (Nat.lt_succ_self m)))
+        (h_nonneg m (Nat.lt_succ_self m))
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Starting from a nonzero initial determinant, nonnegative selected quadratic forms imply that
+all design determinants through horizon `n` are nonzero. -/
+lemma designDet_ne_zero_of_initial_and_widthQuadraticForm_nonneg
+    (hdet0 : designDet A reg x 0 ω ≠ 0)
+    (h_nonneg : ∀ t, t ∈ range n → 0 ≤ widthQuadraticForm A reg x (A t ω) t ω) :
+    ∀ t, t ∈ range (n + 1) → designDet A reg x t ω ≠ 0 := by
+  intro t ht
+  exact designDet_ne_zero_of_initial_and_widthQuadraticForm_nonneg_lt (A := A) (reg := reg)
+    (x := x) (m := t) (ω := ω) hdet0 fun s hs ↦
+      h_nonneg s (mem_range.mpr (Nat.lt_of_lt_of_le hs (Nat.le_of_lt_succ (mem_range.mp ht))))
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, a nonzero initial determinant and nonnegative selected quadratic forms imply
+that all design determinants through horizon `n` are nonzero. -/
+lemma designDet_ae_ne_zero_of_initial_and_widthQuadraticForm_ae_nonneg
+    (hdet0 : ∀ᵐ ω ∂P, designDet A reg x 0 ω ≠ 0)
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω) :
+    ∀ᵐ ω ∂P, ∀ t, t ∈ range (n + 1) → designDet A reg x t ω ≠ 0 := by
+  filter_upwards [hdet0, h_nonneg] with ω hdet0ω h_nonnegω
+  exact designDet_ne_zero_of_initial_and_widthQuadraticForm_nonneg (A := A) (reg := reg)
+    (x := x) (n := n) (ω := ω) hdet0ω h_nonnegω
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- If `det(V_n) ≠ 0`, then the one-step determinant ratio is
+`1 + x_{A_n}ᵀ V_n⁻¹ x_{A_n}`. -/
+lemma designDetStepRatio_eq_one_add_widthQuadraticForm
+    (hdet : designDet A reg x n ω ≠ 0) :
+    designDetStepRatio A reg x n ω =
+      1 + widthQuadraticForm A reg x (A n ω) n ω := by
+  simp [designDetStepRatio,
+    designDet_succ_eq_mul_one_add_widthQuadraticForm (A := A) (reg := reg) (x := x)
+      (n := n) (ω := ω) hdet, hdet]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- The cumulative determinant ratio advances by multiplying by the one-step determinant ratio. -/
+lemma designDetRatio_succ_eq_mul_one_add_widthQuadraticForm
+    (hdet : designDet A reg x n ω ≠ 0) :
+    designDetRatio A reg x (n + 1) ω =
+      designDetRatio A reg x n ω * (1 + widthQuadraticForm A reg x (A n ω) n ω) := by
+  rw [designDetRatio, designDetRatio,
+    designDet_succ_eq_mul_one_add_widthQuadraticForm (A := A) (reg := reg) (x := x)
+      (n := n) (ω := ω) hdet]
+  ring
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Starting from a nonzero initial determinant, nonnegative selected quadratic forms make the
+cumulative determinant ratio positive. -/
+lemma designDetRatio_pos_of_initial_and_widthQuadraticForm_nonneg
+    (hdet0 : designDet A reg x 0 ω ≠ 0)
+    (h_nonneg : ∀ t, t ∈ range n → 0 ≤ widthQuadraticForm A reg x (A t ω) t ω) :
+    0 < designDetRatio A reg x n ω := by
+  induction n with
+  | zero =>
+      exact designDetRatio_zero_pos (A := A) (reg := reg) (x := x) (ω := ω) hdet0
+  | succ n ih =>
+      have hdetn : designDet A reg x n ω ≠ 0 :=
+        designDet_ne_zero_of_initial_and_widthQuadraticForm_nonneg_lt (A := A) (reg := reg)
+          (x := x) (m := n) (ω := ω) hdet0 fun t ht ↦
+            h_nonneg t (mem_range.mpr (Nat.lt_trans ht (Nat.lt_succ_self n)))
+      rw [designDetRatio_succ_eq_mul_one_add_widthQuadraticForm (A := A) (reg := reg)
+        (x := x) (n := n) (ω := ω) hdetn]
+      exact mul_pos
+        (ih fun t ht ↦ h_nonneg t
+          (mem_range.mpr (Nat.lt_trans (mem_range.mp ht) (Nat.lt_succ_self n))))
+        (by linarith [h_nonneg n (by simp)])
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, starting from a nonzero initial determinant, nonnegative selected quadratic
+forms make the cumulative determinant ratio positive. -/
+lemma designDetRatio_ae_pos_of_initial_and_widthQuadraticForm_ae_nonneg
+    (hdet0 : ∀ᵐ ω ∂P, designDet A reg x 0 ω ≠ 0)
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω) :
+    ∀ᵐ ω ∂P, 0 < designDetRatio A reg x n ω := by
+  filter_upwards [hdet0, h_nonneg] with ω hdet0ω h_nonnegω
+  exact designDetRatio_pos_of_initial_and_widthQuadraticForm_nonneg (A := A) (reg := reg)
+    (x := x) (n := n) (ω := ω) hdet0ω h_nonnegω
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, a nonzero regularization parameter and nonnegative selected quadratic forms make
+the cumulative determinant ratio positive. -/
+lemma designDetRatio_ae_pos_of_reg_ne_zero_and_widthQuadraticForm_ae_nonneg
+    (hreg : reg ≠ 0)
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω) :
+    ∀ᵐ ω ∂P, 0 < designDetRatio A reg x n ω := by
+  refine designDetRatio_ae_pos_of_initial_and_widthQuadraticForm_ae_nonneg (A := A)
+    (reg := reg) (x := x) (n := n) (P := P) ?_ h_nonneg
+  exact Filter.Eventually.of_forall fun ω ↦
+    designDet_zero_ne_zero_of_reg_ne_zero (A := A) (reg := reg) (x := x) (ω := ω) hreg
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The log-determinant expression that appears in the elliptical-potential lemma. -/
 noncomputable def ellipticalPotential (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
   2 * Real.log (designDetRatio A reg x n ω)
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- A positive determinant ratio bounded by `D` gives the corresponding log-determinant potential
+bound. -/
+lemma ellipticalPotential_le_two_mul_log_of_designDetRatio_le {D : ℝ}
+    (h_ratio_pos : 0 < designDetRatio A reg x n ω)
+    (h_ratio_le : designDetRatio A reg x n ω ≤ D) :
+    ellipticalPotential A reg x n ω ≤ 2 * Real.log D := by
+  rw [ellipticalPotential]
+  exact mul_le_mul_of_nonneg_left (Real.log_le_log h_ratio_pos h_ratio_le) (by norm_num)
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, a positive determinant ratio bounded by `D` gives the corresponding
+log-determinant potential bound. -/
+lemma ellipticalPotential_ae_le_two_mul_log_of_designDetRatio_ae_le {D : ℝ}
+    (h_ratio_pos : ∀ᵐ ω ∂P, 0 < designDetRatio A reg x n ω)
+    (h_ratio_le : ∀ᵐ ω ∂P, designDetRatio A reg x n ω ≤ D) :
+    ∀ᵐ ω ∂P, ellipticalPotential A reg x n ω ≤ 2 * Real.log D := by
+  filter_upwards [h_ratio_pos, h_ratio_le] with ω h_ratio_posω h_ratio_leω
+  exact ellipticalPotential_le_two_mul_log_of_designDetRatio_le (A := A) (reg := reg)
+    (x := x) (n := n) (ω := ω) h_ratio_posω h_ratio_leω
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- One-step log-determinant potential term based on `det(V_{n+1}) / det(V_n)`.
@@ -424,6 +649,70 @@ bounded by this quantity. A separate log/telescoping bridge then connects this o
 noncomputable def ellipticalPotentialStep (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
   2 * Real.log (designDetStepRatio A reg x n ω)
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Under determinant nonvanishing, the one-step log-determinant potential is
+`2 * log (1 + x_{A_n}ᵀ V_n⁻¹ x_{A_n})`. -/
+lemma ellipticalPotentialStep_eq_two_mul_log_one_add_widthQuadraticForm
+    (hdet : designDet A reg x n ω ≠ 0) :
+    ellipticalPotentialStep A reg x n ω =
+      2 * Real.log (1 + widthQuadraticForm A reg x (A n ω) n ω) := by
+  simp [ellipticalPotentialStep,
+    designDetStepRatio_eq_one_add_widthQuadraticForm (A := A) (reg := reg) (x := x)
+      (n := n) (ω := ω) hdet]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Scalar log inequality used in the elliptical-potential proof: for `0 ≤ q ≤ 1`,
+`min 1 q ≤ 2 * log (1 + q)`. -/
+lemma min_one_le_two_mul_log_one_add_of_nonneg_le_one {q : ℝ}
+    (hq_nonneg : 0 ≤ q) (hq_le_one : q ≤ 1) :
+    min 1 q ≤ 2 * Real.log (1 + q) := by
+  have hlog : 2 * q / (q + 2) ≤ Real.log (1 + q) :=
+    Real.le_log_one_add_of_nonneg hq_nonneg
+  have hq_add_two_pos : 0 < q + 2 := by linarith
+  have hq_le_two : q ≤ 2 := by linarith
+  have hq_le_log_lower : q ≤ 2 * (2 * q / (q + 2)) := by
+    rw [show 2 * (2 * q / (q + 2)) = 4 * q / (q + 2) by ring]
+    rw [le_div_iff₀ hq_add_two_pos]
+    nlinarith
+  rw [min_eq_right hq_le_one]
+  exact hq_le_log_lower.trans (mul_le_mul_of_nonneg_left hlog (by norm_num))
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Under determinant nonvanishing and the usual `0 ≤ q ≤ 1` quadratic-form side conditions, the
+single capped quadratic-width term is bounded by the one-step log-determinant potential. -/
+lemma cappedWidthTerm_le_ellipticalPotentialStep
+    (hdet : designDet A reg x n ω ≠ 0)
+    (h_nonneg : 0 ≤ widthQuadraticForm A reg x (A n ω) n ω)
+    (h_le_one : n ≠ 0 → widthQuadraticForm A reg x (A n ω) n ω ≤ 1) :
+    (if n = 0 then 0 else min 1 (widthQuadraticForm A reg x (A n ω) n ω)) ≤
+      ellipticalPotentialStep A reg x n ω := by
+  by_cases hn : n = 0
+  · rw [if_pos hn,
+      ellipticalPotentialStep_eq_two_mul_log_one_add_widthQuadraticForm (A := A) (reg := reg)
+        (x := x) (n := n) (ω := ω) hdet]
+    exact mul_nonneg (by norm_num) (Real.log_nonneg (by linarith))
+  · rw [if_neg hn,
+      ellipticalPotentialStep_eq_two_mul_log_one_add_widthQuadraticForm (A := A) (reg := reg)
+        (x := x) (n := n) (ω := ω) hdet]
+    exact min_one_le_two_mul_log_one_add_of_nonneg_le_one h_nonneg (h_le_one hn)
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, determinant nonvanishing and the standard quadratic-form side conditions imply
+the per-step one-step-potential bound required by the elliptical-potential induction shell. -/
+lemma cappedWidthTerm_ae_le_ellipticalPotentialStep_of_det_ne_zero
+    (hdet : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → designDet A reg x t ω ≠ 0)
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1) :
+    ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      (if t = 0 then 0 else min 1 (widthQuadraticForm A reg x (A t ω) t ω)) ≤
+        ellipticalPotentialStep A reg x t ω := by
+  filter_upwards [hdet, h_nonneg, h_le_one] with ω hdetω h_nonnegω h_le_oneω
+  intro t ht
+  exact cappedWidthTerm_le_ellipticalPotentialStep (A := A) (reg := reg) (x := x)
+    (n := t) (ω := ω) (hdetω t ht) (h_nonnegω t ht) (h_le_oneω t ht)
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- At horizon zero, the log-determinant potential is zero when the initial design determinant is
@@ -449,6 +738,34 @@ omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 noncomputable def ellipticalPotentialIncrement (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
   ellipticalPotential A reg x (n + 1) ω - ellipticalPotential A reg x n ω
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- The one-step determinant-ratio potential equals the increment of the cumulative
+log-determinant potential, provided the relevant design determinants are nonzero. -/
+lemma ellipticalPotentialStep_eq_increment
+    (hdet0 : designDet A reg x 0 ω ≠ 0)
+    (hdetn : designDet A reg x n ω ≠ 0)
+    (hdet_succ : designDet A reg x (n + 1) ω ≠ 0) :
+    ellipticalPotentialStep A reg x n ω = ellipticalPotentialIncrement A reg x n ω := by
+  simp [ellipticalPotentialStep, designDetStepRatio, ellipticalPotentialIncrement,
+    ellipticalPotential, designDetRatio, Real.log_div hdet_succ hdetn,
+    Real.log_div hdet_succ hdet0, Real.log_div hdetn hdet0]
+  ring
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, the one-step determinant-ratio potential equals the increment of the cumulative
+log-determinant potential throughout the finite horizon, provided all determinants up to that
+horizon are nonzero almost surely. -/
+lemma ellipticalPotentialStep_ae_eq_increment_of_det_ne_zero
+    (hdet : ∀ᵐ ω ∂P, ∀ t, t ∈ range (n + 1) → designDet A reg x t ω ≠ 0) :
+    ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      ellipticalPotentialStep A reg x t ω = ellipticalPotentialIncrement A reg x t ω := by
+  filter_upwards [hdet] with ω hdetω
+  intro t ht
+  exact ellipticalPotentialStep_eq_increment (A := A) (reg := reg) (x := x) (n := t)
+    (ω := ω) (hdetω 0 (by simp))
+    (hdetω t (mem_range.mpr (Nat.lt_trans (mem_range.mp ht) (Nat.lt_succ_self n))))
+    (hdetω (t + 1) (mem_range.mpr (Nat.succ_lt_succ (mem_range.mp ht))))
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- If the next capped quadratic width term is bounded by the next log-determinant potential
@@ -527,6 +844,29 @@ lemma cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_stepPotential_ae_le
   filter_upwards [h_step, h_step_le_increment] with ω h_stepω h_step_le_incrementω
   intro t ht
   exact (h_stepω t ht).trans (h_step_le_incrementω t ht)
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, per-step bounds by the one-step determinant-ratio potential imply the
+cumulative capped-sum/log-det inequality when all design determinants up to the horizon are nonzero
+almost surely.
+
+Compared with `cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_stepPotential_ae_le`, this
+version discharges the log/telescoping bridge automatically from determinant nonvanishing. -/
+lemma cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_stepPotential_ae_le_of_det_ne_zero
+    (hdet : ∀ᵐ ω ∂P, ∀ t, t ∈ range (n + 1) → designDet A reg x t ω ≠ 0)
+    (h_step : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      (if t = 0 then 0 else min 1 (widthQuadraticForm A reg x (A t ω) t ω)) ≤
+        ellipticalPotentialStep A reg x t ω) :
+    ∀ᵐ ω ∂P, cappedQuadraticWidthSum A reg x n ω ≤ ellipticalPotential A reg x n ω := by
+  have hdet0 : ∀ᵐ ω ∂P, designDet A reg x 0 ω ≠ 0 := by
+    filter_upwards [hdet] with ω hdetω
+    exact hdetω 0 (by simp)
+  refine cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_stepPotential_ae_le (A := A)
+    (reg := reg) (x := x) (n := n) (P := P) hdet0 h_step ?_
+  filter_upwards [ellipticalPotentialStep_ae_eq_increment_of_det_ne_zero (A := A)
+    (reg := reg) (x := x) (n := n) (P := P) hdet] with ω h_eq
+  intro t ht
+  rw [h_eq t ht]
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The process-level capped quadratic-width input expected from an elliptical-potential argument.
@@ -692,6 +1032,150 @@ lemma cappedQuadraticWidthBound_ae_of_ellipticalPotential_stepPotential_ae_le_bo
     (cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_stepPotential_ae_le (A := A)
       (reg := reg) (x := x) (n := n) (P := P) hdet h_step h_step_le_increment)
     h_potential_le
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, one-step determinant-ratio potential bounds, determinant nonvanishing up to the
+horizon, and a final constant bound on the potential give the packaged process-level capped
+quadratic-width input.
+
+This is the determinant-nonvanishing version of the one-step interface: the remaining hard
+elliptical-potential work is to prove the one-step matrix inequality and the final
+log-determinant bound. -/
+lemma cappedQuadraticWidthBound_ae_of_ellipticalPotential_stepPotential_ae_le_bound_of_det_ne_zero
+    {W : ℝ}
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (hdet : ∀ᵐ ω ∂P, ∀ t, t ∈ range (n + 1) → designDet A reg x t ω ≠ 0)
+    (h_step : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      (if t = 0 then 0 else min 1 (widthQuadraticForm A reg x (A t ω) t ω)) ≤
+        ellipticalPotentialStep A reg x t ω)
+    (h_potential_le : ∀ᵐ ω ∂P, ellipticalPotential A reg x n ω ≤ W) :
+    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W := by
+  exact cappedQuadraticWidthBound_ae_of_ellipticalPotential_ae_le_bound (A := A)
+    (reg := reg) (x := x) (n := n) (P := P) (W := W) h_nonneg h_le_one
+    (cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_stepPotential_ae_le_of_det_ne_zero
+      (A := A) (reg := reg) (x := x) (n := n) (P := P) hdet h_step)
+    h_potential_le
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, the determinant-update step, determinant nonvanishing up to the horizon, and a
+final constant bound on the log-determinant potential give the packaged capped quadratic-width
+input used by the regret chain.
+
+The assumptions now match the concrete obligations left for a full elliptical-potential proof:
+
+* prove all relevant design determinants are nonzero;
+* prove selected quadratic forms are nonnegative and at most `1` at positive times;
+* prove the final log-determinant potential is at most `W`. -/
+lemma cappedQuadraticWidthBound_ae_of_det_update_ellipticalPotential_le_bound {W : ℝ}
+    (hdet : ∀ᵐ ω ∂P, ∀ t, t ∈ range (n + 1) → designDet A reg x t ω ≠ 0)
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (h_potential_le : ∀ᵐ ω ∂P, ellipticalPotential A reg x n ω ≤ W) :
+    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W := by
+  have hdet_range_n : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → designDet A reg x t ω ≠ 0 := by
+    filter_upwards [hdet] with ω hdetω
+    intro t ht
+    exact hdetω t (mem_range.mpr (Nat.lt_trans (mem_range.mp ht) (Nat.lt_succ_self n)))
+  have h_nonneg_positive : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω := by
+    filter_upwards [h_nonneg] with ω h_nonnegω
+    intro t ht _
+    exact h_nonnegω t ht
+  exact cappedQuadraticWidthBound_ae_of_ellipticalPotential_stepPotential_ae_le_bound_of_det_ne_zero
+    (A := A) (reg := reg) (x := x) (n := n) (P := P) (W := W)
+    h_nonneg_positive h_le_one hdet
+    (cappedWidthTerm_ae_le_ellipticalPotentialStep_of_det_ne_zero (A := A) (reg := reg)
+      (x := x) (n := n) (P := P) hdet_range_n h_nonneg h_le_one)
+    h_potential_le
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, a nonzero initial determinant, the determinant-update step, and a final constant
+bound on the log-determinant potential give the packaged capped quadratic-width input used by the
+regret chain.
+
+This removes the need to assume determinant nonvanishing at every time: it is derived inductively
+from `det(V_0) ≠ 0` and nonnegative selected quadratic forms. -/
+lemma cappedQuadraticWidthBound_ae_of_initial_det_update_ellipticalPotential_le_bound {W : ℝ}
+    (hdet0 : ∀ᵐ ω ∂P, designDet A reg x 0 ω ≠ 0)
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (h_potential_le : ∀ᵐ ω ∂P, ellipticalPotential A reg x n ω ≤ W) :
+    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W := by
+  exact cappedQuadraticWidthBound_ae_of_det_update_ellipticalPotential_le_bound (A := A)
+    (reg := reg) (x := x) (n := n) (P := P) (W := W)
+    (designDet_ae_ne_zero_of_initial_and_widthQuadraticForm_ae_nonneg (A := A)
+      (reg := reg) (x := x) (n := n) (P := P) hdet0 h_nonneg)
+    h_nonneg h_le_one h_potential_le
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, a nonzero regularization parameter, the determinant-update step, and a final
+constant bound on the log-determinant potential give the packaged capped quadratic-width input used
+by the regret chain. -/
+lemma cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_ellipticalPotential_le_bound {W : ℝ}
+    (hreg : reg ≠ 0)
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (h_potential_le : ∀ᵐ ω ∂P, ellipticalPotential A reg x n ω ≤ W) :
+    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W := by
+  refine cappedQuadraticWidthBound_ae_of_initial_det_update_ellipticalPotential_le_bound
+    (A := A) (reg := reg) (x := x) (n := n) (P := P) (W := W) ?_ h_nonneg h_le_one
+    h_potential_le
+  exact Filter.Eventually.of_forall fun ω ↦
+    designDet_zero_ne_zero_of_reg_ne_zero (A := A) (reg := reg) (x := x) (ω := ω) hreg
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, a nonzero initial determinant, nonnegative selected quadratic forms, a
+determinant-ratio upper bound, and the determinant-update step give the packaged capped
+quadratic-width input used by the regret chain.
+
+This version accepts the determinant-ratio bound directly and converts it into the
+`ellipticalPotential ≤ 2 * log D` bound internally. -/
+lemma cappedQuadraticWidthBound_ae_of_initial_det_update_designDetRatio_le_bound {D : ℝ}
+    (hdet0 : ∀ᵐ ω ∂P, designDet A reg x 0 ω ≠ 0)
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (h_ratio_le : ∀ᵐ ω ∂P, designDetRatio A reg x n ω ≤ D) :
+    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω (2 * Real.log D) := by
+  exact cappedQuadraticWidthBound_ae_of_initial_det_update_ellipticalPotential_le_bound
+    (A := A) (reg := reg) (x := x) (n := n) (P := P) (W := 2 * Real.log D)
+    hdet0 h_nonneg h_le_one
+    (ellipticalPotential_ae_le_two_mul_log_of_designDetRatio_ae_le (A := A)
+      (reg := reg) (x := x) (n := n) (P := P)
+      (designDetRatio_ae_pos_of_initial_and_widthQuadraticForm_ae_nonneg (A := A)
+        (reg := reg) (x := x) (n := n) (P := P) hdet0 h_nonneg)
+      h_ratio_le)
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, a nonzero regularization parameter, nonnegative selected quadratic forms, a
+determinant-ratio upper bound, and the determinant-update step give the packaged capped
+quadratic-width input used by the regret chain.
+
+This is the most direct interface for the final determinant-bound part of the finite-action
+elliptical-potential argument: after proving `designDetRatio ≤ D`, the theorem supplies the
+`CappedQuadraticWidthBound` with bound `2 * log D`. -/
+lemma cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_designDetRatio_le_bound {D : ℝ}
+    (hreg : reg ≠ 0)
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (h_ratio_le : ∀ᵐ ω ∂P, designDetRatio A reg x n ω ≤ D) :
+    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω (2 * Real.log D) := by
+  refine cappedQuadraticWidthBound_ae_of_initial_det_update_designDetRatio_le_bound
+    (A := A) (reg := reg) (x := x) (n := n) (P := P) ?_ h_nonneg h_le_one h_ratio_le
+  exact Filter.Eventually.of_forall fun ω ↦
+    designDet_zero_ne_zero_of_reg_ne_zero (A := A) (reg := reg) (x := x) (ω := ω) hreg
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The packaged process-level capped quadratic-width input implies the `widthSqSum` bound consumed
