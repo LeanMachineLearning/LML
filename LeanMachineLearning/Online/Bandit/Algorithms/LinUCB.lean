@@ -375,6 +375,46 @@ lemma widthSqSum_ae_le_of_capped_quadratic_width_sum_ae_le {W : ℝ}
     (n := n) (ω := ω) h_nonnegω h_le_oneω h_capped_leω
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Determinant of the process-level LinUCB design matrix. -/
+noncomputable def designDet (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
+  Matrix.det (designMatrix A reg x n ω)
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- The initial design determinant is the determinant of the regularized identity. -/
+lemma designDet_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (ω : Ω) :
+    designDet A reg x 0 ω = Matrix.det (reg • (1 : Matrix (Fin d) (Fin d) ℝ)) := by
+  simp [designDet, designMatrix_zero]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Determinant ratio `det(V_n) / det(V_0)` for the process-level design matrices. -/
+noncomputable def designDetRatio (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
+  designDet A reg x n ω / designDet A reg x 0 ω
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- At horizon zero, the determinant ratio is `1` when the initial design determinant is nonzero. -/
+lemma designDetRatio_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (ω : Ω) (hdet : designDet A reg x 0 ω ≠ 0) :
+    designDetRatio A reg x 0 ω = 1 := by
+  simp [designDetRatio, hdet]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- The log-determinant expression that appears in the elliptical-potential lemma. -/
+noncomputable def ellipticalPotential (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
+  2 * Real.log (designDetRatio A reg x n ω)
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- At horizon zero, the log-determinant potential is zero when the initial design determinant is
+nonzero. -/
+lemma ellipticalPotential_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (ω : Ω) (hdet : designDet A reg x 0 ω ≠ 0) :
+    ellipticalPotential A reg x 0 ω = 0 := by
+  simp [ellipticalPotential, designDetRatio_zero (A := A) (reg := reg) (x := x) (ω := ω) hdet]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The process-level capped quadratic-width input expected from an elliptical-potential argument.
 
 It packages the three facts needed to turn a capped process-level quadratic-width estimate into the
@@ -431,6 +471,38 @@ lemma cappedQuadraticWidthBound_ae_mono {W W' : ℝ}
   filter_upwards [h_bound] with ω h_boundω
   exact cappedQuadraticWidthBound_mono (A := A) (reg := reg) (x := x) (n := n)
     (ω := ω) h_boundω hW
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- A capped-sum bound by the log-determinant potential, together with a constant bound on that
+potential, gives the packaged process-level capped quadratic-width input. -/
+lemma cappedQuadraticWidthBound_of_ellipticalPotential_le_bound {W : ℝ}
+    (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (h_elliptical :
+      cappedQuadraticWidthSum A reg x n ω ≤ ellipticalPotential A reg x n ω)
+    (h_potential_le : ellipticalPotential A reg x n ω ≤ W) :
+    CappedQuadraticWidthBound A reg x n ω W := by
+  exact cappedQuadraticWidthBound_of_nonneg_le_one_and_sum_le (A := A) (reg := reg)
+    (x := x) (n := n) (ω := ω) h_nonneg h_le_one (h_elliptical.trans h_potential_le)
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, a capped-sum bound by the log-determinant potential and an almost-sure constant
+bound on that potential give the packaged process-level capped quadratic-width input. -/
+lemma cappedQuadraticWidthBound_ae_of_ellipticalPotential_ae_le_bound {W : ℝ}
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (h_elliptical : ∀ᵐ ω ∂P,
+      cappedQuadraticWidthSum A reg x n ω ≤ ellipticalPotential A reg x n ω)
+    (h_potential_le : ∀ᵐ ω ∂P, ellipticalPotential A reg x n ω ≤ W) :
+    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W := by
+  filter_upwards [h_nonneg, h_le_one, h_elliptical, h_potential_le] with
+    ω h_nonnegω h_le_oneω h_ellipticalω h_potential_leω
+  exact cappedQuadraticWidthBound_of_ellipticalPotential_le_bound (A := A) (reg := reg)
+    (x := x) (n := n) (ω := ω) h_nonnegω h_le_oneω h_ellipticalω h_potential_leω
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The packaged process-level capped quadratic-width input implies the `widthSqSum` bound consumed
@@ -1480,6 +1552,41 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_quadratic_width_boun
     (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_best h_arm hβ hβ_mono W
     (widthSqSum_ae_le_of_capped_quadratic_width_bound_ae (A := A) (reg := reg)
       (x := x) (n := n) (P := P) (W := W) h_bound)
+
+/-- Almost surely, cumulative regret is bounded by the simplified initial-gap term plus
+`2 * √(n * β n) * √W` whenever the capped quadratic-width sum is bounded by the
+log-determinant elliptical potential and that potential is bounded by `W`.
+
+This is the first theorem whose assumptions match the two matrix-analysis steps of the actual
+elliptical-potential argument:
+
+* prove `cappedQuadraticWidthSum ≤ ellipticalPotential`;
+* prove `ellipticalPotential ≤ W`. -/
+lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_of_ellipticalPotential_bound
+    [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_best : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      (ν (bestArm ν))[id] ≤ index A R reg β x (bestArm ν) n ω)
+    (h_arm : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      estimatedReward A R reg x (A n ω) n ω -
+        √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
+    (hβ : ∀ t, 0 ≤ β (t + 1)) (hβ_mono : Monotone β) (W : ℝ)
+    (h_quad_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_quad_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (h_elliptical : ∀ᵐ ω ∂P,
+      cappedQuadraticWidthSum A reg x n ω ≤ ellipticalPotential A reg x n ω)
+    (h_potential_le : ∀ᵐ ω ∂P, ellipticalPotential A reg x n ω ≤ W) :
+    ∀ᵐ ω ∂P,
+      regret ν A n ω ≤
+        (if n = 0 then 0 else gap ν (A 0 ω)) + 2 * (√((n : ℝ) * β n) * √W) := by
+  exact regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_quadratic_width_bound
+    (A := A) (R := R) (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_best
+    h_arm hβ hβ_mono W
+    (cappedQuadraticWidthBound_ae_of_ellipticalPotential_ae_le_bound (A := A)
+      (reg := reg) (x := x) (n := n) (P := P) (W := W) h_quad_nonneg h_quad_le_one
+      h_elliptical h_potential_le)
 
 end LinUCB
 
