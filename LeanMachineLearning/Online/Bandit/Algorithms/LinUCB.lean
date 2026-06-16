@@ -415,6 +415,17 @@ lemma ellipticalPotential_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
   simp [ellipticalPotential, designDetRatio_zero (A := A) (reg := reg) (x := x) (ω := ω) hdet]
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Base case for the log-determinant elliptical-potential inequality. At horizon zero there are no
+positive-time capped quadratic width forms, and the log-determinant potential is zero when the
+initial design determinant is nonzero. -/
+lemma cappedQuadraticWidthSum_le_ellipticalPotential_zero
+    (A : ℕ → Ω → Fin K) (reg : ℝ) (x : Fin K → Feature d) (ω : Ω)
+    (hdet : designDet A reg x 0 ω ≠ 0) :
+    cappedQuadraticWidthSum A reg x 0 ω ≤ ellipticalPotential A reg x 0 ω := by
+  rw [cappedQuadraticWidthSum_zero (A := A) (reg := reg) (x := x) (ω := ω),
+    ellipticalPotential_zero (A := A) (reg := reg) (x := x) (ω := ω) hdet]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The process-level capped quadratic-width input expected from an elliptical-potential argument.
 
 It packages the three facts needed to turn a capped process-level quadratic-width estimate into the
@@ -439,6 +450,34 @@ lemma cappedQuadraticWidthBound_of_nonneg_le_one_and_sum_le {W : ℝ}
     (h_sum_le : cappedQuadraticWidthSum A reg x n ω ≤ W) :
     CappedQuadraticWidthBound A reg x n ω W := by
   exact ⟨h_nonneg, h_le_one, h_sum_le⟩
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Base case for the packaged process-level capped quadratic-width input. At horizon zero, the
+nonnegativity and `≤ 1` side conditions are vacuous, and the capped sum is zero. -/
+lemma cappedQuadraticWidthBound_zero {W : ℝ} (hW : 0 ≤ W) :
+    CappedQuadraticWidthBound A reg x 0 ω W := by
+  refine cappedQuadraticWidthBound_of_nonneg_le_one_and_sum_le (A := A) (reg := reg)
+    (x := x) (n := 0) (ω := ω) ?_ ?_ ?_
+  · intro t ht _
+    simp at ht
+  · intro t ht _
+    simp at ht
+  · simpa [cappedQuadraticWidthSum_zero] using hW
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Base case for the packaged process-level capped quadratic-width input when the constant bound
+is supplied through the log-determinant potential. -/
+lemma cappedQuadraticWidthBound_zero_of_ellipticalPotential_le_bound {W : ℝ}
+    (hdet : designDet A reg x 0 ω ≠ 0) (h_potential_le : ellipticalPotential A reg x 0 ω ≤ W) :
+    CappedQuadraticWidthBound A reg x 0 ω W := by
+  refine cappedQuadraticWidthBound_of_nonneg_le_one_and_sum_le (A := A) (reg := reg)
+    (x := x) (n := 0) (ω := ω) ?_ ?_ ?_
+  · intro t ht _
+    simp at ht
+  · intro t ht _
+    simp at ht
+  · exact (cappedQuadraticWidthSum_le_ellipticalPotential_zero (A := A) (reg := reg)
+      (x := x) (ω := ω) hdet).trans h_potential_le
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The packaged process-level capped quadratic-width input is monotone in the numeric bound. -/
