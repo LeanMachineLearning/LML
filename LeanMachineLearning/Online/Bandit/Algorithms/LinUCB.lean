@@ -202,6 +202,31 @@ lemma dotProduct_mulVec_le_of_matrix_le {M N : Matrix (Fin d) (Fin d) ℝ}
   rw [Matrix.sub_mulVec, dotProduct_sub] at h_nonneg
   exact sub_nonneg.mp h_nonneg
 
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- The inverse of the regularized identity is the reciprocal-scaled identity. -/
+lemma reg_smul_one_inv (hreg : reg ≠ 0) :
+    (reg • (1 : Matrix (Fin d) (Fin d) ℝ))⁻¹ =
+      reg⁻¹ • (1 : Matrix (Fin d) (Fin d) ℝ) := by
+  rw [Matrix.inv_eq_left_inv]
+  simp [smul_smul, hreg]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- The quadratic form induced by `(reg • I)⁻¹` is the squared norm divided by `reg`. -/
+lemma dotProduct_reg_smul_one_inv_mulVec (hreg : reg ≠ 0) (u : Feature d) :
+    dotProduct u (((reg • (1 : Matrix (Fin d) (Fin d) ℝ))⁻¹) *ᵥ u) =
+      dotProduct u u / reg := by
+  rw [reg_smul_one_inv (reg := reg) (d := d) hreg]
+  simp [Matrix.smul_mulVec, div_eq_inv_mul, mul_comm]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Arm-specific form of `dotProduct_reg_smul_one_inv_mulVec`. -/
+lemma dotProduct_reg_smul_one_inv_mulVec_eq_featureSqNorm_div
+    (hreg : reg ≠ 0) (a : Fin K) :
+    dotProduct (x a) (((reg • (1 : Matrix (Fin d) (Fin d) ℝ))⁻¹) *ᵥ (x a)) =
+      featureSqNorm x a / reg := by
+  simpa [featureSqNorm] using
+    dotProduct_reg_smul_one_inv_mulVec (reg := reg) (d := d) hreg (x a)
+
 /-- Trace of the process-level regularized design matrix. -/
 noncomputable def designTrace (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
@@ -359,6 +384,37 @@ def WidthQuadraticFormLeFeatureSqNormDivReg
     (A : ℕ → Ω → Fin K) (reg : ℝ) (x : Fin K → Feature d) : Prop :=
   ∀ (a : Fin K) (n : ℕ) (ω : Ω),
     widthQuadraticForm A reg x a n ω ≤ featureSqNorm x a / reg
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- If the inverse design matrix is bounded by the inverse regularized identity, then the LinUCB
+quadratic width is bounded by `featureSqNorm / reg` for one arm, time, and sample point. -/
+lemma widthQuadraticForm_le_featureSqNorm_div_reg_of_inv_le
+    (a : Fin K)
+    (h_inv : (designMatrix A reg x n ω)⁻¹ ≤
+      (reg • (1 : Matrix (Fin d) (Fin d) ℝ))⁻¹)
+    (hreg : reg ≠ 0) :
+    widthQuadraticForm A reg x a n ω ≤ featureSqNorm x a / reg := by
+  calc
+    widthQuadraticForm A reg x a n ω =
+        dotProduct (x a) (((designMatrix A reg x n ω)⁻¹) *ᵥ (x a)) := rfl
+    _ ≤ dotProduct (x a)
+        (((reg • (1 : Matrix (Fin d) (Fin d) ℝ))⁻¹) *ᵥ (x a)) :=
+        dotProduct_mulVec_le_of_matrix_le h_inv (x a)
+    _ = featureSqNorm x a / reg :=
+        dotProduct_reg_smul_one_inv_mulVec_eq_featureSqNorm_div
+          (reg := reg) (x := x) hreg a
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- A pointwise inverse-order comparison for all times and sample points gives the reusable
+`WidthQuadraticFormLeFeatureSqNormDivReg` property consumed by the regret route. -/
+lemma WidthQuadraticFormLeFeatureSqNormDivReg.of_inv_le
+    (hreg : reg ≠ 0)
+    (h_inv : ∀ n ω, (designMatrix A reg x n ω)⁻¹ ≤
+      (reg • (1 : Matrix (Fin d) (Fin d) ℝ))⁻¹) :
+    WidthQuadraticFormLeFeatureSqNormDivReg A reg x := by
+  intro a n ω
+  exact widthQuadraticForm_le_featureSqNorm_div_reg_of_inv_le
+    (A := A) (reg := reg) (x := x) (n := n) (ω := ω) a (h_inv n ω) hreg
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- If `x_aᵀ V_n⁻¹ x_a ≤ ‖x_a‖² / reg` and the squared feature norm is at most `reg`, then the
