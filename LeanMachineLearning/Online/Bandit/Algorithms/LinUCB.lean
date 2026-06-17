@@ -161,6 +161,16 @@ lemma designMatrix_posSemidef (hreg_nonneg : 0 ≤ reg) :
     intro t _
     simpa using Matrix.posSemidef_vecMulVec_self_star (x (A t ω))
 
+/-- Positive regularization makes the process-level design matrix positive definite. -/
+lemma designMatrix_posDef (hreg_pos : 0 < reg) :
+    (designMatrix A reg x n ω).PosDef := by
+  unfold designMatrix
+  apply Matrix.PosDef.add_posSemidef
+  · exact Matrix.PosDef.smul Matrix.PosDef.one hreg_pos
+  · refine Matrix.posSemidef_sum (s := range n) ?_
+    intro t _
+    simpa using Matrix.posSemidef_vecMulVec_self_star (x (A t ω))
+
 /-- Trace of the process-level regularized design matrix. -/
 noncomputable def designTrace (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
@@ -520,6 +530,26 @@ lemma designDet_zero_ne_zero_of_reg_ne_zero (A : ℕ → Ω → Fin K) (reg : �
     designDet A reg x 0 ω ≠ 0 := by
   rw [designDet_zero_eq_reg_pow]
   exact pow_ne_zero d hreg
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Positive regularization makes every process-level design determinant nonzero. -/
+lemma designDet_ne_zero_of_reg_pos (hreg_pos : 0 < reg) :
+    designDet A reg x n ω ≠ 0 := by
+  have hunit : IsUnit (designMatrix A reg x n ω) :=
+    (designMatrix_posDef (A := A) (reg := reg) (x := x) (n := n) (ω := ω)
+      hreg_pos).isUnit
+  have hdet_unit : IsUnit (designMatrix A reg x n ω).det :=
+    (Matrix.isUnit_iff_isUnit_det (A := designMatrix A reg x n ω)).mp hunit
+  exact hdet_unit.ne_zero
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, positive regularization makes all design determinants in a finite horizon
+nonzero. -/
+lemma designDet_ae_ne_zero_of_reg_pos (hreg_pos : 0 < reg) :
+    ∀ᵐ ω ∂P, ∀ t, t ∈ range n → designDet A reg x t ω ≠ 0 := by
+  exact Filter.Eventually.of_forall fun ω t _ht ↦
+    designDet_ne_zero_of_reg_pos (A := A) (reg := reg) (x := x) (n := t) (ω := ω)
+      hreg_pos
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- Determinant ratio `det(V_n) / det(V_0)` for the process-level design matrices. -/
@@ -1467,6 +1497,23 @@ lemma cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_ellipticalPotential
     h_potential_le
   exact Filter.Eventually.of_forall fun ω ↦
     designDet_zero_ne_zero_of_reg_ne_zero (A := A) (reg := reg) (x := x) (ω := ω) hreg
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Positive regularization discharges the determinant-nonvanishing and quadratic-form
+nonnegativity obligations in the log-determinant elliptical-potential chain. -/
+lemma cappedQuadraticWidthBound_ae_of_reg_pos_det_update_ellipticalPotential_le_bound {W : ℝ}
+    (hreg_pos : 0 < reg)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (h_potential_le : ∀ᵐ ω ∂P, ellipticalPotential A reg x n ω ≤ W) :
+    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W := by
+  exact cappedQuadraticWidthBound_ae_of_det_update_ellipticalPotential_le_bound
+    (A := A) (reg := reg) (x := x) (n := n) (P := P) (W := W)
+    (designDet_ae_ne_zero_of_reg_pos (A := A) (reg := reg) (x := x)
+      (n := n + 1) (P := P) hreg_pos)
+    (widthQuadraticForm_ae_nonneg_of_reg_nonneg (A := A) (reg := reg) (x := x)
+      (n := n) (P := P) hreg_pos.le)
+    h_le_one h_potential_le
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- Almost surely, a nonzero initial determinant, nonnegative selected quadratic forms, a
@@ -2830,14 +2877,12 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_of_matrix_det_trace_bound
       L2 hL2 hdet_trace)
 
 /-- Almost surely, cumulative regret is bounded by the simplified initial-gap term plus
-`2 * √(n * β n) * √W` whenever the capped quadratic-width sum is bounded by the
-log-determinant elliptical potential and that potential is bounded by `W`.
+`2 * √(n * β n) * √W` whenever positive regularization, the positive-time width cap, and the final
+log-determinant potential bound hold.
 
-This is the first theorem whose assumptions match the two matrix-analysis steps of the actual
-elliptical-potential argument:
-
-* prove `cappedQuadraticWidthSum ≤ ellipticalPotential`;
-* prove `ellipticalPotential ≤ W`. -/
+The capped-sum/log-determinant part of the elliptical-potential argument is now proved internally:
+positive regularization gives determinant nonvanishing and nonnegative quadratic forms, while
+`h_quad_le_one` supplies the cap needed for `min 1 q ≤ 2 * log (1 + q)`. -/
 lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_of_ellipticalPotential_bound
     [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
@@ -2847,11 +2892,9 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_of_ellipticalPotential_boun
       estimatedReward A R reg x (A n ω) n ω -
         √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
     (hβ : ∀ t, 0 ≤ β (t + 1)) (hβ_mono : Monotone β) (W : ℝ)
-    (hreg_nonneg : 0 ≤ reg)
+    (hreg_pos : 0 < reg)
     (h_quad_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
       widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
-    (h_elliptical : ∀ᵐ ω ∂P,
-      cappedQuadraticWidthSum A reg x n ω ≤ ellipticalPotential A reg x n ω)
     (h_potential_le : ∀ᵐ ω ∂P, ellipticalPotential A reg x n ω ≤ W) :
     ∀ᵐ ω ∂P,
       regret ν A n ω ≤
@@ -2859,11 +2902,9 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_of_ellipticalPotential_boun
   exact regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_quadratic_width_bound
     (A := A) (R := R) (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_best
     h_arm hβ hβ_mono W
-    (cappedQuadraticWidthBound_ae_of_ellipticalPotential_ae_le_bound (A := A)
-      (reg := reg) (x := x) (n := n) (P := P) (W := W)
-      (widthQuadraticForm_ae_pos_time_nonneg_of_reg_nonneg (A := A) (reg := reg)
-        (x := x) (n := n) (P := P) hreg_nonneg)
-      h_quad_le_one h_elliptical h_potential_le)
+    (cappedQuadraticWidthBound_ae_of_reg_pos_det_update_ellipticalPotential_le_bound
+      (A := A) (reg := reg) (x := x) (n := n) (P := P) (W := W) hreg_pos
+      h_quad_le_one h_potential_le)
 
 end LinUCB
 
