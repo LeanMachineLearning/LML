@@ -9,6 +9,7 @@ public import LeanMachineLearning.Online.Bandit.SumRewards
 public import LeanMachineLearning.SequentialLearning.Deterministic
 public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
 public import Mathlib.Analysis.SpecialFunctions.Log.Deriv
+public import Mathlib.Analysis.Matrix.Order
 public import Mathlib.Data.Real.StarOrdered
 public import Mathlib.LinearAlgebra.Matrix.PosDef
 public import Mathlib.LinearAlgebra.Matrix.SchurComplement
@@ -23,7 +24,7 @@ Chapter 19 of *Bandit Algorithms*:
 
 open MeasureTheory ProbabilityTheory Filter Real Finset Learning
 
-open scoped ENNReal NNReal Matrix
+open scoped ENNReal NNReal Matrix MatrixOrder
 
 namespace Bandits
 
@@ -170,6 +171,36 @@ lemma designMatrix_posDef (hreg_pos : 0 < reg) :
   · refine Matrix.posSemidef_sum (s := range n) ?_
     intro t _
     simpa using Matrix.posSemidef_vecMulVec_self_star (x (A t ω))
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- The design matrix dominates its regularization part: after subtracting `reg • I`, what remains
+is the sum of observed rank-one feature matrices, hence positive semidefinite. -/
+lemma designMatrix_sub_reg_smul_one_posSemidef :
+    (designMatrix A reg x n ω - reg • (1 : Matrix (Fin d) (Fin d) ℝ)).PosSemidef := by
+  have hsum :
+      (∑ s ∈ range n, Matrix.vecMulVec (x (A s ω)) (x (A s ω))).PosSemidef := by
+    refine Matrix.posSemidef_sum (s := range n) ?_
+    intro t _
+    simpa using Matrix.posSemidef_vecMulVec_self_star (x (A t ω))
+  simpa [designMatrix, add_sub_cancel_left] using hsum
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Matrix-order form of `designMatrix_sub_reg_smul_one_posSemidef`: `reg • I ≤ V_n`. -/
+lemma reg_smul_one_le_designMatrix :
+    reg • (1 : Matrix (Fin d) (Fin d) ℝ) ≤ designMatrix A reg x n ω := by
+  rw [Matrix.le_iff]
+  exact designMatrix_sub_reg_smul_one_posSemidef (A := A) (reg := reg) (x := x)
+    (n := n) (ω := ω)
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Matrix order is preserved by evaluating the quadratic form against a fixed feature vector. -/
+lemma dotProduct_mulVec_le_of_matrix_le {M N : Matrix (Fin d) (Fin d) ℝ}
+    (hMN : M ≤ N) (u : Feature d) :
+    dotProduct u (M *ᵥ u) ≤ dotProduct u (N *ᵥ u) := by
+  have h_nonneg : 0 ≤ dotProduct u ((N - M) *ᵥ u) := by
+    simpa using (Matrix.le_iff.mp hMN).dotProduct_mulVec_nonneg u
+  rw [Matrix.sub_mulVec, dotProduct_sub] at h_nonneg
+  exact sub_nonneg.mp h_nonneg
 
 /-- Trace of the process-level regularized design matrix. -/
 noncomputable def designTrace (A : ℕ → Ω → Fin K) (reg : ℝ)
