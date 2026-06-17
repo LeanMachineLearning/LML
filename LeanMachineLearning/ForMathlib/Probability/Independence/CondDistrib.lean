@@ -5,7 +5,7 @@ Authors: Rémy Degenne
 -/
 module
 
-public import LeanMachineLearning.Probability.Kernel.KernelSub
+public import LeanMachineLearning.ForMathlib.Probability.Kernel.KernelSub
 public import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 public import Mathlib.Probability.Independence.Basic
 public import Mathlib.Probability.Independence.Conditional

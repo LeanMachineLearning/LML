@@ -7,7 +7,7 @@ module
 
 public import LeanMachineLearning.Online.Bandit.SumRewards
 public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
-public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
 
 /-!
 # UCB algorithm

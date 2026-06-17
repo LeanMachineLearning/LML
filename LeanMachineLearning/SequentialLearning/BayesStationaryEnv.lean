@@ -5,7 +5,7 @@ Authors: Paulo Rauber, Rémy Degenne
 -/
 module
 
-public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
 public import LeanMachineLearning.Online.Bandit.Regret
 public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
 public import LeanMachineLearning.SequentialLearning.StationaryEnv

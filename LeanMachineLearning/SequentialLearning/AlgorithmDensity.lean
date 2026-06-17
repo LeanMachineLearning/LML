@@ -5,8 +5,8 @@ Authors: Paulo Rauber
 -/
 module
 
-public import LeanMachineLearning.Probability.Kernel.Composition.MeasureCompProd
-public import LeanMachineLearning.Probability.WithDensity
+public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.MeasureCompProd
+public import LeanMachineLearning.ForMathlib.Probability.WithDensity
 public import LeanMachineLearning.SequentialLearning.Algorithm
 
 /-!

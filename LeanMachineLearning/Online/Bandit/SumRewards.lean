@@ -5,8 +5,8 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
+public import LeanMachineLearning.ForMathlib.Probability.Moments.SubGaussian
 public import LeanMachineLearning.Online.Bandit.ArrayProbSpace
-public import LeanMachineLearning.Probability.Moments.SubGaussian
 public import LeanMachineLearning.SequentialLearning.BayesStationaryEnv
 
 /-! # Law of the sum of rewards

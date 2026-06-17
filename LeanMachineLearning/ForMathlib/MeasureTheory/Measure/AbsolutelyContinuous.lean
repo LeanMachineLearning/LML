@@ -6,7 +6,7 @@ Authors: Paulo Rauber
 module
 
 public import Mathlib.MeasureTheory.Measure.AbsolutelyContinuous
-public import LeanMachineLearning.MeasureTheory.OuterMeasure.Basic
+public import LeanMachineLearning.ForMathlib.MeasureTheory.OuterMeasure.Basic
 
 /-!
 # Lemma about measures that assign non-zero probability to every singleton.
