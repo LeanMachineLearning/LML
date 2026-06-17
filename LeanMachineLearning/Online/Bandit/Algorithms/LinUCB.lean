@@ -772,6 +772,67 @@ lemma designDetRatio_ae_le_trace_budget_of_featureSqNorm_bound
     h_ratio_of_trace
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- A determinant upper bound for `V_n` implies the corresponding determinant-ratio bound, using
+`det(V_0) = reg ^ d`. -/
+lemma designDetRatio_le_trace_budget_of_designDet_le
+    (T : ℝ) (hreg_pos : 0 < reg) (hd : d ≠ 0)
+    (hdet_le : designDet A reg x n ω ≤ (T / (d : ℝ)) ^ d) :
+    designDetRatio A reg x n ω ≤ (T / (reg * (d : ℝ))) ^ d := by
+  rw [designDetRatio, designDet_zero_eq_reg_pow]
+  have hreg_pow_nonneg : 0 ≤ reg ^ d := (pow_pos hreg_pos d).le
+  have hdiv : designDet A reg x n ω / reg ^ d ≤ (T / (d : ℝ)) ^ d / reg ^ d := by
+    exact div_le_div_of_nonneg_right hdet_le hreg_pow_nonneg
+  refine hdiv.trans_eq ?_
+  rw [← div_pow]
+  congr 1
+  field_simp [hreg_pos.ne', by exact_mod_cast hd]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, a determinant upper bound for `V_n` implies the corresponding determinant-ratio
+bound. -/
+lemma designDetRatio_ae_le_trace_budget_of_designDet_ae_le
+    (T : ℝ) (hreg_pos : 0 < reg) (hd : d ≠ 0)
+    (hdet_le : ∀ᵐ ω ∂P, designDet A reg x n ω ≤ (T / (d : ℝ)) ^ d) :
+    ∀ᵐ ω ∂P, designDetRatio A reg x n ω ≤ (T / (reg * (d : ℝ))) ^ d := by
+  filter_upwards [hdet_le] with ω hdetω
+  exact designDetRatio_le_trace_budget_of_designDet_le (A := A) (reg := reg)
+    (x := x) (n := n) (ω := ω) T hreg_pos hd hdetω
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Converts an almost-sure trace bound plus a future determinant/trace comparison for `det(V_n)`
+into the determinant-ratio bound used by the elliptical-potential chain. -/
+lemma designDetRatio_ae_le_trace_budget_of_designDet_le_of_designTrace_ae_le
+    (T : ℝ) (hreg_pos : 0 < reg) (hd : d ≠ 0)
+    (h_trace_le : ∀ᵐ ω ∂P, designTrace A reg x n ω ≤ T)
+    (hdet_of_trace : ∀ ω,
+      designTrace A reg x n ω ≤ T → designDet A reg x n ω ≤ (T / (d : ℝ)) ^ d) :
+    ∀ᵐ ω ∂P, designDetRatio A reg x n ω ≤ (T / (reg * (d : ℝ))) ^ d := by
+  refine designDetRatio_ae_le_trace_budget_of_designDet_ae_le (A := A) (reg := reg)
+    (x := x) (n := n) (P := P) T hreg_pos hd ?_
+  filter_upwards [h_trace_le] with ω h_traceω
+  exact hdet_of_trace ω h_traceω
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Bounded selected feature norms reduce the determinant-ratio goal to the determinant upper bound
+`det(V_n) ≤ ((reg * d + n * L2) / d) ^ d`. -/
+lemma designDetRatio_ae_le_trace_budget_of_featureSqNorm_bound_of_designDet_le
+    (L2 : ℝ) (hreg_pos : 0 < reg) (hd : d ≠ 0)
+    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
+    (hdet_of_trace : ∀ ω,
+      designTrace A reg x n ω ≤ reg * (d : ℝ) + (n : ℝ) * L2 →
+        designDet A reg x n ω ≤
+          ((reg * (d : ℝ) + (n : ℝ) * L2) / (d : ℝ)) ^ d) :
+    ∀ᵐ ω ∂P,
+      designDetRatio A reg x n ω ≤
+        ((reg * (d : ℝ) + (n : ℝ) * L2) / (reg * (d : ℝ))) ^ d := by
+  exact designDetRatio_ae_le_trace_budget_of_designDet_le_of_designTrace_ae_le (A := A)
+    (reg := reg) (x := x) (n := n) (P := P)
+    (T := reg * (d : ℝ) + (n : ℝ) * L2) hreg_pos hd
+    (designTrace_ae_le_reg_mul_dim_add_nat_mul_featureSqNorm_bound (A := A) (reg := reg)
+      (x := x) (n := n) (P := P) L2 hL2)
+    hdet_of_trace
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The log-determinant expression that appears in the elliptical-potential lemma. -/
 noncomputable def ellipticalPotential (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
@@ -1448,6 +1509,32 @@ lemma cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_featureSqNorm_budge
   exact cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_featureSqNorm_budget_bound
     (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg h_nonneg h_le_one L2 hL2
     h_ratio_of_trace
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Feature-norm-budget interface with the determinant/trace comparison stated as a determinant
+upper bound for `V_n`, rather than directly as a determinant-ratio bound. -/
+lemma cappedQuadraticWidthBound_ae_of_reg_pos_det_update_featureSqNorm_budget_bound_of_designDet_le
+    (hreg_pos : 0 < reg) (hd : d ≠ 0)
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (L2 : ℝ)
+    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
+    (hdet_of_trace : ∀ ω,
+      designTrace A reg x n ω ≤ reg * (d : ℝ) + (n : ℝ) * L2 →
+        designDet A reg x n ω ≤
+          ((reg * (d : ℝ) + (n : ℝ) * L2) / (d : ℝ)) ^ d) :
+    ∀ᵐ ω ∂P,
+      CappedQuadraticWidthBound A reg x n ω
+        (2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ)))) := by
+  refine cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_featureSqNorm_budget_bound'
+    (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos.ne' hd h_nonneg
+    h_le_one L2 hL2 ?_
+  intro ω h_traceω
+  exact designDetRatio_le_trace_budget_of_designDet_le (A := A) (reg := reg)
+    (x := x) (n := n) (ω := ω) (T := reg * (d : ℝ) + (n : ℝ) * L2) hreg_pos hd
+    (hdet_of_trace ω h_traceω)
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The packaged process-level capped quadratic-width input implies the `widthSqSum` bound consumed
@@ -2537,6 +2624,42 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_featureSqNorm_budget_bound
     (cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_featureSqNorm_budget_bound'
       (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg hd h_quad_nonneg
       h_quad_le_one L2 hL2 h_ratio_of_trace)
+
+/-- Almost surely, cumulative regret is bounded by the feature-budget elliptical-potential term
+when the remaining matrix-analysis input is stated as the determinant upper bound
+`det(V_n) ≤ ((reg * d + n * L²) / d) ^ d`. -/
+lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_featureSqNorm_budget_bound_of_designDet_le
+    [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_best : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      (ν (bestArm ν))[id] ≤ index A R reg β x (bestArm ν) n ω)
+    (h_arm : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      estimatedReward A R reg x (A n ω) n ω -
+        √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
+    (hβ : ∀ t, 0 ≤ β (t + 1)) (hβ_mono : Monotone β)
+    (hreg_pos : 0 < reg) (hd : d ≠ 0)
+    (h_quad_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_quad_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (L2 : ℝ)
+    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
+    (hdet_of_trace : ∀ ω,
+      designTrace A reg x n ω ≤ reg * (d : ℝ) + (n : ℝ) * L2 →
+        designDet A reg x n ω ≤
+          ((reg * (d : ℝ) + (n : ℝ) * L2) / (d : ℝ)) ^ d) :
+    ∀ᵐ ω ∂P,
+      regret ν A n ω ≤
+        (if n = 0 then 0 else gap ν (A 0 ω)) +
+          2 * (√((n : ℝ) * β n) *
+            √(2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ))))) := by
+  exact regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_quadratic_width_bound
+    (A := A) (R := R) (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_best
+    h_arm hβ hβ_mono
+    (2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ))))
+    (cappedQuadraticWidthBound_ae_of_reg_pos_det_update_featureSqNorm_budget_bound_of_designDet_le
+      (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos hd h_quad_nonneg
+      h_quad_le_one L2 hL2 hdet_of_trace)
 
 /-- Almost surely, cumulative regret is bounded by the simplified initial-gap term plus
 `2 * √(n * β n) * √W` whenever the capped quadratic-width sum is bounded by the
