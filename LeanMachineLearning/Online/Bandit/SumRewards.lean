@@ -7,6 +7,7 @@ module
 
 public import LeanMachineLearning.ForMathlib.Probability.Moments.SubGaussian
 public import LeanMachineLearning.Online.Bandit.ArrayProbSpace
+public import LeanMachineLearning.Online.Bandit.BayesRegret
 public import LeanMachineLearning.SequentialLearning.BayesStationaryEnv
 
 /-! # Law of the sum of rewards
