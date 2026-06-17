@@ -107,6 +107,15 @@ lemma IsAlgEnvSeq.measurable_step (n : ℕ) (hA : Measurable (A n))
   unfold step
   fun_prop
 
+/-- A random variable that gives the sequence of action-feedback pairs. -/
+def trajectory (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨) (ω : Ω) : ℕ → 𝓐 × 𝓨 := fun n ↦ (A n ω, Y n ω)
+
+@[fun_prop]
+lemma measurable_trajectory {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} (hA : ∀ n, Measurable (A n))
+    (hR : ∀ n, Measurable (Y n)) : Measurable (trajectory A Y) := by
+  unfold trajectory
+  fun_prop
+
 /-- History of the algorithm-environment sequence up to time `n`. -/
 def history (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨) (n : ℕ) (ω : Ω) : Iic n → 𝓐 × 𝓨 :=
   fun i ↦ (A i ω, Y i ω)

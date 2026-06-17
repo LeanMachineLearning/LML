@@ -21,14 +21,17 @@ public import LeanMachineLearning.ForMathlib.Probability.WithDensity
 public import LeanMachineLearning.Online.Bandit.Algorithms.ETC
 public import LeanMachineLearning.Online.Bandit.Algorithms.UCB
 public import LeanMachineLearning.Online.Bandit.ArrayProbSpace
+public import LeanMachineLearning.Online.Bandit.BayesRegret
 public import LeanMachineLearning.Online.Bandit.Regret
 public import LeanMachineLearning.Online.Bandit.RewardByCountMeasure
 public import LeanMachineLearning.Online.Bandit.SumRewards
 public import LeanMachineLearning.SequentialLearning.Algorithm
 public import LeanMachineLearning.SequentialLearning.AlgorithmDensity
+public import LeanMachineLearning.SequentialLearning.AlgorithmDensityBayes
 public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling
 public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
 public import LeanMachineLearning.SequentialLearning.Algorithms.Uniform
+public import LeanMachineLearning.SequentialLearning.BayesStationaryEnv
 public import LeanMachineLearning.SequentialLearning.Deterministic
 public import LeanMachineLearning.SequentialLearning.EvaluationEnv
 public import LeanMachineLearning.SequentialLearning.FiniteActions
