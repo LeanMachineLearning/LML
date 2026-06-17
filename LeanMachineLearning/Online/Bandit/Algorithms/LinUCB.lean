@@ -614,6 +614,77 @@ lemma designDetRatio_ae_pos_of_reg_ne_zero_and_widthQuadraticForm_ae_nonneg
     designDet_zero_ne_zero_of_reg_ne_zero (A := A) (reg := reg) (x := x) (ω := ω) hreg
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Starting from a nonzero initial determinant, the cumulative determinant ratio is the finite
+product of the per-round determinant-update factors. -/
+lemma designDetRatio_eq_prod_one_add_widthQuadraticForm
+    (hdet0 : designDet A reg x 0 ω ≠ 0)
+    (h_nonneg : ∀ t, t ∈ range n → 0 ≤ widthQuadraticForm A reg x (A t ω) t ω) :
+    designDetRatio A reg x n ω =
+      ∏ t ∈ range n, (1 + widthQuadraticForm A reg x (A t ω) t ω) := by
+  induction n with
+  | zero =>
+      rw [designDetRatio_zero (A := A) (reg := reg) (x := x) (ω := ω) hdet0]
+      simp
+  | succ n ih =>
+      have hdetn : designDet A reg x n ω ≠ 0 :=
+        designDet_ne_zero_of_initial_and_widthQuadraticForm_nonneg_lt (A := A) (reg := reg)
+          (x := x) (m := n) (ω := ω) hdet0 fun t ht ↦
+            h_nonneg t (mem_range.mpr (Nat.lt_trans ht (Nat.lt_succ_self n)))
+      rw [designDetRatio_succ_eq_mul_one_add_widthQuadraticForm (A := A) (reg := reg)
+        (x := x) (n := n) (ω := ω) hdetn]
+      rw [ih fun t ht ↦ h_nonneg t
+        (mem_range.mpr (Nat.lt_trans (mem_range.mp ht) (Nat.lt_succ_self n)))]
+      simp [Finset.prod_range_succ]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- If every selected quadratic form is in `[0, 1]`, the cumulative determinant ratio is at most
+`2 ^ n`. -/
+lemma designDetRatio_le_two_pow_of_initial_and_widthQuadraticForm_le_one
+    (hdet0 : designDet A reg x 0 ω ≠ 0)
+    (h_nonneg : ∀ t, t ∈ range n → 0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ t, t ∈ range n → widthQuadraticForm A reg x (A t ω) t ω ≤ 1) :
+    designDetRatio A reg x n ω ≤ (2 : ℝ) ^ n := by
+  rw [designDetRatio_eq_prod_one_add_widthQuadraticForm (A := A) (reg := reg)
+    (x := x) (n := n) (ω := ω) hdet0 h_nonneg]
+  calc
+    (∏ t ∈ range n, (1 + widthQuadraticForm A reg x (A t ω) t ω))
+        ≤ ∏ _t ∈ range n, (2 : ℝ) := by
+          exact Finset.prod_le_prod
+            (fun t ht ↦ by linarith [h_nonneg t ht])
+            (fun t ht ↦ by linarith [h_le_one t ht])
+    _ = (2 : ℝ) ^ n := by
+          simp
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, if every selected quadratic form is in `[0, 1]`, the cumulative determinant
+ratio is at most `2 ^ n`. -/
+lemma designDetRatio_ae_le_two_pow_of_initial_and_widthQuadraticForm_ae_le_one
+    (hdet0 : ∀ᵐ ω ∂P, designDet A reg x 0 ω ≠ 0)
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1) :
+    ∀ᵐ ω ∂P, designDetRatio A reg x n ω ≤ (2 : ℝ) ^ n := by
+  filter_upwards [hdet0, h_nonneg, h_le_one] with ω hdet0ω h_nonnegω h_le_oneω
+  exact designDetRatio_le_two_pow_of_initial_and_widthQuadraticForm_le_one (A := A)
+    (reg := reg) (x := x) (n := n) (ω := ω) hdet0ω h_nonnegω h_le_oneω
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, a nonzero regularization parameter and selected quadratic forms in `[0, 1]`
+imply the cumulative determinant ratio is at most `2 ^ n`. -/
+lemma designDetRatio_ae_le_two_pow_of_reg_ne_zero_and_widthQuadraticForm_ae_le_one
+    (hreg : reg ≠ 0)
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1) :
+    ∀ᵐ ω ∂P, designDetRatio A reg x n ω ≤ (2 : ℝ) ^ n := by
+  refine designDetRatio_ae_le_two_pow_of_initial_and_widthQuadraticForm_ae_le_one
+    (A := A) (reg := reg) (x := x) (n := n) (P := P) ?_ h_nonneg h_le_one
+  exact Filter.Eventually.of_forall fun ω ↦
+    designDet_zero_ne_zero_of_reg_ne_zero (A := A) (reg := reg) (x := x) (ω := ω) hreg
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The log-determinant expression that appears in the elliptical-potential lemma. -/
 noncomputable def ellipticalPotential (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
@@ -1176,6 +1247,28 @@ lemma cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_designDetRatio_le_b
     (A := A) (reg := reg) (x := x) (n := n) (P := P) ?_ h_nonneg h_le_one h_ratio_le
   exact Filter.Eventually.of_forall fun ω ↦
     designDet_zero_ne_zero_of_reg_ne_zero (A := A) (reg := reg) (x := x) (ω := ω) hreg
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- A simple explicit determinant-ratio bound for the capped quadratic-width input.
+
+If `reg ≠ 0` and every selected quadratic form is almost surely in `[0, 1]`, then the determinant
+ratio is at most `2 ^ n`, so the existing determinant-update/elliptical-potential chain gives the
+packaged capped-width bound with budget `2 * log (2 ^ n)`. -/
+lemma cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_two_pow_bound
+    (hreg : reg ≠ 0)
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1) :
+    ∀ᵐ ω ∂P,
+      CappedQuadraticWidthBound A reg x n ω (2 * Real.log ((2 : ℝ) ^ n)) := by
+  refine cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_designDetRatio_le_bound
+    (A := A) (reg := reg) (x := x) (n := n) (P := P) (D := (2 : ℝ) ^ n)
+    hreg h_nonneg ?_ ?_
+  · filter_upwards [h_le_one] with ω h_le_oneω
+    exact fun t ht _ ↦ h_le_oneω t ht
+  · exact designDetRatio_ae_le_two_pow_of_reg_ne_zero_and_widthQuadraticForm_ae_le_one
+      (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg h_nonneg h_le_one
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The packaged process-level capped quadratic-width input implies the `widthSqSum` bound consumed
