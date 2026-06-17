@@ -317,6 +317,61 @@ lemma widthQuadraticForm_ae_pos_time_nonneg_of_reg_nonneg
   intro t ht _ht0
   exact h_nonnegω t ht
 
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- The matrix comparison needed to turn bounded feature vectors into the positive-time LinUCB
+width cap.
+
+Mathematically, this says `x_aᵀ V_t⁻¹ x_a ≤ ‖x_a‖² / reg`. A later matrix-order proof should
+derive it from `reg > 0` and `V_t = reg I + ∑ x_s x_sᵀ`. Keeping it as a named property makes the
+remaining linear-algebra obligation precise and reusable. -/
+def WidthQuadraticFormLeFeatureSqNormDivReg
+    (A : ℕ → Ω → Fin K) (reg : ℝ) (x : Fin K → Feature d) : Prop :=
+  ∀ (a : Fin K) (n : ℕ) (ω : Ω),
+    widthQuadraticForm A reg x a n ω ≤ featureSqNorm x a / reg
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- If `x_aᵀ V_n⁻¹ x_a ≤ ‖x_a‖² / reg` and the squared feature norm is at most `reg`, then the
+quadratic form is at most one. -/
+lemma widthQuadraticForm_le_one_of_featureSqNorm_le_reg
+    (a : Fin K)
+    (h_width : WidthQuadraticFormLeFeatureSqNormDivReg A reg x)
+    (hreg_pos : 0 < reg)
+    (h_feature_le : featureSqNorm x a ≤ reg) :
+    widthQuadraticForm A reg x a n ω ≤ 1 := by
+  refine (h_width a n ω).trans ?_
+  rwa [div_le_one hreg_pos]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost-sure positive-time width cap from the matrix comparison and an almost-sure
+`featureSqNorm ≤ reg` bound along the selected actions. -/
+lemma widthQuadraticForm_ae_le_one_of_featureSqNorm_ae_le_reg
+    (h_width : WidthQuadraticFormLeFeatureSqNormDivReg A reg x)
+    (hreg_pos : 0 < reg)
+    (h_feature_le : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ reg) :
+    ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1 := by
+  filter_upwards [h_feature_le] with ω h_feature_leω
+  intro t ht _ht0
+  exact widthQuadraticForm_le_one_of_featureSqNorm_le_reg
+    (A := A) (reg := reg) (x := x) (n := t) (ω := ω) (A t ω) h_width hreg_pos
+    (h_feature_leω t ht)
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost-sure positive-time width cap from the matrix comparison and a selected-feature budget
+`featureSqNorm ≤ L2`, when `L2 ≤ reg`. -/
+lemma widthQuadraticForm_ae_le_one_of_featureSqNorm_ae_le
+    (h_width : WidthQuadraticFormLeFeatureSqNormDivReg A reg x)
+    (hreg_pos : 0 < reg) {L2 : ℝ}
+    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
+    (hL2_le_reg : L2 ≤ reg) :
+    ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1 := by
+  refine widthQuadraticForm_ae_le_one_of_featureSqNorm_ae_le_reg
+    (A := A) (reg := reg) (x := x) (n := n) (P := P) h_width hreg_pos ?_
+  filter_upwards [hL2] with ω hL2ω
+  intro t ht
+  exact (hL2ω t ht).trans hL2_le_reg
+
 /-- The process-level elliptical confidence width. -/
 noncomputable def width (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (a : Fin K) (n : ℕ) (ω : Ω) : ℝ :=
@@ -1679,10 +1734,10 @@ omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 upper bound for `V_n`, rather than directly as a determinant-ratio bound. -/
 lemma cappedQuadraticWidthBound_ae_of_reg_pos_det_update_featureSqNorm_budget_bound_of_designDet_le
     (hreg_pos : 0 < reg) (hd : d ≠ 0)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (h_width_le_feature : WidthQuadraticFormLeFeatureSqNormDivReg A reg x)
     (L2 : ℝ)
     (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
+    (hL2_le_reg : L2 ≤ reg)
     (hdet_of_trace : ∀ ω,
       designTrace A reg x n ω ≤ reg * (d : ℝ) + (n : ℝ) * L2 →
         designDet A reg x n ω ≤
@@ -1694,7 +1749,9 @@ lemma cappedQuadraticWidthBound_ae_of_reg_pos_det_update_featureSqNorm_budget_bo
     (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos.ne' hd
     (widthQuadraticForm_ae_nonneg_of_reg_nonneg (A := A) (reg := reg) (x := x)
       (n := n) (P := P) hreg_pos.le)
-    h_le_one L2 hL2 ?_
+    (widthQuadraticForm_ae_le_one_of_featureSqNorm_ae_le (A := A) (reg := reg)
+      (x := x) (n := n) (P := P) h_width_le_feature hreg_pos hL2 hL2_le_reg)
+    L2 hL2 ?_
   intro ω h_traceω
   exact designDetRatio_le_trace_budget_of_designDet_le (A := A) (reg := reg)
     (x := x) (n := n) (ω := ω) (T := reg * (d : ℝ) + (n : ℝ) * L2) hreg_pos hd
@@ -1705,18 +1762,18 @@ omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 positive-semidefinite determinant/trace comparison `det(M) ≤ (trace(M) / d) ^ d`. -/
 lemma cappedQuadraticWidthBound_ae_of_matrix_det_trace_bound
     (hreg_pos : 0 < reg) (hd : d ≠ 0)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (h_width_le_feature : WidthQuadraticFormLeFeatureSqNormDivReg A reg x)
     (L2 : ℝ)
     (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
+    (hL2_le_reg : L2 ≤ reg)
     (hdet_trace : MatrixDetLeTraceAveragePow d) :
     ∀ᵐ ω ∂P,
       CappedQuadraticWidthBound A reg x n ω
         (2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ)))) := by
   refine
     cappedQuadraticWidthBound_ae_of_reg_pos_det_update_featureSqNorm_budget_bound_of_designDet_le
-    (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos hd h_le_one
-    L2 hL2 ?_
+    (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos hd
+    h_width_le_feature L2 hL2 hL2_le_reg ?_
   intro ω h_traceω
   exact designDet_le_trace_budget_of_matrix_det_trace_bound (A := A) (reg := reg)
     (x := x) (n := n) (ω := ω) hdet_trace hreg_pos.le hd
@@ -2775,9 +2832,10 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_quadratic_width_boun
 feature-budget elliptical-potential term
 `2 * √(n * β n) * √(2 * d * log(1 + n L² / (reg d)))`.
 
-The remaining matrix-analysis input is isolated in `h_ratio_of_trace`: a future determinant/trace
-comparison theorem should prove that the trace budget implies the displayed determinant-ratio
-bound. -/
+The remaining matrix-analysis inputs are isolated as named hypotheses: `h_width_le_feature` should
+come from the inverse-design comparison `xᵀV⁻¹x ≤ ‖x‖² / reg`, and `h_ratio_of_trace` should come
+from a determinant/trace comparison proving that the trace budget implies the displayed
+determinant-ratio bound. -/
 lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_featureSqNorm_budget_bound
     [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
@@ -2788,10 +2846,10 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_featureSqNorm_budget_bound
         √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
     (hβ : ∀ t, 0 ≤ β (t + 1)) (hβ_mono : Monotone β)
     (hreg_pos : 0 < reg) (hd : d ≠ 0)
-    (h_quad_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (h_width_le_feature : WidthQuadraticFormLeFeatureSqNormDivReg A reg x)
     (L2 : ℝ)
     (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
+    (hL2_le_reg : L2 ≤ reg)
     (h_ratio_of_trace : ∀ ω,
       designTrace A reg x n ω ≤ reg * (d : ℝ) + (n : ℝ) * L2 →
         designDetRatio A reg x n ω ≤
@@ -2809,10 +2867,12 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_featureSqNorm_budget_bound
       (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos.ne' hd
       (widthQuadraticForm_ae_nonneg_of_reg_nonneg (A := A) (reg := reg) (x := x)
         (n := n) (P := P) hreg_pos.le)
-      h_quad_le_one L2 hL2 h_ratio_of_trace)
+      (widthQuadraticForm_ae_le_one_of_featureSqNorm_ae_le (A := A) (reg := reg)
+        (x := x) (n := n) (P := P) h_width_le_feature hreg_pos hL2 hL2_le_reg)
+      L2 hL2 h_ratio_of_trace)
 
 /-- Almost surely, cumulative regret is bounded by the feature-budget elliptical-potential term
-when the remaining matrix-analysis input is stated as the determinant upper bound
+when the determinant/trace input is stated as the determinant upper bound
 `det(V_n) ≤ ((reg * d + n * L²) / d) ^ d`. -/
 lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_featureSqNorm_budget_bound_of_designDet_le
     [Nonempty (Fin K)]
@@ -2824,10 +2884,10 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_featureSqNorm_budget_bound_
         √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
     (hβ : ∀ t, 0 ≤ β (t + 1)) (hβ_mono : Monotone β)
     (hreg_pos : 0 < reg) (hd : d ≠ 0)
-    (h_quad_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (h_width_le_feature : WidthQuadraticFormLeFeatureSqNormDivReg A reg x)
     (L2 : ℝ)
     (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
+    (hL2_le_reg : L2 ≤ reg)
     (hdet_of_trace : ∀ ω,
       designTrace A reg x n ω ≤ reg * (d : ℝ) + (n : ℝ) * L2 →
         designDet A reg x n ω ≤
@@ -2842,11 +2902,11 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_featureSqNorm_budget_bound_
     h_arm hβ hβ_mono
     (2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ))))
     (cappedQuadraticWidthBound_ae_of_reg_pos_det_update_featureSqNorm_budget_bound_of_designDet_le
-      (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos hd h_quad_le_one
-      L2 hL2 hdet_of_trace)
+      (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos hd
+      h_width_le_feature L2 hL2 hL2_le_reg hdet_of_trace)
 
 /-- Almost surely, cumulative regret is bounded by the feature-budget elliptical-potential term
-when the remaining hard input is the reusable PSD matrix determinant/trace comparison
+when the determinant/trace input is the reusable PSD matrix determinant/trace comparison
 `det(M) ≤ (trace(M) / d) ^ d`. -/
 lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_of_matrix_det_trace_bound
     [Nonempty (Fin K)]
@@ -2858,10 +2918,10 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_of_matrix_det_trace_bound
         √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
     (hβ : ∀ t, 0 ≤ β (t + 1)) (hβ_mono : Monotone β)
     (hreg_pos : 0 < reg) (hd : d ≠ 0)
-    (h_quad_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (h_width_le_feature : WidthQuadraticFormLeFeatureSqNormDivReg A reg x)
     (L2 : ℝ)
     (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
+    (hL2_le_reg : L2 ≤ reg)
     (hdet_trace : MatrixDetLeTraceAveragePow d) :
     ∀ᵐ ω ∂P,
       regret ν A n ω ≤
@@ -2873,8 +2933,8 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_of_matrix_det_trace_bound
     h_arm hβ hβ_mono
     (2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ))))
     (cappedQuadraticWidthBound_ae_of_matrix_det_trace_bound
-      (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos hd h_quad_le_one
-      L2 hL2 hdet_trace)
+      (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos hd
+      h_width_le_feature L2 hL2 hL2_le_reg hdet_trace)
 
 /-- Almost surely, cumulative regret is bounded by the simplified initial-gap term plus
 `2 * √(n * β n) * √W` whenever positive regularization, the positive-time width cap, and the final
