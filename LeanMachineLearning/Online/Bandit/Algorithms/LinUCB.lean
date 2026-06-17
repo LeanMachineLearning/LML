@@ -34,6 +34,11 @@ namespace LinUCB
 /-- Feature vectors for finite-dimensional linear bandits. -/
 abbrev Feature (d : ℕ) := Fin d → ℝ
 
+/-- Squared Euclidean norm of a finite-action feature vector, written as the dot product
+`x_aᵀ x_a`. -/
+def featureSqNorm (x : Fin K → Feature d) (a : Fin K) : ℝ :=
+  dotProduct (x a) (x a)
+
 /-- History-level regularized design matrix for LinUCB. -/
 noncomputable def designMatrix' (reg : ℝ) (x : Fin K → Feature d)
     (n : ℕ) (h : Iic n → Fin K × ℝ) : Matrix (Fin d) (Fin d) ℝ :=
@@ -137,6 +142,55 @@ lemma designMatrix_succ (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (ω : Ω
     designMatrix A reg x (n + 1) ω =
       designMatrix A reg x n ω + Matrix.vecMulVec (x (A n ω)) (x (A n ω)) := by
   simp [designMatrix, sum_range_succ, add_assoc]
+
+/-- Trace of the process-level regularized design matrix. -/
+noncomputable def designTrace (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
+  Matrix.trace (designMatrix A reg x n ω)
+
+/-- Before any observations, the design trace is the trace of `reg • I_d`, namely `reg * d`. -/
+lemma designTrace_zero (reg : ℝ) (x : Fin K → Feature d) (ω : Ω) :
+    designTrace A reg x 0 ω = reg * (d : ℝ) := by
+  simp [designTrace, designMatrix_zero]
+
+/-- Updating the design matrix by `x_a x_aᵀ` increases the trace by `x_aᵀ x_a`. -/
+lemma designTrace_succ (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (ω : Ω) :
+    designTrace A reg x (n + 1) ω =
+      designTrace A reg x n ω + featureSqNorm x (A n ω) := by
+  simp [designTrace, designMatrix_succ, featureSqNorm, Matrix.trace_vecMulVec]
+
+/-- Closed form for the design trace: initial regularization trace plus accumulated squared
+feature norms. -/
+lemma designTrace_eq_reg_mul_dim_add_sum_featureSqNorm
+    (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (ω : Ω) :
+    designTrace A reg x n ω =
+      reg * (d : ℝ) + ∑ t ∈ range n, featureSqNorm x (A t ω) := by
+  simp [designTrace, designMatrix, featureSqNorm, Matrix.trace_vecMulVec]
+
+/-- If every selected feature vector has squared norm at most `L2`, then the trace of the design
+matrix is at most `reg * d + n * L2`. -/
+lemma designTrace_le_reg_mul_dim_add_nat_mul_featureSqNorm_bound
+    (L2 : ℝ)
+    (hL2 : ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2) :
+    designTrace A reg x n ω ≤ reg * (d : ℝ) + (n : ℝ) * L2 := by
+  rw [designTrace_eq_reg_mul_dim_add_sum_featureSqNorm]
+  gcongr
+  calc
+    (∑ t ∈ range n, featureSqNorm x (A t ω)) ≤ ∑ _t ∈ range n, L2 := by
+      exact sum_le_sum fun t ht ↦ hL2 t ht
+    _ = (n : ℝ) * L2 := by
+      simp [nsmul_eq_mul]
+
+omit [IsProbabilityMeasure P] in
+/-- Almost surely, bounded selected feature norms give the corresponding deterministic trace
+budget `reg * d + n * L2`. -/
+lemma designTrace_ae_le_reg_mul_dim_add_nat_mul_featureSqNorm_bound
+    (L2 : ℝ)
+    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2) :
+    ∀ᵐ ω ∂P, designTrace A reg x n ω ≤ reg * (d : ℝ) + (n : ℝ) * L2 := by
+  filter_upwards [hL2] with ω hL2ω
+  exact designTrace_le_reg_mul_dim_add_nat_mul_featureSqNorm_bound (A := A) (reg := reg)
+    (x := x) (n := n) (ω := ω) L2 hL2ω
 
 /-- The process-level reward-feature vector built from history up to time `n` excluded. -/
 noncomputable def responseVector (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
@@ -1269,6 +1323,30 @@ lemma cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_two_pow_bound
     exact fun t ht _ ↦ h_le_oneω t ht
   · exact designDetRatio_ae_le_two_pow_of_reg_ne_zero_and_widthQuadraticForm_ae_le_one
       (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg h_nonneg h_le_one
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Trace-budget interface for the determinant part of the finite-action elliptical-potential
+argument.
+
+The future spectral/AM-GM determinant theorem should prove the hypothesis
+`designDetRatio ≤ (T / (reg * d)) ^ d`, where `T` is an upper bound on `trace(V_n)`. This theorem
+then feeds that determinant-ratio bound into the already-proved determinant-update and
+elliptical-potential chain. -/
+lemma cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_trace_budget_bound
+    (hreg : reg ≠ 0)
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (T : ℝ)
+    (h_ratio_le : ∀ᵐ ω ∂P,
+      designDetRatio A reg x n ω ≤ (T / (reg * (d : ℝ))) ^ d) :
+    ∀ᵐ ω ∂P,
+      CappedQuadraticWidthBound A reg x n ω
+        (2 * Real.log ((T / (reg * (d : ℝ))) ^ d)) := by
+  exact cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_designDetRatio_le_bound
+    (A := A) (reg := reg) (x := x) (n := n) (P := P)
+    (D := (T / (reg * (d : ℝ))) ^ d) hreg h_nonneg h_le_one h_ratio_le
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The packaged process-level capped quadratic-width input implies the `widthSqSum` bound consumed
