@@ -2498,6 +2498,46 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_quadratic_width_boun
     (widthSqSum_ae_le_of_capped_quadratic_width_bound_ae (A := A) (reg := reg)
       (x := x) (n := n) (P := P) (W := W) h_bound)
 
+/-- Almost surely, cumulative regret is bounded by the simplified initial-gap term plus the
+feature-budget elliptical-potential term
+`2 * √(n * β n) * √(2 * d * log(1 + n L² / (reg d)))`.
+
+The remaining matrix-analysis input is isolated in `h_ratio_of_trace`: a future determinant/trace
+comparison theorem should prove that the trace budget implies the displayed determinant-ratio
+bound. -/
+lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_featureSqNorm_budget_bound
+    [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_best : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      (ν (bestArm ν))[id] ≤ index A R reg β x (bestArm ν) n ω)
+    (h_arm : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      estimatedReward A R reg x (A n ω) n ω -
+        √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
+    (hβ : ∀ t, 0 ≤ β (t + 1)) (hβ_mono : Monotone β)
+    (hreg : reg ≠ 0) (hd : d ≠ 0)
+    (h_quad_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_quad_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (L2 : ℝ)
+    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
+    (h_ratio_of_trace : ∀ ω,
+      designTrace A reg x n ω ≤ reg * (d : ℝ) + (n : ℝ) * L2 →
+        designDetRatio A reg x n ω ≤
+          ((reg * (d : ℝ) + (n : ℝ) * L2) / (reg * (d : ℝ))) ^ d) :
+    ∀ᵐ ω ∂P,
+      regret ν A n ω ≤
+        (if n = 0 then 0 else gap ν (A 0 ω)) +
+          2 * (√((n : ℝ) * β n) *
+            √(2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ))))) := by
+  exact regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_quadratic_width_bound
+    (A := A) (R := R) (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_best
+    h_arm hβ hβ_mono
+    (2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ))))
+    (cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_featureSqNorm_budget_bound'
+      (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg hd h_quad_nonneg
+      h_quad_le_one L2 hL2 h_ratio_of_trace)
+
 /-- Almost surely, cumulative regret is bounded by the simplified initial-gap term plus
 `2 * √(n * β n) * √W` whenever the capped quadratic-width sum is bounded by the
 log-determinant elliptical potential and that potential is bounded by `W`.
