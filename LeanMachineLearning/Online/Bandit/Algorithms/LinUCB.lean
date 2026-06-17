@@ -739,6 +739,39 @@ lemma designDetRatio_ae_le_two_pow_of_reg_ne_zero_and_widthQuadraticForm_ae_le_o
     designDet_zero_ne_zero_of_reg_ne_zero (A := A) (reg := reg) (x := x) (ω := ω) hreg
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Converts an almost-sure trace bound into the determinant-ratio bound expected from a future
+trace/determinant comparison theorem. -/
+lemma designDetRatio_ae_le_trace_budget_of_designTrace_ae_le
+    (T : ℝ)
+    (h_trace_le : ∀ᵐ ω ∂P, designTrace A reg x n ω ≤ T)
+    (h_ratio_of_trace : ∀ ω,
+      designTrace A reg x n ω ≤ T →
+        designDetRatio A reg x n ω ≤ (T / (reg * (d : ℝ))) ^ d) :
+    ∀ᵐ ω ∂P, designDetRatio A reg x n ω ≤ (T / (reg * (d : ℝ))) ^ d := by
+  filter_upwards [h_trace_le] with ω h_traceω
+  exact h_ratio_of_trace ω h_traceω
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Bounded selected feature norms give the concrete trace budget
+`reg * d + n * L2`; a future trace/determinant comparison then gives the corresponding
+determinant-ratio bound. -/
+lemma designDetRatio_ae_le_trace_budget_of_featureSqNorm_bound
+    (L2 : ℝ)
+    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
+    (h_ratio_of_trace : ∀ ω,
+      designTrace A reg x n ω ≤ reg * (d : ℝ) + (n : ℝ) * L2 →
+        designDetRatio A reg x n ω ≤
+          ((reg * (d : ℝ) + (n : ℝ) * L2) / (reg * (d : ℝ))) ^ d) :
+    ∀ᵐ ω ∂P,
+      designDetRatio A reg x n ω ≤
+        ((reg * (d : ℝ) + (n : ℝ) * L2) / (reg * (d : ℝ))) ^ d := by
+  exact designDetRatio_ae_le_trace_budget_of_designTrace_ae_le (A := A) (reg := reg)
+    (x := x) (n := n) (P := P) (T := reg * (d : ℝ) + (n : ℝ) * L2)
+    (designTrace_ae_le_reg_mul_dim_add_nat_mul_featureSqNorm_bound (A := A) (reg := reg)
+      (x := x) (n := n) (P := P) L2 hL2)
+    h_ratio_of_trace
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The log-determinant expression that appears in the elliptical-potential lemma. -/
 noncomputable def ellipticalPotential (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
@@ -1347,6 +1380,35 @@ lemma cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_trace_budget_bound
   exact cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_designDetRatio_le_bound
     (A := A) (reg := reg) (x := x) (n := n) (P := P)
     (D := (T / (reg * (d : ℝ))) ^ d) hreg h_nonneg h_le_one h_ratio_le
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Feature-norm-budget interface for the determinant part of the finite-action
+elliptical-potential argument.
+
+If selected feature vectors have squared norm at most `L2`, then `trace(V_n) ≤ reg * d + n * L2`.
+Given a future deterministic trace/determinant comparison that turns this trace budget into the
+determinant-ratio bound, this theorem supplies the packaged capped-width input with the explicit
+budget `2 * log (((reg * d + n * L2) / (reg * d)) ^ d)`. -/
+lemma cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_featureSqNorm_budget_bound
+    (hreg : reg ≠ 0)
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (L2 : ℝ)
+    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
+    (h_ratio_of_trace : ∀ ω,
+      designTrace A reg x n ω ≤ reg * (d : ℝ) + (n : ℝ) * L2 →
+        designDetRatio A reg x n ω ≤
+          ((reg * (d : ℝ) + (n : ℝ) * L2) / (reg * (d : ℝ))) ^ d) :
+    ∀ᵐ ω ∂P,
+      CappedQuadraticWidthBound A reg x n ω
+        (2 * Real.log (((reg * (d : ℝ) + (n : ℝ) * L2) / (reg * (d : ℝ))) ^ d)) := by
+  exact cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_trace_budget_bound
+    (A := A) (reg := reg) (x := x) (n := n) (P := P)
+    (T := reg * (d : ℝ) + (n : ℝ) * L2) hreg h_nonneg h_le_one
+    (designDetRatio_ae_le_trace_budget_of_featureSqNorm_bound (A := A) (reg := reg)
+      (x := x) (n := n) (P := P) L2 hL2 h_ratio_of_trace)
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The packaged process-level capped quadratic-width input implies the `widthSqSum` bound consumed
