@@ -101,8 +101,7 @@ def step (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨) (n : ℕ) (ω : Ω)
   (A n ω, Y n ω)
 
 @[fun_prop]
-lemma IsAlgEnvSeq.measurable_step (n : ℕ) (hA : Measurable (A n))
-    (hY : Measurable (Y n)) :
+lemma measurable_step (n : ℕ) (hA : Measurable (A n)) (hY : Measurable (Y n)) :
     Measurable (step A Y n) := by
   unfold step
   fun_prop
@@ -201,6 +200,13 @@ lemma IsAlgEnvSeq.isAlgEnvSeqUntil (h : IsAlgEnvSeq A Y alg env P) (N : ℕ) :
   hasCondDistrib_feedback_zero := h.hasCondDistrib_feedback_zero
   hasCondDistrib_action n _ := h.hasCondDistrib_action n
   hasCondDistrib_feedback n _ := h.hasCondDistrib_feedback n
+
+@[fun_prop]
+lemma IsAlgEnvSeq.measurable_step (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
+    Measurable (step A Y n) := by
+  have hA := h.measurable_action
+  have hY := h.measurable_feedback
+  fun_prop
 
 @[fun_prop]
 lemma IsAlgEnvSeq.measurable_history (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
