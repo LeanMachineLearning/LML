@@ -8,8 +8,11 @@ module
 public import LeanMachineLearning.Online.Bandit.SumRewards
 public import LeanMachineLearning.SequentialLearning.Deterministic
 public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
+<<<<<<< HEAD
 public import Mathlib.Analysis.SpecialFunctions.Log.Deriv
 public import Mathlib.LinearAlgebra.Matrix.SchurComplement
+=======
+>>>>>>> main
 public import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 
 /-!
@@ -31,6 +34,7 @@ section Algorithm
 
 namespace LinUCB
 
+<<<<<<< HEAD
 /-- Feature vectors for finite-dimensional linear bandits. -/
 abbrev Feature (d : ℕ) := Fin d → ℝ
 
@@ -40,25 +44,39 @@ def featureSqNorm (x : Fin K → Feature d) (a : Fin K) : ℝ :=
   dotProduct (x a) (x a)
 
 /-- History-level regularized design matrix for LinUCB. -/
+=======
+abbrev Feature (d : ℕ) := Fin d → ℝ
+
+>>>>>>> main
 noncomputable def designMatrix' (reg : ℝ) (x : Fin K → Feature d)
     (n : ℕ) (h : Iic n → Fin K × ℝ) : Matrix (Fin d) (Fin d) ℝ :=
   reg • 1 + ∑ s : Iic n, Matrix.vecMulVec (x (h s).1) (x (h s).1)
 
+<<<<<<< HEAD
 /-- History-level response vector for LinUCB. -/
+=======
+>>>>>>> main
 noncomputable def responseVector' (x : Fin K → Feature d)
     (n : ℕ) (h : Iic n → Fin K × ℝ) : Feature d :=
   ∑ s : Iic n, (h s).2 • x (h s).1
 
+<<<<<<< HEAD
 /-- History-level regularized least-squares estimate. -/
+=======
+>>>>>>> main
 noncomputable def thetaHat' (reg : ℝ) (x : Fin K → Feature d)
     (n : ℕ) (h : Iic n → Fin K × ℝ) : Feature d :=
   Matrix.mulVec (designMatrix' reg x n h)⁻¹ (responseVector' x n h)
 
+<<<<<<< HEAD
 /-- History-level estimated reward of an arm. -/
+=======
+>>>>>>> main
 noncomputable def estimatedReward' (reg : ℝ) (x : Fin K → Feature d)
     (n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fin K) : ℝ :=
   dotProduct (thetaHat' reg x n h) (x a)
 
+<<<<<<< HEAD
 /-- History-level quadratic form underlying the LinUCB confidence width. -/
 noncomputable def widthQuadraticForm' (reg : ℝ) (x : Fin K → Feature d)
     (n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fin K) : ℝ :=
@@ -76,6 +94,11 @@ lemma width'_sq_eq_quadratic_form (reg : ℝ) (x : Fin K → Feature d)
     (h_nonneg : 0 ≤ widthQuadraticForm' reg x n h a) :
     width' reg x n h a ^ 2 = widthQuadraticForm' reg x n h a := by
   simp [width', Real.sq_sqrt h_nonneg]
+=======
+noncomputable def width' (reg : ℝ) (x : Fin K → Feature d)
+    (n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fin K) : ℝ :=
+  √(dotProduct (x a) (Matrix.mulVec (designMatrix' reg x n h)⁻¹ (x a)))
+>>>>>>> main
 
 /-- LinUCB optimistic index of an arm.
 
@@ -91,6 +114,10 @@ open Classical in
 /-- Arm pulled by finite-action LinUCB at time `n + 1`. -/
 noncomputable def nextArm (hK : 0 < K) (reg : ℝ) (β : ℕ → ℝ)
     (x : Fin K → Feature d)
+<<<<<<< HEAD
+=======
+    (_h_index : ∀ n a, Measurable (fun h ↦ index' reg β x n h a))
+>>>>>>> main
     (n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   measurableArgmax (fun h a ↦ index' reg β x n h a) h
@@ -100,7 +127,11 @@ lemma measurable_nextArm (hK : 0 < K) (reg : ℝ) (β : ℕ → ℝ)
     (x : Fin K → Feature d)
     (h_index : ∀ n a, Measurable (fun h ↦ index' reg β x n h a))
     (n : ℕ) :
+<<<<<<< HEAD
     Measurable (nextArm hK reg β x n) := by
+=======
+    Measurable (nextArm hK reg β x h_index n) := by
+>>>>>>> main
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   exact measurable_measurableArgmax fun a ↦ h_index n a
 
@@ -111,7 +142,11 @@ noncomputable def linUCBAlgorithm (hK : 0 < K) (reg : ℝ) (β : ℕ → ℝ)
     (x : Fin K → LinUCB.Feature d)
     (h_index : ∀ n a, Measurable (fun h ↦ LinUCB.index' reg β x n h a)) :
     Algorithm (Fin K) ℝ :=
+<<<<<<< HEAD
   detAlgorithm (LinUCB.nextArm hK reg β x) (by fun_prop) ⟨0, hK⟩
+=======
+  detAlgorithm (LinUCB.nextArm hK reg β x h_index) (by fun_prop) ⟨0, hK⟩
+>>>>>>> main
 
 end Algorithm
 
@@ -132,6 +167,7 @@ noncomputable def designMatrix (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : Matrix (Fin d) (Fin d) ℝ :=
   reg • 1 + ∑ s ∈ range n, Matrix.vecMulVec (x (A s ω)) (x (A s ω))
 
+<<<<<<< HEAD
 /-- The initial design matrix before any actions are included. -/
 lemma designMatrix_zero (reg : ℝ) (x : Fin K → Feature d) (ω : Ω) :
     designMatrix A reg x 0 ω = reg • 1 := by
@@ -192,11 +228,14 @@ lemma designTrace_ae_le_reg_mul_dim_add_nat_mul_featureSqNorm_bound
   exact designTrace_le_reg_mul_dim_add_nat_mul_featureSqNorm_bound (A := A) (reg := reg)
     (x := x) (n := n) (ω := ω) L2 hL2ω
 
+=======
+>>>>>>> main
 /-- The process-level reward-feature vector built from history up to time `n` excluded. -/
 noncomputable def responseVector (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : Feature d :=
   ∑ s ∈ range n, R s ω • x (A s ω)
 
+<<<<<<< HEAD
 /-- The initial response vector before any rewards are included. -/
 lemma responseVector_zero (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     (x : Fin K → Feature d) (ω : Ω) :
@@ -210,11 +249,14 @@ lemma responseVector_succ (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
       responseVector A R x n ω + R n ω • x (A n ω) := by
   simp [responseVector, sum_range_succ]
 
+=======
+>>>>>>> main
 /-- The process-level regularized least-squares estimate. -/
 noncomputable def thetaHat (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : Feature d :=
   Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (responseVector A R x n ω)
 
+<<<<<<< HEAD
 /-- The initial least-squares estimate is zero because no reward-feature observations have been
 included yet. -/
 lemma thetaHat_zero (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
@@ -222,11 +264,14 @@ lemma thetaHat_zero (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     thetaHat A R reg x 0 ω = 0 := by
   simp [thetaHat, responseVector_zero]
 
+=======
+>>>>>>> main
 /-- The process-level estimated linear reward. -/
 noncomputable def estimatedReward (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     (reg : ℝ) (x : Fin K → Feature d) (a : Fin K) (n : ℕ) (ω : Ω) : ℝ :=
   dotProduct (thetaHat A R reg x n ω) (x a)
 
+<<<<<<< HEAD
 /-- The initial estimated reward is zero for every arm. -/
 lemma estimatedReward_zero (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     (reg : ℝ) (x : Fin K → Feature d) (a : Fin K) (ω : Ω) :
@@ -1366,6 +1411,12 @@ lemma widthSqSum_ae_le_of_capped_quadratic_width_bound_ae {W : ℝ}
   filter_upwards [h_bound] with ω h_boundω
   exact widthSqSum_le_of_capped_quadratic_width_bound (A := A) (reg := reg) (x := x)
     (n := n) (ω := ω) (W := W) h_boundω
+=======
+/-- The process-level elliptical confidence width. -/
+noncomputable def width (A : ℕ → Ω → Fin K) (reg : ℝ)
+    (x : Fin K → Feature d) (a : Fin K) (n : ℕ) (ω : Ω) : ℝ :=
+  √(dotProduct (x a) (Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (x a)))
+>>>>>>> main
 
 /-- The process-level LinUCB optimistic index. -/
 noncomputable def index (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
@@ -1373,6 +1424,7 @@ noncomputable def index (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     (n : ℕ) (ω : Ω) : ℝ :=
   estimatedReward A R reg x a n ω + √(β (n + 1)) * width A reg x a n ω
 
+<<<<<<< HEAD
 /-- At time zero, the LinUCB index is only the confidence bonus because the estimated reward is
 zero. -/
 lemma index_zero (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
@@ -1388,6 +1440,8 @@ lemma index_zero_eq_initial_quadratic_form (A : ℕ → Ω → Fin K) (R : ℕ �
       √(β 1) * √(dotProduct (x a) (Matrix.mulVec (reg • 1)⁻¹ (x a))) := by
   simp [index_zero, width_zero]
 
+=======
+>>>>>>> main
 lemma designMatrix_eq_designMatrix' (reg : ℝ) (x : Fin K → Feature d) (n : ℕ)
     (ω : Ω) (hn : n ≠ 0) :
     designMatrix A reg x n ω =
@@ -1423,6 +1477,7 @@ lemma estimatedReward_eq_estimatedReward' (reg : ℝ) (x : Fin K → Feature d)
       estimatedReward' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) a := by
   simp [estimatedReward, estimatedReward', thetaHat_eq_thetaHat' (A := A) (R := R) reg x n ω hn]
 
+<<<<<<< HEAD
 lemma widthQuadraticForm_eq_widthQuadraticForm' (reg : ℝ) (x : Fin K → Feature d)
     (a : Fin K) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
     widthQuadraticForm A reg x a n ω =
@@ -1864,6 +1919,12 @@ lemma widthSqSum_ae_le_of_capped_history_quadratic_width_sum_ae_le {W : ℝ}
     (historyQuadraticWidthBound_ae_of_capped_sum_ae_le (A := A) (R := R)
       (reg := reg) (x := x) (n := n) (P := P) (W := W) h_nonneg h_le_one
       h_capped_le)
+=======
+lemma width_eq_width' (reg : ℝ) (x : Fin K → Feature d)
+    (a : Fin K) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
+    width A reg x a n ω = width' reg x (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) a := by
+  simp [width, width', designMatrix_eq_designMatrix' (A := A) (R := R) reg x n ω hn]
+>>>>>>> main
 
 lemma index_eq_index' (reg : ℝ) (β : ℕ → ℝ) (x : Fin K → Feature d)
     (a : Fin K) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
@@ -1878,7 +1939,11 @@ lemma arm_ae_eq_linUCBNextArm [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
     (n : ℕ) :
     A (n + 1) =ᵐ[P]
+<<<<<<< HEAD
       fun ω ↦ nextArm hK reg β x n (IsAlgEnvSeq.hist A R n ω) := by
+=======
+      fun ω ↦ nextArm hK reg β x h_index n (IsAlgEnvSeq.hist A R n ω) := by
+>>>>>>> main
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   exact h.action_detAlgorithm_ae_eq n
 
@@ -1887,7 +1952,11 @@ lemma arm_ae_all_eq [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P) :
     ∀ᵐ ω ∂P,
       ∀ n, A (n + 1) ω =
+<<<<<<< HEAD
         nextArm hK reg β x n (IsAlgEnvSeq.hist A R n ω) := by
+=======
+        nextArm hK reg β x h_index n (IsAlgEnvSeq.hist A R n ω) := by
+>>>>>>> main
   simp_rw [ae_all_iff]
   exact fun n ↦ arm_ae_eq_linUCBNextArm h n
 
@@ -1917,6 +1986,7 @@ lemma forall_index_le_index_arm [Nonempty (Fin K)]
 
 end AlgorithmBehavior
 
+<<<<<<< HEAD
 omit [IsMarkovKernel ν] in
 /-- If the LinUCB confidence inequalities hold for a comparator arm and the selected arm, and the
 selected arm has maximal LinUCB index, then instantaneous regret is controlled by the selected
@@ -2432,6 +2502,8 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_of_ellipticalPotential_boun
       (reg := reg) (x := x) (n := n) (P := P) (W := W) h_quad_nonneg h_quad_le_one
       h_elliptical h_potential_le)
 
+=======
+>>>>>>> main
 end LinUCB
 
 end Bandits
