@@ -87,6 +87,86 @@ structure IsBayesAlgEnvSeq
 
 namespace IsBayesAlgEnvSeq
 
+section Laws
+
+variable [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
+variable {Q : Measure 𝓔} {κ : Kernel (𝓔 × 𝓐) 𝓨} {alg : Algorithm 𝓐 𝓨}
+variable {E : Ω → 𝓔} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
+variable {P : Measure Ω} [IsFiniteMeasure P]
+
+lemma hasLaw_action_zero [IsProbabilityMeasure P] (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
+    HasLaw (A 0) alg.p0 P := h.hasCondDistrib_action_zero.hasLaw_of_const
+
+lemma hasCondDistrib_action' (h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
+    HasCondDistrib (A (n + 1)) (IsAlgEnvSeq.hist A Y n) (alg.policy n) P :=
+  (h.hasCondDistrib_action n).comp_right' (by fun_prop)
+
+lemma hasCondDistrib_feedback' [IsFiniteKernel κ] (h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
+    HasCondDistrib (Y (n + 1)) (fun ω ↦ (E ω, A (n + 1) ω)) κ P :=
+  (h.hasCondDistrib_feedback n).comp_right' (by fun_prop)
+
+lemma hasLaw_IT_action_zero (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
+    ∀ᵐ e ∂Q, HasLaw (IT.action 0) alg.p0 (condDistrib (trajectory A Y) E P e) := by
+  rw [← h.hasLaw_env.map_eq]
+  filter_upwards [condDistrib_comp E
+      ((measurable_trajectory h.measurable_action h.measurable_feedback).aemeasurable)
+      (IT.measurable_action (𝓐 := 𝓐) (𝓨 := 𝓨) 0),
+    h.hasCondDistrib_action_zero.condDistrib_eq] with _ hc hcd
+  exact ⟨(IT.measurable_action 0).aemeasurable, by
+    rw [← Kernel.map_apply _ (IT.measurable_action 0), ← hc,
+      show IT.action 0 ∘ trajectory A Y = A 0 from rfl, hcd, Kernel.const_apply]⟩
+
+lemma hasCondDistrib_IT_feedback_zero (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
+    ∀ᵐ e ∂Q, HasCondDistrib (IT.feedback 0) (IT.action 0) (κ.sectR e)
+      (condDistrib (trajectory A Y) E P e) := by
+  rw [← h.hasLaw_env.map_eq]
+  exact h.hasCondDistrib_feedback_zero.hasCondDistrib_sectR
+    (IT.measurable_action 0) (IT.measurable_feedback 0)
+    (measurable_trajectory h.measurable_action h.measurable_feedback).aemeasurable
+
+lemma hasCondDistrib_IT_action (h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
+    ∀ᵐ e ∂Q, HasCondDistrib (IT.action (n + 1)) (IT.hist n) (alg.policy n)
+      (condDistrib (trajectory A Y) E P e) := by
+  rw [← h.hasLaw_env.map_eq]
+  filter_upwards [(h.hasCondDistrib_action n).hasCondDistrib_sectR
+    (IT.measurable_hist n) (IT.measurable_action (n + 1))
+    (measurable_trajectory h.measurable_action h.measurable_feedback).aemeasurable] with _ he
+  rwa [Kernel.sectR_prodMkLeft] at he
+
+lemma hasCondDistrib_IT_feedback [IsFiniteKernel κ] (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
+    (n : ℕ) :
+    ∀ᵐ e ∂Q, HasCondDistrib (IT.feedback (n + 1)) (fun τ ↦ (IT.hist n τ, IT.action (n + 1) τ))
+      ((κ.sectR e).prodMkLeft _) (condDistrib (trajectory A Y) E P e) := by
+  rw [← h.hasLaw_env.map_eq]
+  have hc : HasCondDistrib (Y (n + 1))
+      (fun ω ↦ (E ω, IsAlgEnvSeq.hist A Y n ω, A (n + 1) ω))
+      (κ.comap (fun (e, _, a) ↦ (e, a)) (by fun_prop)) P :=
+    (h.hasCondDistrib_feedback n).comp_right (MeasurableEquiv.prodAssoc.symm.trans
+      ((MeasurableEquiv.prodCongr .prodComm (.refl _)).trans .prodAssoc))
+  exact hc.hasCondDistrib_sectR ((IT.measurable_hist n).prodMk
+    (IT.measurable_action (n + 1))) (IT.measurable_feedback (n + 1))
+    (measurable_trajectory h.measurable_action h.measurable_feedback).aemeasurable
+
+lemma hasLaw_IT_hist (h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
+    ∀ᵐ e ∂Q, HasLaw (IT.hist n) (condDistrib (IsAlgEnvSeq.hist A Y n) E P e)
+      (condDistrib (trajectory A Y) E P e) := by
+  rw [← h.hasLaw_env.map_eq, show IsAlgEnvSeq.hist A Y n = IT.hist n ∘ trajectory A Y from rfl]
+  filter_upwards [condDistrib_comp E
+    (measurable_trajectory h.measurable_action h.measurable_feedback).aemeasurable
+    (IT.measurable_hist n)] with _ he
+  exact ⟨(IT.measurable_hist n).aemeasurable, by
+    rw [← Kernel.map_apply _ (IT.measurable_hist n), he]⟩
+
+lemma ae_IsAlgEnvSeq [IsMarkovKernel κ] (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
+    ∀ᵐ e ∂Q, IsAlgEnvSeq IT.action IT.feedback alg (stationaryEnv (κ.sectR e))
+      (condDistrib (trajectory A Y) E P e) := by
+  filter_upwards [hasLaw_IT_action_zero h, hasCondDistrib_IT_feedback_zero h,
+    ae_all_iff.2 (hasCondDistrib_IT_action h), ae_all_iff.2 (hasCondDistrib_IT_feedback h)]
+    with _ ha0 hr0 hA hR
+  exact ⟨IT.measurable_action, IT.measurable_feedback, ha0, hr0, hA, hR⟩
+
+end Laws
+
 section Real
 
 /-- A random variable that gives the mean feedback of action `a`. -/
@@ -196,90 +276,6 @@ lemma integrable_regret [Countable 𝓐] [Nonempty 𝓐] {κ : Kernel (𝓔 × �
   exact integrable_finsetSum _ (fun _ _ ↦ integrable_gap hE hA h)
 
 end Real
-
-variable [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
-variable {Q : Measure 𝓔} {κ : Kernel (𝓔 × 𝓐) 𝓨} {alg : Algorithm 𝓐 𝓨}
-variable {E : Ω → 𝓔} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
-variable {P : Measure Ω} [IsFiniteMeasure P]
-
-section Laws
-
-lemma hasLaw_action_zero [IsProbabilityMeasure P] (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
-    HasLaw (A 0) alg.p0 P := h.hasCondDistrib_action_zero.hasLaw_of_const
-
-lemma hasCondDistrib_action' (h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
-    HasCondDistrib (A (n + 1)) (IsAlgEnvSeq.hist A Y n) (alg.policy n) P :=
-  (h.hasCondDistrib_action n).comp_right' (by fun_prop)
-
-lemma hasCondDistrib_feedback' [IsFiniteKernel κ] (h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
-    HasCondDistrib (Y (n + 1)) (fun ω ↦ (E ω, A (n + 1) ω)) κ P :=
-  (h.hasCondDistrib_feedback n).comp_right' (by fun_prop)
-
-end Laws
-
-section CondDistribIsAlgEnvSeq
-
-lemma hasLaw_IT_action_zero (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
-    ∀ᵐ e ∂Q, HasLaw (IT.action 0) alg.p0 (condDistrib (trajectory A Y) E P e) := by
-  rw [← h.hasLaw_env.map_eq]
-  filter_upwards [condDistrib_comp E
-      ((measurable_trajectory h.measurable_action h.measurable_feedback).aemeasurable)
-      (IT.measurable_action (𝓐 := 𝓐) (𝓨 := 𝓨) 0),
-    h.hasCondDistrib_action_zero.condDistrib_eq] with _ hc hcd
-  exact ⟨(IT.measurable_action 0).aemeasurable, by
-    rw [← Kernel.map_apply _ (IT.measurable_action 0), ← hc,
-      show IT.action 0 ∘ trajectory A Y = A 0 from rfl, hcd, Kernel.const_apply]⟩
-
-lemma hasCondDistrib_IT_feedback_zero (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
-    ∀ᵐ e ∂Q, HasCondDistrib (IT.feedback 0) (IT.action 0) (κ.sectR e)
-      (condDistrib (trajectory A Y) E P e) := by
-  rw [← h.hasLaw_env.map_eq]
-  exact h.hasCondDistrib_feedback_zero.hasCondDistrib_sectR
-    (IT.measurable_action 0) (IT.measurable_feedback 0)
-    (measurable_trajectory h.measurable_action h.measurable_feedback).aemeasurable
-
-lemma hasCondDistrib_IT_action (h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
-    ∀ᵐ e ∂Q, HasCondDistrib (IT.action (n + 1)) (IT.hist n) (alg.policy n)
-      (condDistrib (trajectory A Y) E P e) := by
-  rw [← h.hasLaw_env.map_eq]
-  filter_upwards [(h.hasCondDistrib_action n).hasCondDistrib_sectR
-    (IT.measurable_hist n) (IT.measurable_action (n + 1))
-    (measurable_trajectory h.measurable_action h.measurable_feedback).aemeasurable] with _ he
-  rwa [Kernel.sectR_prodMkLeft] at he
-
-lemma hasCondDistrib_IT_feedback [IsFiniteKernel κ] (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
-    (n : ℕ) :
-    ∀ᵐ e ∂Q, HasCondDistrib (IT.feedback (n + 1)) (fun τ ↦ (IT.hist n τ, IT.action (n + 1) τ))
-      ((κ.sectR e).prodMkLeft _) (condDistrib (trajectory A Y) E P e) := by
-  rw [← h.hasLaw_env.map_eq]
-  have hc : HasCondDistrib (Y (n + 1))
-      (fun ω ↦ (E ω, IsAlgEnvSeq.hist A Y n ω, A (n + 1) ω))
-      (κ.comap (fun (e, _, a) ↦ (e, a)) (by fun_prop)) P :=
-    (h.hasCondDistrib_feedback n).comp_right (MeasurableEquiv.prodAssoc.symm.trans
-      ((MeasurableEquiv.prodCongr .prodComm (.refl _)).trans .prodAssoc))
-  exact hc.hasCondDistrib_sectR ((IT.measurable_hist n).prodMk
-    (IT.measurable_action (n + 1))) (IT.measurable_feedback (n + 1))
-    (measurable_trajectory h.measurable_action h.measurable_feedback).aemeasurable
-
-lemma hasLaw_IT_hist (h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
-    ∀ᵐ e ∂Q, HasLaw (IT.hist n) (condDistrib (IsAlgEnvSeq.hist A Y n) E P e)
-      (condDistrib (trajectory A Y) E P e) := by
-  rw [← h.hasLaw_env.map_eq, show IsAlgEnvSeq.hist A Y n = IT.hist n ∘ trajectory A Y from rfl]
-  filter_upwards [condDistrib_comp E
-    (measurable_trajectory h.measurable_action h.measurable_feedback).aemeasurable
-    (IT.measurable_hist n)] with _ he
-  exact ⟨(IT.measurable_hist n).aemeasurable, by
-    rw [← Kernel.map_apply _ (IT.measurable_hist n), he]⟩
-
-lemma ae_IsAlgEnvSeq [IsMarkovKernel κ] (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
-    ∀ᵐ e ∂Q, IsAlgEnvSeq IT.action IT.feedback alg (stationaryEnv (κ.sectR e))
-      (condDistrib (trajectory A Y) E P e) := by
-  filter_upwards [hasLaw_IT_action_zero h, hasCondDistrib_IT_feedback_zero h,
-    ae_all_iff.2 (hasCondDistrib_IT_action h), ae_all_iff.2 (hasCondDistrib_IT_feedback h)]
-    with _ ha0 hr0 hA hR
-  exact ⟨IT.measurable_action, IT.measurable_feedback, ha0, hr0, hA, hR⟩
-
-end CondDistribIsAlgEnvSeq
 
 end IsBayesAlgEnvSeq
 
