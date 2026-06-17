@@ -1411,6 +1411,45 @@ lemma cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_featureSqNorm_budge
       (x := x) (n := n) (P := P) L2 hL2 h_ratio_of_trace)
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- The explicit feature-norm determinant budget can be rewritten in the common
+`d * log(1 + n L² / (reg d))` form. -/
+lemma featureSqNorm_budget_log_eq_dim_mul_log_one_add
+    (L2 : ℝ) (hden : reg * (d : ℝ) ≠ 0) :
+    2 * Real.log (((reg * (d : ℝ) + (n : ℝ) * L2) / (reg * (d : ℝ))) ^ d) =
+      2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ))) := by
+  have hbase :
+      (reg * (d : ℝ) + (n : ℝ) * L2) / (reg * (d : ℝ)) =
+        1 + (n : ℝ) * L2 / (reg * (d : ℝ)) := by
+    exact same_add_div hden
+  rw [Real.log_pow, hbase]
+  ring
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Feature-norm-budget interface with the log term rewritten in the standard
+`2 * d * log(1 + n L² / (reg d))` shape. -/
+lemma cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_featureSqNorm_budget_bound'
+    (hreg : reg ≠ 0) (hd : d ≠ 0)
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
+      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
+    (L2 : ℝ)
+    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
+    (h_ratio_of_trace : ∀ ω,
+      designTrace A reg x n ω ≤ reg * (d : ℝ) + (n : ℝ) * L2 →
+        designDetRatio A reg x n ω ≤
+          ((reg * (d : ℝ) + (n : ℝ) * L2) / (reg * (d : ℝ))) ^ d) :
+    ∀ᵐ ω ∂P,
+      CappedQuadraticWidthBound A reg x n ω
+        (2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ)))) := by
+  have hden : reg * (d : ℝ) ≠ 0 := by
+    exact mul_ne_zero hreg (by exact_mod_cast hd)
+  rw [← featureSqNorm_budget_log_eq_dim_mul_log_one_add (reg := reg) (n := n) L2 hden]
+  exact cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_featureSqNorm_budget_bound
+    (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg h_nonneg h_le_one L2 hL2
+    h_ratio_of_trace
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The packaged process-level capped quadratic-width input implies the `widthSqSum` bound consumed
 by the regret chain. -/
 lemma widthSqSum_le_of_capped_quadratic_width_bound {W : ℝ}
