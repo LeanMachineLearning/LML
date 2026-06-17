@@ -24,9 +24,9 @@ and properties are also given in this file.
 ## Main definitions
 
 * `tsAlgorithm hK Q κ`: a Thompson sampling algorithm with actions in `Fin K` given `hK : 0 < K`,
-  a prior distribution over "environments" `Q : Measure 𝓔`, and a Markov kernel
-  `κ : Kernel (𝓔 × Fin K) ℝ`. This kernel defines how an "environment" `e : 𝓔` gives rise to
-  an actual (stationary) environment `stationaryEnv (κ.sectR e) : Environment (Fin K) ℝ`.
+  a prior distribution over parameters `Q : Measure 𝓔`, and a Markov kernel
+  `κ : Kernel (𝓔 × Fin K) ℝ`. This kernel defines how a parameter `e : 𝓔` gives rise to
+  a stationary environment: `stationaryEnv (κ.sectR e) : Environment (Fin K) ℝ`.
 * `ucb A R l u σ2 δ a n` : clipped upper confidence bound used in the regret analysis of Thompson
   sampling for a sequence of actions `A : ℕ → Ω → Fin K`, rewards `R : ℕ → Ω → ℝ`, reward lower
   bound `l : ℝ`, reward upper bound `u : ℝ`, sub-Gaussian variance proxy `σ2 : ℝ`, confidence
@@ -41,7 +41,7 @@ and properties are also given in this file.
   conditional distribution of the best action given the history so far.
 
 * `integral_regret_le`: if Thompson sampling has the correct prior over environments and every
-  "environment" has `K` actions, each of which has a corresponding reward between `l` and `u` that
+  environment has `K` actions, each of which has a corresponding reward between `l` and `u` that
   is sub-Gaussian with variance proxy `σ2` after its mean is subtracted, then the Bayesian regret at
   time `n` is at most `(2 * K + 1) * (u - l) + 8 * √(σ2 * K * n * Real.log n)`.
 
@@ -62,7 +62,7 @@ variable {K : ℕ}
 variable {𝓔 : Type*} [MeasurableSpace 𝓔] [StandardBorelSpace 𝓔] [Nonempty 𝓔]
 
 /-- The Thompson sampling policy samples an action according to its probability of being optimal
-under the posterior over "environments" given the history so far.
+under the posterior over environments given the history so far.
 The posterior under a uniform algorithm is used to avoid a circular definition. -/
 noncomputable
 def TS.policy (hK : 0 < K) (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × Fin K) ℝ)
@@ -75,7 +75,7 @@ instance {hK : 0 < K} {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (
   Kernel.IsMarkovKernel.map _ (by fun_prop)
 
 /-- The initial action is sampled according to its probability of being optimal under the prior over
-"environments". -/
+environments. -/
 noncomputable
 def TS.initialPolicy (hK : 0 < K) (Q : Measure 𝓔) (κ : Kernel (𝓔 × Fin K) ℝ) : Measure (Fin K) :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
