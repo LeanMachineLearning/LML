@@ -72,7 +72,7 @@ structure IsBayesAlgEnvSeq
     (Q : Measure 𝓔) (κ : Kernel (𝓔 × 𝓐) 𝓨) (alg : Algorithm 𝓐 𝓨)
     (E : Ω → 𝓔) (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨)
     (P : Measure Ω) [IsFiniteMeasure P] : Prop where
-  measurable_E : Measurable E := by fun_prop -- todo rename
+  measurable_param : Measurable E := by fun_prop
   measurable_action n : Measurable (A n) := by fun_prop
   measurable_feedback n : Measurable (Y n) := by fun_prop
   hasLaw_env : HasLaw E Q P
@@ -305,7 +305,7 @@ variable {P : Measure Ω} [IsProbabilityMeasure P]
 lemma IsAlgEnvSeq.isBayesAlgEnvSeq
     (h : IsAlgEnvSeq A Y (alg.prodLeft 𝓔) (bayesStationaryEnv Q κ) P) :
     IsBayesAlgEnvSeq Q κ alg (fun ω ↦ (Y 0 ω).1) A (fun n ω ↦ (Y n ω).2) P where
-  measurable_E := (h.measurable_feedback 0).fst
+  measurable_param := (h.measurable_feedback 0).fst
   measurable_action := h.measurable_action
   measurable_feedback n := (h.measurable_feedback n).snd
   hasLaw_env := by

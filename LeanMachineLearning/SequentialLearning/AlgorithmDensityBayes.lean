@@ -77,8 +77,8 @@ lemma hasLaw_hist_withDensity (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
     have hY := h.measurable_feedback
     have hA₀ := h₀.measurable_action
     have hY₀ := h₀.measurable_feedback
-    have hE := h.measurable_E
-    have hE₀ := h₀.measurable_E
+    have hE := h.measurable_param
+    have hE₀ := h₀.measurable_param
     rw [← condDistrib_comp_map hE.aemeasurable (by fun_prop), h.hasLaw_env.map_eq,
           Measure.bind_congr_right (h.condDistrib_hist_eq_condDistrib_hist_withDensity h₀ hc n),
           Kernel.comp_withDensity_eq_withDensity_comp (by fun_prop),
@@ -91,7 +91,7 @@ lemma hasCondDistrib_env_hist (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
     (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ Y₀ P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) :
     HasCondDistrib E (IsAlgEnvSeq.hist A Y n)
       (condDistrib E₀ (IsAlgEnvSeq.hist A₀ Y₀ n) P₀) P where
-  aemeasurable_fst := h.measurable_E.aemeasurable
+  aemeasurable_fst := h.measurable_param.aemeasurable
   aemeasurable_snd :=
     (IsAlgEnvSeq.measurable_hist h.measurable_action h.measurable_feedback n).aemeasurable
   condDistrib_eq := by
@@ -99,9 +99,9 @@ lemma hasCondDistrib_env_hist (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
     have hY := h.measurable_feedback
     have hA₀ := h₀.measurable_action
     have hY₀ := h₀.measurable_feedback
-    have hE := h.measurable_E
-    have hE₀ := h₀.measurable_E
-    rw [condDistrib_ae_eq_iff_measure_eq_compProd _ h.measurable_E.aemeasurable,
+    have hE := h.measurable_param
+    have hE₀ := h₀.measurable_param
+    rw [condDistrib_ae_eq_iff_measure_eq_compProd _ h.measurable_param.aemeasurable,
       ← map_swap_compProd_map_condDistrib (by fun_prop), h.hasLaw_env.map_eq,
       Measure.compProd_eq_compProd_withDensity_comp_snd (by fun_prop)
         (h.condDistrib_hist_eq_condDistrib_hist_withDensity h₀ hc n),
