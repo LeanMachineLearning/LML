@@ -2135,6 +2135,36 @@ lemma index_zero_eq_initial_quadratic_form (A : ℕ → Ω → Fin K) (R : ℕ �
       √(β 1) * √(dotProduct (x a) (Matrix.mulVec (reg • 1)⁻¹ (x a))) := by
   simp [index_zero, width_zero]
 
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- In zero feature dimension, every least-squares reward estimate is zero. -/
+lemma estimatedReward_eq_zero_of_dim_eq_zero (hd : d = 0) (a : Fin K) :
+    estimatedReward A R reg x a n ω = 0 := by
+  subst d
+  simp [estimatedReward, dotProduct]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- In zero feature dimension, every LinUCB quadratic width form is zero. -/
+lemma widthQuadraticForm_eq_zero_of_dim_eq_zero (hd : d = 0) (a : Fin K) :
+    widthQuadraticForm A reg x a n ω = 0 := by
+  subst d
+  simp [widthQuadraticForm, dotProduct]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- In zero feature dimension, every LinUCB width is zero. -/
+lemma width_eq_zero_of_dim_eq_zero (hd : d = 0) (a : Fin K) :
+    width A reg x a n ω = 0 := by
+  simp [width, widthQuadraticForm_eq_zero_of_dim_eq_zero (A := A) (reg := reg)
+    (x := x) (n := n) (ω := ω) hd a]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- In zero feature dimension, every LinUCB index is zero. -/
+lemma index_eq_zero_of_dim_eq_zero (hd : d = 0) (a : Fin K) :
+    index A R reg β x a n ω = 0 := by
+  simp [index, estimatedReward_eq_zero_of_dim_eq_zero (A := A) (R := R)
+    (reg := reg) (x := x) (n := n) (ω := ω) hd a,
+    width_eq_zero_of_dim_eq_zero (A := A) (reg := reg) (x := x) (n := n)
+      (ω := ω) hd a]
+
 /-- The pointwise LinUCB confidence event used by the finite-action regret proof.
 
 For every positive process time, the best arm's true mean lies below its optimistic index, and the
@@ -2180,6 +2210,28 @@ lemma LinUCBConfidenceEvent.arm [Nonempty (Fin K)]
         √(β (t + 1)) * width A reg x (A t ω) t ω ≤ (ν (A t ω))[id] := by
   intro t ht
   exact (h_conf t ht).2
+
+omit [IsMarkovKernel ν] in
+/-- In zero feature dimension, the confidence event forces every positive-time selected gap to be
+nonpositive. The best-arm index is zero, and the selected-arm pessimistic index is also zero. -/
+lemma gap_nonpos_of_confidence_dim_eq_zero [Nonempty (Fin K)]
+    (hd : d = 0) (h_conf : LinUCBConfidenceEvent A R reg β x ν ω)
+    (t : ℕ) (ht : t ≠ 0) :
+    gap ν (A t ω) ≤ 0 := by
+  have hbest := LinUCBConfidenceEvent.best (A := A) (R := R) (reg := reg) (β := β)
+    (x := x) (ν := ν) (ω := ω) h_conf t ht
+  have harm := LinUCBConfidenceEvent.arm (A := A) (R := R) (reg := reg) (β := β)
+    (x := x) (ν := ν) (ω := ω) h_conf t ht
+  rw [gap_eq_bestArm_sub]
+  have hbest0 : (ν (bestArm ν))[id] ≤ 0 := by
+    simpa [index_eq_zero_of_dim_eq_zero (A := A) (R := R) (reg := reg) (β := β)
+      (x := x) (n := t) (ω := ω) hd (bestArm ν)] using hbest
+  have harm0 : 0 ≤ (ν (A t ω))[id] := by
+    simpa [estimatedReward_eq_zero_of_dim_eq_zero (A := A) (R := R) (reg := reg)
+      (x := x) (n := t) (ω := ω) hd (A t ω),
+      width_eq_zero_of_dim_eq_zero (A := A) (reg := reg) (x := x) (n := t)
+        (ω := ω) hd (A t ω)] using harm
+  linarith
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- Almost-sure projection of the packaged confidence event to optimism for the best arm. -/
@@ -3209,6 +3261,32 @@ lemma initial_gap_sum_eq :
       if n = 0 then 0 else gap ν (A 0 ω) := by
   cases n <;> simp
 
+omit [IsMarkovKernel ν] in
+/-- In zero feature dimension, the confidence event bounds cumulative regret by the initial gap.
+There is no positive-time width contribution because all widths are zero. -/
+lemma regret_le_initial_gap_of_confidence_dim_eq_zero [Nonempty (Fin K)]
+    (hd : d = 0) (h_conf : LinUCBConfidenceEvent A R reg β x ν ω) :
+    regret ν A n ω ≤ if n = 0 then 0 else gap ν (A 0 ω) := by
+  refine (regret_le_sum_of_gap_bound (A := A) (ν := ν) (n := n) (ω := ω)
+    (B := fun t ↦ if t = 0 then gap ν (A 0 ω) else 0) ?_).trans ?_
+  · intro t _ht
+    by_cases ht0 : t = 0
+    · simp [ht0]
+    · simpa [ht0] using
+        gap_nonpos_of_confidence_dim_eq_zero (A := A) (R := R) (reg := reg)
+          (β := β) (x := x) (ν := ν) (ω := ω) hd h_conf t ht0
+  · rw [initial_gap_sum_eq]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost-sure zero-dimensional version of the finite-action LinUCB regret skeleton. -/
+lemma regret_ae_le_initial_gap_of_confidence_dim_eq_zero [Nonempty (Fin K)]
+    (hd : d = 0)
+    (h_conf : ∀ᵐ ω ∂P, LinUCBConfidenceEvent A R reg β x ν ω) :
+    ∀ᵐ ω ∂P, regret ν A n ω ≤ if n = 0 then 0 else gap ν (A 0 ω) := by
+  filter_upwards [h_conf] with ω h_confω
+  exact regret_le_initial_gap_of_confidence_dim_eq_zero (A := A) (R := R)
+    (reg := reg) (β := β) (x := x) (ν := ν) (n := n) (ω := ω) hd h_confω
+
 /-- Almost surely, cumulative regret is bounded by the initial gap plus
 `2 * √(n * β n) * √W` whenever the squared LinUCB widths are almost surely bounded by `W` and `β`
 is nonnegative and monotone. -/
@@ -3560,33 +3638,38 @@ lemma regret_ae_le_textbook_finite_action
     (h_gap_bound : GapBound (K := K) ν 2)
     (hβ_nonneg : ∀ t, 0 ≤ β t)
     (hβ_one : 1 ≤ β 1) (hβ_mono : Monotone β)
-    (hreg_pos : 0 < reg) (hd : d ≠ 0)
+    (hreg_pos : 0 < reg)
     (L2 : ℝ) (hL2 : FeatureSqNormBound x L2) :
     ∀ᵐ ω ∂P,
       regret ν A n ω ≤
         (if n = 0 then 0 else gap ν (A 0 ω)) +
           2 * (√((n : ℝ) * β n) *
             √(2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ))))) := by
-  have h_gap_two : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 → gap ν (A t ω) ≤ 2 := by
-    filter_upwards [gap_ae_le_of_GapBound (A := A) (ν := ν) (n := n) (P := P)
-      2 h_gap_bound] with ω h_gapω
-    intro t ht _ht0
-    exact h_gapω t ht
-  exact regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_sum_bound
-    (A := A) (R := R) (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h
-    (linUCBConfidenceEvent_ae_best (A := A) (R := R) (reg := reg) (β := β)
-      (x := x) (ν := ν) (P := P) h_conf)
-    (linUCBConfidenceEvent_ae_arm (A := A) (R := R) (reg := reg) (β := β)
-      (x := x) (ν := ν) (P := P) h_conf)
-    h_gap_two hβ_nonneg hβ_one hβ_mono
-    (2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ))))
-    (widthQuadraticForm_ae_nonneg_of_reg_nonneg (A := A) (reg := reg) (x := x)
-      (n := n) (P := P) hreg_pos.le)
-    (cappedQuadraticWidthSum_ae_le_featureSqNorm_budget_of_matrix_det_trace_bound
-      (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos hd L2
-      (featureSqNorm_ae_le_of_featureSqNormBound (A := A) (x := x) (n := n)
-        (P := P) L2 hL2)
-      matrixDetLeTraceAveragePow)
+  by_cases hd : d = 0
+  · subst d
+    simpa using regret_ae_le_initial_gap_of_confidence_dim_eq_zero
+      (A := A) (R := R) (reg := reg) (β := β) (x := x) (ν := ν) (n := n)
+      (P := P) (d := 0) rfl h_conf
+  · have h_gap_two : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 → gap ν (A t ω) ≤ 2 := by
+      filter_upwards [gap_ae_le_of_GapBound (A := A) (ν := ν) (n := n) (P := P)
+        2 h_gap_bound] with ω h_gapω
+      intro t ht _ht0
+      exact h_gapω t ht
+    exact regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_sum_bound
+      (A := A) (R := R) (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h
+      (linUCBConfidenceEvent_ae_best (A := A) (R := R) (reg := reg) (β := β)
+        (x := x) (ν := ν) (P := P) h_conf)
+      (linUCBConfidenceEvent_ae_arm (A := A) (R := R) (reg := reg) (β := β)
+        (x := x) (ν := ν) (P := P) h_conf)
+      h_gap_two hβ_nonneg hβ_one hβ_mono
+      (2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ))))
+      (widthQuadraticForm_ae_nonneg_of_reg_nonneg (A := A) (reg := reg) (x := x)
+        (n := n) (P := P) hreg_pos.le)
+      (cappedQuadraticWidthSum_ae_le_featureSqNorm_budget_of_matrix_det_trace_bound
+        (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos hd L2
+        (featureSqNorm_ae_le_of_featureSqNormBound (A := A) (x := x) (n := n)
+          (P := P) L2 hL2)
+        matrixDetLeTraceAveragePow)
 
 /-- Almost surely, cumulative regret is bounded by the simplified initial-gap term plus
 `2 * √(n * β n) * √W` whenever positive regularization, the positive-time width cap, and the final
