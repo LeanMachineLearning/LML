@@ -78,9 +78,9 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {n N : ℕ}
   {ν : ℕ → Kernel 𝓐 𝓨} [∀ n, IsMarkovKernel (ν n)]
 
-lemma hasCondDistrib_feedback_hist_action [IsObliviousEnv env]
+lemma hasCondDistrib_feedback_history_action [IsObliviousEnv env]
     (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
-    HasCondDistrib (Y (n + 1)) (fun ω ↦ (IsAlgEnvSeq.hist A Y n ω, A (n + 1) ω))
+    HasCondDistrib (Y (n + 1)) (fun ω ↦ (history A Y n ω, A (n + 1) ω))
       ((feedbackCondAction env (n + 1)).prodMkLeft _) P := by
   have hA := h.measurable_action
   have hR' := h.measurable_feedback
