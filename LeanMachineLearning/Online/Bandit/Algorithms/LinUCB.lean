@@ -48,6 +48,13 @@ lemma featureSqNorm_nonneg (x : Fin K → Feature d) (a : Fin K) :
   rw [featureSqNorm, dotProduct]
   exact sum_nonneg fun i _ ↦ mul_self_nonneg (x a i)
 
+/-- Uniform squared feature-norm bound for finite-action LinUCB.
+
+This is the finite-action version of the textbook assumption `‖x‖₂ ≤ L`, written here in squared
+form as `‖x_a‖₂² ≤ L2` for every action. -/
+def FeatureSqNormBound (x : Fin K → Feature d) (L2 : ℝ) : Prop :=
+  ∀ a, featureSqNorm x a ≤ L2
+
 /-- History-level regularized design matrix for LinUCB. -/
 noncomputable def designMatrix' (reg : ℝ) (x : Fin K → Feature d)
     (n : ℕ) (h : Iic n → Fin K × ℝ) : Matrix (Fin d) (Fin d) ℝ :=
@@ -322,6 +329,14 @@ lemma designTrace_ae_le_reg_mul_dim_add_nat_mul_featureSqNorm_bound
   filter_upwards [hL2] with ω hL2ω
   exact designTrace_le_reg_mul_dim_add_nat_mul_featureSqNorm_bound (A := A) (reg := reg)
     (x := x) (n := n) (ω := ω) L2 hL2ω
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- A uniform finite-action feature bound implies the selected-action feature bound through any
+finite horizon. -/
+lemma featureSqNorm_ae_le_of_featureSqNormBound
+    (L2 : ℝ) (hL2 : FeatureSqNormBound x L2) :
+    ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2 :=
+  Filter.Eventually.of_forall fun ω t _ht ↦ hL2 (A t ω)
 
 /-- The process-level reward-feature vector built from history up to time `n` excluded. -/
 noncomputable def responseVector (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
@@ -1226,6 +1241,25 @@ lemma min_one_le_two_mul_log_one_add_of_nonneg_le_one {q : ℝ}
   exact hq_le_log_lower.trans (mul_le_mul_of_nonneg_left hlog (by norm_num))
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Scalar log inequality used in the textbook elliptical-potential proof: for `0 ≤ q`,
+`min 1 q ≤ 2 * log (1 + q)`. -/
+lemma min_one_le_two_mul_log_one_add_of_nonneg {q : ℝ}
+    (hq_nonneg : 0 ≤ q) :
+    min 1 q ≤ 2 * Real.log (1 + q) := by
+  by_cases hq_le_one : q ≤ 1
+  · exact min_one_le_two_mul_log_one_add_of_nonneg_le_one hq_nonneg hq_le_one
+  · have hq_one : 1 ≤ q := by linarith
+    have hlog : 2 * q / (q + 2) ≤ Real.log (1 + q) :=
+      Real.le_log_one_add_of_nonneg hq_nonneg
+    have hq_add_two_pos : 0 < q + 2 := by linarith
+    have hone_le_log_lower : 1 ≤ 2 * (2 * q / (q + 2)) := by
+      rw [show 2 * (2 * q / (q + 2)) = 4 * q / (q + 2) by ring]
+      rw [le_div_iff₀ hq_add_two_pos]
+      nlinarith
+    rw [min_eq_left hq_one]
+    exact hone_le_log_lower.trans (mul_le_mul_of_nonneg_left hlog (by norm_num))
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- Under determinant nonvanishing and the usual `0 ≤ q ≤ 1` quadratic-form side conditions, the
 single capped quadratic-width term is bounded by the one-step log-determinant potential. -/
 lemma cappedWidthTerm_le_ellipticalPotentialStep
@@ -1245,6 +1279,25 @@ lemma cappedWidthTerm_le_ellipticalPotentialStep
     exact min_one_le_two_mul_log_one_add_of_nonneg_le_one h_nonneg (h_le_one hn)
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Under determinant nonvanishing and nonnegativity of the selected quadratic form, the single
+capped quadratic-width term is bounded by the one-step log-determinant potential. This is the
+textbook form; no separate `q ≤ 1` assumption is needed because the term is already capped. -/
+lemma cappedWidthTerm_le_ellipticalPotentialStep_of_nonneg
+    (hdet : designDet A reg x n ω ≠ 0)
+    (h_nonneg : 0 ≤ widthQuadraticForm A reg x (A n ω) n ω) :
+    (if n = 0 then 0 else min 1 (widthQuadraticForm A reg x (A n ω) n ω)) ≤
+      ellipticalPotentialStep A reg x n ω := by
+  by_cases hn : n = 0
+  · rw [if_pos hn,
+      ellipticalPotentialStep_eq_two_mul_log_one_add_widthQuadraticForm (A := A) (reg := reg)
+        (x := x) (n := n) (ω := ω) hdet]
+    exact mul_nonneg (by norm_num) (Real.log_nonneg (by linarith))
+  · rw [if_neg hn,
+      ellipticalPotentialStep_eq_two_mul_log_one_add_widthQuadraticForm (A := A) (reg := reg)
+        (x := x) (n := n) (ω := ω) hdet]
+    exact min_one_le_two_mul_log_one_add_of_nonneg h_nonneg
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- Almost surely, determinant nonvanishing and the standard quadratic-form side conditions imply
 the per-step one-step-potential bound required by the elliptical-potential induction shell. -/
 lemma cappedWidthTerm_ae_le_ellipticalPotentialStep_of_det_ne_zero
@@ -1260,6 +1313,21 @@ lemma cappedWidthTerm_ae_le_ellipticalPotentialStep_of_det_ne_zero
   intro t ht
   exact cappedWidthTerm_le_ellipticalPotentialStep (A := A) (reg := reg) (x := x)
     (n := t) (ω := ω) (hdetω t ht) (h_nonnegω t ht) (h_le_oneω t ht)
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, determinant nonvanishing and nonnegative selected quadratic forms imply the
+per-step one-step-potential bound for the capped quadratic-width term. -/
+lemma cappedWidthTerm_ae_le_ellipticalPotentialStep_of_det_ne_zero_of_nonneg
+    (hdet : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → designDet A reg x t ω ≠ 0)
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω) :
+    ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      (if t = 0 then 0 else min 1 (widthQuadraticForm A reg x (A t ω) t ω)) ≤
+        ellipticalPotentialStep A reg x t ω := by
+  filter_upwards [hdet, h_nonneg] with ω hdetω h_nonnegω
+  intro t ht
+  exact cappedWidthTerm_le_ellipticalPotentialStep_of_nonneg (A := A) (reg := reg)
+    (x := x) (n := t) (ω := ω) (hdetω t ht) (h_nonnegω t ht)
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- At horizon zero, the log-determinant potential is zero when the initial design determinant is
@@ -1414,6 +1482,39 @@ lemma cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_stepPotential_ae_le_o
     (reg := reg) (x := x) (n := n) (P := P) hdet] with ω h_eq
   intro t ht
   rw [h_eq t ht]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost surely, determinant nonvanishing and nonnegative selected quadratic forms imply the
+capped-sum/log-determinant elliptical-potential bound.
+
+This is the capped form used in the textbook proof of LinUCB: the quadratic forms do not need to
+be bounded by `1`, because the accumulated quantity is `min 1 q_t`. -/
+lemma cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_det_ne_zero_and_nonneg
+    (hdet : ∀ᵐ ω ∂P, ∀ t, t ∈ range (n + 1) → designDet A reg x t ω ≠ 0)
+    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω) :
+    ∀ᵐ ω ∂P, cappedQuadraticWidthSum A reg x n ω ≤ ellipticalPotential A reg x n ω := by
+  have hdet_range_n : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → designDet A reg x t ω ≠ 0 := by
+    filter_upwards [hdet] with ω hdetω
+    intro t ht
+    exact hdetω t (mem_range.mpr (Nat.lt_trans (mem_range.mp ht) (Nat.lt_succ_self n)))
+  exact cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_stepPotential_ae_le_of_det_ne_zero
+    (A := A) (reg := reg) (x := x) (n := n) (P := P) hdet
+    (cappedWidthTerm_ae_le_ellipticalPotentialStep_of_det_ne_zero_of_nonneg
+      (A := A) (reg := reg) (x := x) (n := n) (P := P) hdet_range_n h_nonneg)
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Positive regularization discharges determinant nonvanishing and nonnegativity, yielding the
+capped-sum/log-determinant elliptical-potential bound directly. -/
+lemma cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_reg_pos
+    (hreg_pos : 0 < reg) :
+    ∀ᵐ ω ∂P, cappedQuadraticWidthSum A reg x n ω ≤ ellipticalPotential A reg x n ω := by
+  exact cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_det_ne_zero_and_nonneg
+    (A := A) (reg := reg) (x := x) (n := n) (P := P)
+    (designDet_ae_ne_zero_of_reg_pos (A := A) (reg := reg) (x := x)
+      (n := n + 1) (P := P) hreg_pos)
+    (widthQuadraticForm_ae_nonneg_of_reg_nonneg (A := A) (reg := reg) (x := x)
+      (n := n) (P := P) hreg_pos.le)
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The process-level capped quadratic-width input expected from an elliptical-potential argument.
@@ -1831,6 +1932,42 @@ lemma featureSqNorm_budget_log_eq_dim_mul_log_one_add
   ring
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Textbook capped elliptical-potential budget from bounded selected feature norms and the
+matrix-level determinant/trace comparison.
+
+Unlike `cappedQuadraticWidthBound_ae_of_matrix_det_trace_bound`, this theorem bounds the capped
+quadratic-width sum directly and does not assume the individual quadratic forms are at most `1`. -/
+lemma cappedQuadraticWidthSum_ae_le_featureSqNorm_budget_of_matrix_det_trace_bound
+    (hreg_pos : 0 < reg) (hd : d ≠ 0)
+    (L2 : ℝ)
+    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
+    (hdet_trace : MatrixDetLeTraceAveragePow d) :
+    ∀ᵐ ω ∂P,
+      cappedQuadraticWidthSum A reg x n ω ≤
+        2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ))) := by
+  have hden : reg * (d : ℝ) ≠ 0 := by
+    exact mul_ne_zero hreg_pos.ne' (by exact_mod_cast hd)
+  rw [← featureSqNorm_budget_log_eq_dim_mul_log_one_add (reg := reg) (n := n) L2 hden]
+  have h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω :=
+    widthQuadraticForm_ae_nonneg_of_reg_nonneg (A := A) (reg := reg) (x := x)
+      (n := n) (P := P) hreg_pos.le
+  have h_potential_le : ∀ᵐ ω ∂P,
+      ellipticalPotential A reg x n ω ≤
+        2 * Real.log (((reg * (d : ℝ) + (n : ℝ) * L2) / (reg * (d : ℝ))) ^ d) := by
+    exact ellipticalPotential_ae_le_two_mul_log_of_designDetRatio_ae_le (A := A)
+      (reg := reg) (x := x) (n := n) (P := P)
+      (designDetRatio_ae_pos_of_reg_ne_zero_and_widthQuadraticForm_ae_nonneg
+        (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos.ne' h_nonneg)
+      (designDetRatio_ae_le_trace_budget_of_featureSqNorm_bound_of_matrix_det_trace_bound
+        (A := A) (reg := reg) (x := x) (n := n) (P := P) L2 hreg_pos hd hL2
+        hdet_trace)
+  filter_upwards [cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_reg_pos
+    (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos, h_potential_le] with
+    ω h_capped_le h_potentialω
+  exact h_capped_le.trans h_potentialω
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- Feature-norm-budget interface with the log term rewritten in the standard
 `2 * d * log(1 + n L² / (reg d))` shape. -/
 lemma cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_featureSqNorm_budget_bound'
@@ -1949,6 +2086,72 @@ lemma index_zero_eq_initial_quadratic_form (A : ℕ → Ω → Fin K) (R : ℕ �
     index A R reg β x a 0 ω =
       √(β 1) * √(dotProduct (x a) (Matrix.mulVec (reg • 1)⁻¹ (x a))) := by
   simp [index_zero, width_zero]
+
+/-- The pointwise LinUCB confidence event used by the finite-action regret proof.
+
+For every positive process time, the best arm's true mean lies below its optimistic index, and the
+selected arm's pessimistic index lies below its true mean. On this event, the max-index property of
+LinUCB turns optimism into an instantaneous regret bound. -/
+def LinUCBConfidenceEvent [Nonempty (Fin K)]
+    (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
+    (reg : ℝ) (β : ℕ → ℝ) (x : Fin K → Feature d)
+    (ν : Kernel (Fin K) ℝ) (ω : Ω) : Prop :=
+  ∀ t, t ≠ 0 →
+    (ν (bestArm ν))[id] ≤ index A R reg β x (bestArm ν) t ω ∧
+      estimatedReward A R reg x (A t ω) t ω -
+        √(β (t + 1)) * width A reg x (A t ω) t ω ≤ (ν (A t ω))[id]
+
+omit [IsMarkovKernel ν] in
+/-- Uniform bound on arm gaps, used as the finite-action analogue of the textbook bounded
+instantaneous-regret assumption. -/
+def GapBound (ν : Kernel (Fin K) ℝ) (G : ℝ) : Prop :=
+  ∀ a, gap ν a ≤ G
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- A uniform gap bound implies the selected-action gap bound through any finite horizon. -/
+lemma gap_ae_le_of_GapBound (G : ℝ) (hG : GapBound (K := K) ν G) :
+    ∀ᵐ ω ∂P, ∀ t, t ∈ range n → gap ν (A t ω) ≤ G :=
+  Filter.Eventually.of_forall fun ω t _ht ↦ hG (A t ω)
+
+omit [IsMarkovKernel ν] in
+/-- First projection from the packaged LinUCB confidence event: optimism for the best arm. -/
+lemma LinUCBConfidenceEvent.best [Nonempty (Fin K)]
+    (h_conf : LinUCBConfidenceEvent A R reg β x ν ω) :
+    ∀ t, t ≠ 0 →
+      (ν (bestArm ν))[id] ≤ index A R reg β x (bestArm ν) t ω := by
+  intro t ht
+  exact (h_conf t ht).1
+
+omit [IsMarkovKernel ν] in
+/-- Second projection from the packaged LinUCB confidence event: validity of the selected arm's
+lower confidence inequality. -/
+lemma LinUCBConfidenceEvent.arm [Nonempty (Fin K)]
+    (h_conf : LinUCBConfidenceEvent A R reg β x ν ω) :
+    ∀ t, t ≠ 0 →
+      estimatedReward A R reg x (A t ω) t ω -
+        √(β (t + 1)) * width A reg x (A t ω) t ω ≤ (ν (A t ω))[id] := by
+  intro t ht
+  exact (h_conf t ht).2
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost-sure projection of the packaged confidence event to optimism for the best arm. -/
+lemma linUCBConfidenceEvent_ae_best [Nonempty (Fin K)]
+    (h_conf : ∀ᵐ ω ∂P, LinUCBConfidenceEvent A R reg β x ν ω) :
+    ∀ᵐ ω ∂P, ∀ t, t ≠ 0 →
+      (ν (bestArm ν))[id] ≤ index A R reg β x (bestArm ν) t ω := by
+  filter_upwards [h_conf] with ω h_confω
+  exact h_confω.best
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Almost-sure projection of the packaged confidence event to the selected arm's lower confidence
+inequality. -/
+lemma linUCBConfidenceEvent_ae_arm [Nonempty (Fin K)]
+    (h_conf : ∀ᵐ ω ∂P, LinUCBConfidenceEvent A R reg β x ν ω) :
+    ∀ᵐ ω ∂P, ∀ t, t ≠ 0 →
+      estimatedReward A R reg x (A t ω) t ω -
+        √(β (t + 1)) * width A reg x (A t ω) t ω ≤ (ν (A t ω))[id] := by
+  filter_upwards [h_conf] with ω h_confω
+  exact h_confω.arm
 
 lemma designMatrix_eq_designMatrix' (reg : ℝ) (x : Fin K → Feature d) (n : ℕ)
     (ω : Ω) (hn : n ≠ 0) :
@@ -2547,6 +2750,43 @@ lemma forall_gap_arm_le_two_mul_width [Nonempty (Fin K)]
     (ν := ν) (n := n) (ω := ω) (h_bestω n hn) (h_armω n hn) (h_leω n hn)
 
 omit [IsMarkovKernel ν] in
+/-- Pointwise capped LinUCB regret bound for one positive time.
+
+If the instantaneous gap is bounded by `2`, and the confidence/max-index argument gives the usual
+`2 * sqrt(β_t) * width_t` bound, then monotonicity up to the terminal `β n` gives the textbook
+capped form `2 * sqrt(β n) * sqrt(min 1 q_t)`, where `q_t` is the width quadratic form. -/
+lemma gap_le_two_mul_sqrt_beta_mul_sqrt_min_widthQuadraticForm
+    (t : ℕ)
+    (h_gap_two : gap ν (A t ω) ≤ 2)
+    (h_gap_width : gap ν (A t ω) ≤
+      2 * (√(β (t + 1)) * width A reg x (A t ω) t ω))
+    (hβ_le : β (t + 1) ≤ β n)
+    (hβn_one : 1 ≤ β n) :
+    gap ν (A t ω) ≤
+      2 * (√(β n) * √(min 1 (widthQuadraticForm A reg x (A t ω) t ω))) := by
+  by_cases hq_le_one : widthQuadraticForm A reg x (A t ω) t ω ≤ 1
+  · have hwidth_nonneg : 0 ≤ width A reg x (A t ω) t ω := Real.sqrt_nonneg _
+    have hsqrt_le : √(β (t + 1)) ≤ √(β n) := Real.sqrt_le_sqrt hβ_le
+    have hbonus_le :
+        2 * (√(β (t + 1)) * width A reg x (A t ω) t ω) ≤
+          2 * (√(β n) * width A reg x (A t ω) t ω) := by
+      exact mul_le_mul_of_nonneg_left
+        (mul_le_mul_of_nonneg_right hsqrt_le hwidth_nonneg) (by norm_num)
+    have hmin :
+        √(min 1 (widthQuadraticForm A reg x (A t ω) t ω)) =
+          width A reg x (A t ω) t ω := by
+      rw [min_eq_right hq_le_one, width]
+    simpa [hmin] using h_gap_width.trans hbonus_le
+  · have hq_one : 1 ≤ widthQuadraticForm A reg x (A t ω) t ω := by linarith
+    have hsqrt_one : 1 ≤ √(β n) := by
+      simpa using (Real.one_le_sqrt).2 hβn_one
+    have htwo_le :
+        2 ≤ 2 * (√(β n) * √(min 1 (widthQuadraticForm A reg x (A t ω) t ω))) := by
+      rw [min_eq_left hq_one, Real.sqrt_one]
+      nlinarith
+    exact h_gap_two.trans htwo_le
+
+omit [IsMarkovKernel ν] in
 /-- If every realized gap up to horizon `n` is bounded pointwise, then regret up to `n` is bounded
 by the corresponding sum of pointwise bounds. -/
 lemma regret_le_sum_of_gap_bound (B : ℕ → ℝ)
@@ -2571,6 +2811,26 @@ lemma regret_le_sum_width_of_forall_gap_le
     (B := fun t ↦
       if t = 0 then gap ν (A 0 ω)
       else 2 * (√(β (t + 1)) * width A reg x (A t ω) t ω)) ?_
+  intro t ht
+  by_cases ht0 : t = 0
+  · simp [ht0]
+  · simpa [ht0] using h_gap t ht ht0
+
+omit [IsMarkovKernel ν] in
+/-- A pathwise cumulative-regret bound obtained by summing the positive-time capped LinUCB width
+bound. -/
+lemma regret_le_sum_sqrt_capped_width_of_forall_gap_le
+    (h_gap : ∀ t, t ∈ range n → t ≠ 0 →
+      gap ν (A t ω) ≤
+        2 * (√(β n) * √(min 1 (widthQuadraticForm A reg x (A t ω) t ω)))) :
+    regret ν A n ω ≤
+      ∑ t ∈ range n,
+        if t = 0 then gap ν (A 0 ω)
+        else 2 * (√(β n) * √(min 1 (widthQuadraticForm A reg x (A t ω) t ω))) := by
+  refine regret_le_sum_of_gap_bound (A := A) (ν := ν) (n := n) (ω := ω)
+    (B := fun t ↦
+      if t = 0 then gap ν (A 0 ω)
+      else 2 * (√(β n) * √(min 1 (widthQuadraticForm A reg x (A t ω) t ω)))) ?_
   intro t ht
   by_cases ht0 : t = 0
   · simp [ht0]
@@ -2603,6 +2863,112 @@ lemma sum_positive_bonus_le_two_mul_sqrt_sum_sq :
       exact Real.sum_mul_le_sqrt_mul_sqrt (range n)
         (fun t ↦ if t = 0 then 0 else √(β (t + 1)))
         (fun t ↦ if t = 0 then 0 else width A reg x (A t ω) t ω)
+
+omit [IsMarkovKernel ν] in
+/-- Cauchy-Schwarz bound for the positive-time capped LinUCB bonus sum. -/
+lemma sum_positive_capped_bonus_le_two_mul_sqrt_nat_mul_beta_mul_sqrt_capped_sum
+    (hβn_nonneg : 0 ≤ β n)
+    (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω) :
+    (∑ t ∈ range n,
+      if t = 0 then 0
+      else 2 * (√(β n) * √(min 1 (widthQuadraticForm A reg x (A t ω) t ω)))) ≤
+      2 * (√((n : ℝ) * β n) * √(cappedQuadraticWidthSum A reg x n ω)) := by
+  calc
+    (∑ t ∈ range n,
+      if t = 0 then 0
+      else 2 * (√(β n) * √(min 1 (widthQuadraticForm A reg x (A t ω) t ω))))
+        = 2 * ∑ t ∈ range n,
+          (if t = 0 then 0 else √(β n)) *
+            (if t = 0 then 0
+              else √(min 1 (widthQuadraticForm A reg x (A t ω) t ω))) := by
+          rw [mul_sum]
+          refine sum_congr rfl ?_
+          intro t ht
+          by_cases ht0 : t = 0
+          · simp [ht0]
+          · simp [ht0]
+    _ ≤ 2 * (√(∑ t ∈ range n, (if t = 0 then 0 else √(β n)) ^ 2) *
+        √(∑ t ∈ range n,
+          (if t = 0 then 0
+            else √(min 1 (widthQuadraticForm A reg x (A t ω) t ω))) ^ 2)) := by
+      gcongr
+      exact Real.sum_mul_le_sqrt_mul_sqrt (range n)
+        (fun t ↦ if t = 0 then 0 else √(β n))
+        (fun t ↦ if t = 0 then 0
+          else √(min 1 (widthQuadraticForm A reg x (A t ω) t ω)))
+    _ ≤ 2 * (√((n : ℝ) * β n) * √(cappedQuadraticWidthSum A reg x n ω)) := by
+      gcongr
+      · calc
+          (∑ t ∈ range n, (if t = 0 then 0 else √(β n)) ^ 2)
+              ≤ ∑ _t ∈ range n, β n := by
+                refine sum_le_sum ?_
+                intro t ht
+                by_cases ht0 : t = 0
+                · simp [ht0, hβn_nonneg]
+                · simp [ht0, Real.sq_sqrt hβn_nonneg]
+          _ = (n : ℝ) * β n := by
+            simp [sum_const, nsmul_eq_mul]
+      · rw [cappedQuadraticWidthSum]
+        refine le_of_eq ?_
+        refine sum_congr rfl ?_
+        intro t ht
+        by_cases ht0 : t = 0
+        · simp [ht0]
+        · have hmin_nonneg :
+              0 ≤ min 1 (widthQuadraticForm A reg x (A t ω) t ω) := by
+            exact le_min zero_le_one (h_nonneg t ht ht0)
+          simp [ht0, Real.sq_sqrt hmin_nonneg]
+
+omit [IsMarkovKernel ν] in
+/-- Pathwise cumulative-regret bound using the textbook capped quadratic-width sum. -/
+lemma regret_le_initial_add_sqrt_nat_mul_beta_capped_sum
+    (hβn_nonneg : 0 ≤ β n)
+    (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (h_gap : ∀ t, t ∈ range n → t ≠ 0 →
+      gap ν (A t ω) ≤
+        2 * (√(β n) * √(min 1 (widthQuadraticForm A reg x (A t ω) t ω)))) :
+    regret ν A n ω ≤
+      (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) +
+        2 * (√((n : ℝ) * β n) * √(cappedQuadraticWidthSum A reg x n ω)) := by
+  refine (regret_le_sum_sqrt_capped_width_of_forall_gap_le (A := A) (reg := reg)
+    (β := β) (x := x) (ν := ν) (n := n) (ω := ω) h_gap).trans ?_
+  have hsplit :
+      (∑ t ∈ range n,
+        if t = 0 then gap ν (A 0 ω)
+        else 2 * (√(β n) * √(min 1 (widthQuadraticForm A reg x (A t ω) t ω)))) =
+        (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) +
+          ∑ t ∈ range n,
+            if t = 0 then 0
+            else 2 * (√(β n) *
+              √(min 1 (widthQuadraticForm A reg x (A t ω) t ω))) := by
+    rw [← sum_add_distrib]
+    refine sum_congr rfl ?_
+    intro t ht
+    by_cases ht0 : t = 0
+    · simp [ht0]
+    · simp [ht0]
+  rw [hsplit]
+  exact add_le_add le_rfl
+    (sum_positive_capped_bonus_le_two_mul_sqrt_nat_mul_beta_mul_sqrt_capped_sum
+      (A := A) (reg := reg) (β := β) (x := x) (n := n) (ω := ω)
+      hβn_nonneg h_nonneg)
+
+omit [IsMarkovKernel ν] in
+/-- If the capped quadratic-width sum is bounded by `W`, the pathwise capped regret bound can use
+`√W` in place of the realized capped-sum square root. -/
+lemma regret_le_initial_add_sqrt_nat_mul_beta_of_capped_sum_le (W : ℝ)
+    (h_regret :
+      regret ν A n ω ≤
+        (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) +
+          2 * (√((n : ℝ) * β n) * √(cappedQuadraticWidthSum A reg x n ω)))
+    (hW : cappedQuadraticWidthSum A reg x n ω ≤ W) :
+    regret ν A n ω ≤
+      (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) +
+        2 * (√((n : ℝ) * β n) * √W) := by
+  refine h_regret.trans ?_
+  gcongr
 
 /-- The squared beta factor in the Cauchy-Schwarz bound simplifies when the confidence schedule is
 nonnegative. -/
@@ -2959,6 +3325,61 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_quadratic_width_boun
     (widthSqSum_ae_le_of_capped_quadratic_width_bound_ae (A := A) (reg := reg)
       (x := x) (n := n) (P := P) (W := W) h_bound)
 
+/-- Almost surely, cumulative regret is bounded by the simplified initial-gap term plus
+`2 * √(n * β n) * √W` whenever the textbook capped quadratic-width sum is almost surely bounded
+by `W`.
+
+This version follows the proof structure of *Bandit Algorithms*, Theorem 19.2: optimism gives the
+width bound, bounded instantaneous gaps give the cap, monotonicity of `β` moves all confidence
+radii to `β n`, and Cauchy-Schwarz turns the sum into the square root of the capped quadratic-width
+sum. -/
+lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_sum_bound
+    [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_best : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      (ν (bestArm ν))[id] ≤ index A R reg β x (bestArm ν) n ω)
+    (h_arm : ∀ᵐ ω ∂P, ∀ n, n ≠ 0 →
+      estimatedReward A R reg x (A n ω) n ω -
+        √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
+    (h_gap_two : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 → gap ν (A t ω) ≤ 2)
+    (hβ_nonneg : ∀ t, 0 ≤ β t)
+    (hβ_one : 1 ≤ β 1) (hβ_mono : Monotone β) (W : ℝ)
+    (h_quad_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (hW : ∀ᵐ ω ∂P, cappedQuadraticWidthSum A reg x n ω ≤ W) :
+    ∀ᵐ ω ∂P,
+      regret ν A n ω ≤
+        (if n = 0 then 0 else gap ν (A 0 ω)) + 2 * (√((n : ℝ) * β n) * √W) := by
+  filter_upwards [forall_gap_arm_le_two_mul_width h h_best h_arm, h_gap_two, h_quad_nonneg, hW]
+    with ω h_gap_widthω h_gap_twoω h_quad_nonnegω hWω
+  have h_quad_pos : ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω := by
+    intro t ht _ht0
+    exact h_quad_nonnegω t ht
+  have h_gap_capped : ∀ t, t ∈ range n → t ≠ 0 →
+      gap ν (A t ω) ≤
+        2 * (√(β n) * √(min 1 (widthQuadraticForm A reg x (A t ω) t ω))) := by
+    intro t ht ht0
+    have hβ_le : β (t + 1) ≤ β n :=
+      hβ_mono (Nat.succ_le_iff.mpr (mem_range.mp ht))
+    have ht_pos : 0 < t := Nat.pos_of_ne_zero ht0
+    have hn_pos : 0 < n := Nat.lt_trans ht_pos (mem_range.mp ht)
+    have hn_one : 1 ≤ n := Nat.succ_le_iff.mpr hn_pos
+    have hβn_one : 1 ≤ β n := hβ_one.trans (hβ_mono hn_one)
+    exact gap_le_two_mul_sqrt_beta_mul_sqrt_min_widthQuadraticForm (A := A)
+      (reg := reg) (β := β) (x := x) (ν := ν) (n := n) (ω := ω) (t := t)
+      (h_gap_twoω t ht ht0) (h_gap_widthω t ht0) hβ_le hβn_one
+  have h_regret :
+      regret ν A n ω ≤
+        (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) +
+          2 * (√((n : ℝ) * β n) * √(cappedQuadraticWidthSum A reg x n ω)) :=
+    regret_le_initial_add_sqrt_nat_mul_beta_capped_sum (A := A) (reg := reg)
+      (β := β) (x := x) (ν := ν) (n := n) (ω := ω) (hβ_nonneg n) h_quad_pos
+      h_gap_capped
+  simpa [initial_gap_sum_eq (A := A) (ν := ν) (n := n) (ω := ω)] using
+    regret_le_initial_add_sqrt_nat_mul_beta_of_capped_sum_le (A := A) (reg := reg)
+      (β := β) (x := x) (ν := ν) (n := n) (ω := ω) W h_regret hWω
+
 /-- Almost surely, cumulative regret is bounded by the simplified initial-gap term plus the
 feature-budget elliptical-potential term
 `2 * √(n * β n) * √(2 * d * log(1 + n L² / (reg d)))`.
@@ -3072,13 +3493,62 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_of_matrix_det_trace_bound
       (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos hd
       h_inv_antitone L2 hL2 hL2_le_reg hdet_trace)
 
+/-- Textbook-shaped finite-action LinUCB regret theorem.
+
+This theorem is the same deterministic regret skeleton as the theorem above, but with assumptions
+packaged in the way the finite-action linear-bandit proof is usually read:
+
+* `h_conf` is the high-probability confidence event for all positive times;
+* `h_gap_bound` is the bounded instantaneous-regret/gap assumption;
+* `hL2` is the uniform finite-action feature bound `‖x_a‖₂² ≤ L2`;
+* `hdet_trace` is the reusable determinant/trace matrix-analysis obligation.
+
+The displayed bound is the standard Cauchy-Schwarz plus elliptical-potential expression
+`2 * sqrt(n * β_n) * sqrt(2 d log(1 + n L² / (reg d)))`, with one extra initial gap because this
+formalization lets the deterministic algorithm play its default initial arm at time zero. -/
+lemma regret_ae_le_textbook_finite_action
+    [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_conf : ∀ᵐ ω ∂P, LinUCBConfidenceEvent A R reg β x ν ω)
+    (h_gap_bound : GapBound (K := K) ν 2)
+    (hβ_nonneg : ∀ t, 0 ≤ β t)
+    (hβ_one : 1 ≤ β 1) (hβ_mono : Monotone β)
+    (hreg_pos : 0 < reg) (hd : d ≠ 0)
+    (L2 : ℝ) (hL2 : FeatureSqNormBound x L2)
+    (hdet_trace : MatrixDetLeTraceAveragePow d) :
+    ∀ᵐ ω ∂P,
+      regret ν A n ω ≤
+        (if n = 0 then 0 else gap ν (A 0 ω)) +
+          2 * (√((n : ℝ) * β n) *
+            √(2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ))))) := by
+  have h_gap_two : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 → gap ν (A t ω) ≤ 2 := by
+    filter_upwards [gap_ae_le_of_GapBound (A := A) (ν := ν) (n := n) (P := P)
+      2 h_gap_bound] with ω h_gapω
+    intro t ht _ht0
+    exact h_gapω t ht
+  exact regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_sum_bound
+    (A := A) (R := R) (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h
+    (linUCBConfidenceEvent_ae_best (A := A) (R := R) (reg := reg) (β := β)
+      (x := x) (ν := ν) (P := P) h_conf)
+    (linUCBConfidenceEvent_ae_arm (A := A) (R := R) (reg := reg) (β := β)
+      (x := x) (ν := ν) (P := P) h_conf)
+    h_gap_two hβ_nonneg hβ_one hβ_mono
+    (2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ))))
+    (widthQuadraticForm_ae_nonneg_of_reg_nonneg (A := A) (reg := reg) (x := x)
+      (n := n) (P := P) hreg_pos.le)
+    (cappedQuadraticWidthSum_ae_le_featureSqNorm_budget_of_matrix_det_trace_bound
+      (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos hd L2
+      (featureSqNorm_ae_le_of_featureSqNormBound (A := A) (x := x) (n := n)
+        (P := P) L2 hL2)
+      hdet_trace)
+
 /-- Almost surely, cumulative regret is bounded by the simplified initial-gap term plus
 `2 * √(n * β n) * √W` whenever positive regularization, the positive-time width cap, and the final
 log-determinant potential bound hold.
 
-The capped-sum/log-determinant part of the elliptical-potential argument is now proved internally:
+The capped-sum/log-determinant part of the elliptical-potential argument is proved internally:
 positive regularization gives determinant nonvanishing and nonnegative quadratic forms, while
-`h_quad_le_one` supplies the cap needed for `min 1 q ≤ 2 * log (1 + q)`. -/
+`h_quad_le_one` lets this older theorem feed the uncapped `widthSqSum` regret route. -/
 lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_of_ellipticalPotential_bound
     [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
