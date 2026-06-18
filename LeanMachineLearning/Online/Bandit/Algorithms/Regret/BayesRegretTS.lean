@@ -103,10 +103,10 @@ lemma measurable_uncurry_ucb' {n : ℕ} :
   Measurable.ite (by measurability) (by fun_prop) (by fun_prop)
 
 lemma ucb_succ_eq_ucb' {a : Fin K} {n : ℕ} {ω : Ω} :
-    ucb A R l u σ2 δ a (n + 1) ω = ucb' n (IsAlgEnvSeq.hist A R n ω) l u σ2 δ a := by
-  have hp : pullCount A a (n + 1) ω = pullCount' n (IsAlgEnvSeq.hist A R n ω) a :=
+    ucb A R l u σ2 δ a (n + 1) ω = ucb' n (history A R n ω) l u σ2 δ a := by
+  have hp : pullCount A a (n + 1) ω = pullCount' n (history A R n ω) a :=
     pullCount_add_one_eq_pullCount'
-  have he : empMean A R a (n + 1) ω = empMean' n (IsAlgEnvSeq.hist A R n ω) a :=
+  have he : empMean A R a (n + 1) ω = empMean' n (history A R n ω) a :=
     empMean_add_one_eq_empMean'
   rw [ucb, ucb', hp, he]
 
@@ -328,11 +328,11 @@ lemma integral_ucb_action_eq_integral_ucb_bestAction (hK : 0 < K)
   obtain ⟨n, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hn
   let uc (ha : (Iic n → Fin K × ℝ) × Fin K) := ucb' n ha.1 l u σ2 δ ha.2
   calc
-    _  = P[fun ω ↦ uc (IsAlgEnvSeq.hist A R n ω, A (n + 1) ω)] := by
+    _  = P[fun ω ↦ uc (history A R n ω, A (n + 1) ω)] := by
         simp_rw [uc, ucb_succ_eq_ucb']
-    _ = ∫ ha, uc ha ∂P.map (fun ω ↦ (IsAlgEnvSeq.hist A R n ω, A (n + 1) ω)) := by
+    _ = ∫ ha, uc ha ∂P.map (fun ω ↦ (history A R n ω, A (n + 1) ω)) := by
         rw [← integral_map (by fun_prop) (by fun_prop)]
-    _ = ∫ ha, uc ha ∂P.map (fun ω ↦ (IsAlgEnvSeq.hist A R n ω, bestAction κ E ω)) := by
+    _ = ∫ ha, uc ha ∂P.map (fun ω ↦ (history A R n ω, bestAction κ E ω)) := by
         rw [← compProd_map_condDistrib (by fun_prop), ← compProd_map_condDistrib (by fun_prop),
             Measure.compProd_congr (hasCondDistrib_action hK h n).condDistrib_eq]
     _ = P[fun ω ↦ ucb A R l u σ2 δ (bestAction κ E ω) (n + 1) ω] := by
