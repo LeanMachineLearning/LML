@@ -8,6 +8,7 @@ module
 public import LeanMachineLearning.Online.Bandit.SumRewards
 public import LeanMachineLearning.SequentialLearning.Deterministic
 public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
+public import Mathlib.Analysis.MeanInequalities
 public import Mathlib.Analysis.SpecialFunctions.Log.Deriv
 public import Mathlib.Analysis.Matrix.Order
 public import Mathlib.Data.Real.StarOrdered
@@ -1128,6 +1129,53 @@ For positive semidefinite `d × d` matrices, this is the AM-GM-style inequality
 `det(M) ≤ (trace(M) / d) ^ d`. -/
 def MatrixDetLeTraceAveragePow (d : ℕ) : Prop :=
   ∀ M : Matrix (Fin d) (Fin d) ℝ, M.PosSemidef → M.det ≤ (M.trace / (d : ℝ)) ^ d
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Scalar AM-GM in the form used for PSD matrix eigenvalues:
+the product of nonnegative entries is bounded by the arithmetic mean to the `card` power. -/
+lemma prod_le_average_pow_of_nonneg {ι : Type*} [Fintype ι] [Nonempty ι]
+    (z : ι → ℝ) (hz : ∀ i, 0 ≤ z i) :
+    (∏ i, z i) ≤ ((∑ i, z i) / (Fintype.card ι : ℝ)) ^ Fintype.card ι := by
+  classical
+  have hN_pos : 0 < (Fintype.card ι : ℝ) := by
+    exact_mod_cast Fintype.card_pos_iff.mpr inferInstance
+  have hweights_pos : 0 < ∑ i : ι, (1 : ℝ) := by
+    simpa using hN_pos
+  have h_amgm := Real.geom_mean_le_arith_mean (s := Finset.univ)
+      (w := fun _ : ι ↦ (1 : ℝ)) (z := z)
+      (by intro i hi; norm_num) hweights_pos (by intro i hi; exact hz i)
+  have h_amgm' :
+      (∏ i : ι, z i) ^ ((Fintype.card ι : ℝ)⁻¹) ≤
+        (∑ i : ι, z i) / (Fintype.card ι : ℝ) := by
+    simpa using h_amgm
+  have hprod_nonneg : 0 ≤ ∏ i : ι, z i := by
+    exact Finset.prod_nonneg fun i _ ↦ hz i
+  have hraise := Real.rpow_le_rpow (Real.rpow_nonneg hprod_nonneg _) h_amgm' hN_pos.le
+  have hleft :
+      ((∏ i : ι, z i) ^ ((Fintype.card ι : ℝ)⁻¹)) ^ (Fintype.card ι : ℝ) =
+        ∏ i : ι, z i := by
+    rw [← Real.rpow_mul hprod_nonneg]
+    rw [inv_mul_cancel₀ hN_pos.ne']
+    simp
+  have hright :
+      ((∑ i : ι, z i) / (Fintype.card ι : ℝ)) ^ (Fintype.card ι : ℝ) =
+        ((∑ i : ι, z i) / (Fintype.card ι : ℝ)) ^ Fintype.card ι := by
+    rw [Real.rpow_natCast]
+  simpa [hleft, hright] using hraise
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- PSD matrix determinant/trace comparison from AM-GM over eigenvalues:
+`det(M) ≤ (trace(M) / d) ^ d`. -/
+lemma matrixDetLeTraceAveragePow : MatrixDetLeTraceAveragePow d := by
+  intro M hM
+  by_cases hd : d = 0
+  · subst d
+    simp
+  · haveI : Nonempty (Fin d) := Fin.pos_iff_nonempty.mp (Nat.pos_of_ne_zero hd)
+    rw [hM.1.det_eq_prod_eigenvalues, hM.1.trace_eq_sum_eigenvalues]
+    simpa using prod_le_average_pow_of_nonneg
+      (z := fun i : Fin d ↦ hM.1.eigenvalues i)
+      (fun i ↦ hM.eigenvalues_nonneg i)
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- A matrix-level determinant/trace comparison applies to the LinUCB design matrix because the
@@ -3500,8 +3548,7 @@ packaged in the way the finite-action linear-bandit proof is usually read:
 
 * `h_conf` is the high-probability confidence event for all positive times;
 * `h_gap_bound` is the bounded instantaneous-regret/gap assumption;
-* `hL2` is the uniform finite-action feature bound `‖x_a‖₂² ≤ L2`;
-* `hdet_trace` is the reusable determinant/trace matrix-analysis obligation.
+* `hL2` is the uniform finite-action feature bound `‖x_a‖₂² ≤ L2`.
 
 The displayed bound is the standard Cauchy-Schwarz plus elliptical-potential expression
 `2 * sqrt(n * β_n) * sqrt(2 d log(1 + n L² / (reg d)))`, with one extra initial gap because this
@@ -3514,8 +3561,7 @@ lemma regret_ae_le_textbook_finite_action
     (hβ_nonneg : ∀ t, 0 ≤ β t)
     (hβ_one : 1 ≤ β 1) (hβ_mono : Monotone β)
     (hreg_pos : 0 < reg) (hd : d ≠ 0)
-    (L2 : ℝ) (hL2 : FeatureSqNormBound x L2)
-    (hdet_trace : MatrixDetLeTraceAveragePow d) :
+    (L2 : ℝ) (hL2 : FeatureSqNormBound x L2) :
     ∀ᵐ ω ∂P,
       regret ν A n ω ≤
         (if n = 0 then 0 else gap ν (A 0 ω)) +
@@ -3540,7 +3586,7 @@ lemma regret_ae_le_textbook_finite_action
       (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos hd L2
       (featureSqNorm_ae_le_of_featureSqNormBound (A := A) (x := x) (n := n)
         (P := P) L2 hL2)
-      hdet_trace)
+      matrixDetLeTraceAveragePow)
 
 /-- Almost surely, cumulative regret is bounded by the simplified initial-gap term plus
 `2 * √(n * β n) * √W` whenever positive regularization, the positive-time width cap, and the final
