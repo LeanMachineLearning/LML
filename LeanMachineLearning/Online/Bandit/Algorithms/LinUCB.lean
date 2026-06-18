@@ -2185,6 +2185,32 @@ instantaneous-regret assumption. -/
 def GapBound (ν : Kernel (Fin K) ℝ) (G : ℝ) : Prop :=
   ∀ a, gap ν a ≤ G
 
+omit [IsMarkovKernel ν] in
+/-- Uniform bound on arm means. For finite-action linear bandits this is a convenient way to state
+the usual bounded expected-reward assumption, for example `(ν a)[id] ∈ [-1, 1]`. -/
+def MeanRewardBound (ν : Kernel (Fin K) ℝ) (lo hi : ℝ) : Prop :=
+  ∀ a, lo ≤ (ν a)[id] ∧ (ν a)[id] ≤ hi
+
+omit [IsMarkovKernel ν] in
+/-- If every arm mean lies in `[lo, hi]`, then every arm gap is at most `hi - lo`. -/
+lemma gap_le_of_meanRewardBound [Nonempty (Fin K)] {lo hi : ℝ}
+    (hμ : MeanRewardBound ν lo hi) (a : Fin K) :
+    gap ν a ≤ hi - lo := by
+  rw [gap_eq_bestArm_sub]
+  have hbest_le : (ν (bestArm ν))[id] ≤ hi := (hμ (bestArm ν)).2
+  have ha_ge : lo ≤ (ν a)[id] := (hμ a).1
+  linarith
+
+omit [IsMarkovKernel ν] in
+/-- Arm means in `[-1, 1]` imply the gap cap `gap ≤ 2` used by the capped regret argument. -/
+lemma gapBound_two_of_meanRewardBound_neg_one_one [Nonempty (Fin K)]
+    (hμ : MeanRewardBound ν (-1) 1) :
+    GapBound (K := K) ν 2 := by
+  intro a
+  have hgap := gap_le_of_meanRewardBound (ν := ν) (lo := -1) (hi := 1) hμ a
+  norm_num at hgap
+  exact hgap
+
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- A uniform gap bound implies the selected-action gap bound through any finite horizon. -/
 lemma gap_ae_le_of_GapBound (G : ℝ) (hG : GapBound (K := K) ν G) :
@@ -3625,7 +3651,7 @@ This theorem is the same deterministic regret skeleton as the theorem above, but
 packaged in the way the finite-action linear-bandit proof is usually read:
 
 * `h_conf` is the high-probability confidence event for all positive times;
-* `h_gap_bound` is the bounded instantaneous-regret/gap assumption;
+* `h_mean_bound` bounds every arm's mean reward in `[-1, 1]`;
 * `hL2` is the uniform finite-action feature bound `‖x_a‖₂² ≤ L2`.
 
 The displayed bound is the standard Cauchy-Schwarz plus elliptical-potential expression
@@ -3635,7 +3661,7 @@ lemma regret_ae_le_textbook_finite_action
     [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
     (h_conf : ∀ᵐ ω ∂P, LinUCBConfidenceEvent A R reg β x ν ω)
-    (h_gap_bound : GapBound (K := K) ν 2)
+    (h_mean_bound : MeanRewardBound (K := K) ν (-1) 1)
     (hβ_nonneg : ∀ t, 0 ≤ β t)
     (hβ_one : 1 ≤ β 1) (hβ_mono : Monotone β)
     (hreg_pos : 0 < reg)
@@ -3652,7 +3678,8 @@ lemma regret_ae_le_textbook_finite_action
       (P := P) (d := 0) rfl h_conf
   · have h_gap_two : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 → gap ν (A t ω) ≤ 2 := by
       filter_upwards [gap_ae_le_of_GapBound (A := A) (ν := ν) (n := n) (P := P)
-        2 h_gap_bound] with ω h_gapω
+        2 (gapBound_two_of_meanRewardBound_neg_one_one (ν := ν) h_mean_bound)] with
+        ω h_gapω
       intro t ht _ht0
       exact h_gapω t ht
     exact regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_sum_bound
