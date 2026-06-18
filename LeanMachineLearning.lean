@@ -3,6 +3,8 @@ module  -- shake: keep-all --deprecated_module: ignore
 public import LeanMachineLearning.ForMathlib.Analysis.Calculus.Deriv.Slope
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Constructions.Polish.StandardBorel
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Function.ConditionalExpectation.PullOut
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Function.L2Space
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measurable
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measure.AbsolutelyContinuous
 public import LeanMachineLearning.ForMathlib.MeasureTheory.OuterMeasure.Basic
@@ -19,8 +21,6 @@ public import LeanMachineLearning.ForMathlib.Probability.Kernel.IonescuTulcea.Tr
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.KernelSub
 public import LeanMachineLearning.ForMathlib.Probability.Moments.SubGaussian
 public import LeanMachineLearning.ForMathlib.Probability.WithDensity
-public import LeanMachineLearning.MeasureTheory.Function.ConditionalExpectation.PullOut
-public import LeanMachineLearning.MeasureTheory.Function.L2Space
 public import LeanMachineLearning.Online.Bandit.Algorithms.ETC
 public import LeanMachineLearning.Online.Bandit.Algorithms.UCB
 public import LeanMachineLearning.Online.Bandit.ArrayProbSpace

@@ -9,7 +9,7 @@ public import LeanMachineLearning.Online.OnlineRegret
 public import LeanMachineLearning.SequentialLearning.Deterministic
 
 import LeanMachineLearning.ForMathlib.Analysis.Calculus.Deriv.Slope
-import LeanMachineLearning.MeasureTheory.Function.L2Space
+import LeanMachineLearning.ForMathlib.MeasureTheory.Function.L2Space
 
 /-!
 # Online gradient descent

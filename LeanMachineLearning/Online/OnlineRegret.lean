@@ -9,8 +9,8 @@ public import LeanMachineLearning.SequentialLearning.StationaryEnv
 public import Mathlib.Analysis.Calculus.Gradient.Basic
 
 import LeanMachineLearning.ForMathlib.Analysis.Calculus.Deriv.Slope
-import LeanMachineLearning.MeasureTheory.Function.ConditionalExpectation.PullOut
-import LeanMachineLearning.MeasureTheory.Function.L2Space
+import LeanMachineLearning.ForMathlib.MeasureTheory.Function.ConditionalExpectation.PullOut
+import LeanMachineLearning.ForMathlib.MeasureTheory.Function.L2Space
 
 /-!
 # Online gradient descent
