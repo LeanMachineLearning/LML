@@ -3567,6 +3567,66 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_sum_bound
     regret_le_initial_add_sqrt_nat_mul_beta_of_capped_sum_le (A := A) (reg := reg)
       (β := β) (x := x) (ν := ν) (n := n) (ω := ω) W h_regret hWω
 
+/-- Almost surely, on the LinUCB confidence event, cumulative regret is bounded by the simplified
+initial-gap term plus `2 * √(n * β n) * √W` whenever the textbook capped quadratic-width sum is
+almost surely bounded by `W`.
+
+This is the good-event form of the deterministic regret argument. It separates the algorithmic
+regret proof from the future concentration theorem: a later self-normalized concentration result
+should prove that `LinUCBConfidenceEvent` holds with high probability, and this theorem converts
+that event into the regret bound. -/
+lemma regret_ae_imp_le_initial_gap_add_sqrt_nat_mul_beta_capped_sum_bound
+    [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_gap_two : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 → gap ν (A t ω) ≤ 2)
+    (hβ_schedule : BetaSchedule β) (W : ℝ)
+    (h_quad_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
+    (hW : ∀ᵐ ω ∂P, cappedQuadraticWidthSum A reg x n ω ≤ W) :
+    ∀ᵐ ω ∂P,
+      LinUCBConfidenceEvent A R reg β x ν ω →
+        regret ν A n ω ≤
+          (if n = 0 then 0 else gap ν (A 0 ω)) + 2 * (√((n : ℝ) * β n) * √W) := by
+  by_cases hn : n = 0
+  · subst n
+    exact Filter.Eventually.of_forall fun ω _h_confω ↦ by simp [regret]
+  have hβn_nonneg : 0 ≤ β n :=
+    hβ_schedule.nonneg_of_ne_zero hn
+  filter_upwards [forall_index_le_index_arm h (bestArm ν), h_gap_two, h_quad_nonneg, hW] with
+    ω h_indexω h_gap_twoω h_quad_nonnegω hWω h_confω
+  have h_quad_pos : ∀ t, t ∈ range n → t ≠ 0 →
+      0 ≤ widthQuadraticForm A reg x (A t ω) t ω := by
+    intro t ht _ht0
+    exact h_quad_nonnegω t ht
+  have h_gap_capped : ∀ t, t ∈ range n → t ≠ 0 →
+      gap ν (A t ω) ≤
+        2 * (√(β n) * √(min 1 (widthQuadraticForm A reg x (A t ω) t ω))) := by
+    intro t ht ht0
+    have h_gap_width :
+        gap ν (A t ω) ≤ 2 * (√(β (t + 1)) * width A reg x (A t ω) t ω) :=
+      gap_arm_le_two_mul_width (A := A) (R := R) (reg := reg) (β := β)
+        (x := x) (ν := ν) (n := t) (ω := ω) (h_confω.best t ht0)
+        (h_confω.arm t ht0) (h_indexω t ht0)
+    have hβ_le : β (t + 1) ≤ β n :=
+      hβ_schedule.monotone (Nat.succ_le_iff.mpr (mem_range.mp ht))
+    have ht_pos : 0 < t := Nat.pos_of_ne_zero ht0
+    have hn_pos : 0 < n := Nat.lt_trans ht_pos (mem_range.mp ht)
+    have hn_one : 1 ≤ n := Nat.succ_le_iff.mpr hn_pos
+    have hβn_one : 1 ≤ β n := hβ_schedule.one.trans (hβ_schedule.monotone hn_one)
+    exact gap_le_two_mul_sqrt_beta_mul_sqrt_min_widthQuadraticForm (A := A)
+      (reg := reg) (β := β) (x := x) (ν := ν) (n := n) (ω := ω) (t := t)
+      (h_gap_twoω t ht ht0) h_gap_width hβ_le hβn_one
+  have h_regret :
+      regret ν A n ω ≤
+        (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) +
+          2 * (√((n : ℝ) * β n) * √(cappedQuadraticWidthSum A reg x n ω)) :=
+    regret_le_initial_add_sqrt_nat_mul_beta_capped_sum (A := A) (reg := reg)
+      (β := β) (x := x) (ν := ν) (n := n) (ω := ω) hβn_nonneg h_quad_pos
+      h_gap_capped
+  simpa [initial_gap_sum_eq (A := A) (ν := ν) (n := n) (ω := ω)] using
+    regret_le_initial_add_sqrt_nat_mul_beta_of_capped_sum_le (A := A) (reg := reg)
+      (β := β) (x := x) (ν := ν) (n := n) (ω := ω) W h_regret hWω
+
 /-- Almost surely, cumulative regret is bounded by the simplified initial-gap term plus the
 feature-budget elliptical-potential term
 `2 * √(n * β n) * √(2 * d * log(1 + n L² / (reg d)))`.
@@ -3680,19 +3740,65 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_of_matrix_det_trace_bound
       (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos hd
       h_inv_antitone L2 hL2 hL2_le_reg hdet_trace)
 
-/-- Textbook-shaped finite-action LinUCB regret theorem.
+/-- Textbook-shaped finite-action LinUCB regret theorem on the confidence event.
 
-This theorem is the same deterministic regret skeleton as the theorem above, but with assumptions
-packaged in the way the finite-action linear-bandit proof is usually read:
+This theorem is the good-event form closest to the finite-action LinUCB proof in
+*Bandit Algorithms*: after the deterministic algorithm/max-index argument and the elliptical
+potential bound are proved, the only remaining probabilistic input is whether the confidence event
+holds on a sample path.
 
-* `h_conf` is the high-probability confidence event for all positive times;
 * `h_mean_bound` bounds every arm's mean reward in `[-1, 1]`;
 * `hβ_schedule` states that the confidence-radius schedule starts at least at one and is monotone;
 * `hL2` is the uniform finite-action feature bound `‖x_a‖₂² ≤ L2`.
 
+The conclusion is an almost-sure implication: on almost every sample path, if
+`LinUCBConfidenceEvent` holds, then the displayed regret bound holds. A future self-normalized
+concentration theorem should prove that this confidence event has high probability for a concrete
+textbook choice of `β`.
+
 The displayed bound is the standard Cauchy-Schwarz plus elliptical-potential expression
 `2 * sqrt(n * β_n) * sqrt(2 d log(1 + n L² / (reg d)))`, with one extra initial gap because this
 formalization lets the deterministic algorithm play its default initial arm at time zero. -/
+lemma regret_ae_imp_le_textbook_finite_action
+    [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_mean_bound : MeanRewardBound (K := K) ν (-1) 1)
+    (hβ_schedule : BetaSchedule β)
+    (hreg_pos : 0 < reg)
+    (L2 : ℝ) (hL2 : FeatureSqNormBound x L2) :
+    ∀ᵐ ω ∂P,
+      LinUCBConfidenceEvent A R reg β x ν ω →
+        regret ν A n ω ≤
+          (if n = 0 then 0 else gap ν (A 0 ω)) +
+            2 * (√((n : ℝ) * β n) *
+              √(2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ))))) := by
+  by_cases hd : d = 0
+  · subst d
+    exact Filter.Eventually.of_forall fun ω h_confω ↦ by
+      simpa using regret_le_initial_gap_of_confidence_dim_eq_zero
+        (A := A) (R := R) (reg := reg) (β := β) (x := x) (ν := ν) (n := n)
+        (ω := ω) (d := 0) rfl h_confω
+  · have h_gap_two : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 → gap ν (A t ω) ≤ 2 := by
+      filter_upwards [gap_ae_le_of_GapBound (A := A) (ν := ν) (n := n) (P := P)
+        2 (gapBound_two_of_meanRewardBound_neg_one_one (ν := ν) h_mean_bound)] with
+        ω h_gapω
+      intro t ht _ht0
+      exact h_gapω t ht
+    exact regret_ae_imp_le_initial_gap_add_sqrt_nat_mul_beta_capped_sum_bound
+      (A := A) (R := R) (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h
+      h_gap_two hβ_schedule
+      (2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ))))
+      (widthQuadraticForm_ae_nonneg_of_reg_nonneg (A := A) (reg := reg) (x := x)
+        (n := n) (P := P) hreg_pos.le)
+      (cappedQuadraticWidthSum_ae_le_featureSqNorm_budget_of_matrix_det_trace_bound
+        (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos hd L2
+        (featureSqNorm_ae_le_of_featureSqNormBound (A := A) (x := x) (n := n)
+          (P := P) L2 hL2)
+        matrixDetLeTraceAveragePow)
+
+/-- Corollary of `regret_ae_imp_le_textbook_finite_action` when the confidence event is known to
+hold almost surely. This is stronger than the textbook high-probability route and is mainly useful
+as a compatibility wrapper for earlier lemmas in this file. -/
 lemma regret_ae_le_textbook_finite_action
     [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
@@ -3706,32 +3812,10 @@ lemma regret_ae_le_textbook_finite_action
         (if n = 0 then 0 else gap ν (A 0 ω)) +
           2 * (√((n : ℝ) * β n) *
             √(2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ))))) := by
-  by_cases hd : d = 0
-  · subst d
-    simpa using regret_ae_le_initial_gap_of_confidence_dim_eq_zero
-      (A := A) (R := R) (reg := reg) (β := β) (x := x) (ν := ν) (n := n)
-      (P := P) (d := 0) rfl h_conf
-  · have h_gap_two : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 → gap ν (A t ω) ≤ 2 := by
-      filter_upwards [gap_ae_le_of_GapBound (A := A) (ν := ν) (n := n) (P := P)
-        2 (gapBound_two_of_meanRewardBound_neg_one_one (ν := ν) h_mean_bound)] with
-        ω h_gapω
-      intro t ht _ht0
-      exact h_gapω t ht
-    exact regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_sum_bound
-      (A := A) (R := R) (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h
-      (linUCBConfidenceEvent_ae_best (A := A) (R := R) (reg := reg) (β := β)
-        (x := x) (ν := ν) (P := P) h_conf)
-      (linUCBConfidenceEvent_ae_arm (A := A) (R := R) (reg := reg) (β := β)
-        (x := x) (ν := ν) (P := P) h_conf)
-      h_gap_two hβ_schedule
-      (2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ))))
-      (widthQuadraticForm_ae_nonneg_of_reg_nonneg (A := A) (reg := reg) (x := x)
-        (n := n) (P := P) hreg_pos.le)
-      (cappedQuadraticWidthSum_ae_le_featureSqNorm_budget_of_matrix_det_trace_bound
-        (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos hd L2
-        (featureSqNorm_ae_le_of_featureSqNormBound (A := A) (x := x) (n := n)
-          (P := P) L2 hL2)
-        matrixDetLeTraceAveragePow)
+  filter_upwards [regret_ae_imp_le_textbook_finite_action (A := A) (R := R)
+    (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_mean_bound hβ_schedule
+    hreg_pos L2 hL2, h_conf] with ω h_regret h_confω
+  exact h_regret h_confω
 
 /-- Almost surely, cumulative regret is bounded by the simplified initial-gap term plus
 `2 * √(n * β n) * √W` whenever positive regularization, the positive-time width cap, and the final
