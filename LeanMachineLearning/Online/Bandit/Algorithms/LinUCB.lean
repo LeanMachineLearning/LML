@@ -3279,6 +3279,15 @@ lemma beta_sum_le_nat_mul_of_monotone
     _ = (n : ℝ) * β n := by
       simp [sum_const, nsmul_eq_mul]
 
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- A confidence-radius schedule with `1 ≤ β 1` and monotone `β` is nonnegative at every positive
+horizon. -/
+lemma beta_nonneg_of_one_le_of_monotone
+    (hβ_one : 1 ≤ β 1) (hβ_mono : Monotone β) {n : ℕ} (hn : n ≠ 0) :
+    0 ≤ β n := by
+  have hn_one : 1 ≤ n := Nat.succ_le_iff.mpr (Nat.pos_of_ne_zero hn)
+  exact ((zero_le_one : (0 : ℝ) ≤ 1).trans hβ_one).trans (hβ_mono hn_one)
+
 omit [IsMarkovKernel ν] in
 /-- The initial-gap sum is just the time-zero gap when the horizon is positive, and zero when the
 horizon is zero. -/
@@ -3494,7 +3503,6 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_sum_bound
       estimatedReward A R reg x (A n ω) n ω -
         √(β (n + 1)) * width A reg x (A n ω) n ω ≤ (ν (A n ω))[id])
     (h_gap_two : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 → gap ν (A t ω) ≤ 2)
-    (hβ_nonneg : ∀ t, 0 ≤ β t)
     (hβ_one : 1 ≤ β 1) (hβ_mono : Monotone β) (W : ℝ)
     (h_quad_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
       0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
@@ -3502,6 +3510,11 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_sum_bound
     ∀ᵐ ω ∂P,
       regret ν A n ω ≤
         (if n = 0 then 0 else gap ν (A 0 ω)) + 2 * (√((n : ℝ) * β n) * √W) := by
+  by_cases hn : n = 0
+  · subst n
+    exact Filter.Eventually.of_forall fun ω ↦ by simp [regret]
+  have hβn_nonneg : 0 ≤ β n :=
+    beta_nonneg_of_one_le_of_monotone (β := β) hβ_one hβ_mono hn
   filter_upwards [forall_gap_arm_le_two_mul_width h h_best h_arm, h_gap_two, h_quad_nonneg, hW]
     with ω h_gap_widthω h_gap_twoω h_quad_nonnegω hWω
   have h_quad_pos : ∀ t, t ∈ range n → t ≠ 0 →
@@ -3526,7 +3539,7 @@ lemma regret_ae_le_initial_gap_add_sqrt_nat_mul_beta_capped_sum_bound
         (∑ t ∈ range n, if t = 0 then gap ν (A 0 ω) else 0) +
           2 * (√((n : ℝ) * β n) * √(cappedQuadraticWidthSum A reg x n ω)) :=
     regret_le_initial_add_sqrt_nat_mul_beta_capped_sum (A := A) (reg := reg)
-      (β := β) (x := x) (ν := ν) (n := n) (ω := ω) (hβ_nonneg n) h_quad_pos
+      (β := β) (x := x) (ν := ν) (n := n) (ω := ω) hβn_nonneg h_quad_pos
       h_gap_capped
   simpa [initial_gap_sum_eq (A := A) (ν := ν) (n := n) (ω := ω)] using
     regret_le_initial_add_sqrt_nat_mul_beta_of_capped_sum_le (A := A) (reg := reg)
@@ -3652,6 +3665,8 @@ packaged in the way the finite-action linear-bandit proof is usually read:
 
 * `h_conf` is the high-probability confidence event for all positive times;
 * `h_mean_bound` bounds every arm's mean reward in `[-1, 1]`;
+* `hβ_one` and `hβ_mono` state that the confidence-radius schedule starts at least at one and is
+  monotone;
 * `hL2` is the uniform finite-action feature bound `‖x_a‖₂² ≤ L2`.
 
 The displayed bound is the standard Cauchy-Schwarz plus elliptical-potential expression
@@ -3662,7 +3677,6 @@ lemma regret_ae_le_textbook_finite_action
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
     (h_conf : ∀ᵐ ω ∂P, LinUCBConfidenceEvent A R reg β x ν ω)
     (h_mean_bound : MeanRewardBound (K := K) ν (-1) 1)
-    (hβ_nonneg : ∀ t, 0 ≤ β t)
     (hβ_one : 1 ≤ β 1) (hβ_mono : Monotone β)
     (hreg_pos : 0 < reg)
     (L2 : ℝ) (hL2 : FeatureSqNormBound x L2) :
@@ -3688,7 +3702,7 @@ lemma regret_ae_le_textbook_finite_action
         (x := x) (ν := ν) (P := P) h_conf)
       (linUCBConfidenceEvent_ae_arm (A := A) (R := R) (reg := reg) (β := β)
         (x := x) (ν := ν) (P := P) h_conf)
-      h_gap_two hβ_nonneg hβ_one hβ_mono
+      h_gap_two hβ_one hβ_mono
       (2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ))))
       (widthQuadraticForm_ae_nonneg_of_reg_nonneg (A := A) (reg := reg) (x := x)
         (n := n) (P := P) hreg_pos.le)
