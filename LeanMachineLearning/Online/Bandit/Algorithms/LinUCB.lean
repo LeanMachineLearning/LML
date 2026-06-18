@@ -2212,6 +2212,16 @@ lemma gapBound_two_of_meanRewardBound_neg_one_one [Nonempty (Fin K)]
   exact hgap
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- The initial-gap term used by this formalization is deterministically at most `2` when all arm
+means lie in `[-1, 1]`. At horizon zero the initial term is exactly zero. -/
+lemma initialGapTerm_le_two_of_meanRewardBound_neg_one_one [Nonempty (Fin K)]
+    (hμ : MeanRewardBound ν (-1) 1) :
+    (if n = 0 then 0 else gap ν (A 0 ω)) ≤ if n = 0 then 0 else 2 := by
+  by_cases hn : n = 0
+  · simp [hn]
+  · simpa [hn] using (gapBound_two_of_meanRewardBound_neg_one_one (ν := ν) hμ (A 0 ω))
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- A uniform gap bound implies the selected-action gap bound through any finite horizon. -/
 lemma gap_ae_le_of_GapBound (G : ℝ) (hG : GapBound (K := K) ν G) :
     ∀ᵐ ω ∂P, ∀ t, t ∈ range n → gap ν (A t ω) ≤ G :=
@@ -3795,6 +3805,121 @@ lemma regret_ae_imp_le_textbook_finite_action
         (featureSqNorm_ae_le_of_featureSqNormBound (A := A) (x := x) (n := n)
           (P := P) L2 hL2)
         matrixDetLeTraceAveragePow)
+
+/-- The deterministic textbook LinUCB bonus term
+`2 * sqrt(n * β_n) * sqrt(2 d log(1 + n L² / (reg d)))`.
+
+The final finite-action theorem keeps this as a named expression so probability statements can use
+a deterministic right-hand side instead of repeating the full formula. -/
+noncomputable def textbookRegretBonus (reg : ℝ) (β : ℕ → ℝ) (L2 : ℝ) (n : ℕ) : ℝ :=
+  2 * (√((n : ℝ) * β n) *
+    √(2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ)))))
+
+/-- Good-event finite-action LinUCB regret theorem with the random initial gap replaced by the
+deterministic `≤ 2` bound implied by `MeanRewardBound ν (-1) 1`. -/
+lemma regret_ae_imp_le_textbook_finite_action_deterministic_bound
+    [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_mean_bound : MeanRewardBound (K := K) ν (-1) 1)
+    (hβ_schedule : BetaSchedule β)
+    (hreg_pos : 0 < reg)
+    (L2 : ℝ) (hL2 : FeatureSqNormBound x L2) :
+    ∀ᵐ ω ∂P,
+      LinUCBConfidenceEvent A R reg β x ν ω →
+        regret ν A n ω ≤
+          (if n = 0 then 0 else 2) + textbookRegretBonus (d := d) reg β L2 n := by
+  filter_upwards [regret_ae_imp_le_textbook_finite_action (A := A) (R := R)
+    (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_mean_bound hβ_schedule
+    hreg_pos L2 hL2] with ω h_regret h_confω
+  refine (h_regret h_confω).trans ?_
+  simpa [textbookRegretBonus] using
+    add_le_add_right
+      (initialGapTerm_le_two_of_meanRewardBound_neg_one_one (A := A) (ν := ν)
+        (n := n) (ω := ω) h_mean_bound)
+      (2 * (√((n : ℝ) * β n) *
+        √(2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ))))))
+
+/-- Almost-sure corollary of
+`regret_ae_imp_le_textbook_finite_action_deterministic_bound` when the confidence event is known
+to hold almost surely. -/
+lemma regret_ae_le_textbook_finite_action_deterministic_bound
+    [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_conf : ∀ᵐ ω ∂P, LinUCBConfidenceEvent A R reg β x ν ω)
+    (h_mean_bound : MeanRewardBound (K := K) ν (-1) 1)
+    (hβ_schedule : BetaSchedule β)
+    (hreg_pos : 0 < reg)
+    (L2 : ℝ) (hL2 : FeatureSqNormBound x L2) :
+    ∀ᵐ ω ∂P,
+      regret ν A n ω ≤
+        (if n = 0 then 0 else 2) + textbookRegretBonus (d := d) reg β L2 n := by
+  filter_upwards [regret_ae_imp_le_textbook_finite_action_deterministic_bound
+    (A := A) (R := R) (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h
+    h_mean_bound hβ_schedule hreg_pos L2 hL2, h_conf] with ω h_regret h_confω
+  exact h_regret h_confω
+
+/-- The confidence event is almost surely contained in the deterministic textbook regret-bound
+event. This is the version to combine with a future high-probability confidence theorem. -/
+lemma probReal_confidenceEvent_le_textbook_regret_bound_deterministic
+    [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_mean_bound : MeanRewardBound (K := K) ν (-1) 1)
+    (hβ_schedule : BetaSchedule β)
+    (hreg_pos : 0 < reg)
+    (L2 : ℝ) (hL2 : FeatureSqNormBound x L2) :
+    P.real {ω | LinUCBConfidenceEvent A R reg β x ν ω} ≤
+      P.real {ω |
+        regret ν A n ω ≤
+          (if n = 0 then 0 else 2) + textbookRegretBonus (d := d) reg β L2 n} := by
+  simp_rw [measureReal_def]
+  gcongr 1
+  · simp
+  refine measure_mono_ae ?_
+  filter_upwards [regret_ae_imp_le_textbook_finite_action_deterministic_bound
+    (A := A) (R := R) (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h
+    h_mean_bound hβ_schedule hreg_pos L2 hL2] with ω h_regret h_confω
+  exact h_regret h_confω
+
+/-- High-probability wrapper for the deterministic textbook finite-action LinUCB regret bound. -/
+lemma probReal_textbook_regret_bound_deterministic_ge_of_confidenceEvent_ge
+    [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_mean_bound : MeanRewardBound (K := K) ν (-1) 1)
+    (hβ_schedule : BetaSchedule β)
+    (hreg_pos : 0 < reg)
+    (L2 : ℝ) (hL2 : FeatureSqNormBound x L2) {δ : ℝ}
+    (h_conf_prob : 1 - δ ≤ P.real {ω | LinUCBConfidenceEvent A R reg β x ν ω}) :
+    1 - δ ≤
+      P.real {ω |
+        regret ν A n ω ≤
+          (if n = 0 then 0 else 2) + textbookRegretBonus (d := d) reg β L2 n} := by
+  exact h_conf_prob.trans
+    (probReal_confidenceEvent_le_textbook_regret_bound_deterministic (A := A) (R := R)
+      (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_mean_bound hβ_schedule
+      hreg_pos L2 hL2)
+
+/-- Failure-probability wrapper for the deterministic textbook finite-action LinUCB regret bound. -/
+lemma probReal_textbook_regret_bound_deterministic_failure_le_of_confidenceEvent_failure_le
+    [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_mean_bound : MeanRewardBound (K := K) ν (-1) 1)
+    (hβ_schedule : BetaSchedule β)
+    (hreg_pos : 0 < reg)
+    (L2 : ℝ) (hL2 : FeatureSqNormBound x L2) {δ : ℝ}
+    (h_conf_failure :
+      P.real {ω | ¬ LinUCBConfidenceEvent A R reg β x ν ω} ≤ δ) :
+    P.real {ω |
+      ¬ regret ν A n ω ≤
+          (if n = 0 then 0 else 2) + textbookRegretBonus (d := d) reg β L2 n} ≤ δ := by
+  refine le_trans ?_ h_conf_failure
+  simp_rw [measureReal_def]
+  gcongr 1
+  · simp
+  refine measure_mono_ae ?_
+  filter_upwards [regret_ae_imp_le_textbook_finite_action_deterministic_bound
+    (A := A) (R := R) (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h
+    h_mean_bound hβ_schedule hreg_pos L2 hL2] with ω h_regret h_regret_failure h_confω
+  exact h_regret_failure (h_regret h_confω)
 
 /-- The confidence event is almost surely contained in the textbook finite-action regret-bound
 event.
