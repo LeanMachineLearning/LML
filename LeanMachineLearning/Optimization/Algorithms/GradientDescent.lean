@@ -8,6 +8,7 @@ module
 public import LeanMachineLearning.Online.OnlineRegret
 public import LeanMachineLearning.SequentialLearning.Deterministic
 
+import LeanMachineLearning.ForMathlib.Analysis.Calculus.Deriv.Slope
 import LeanMachineLearning.MeasureTheory.Function.L2Space
 
 /-!
@@ -152,7 +153,7 @@ lemma integral_apply_avg_le {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (hdf : D
     refine le_of_eq ?_
     field
 
-lemma integral_apply_avg_const_div_sqrt {f : E → ℝ}
+theorem integral_apply_avg_const_div_sqrt {f : E → ℝ}
     (hf : ConvexOn ℝ .univ f) (hdf : Differentiable ℝ f)
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ f x)
     {D L : ℝ} (hD_pos : 0 < D) (hL_pos : 0 < L)
