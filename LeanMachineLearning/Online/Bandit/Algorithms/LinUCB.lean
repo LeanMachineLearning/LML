@@ -3796,6 +3796,85 @@ lemma regret_ae_imp_le_textbook_finite_action
           (P := P) L2 hL2)
         matrixDetLeTraceAveragePow)
 
+/-- The confidence event is almost surely contained in the textbook finite-action regret-bound
+event.
+
+This is the probability bridge needed after the good-event theorem: once a concentration theorem
+proves that `LinUCBConfidenceEvent` has high probability, this lemma transfers that probability
+mass to the displayed regret bound. -/
+lemma probReal_confidenceEvent_le_textbook_regret_bound
+    [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_mean_bound : MeanRewardBound (K := K) ν (-1) 1)
+    (hβ_schedule : BetaSchedule β)
+    (hreg_pos : 0 < reg)
+    (L2 : ℝ) (hL2 : FeatureSqNormBound x L2) :
+    P.real {ω | LinUCBConfidenceEvent A R reg β x ν ω} ≤
+      P.real {ω |
+        regret ν A n ω ≤
+          (if n = 0 then 0 else gap ν (A 0 ω)) +
+            2 * (√((n : ℝ) * β n) *
+              √(2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ)))))} := by
+  simp_rw [measureReal_def]
+  gcongr 1
+  · simp
+  refine measure_mono_ae ?_
+  filter_upwards [regret_ae_imp_le_textbook_finite_action (A := A) (R := R)
+    (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_mean_bound hβ_schedule
+    hreg_pos L2 hL2] with ω h_regret h_confω
+  exact h_regret h_confω
+
+/-- High-probability wrapper for the textbook finite-action LinUCB regret bound.
+
+If a future self-normalized concentration theorem proves that the confidence event has probability
+at least `1 - δ`, then the textbook regret bound has probability at least `1 - δ` as well. -/
+lemma probReal_textbook_regret_bound_ge_of_confidenceEvent_ge
+    [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_mean_bound : MeanRewardBound (K := K) ν (-1) 1)
+    (hβ_schedule : BetaSchedule β)
+    (hreg_pos : 0 < reg)
+    (L2 : ℝ) (hL2 : FeatureSqNormBound x L2) {δ : ℝ}
+    (h_conf_prob : 1 - δ ≤ P.real {ω | LinUCBConfidenceEvent A R reg β x ν ω}) :
+    1 - δ ≤
+      P.real {ω |
+        regret ν A n ω ≤
+          (if n = 0 then 0 else gap ν (A 0 ω)) +
+            2 * (√((n : ℝ) * β n) *
+              √(2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ)))))} := by
+  exact h_conf_prob.trans
+    (probReal_confidenceEvent_le_textbook_regret_bound (A := A) (R := R) (reg := reg)
+      (β := β) (x := x) (ν := ν) (n := n) h h_mean_bound hβ_schedule hreg_pos L2 hL2)
+
+/-- Failure-probability wrapper for the textbook finite-action LinUCB regret bound.
+
+If a future self-normalized concentration theorem proves that the confidence event fails with
+probability at most `δ`, then the textbook regret bound fails with probability at most `δ`. -/
+lemma probReal_textbook_regret_bound_failure_le_of_confidenceEvent_failure_le
+    [Nonempty (Fin K)]
+    (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x h_index) (stationaryEnv ν) P)
+    (h_mean_bound : MeanRewardBound (K := K) ν (-1) 1)
+    (hβ_schedule : BetaSchedule β)
+    (hreg_pos : 0 < reg)
+    (L2 : ℝ) (hL2 : FeatureSqNormBound x L2) {δ : ℝ}
+    (h_conf_failure :
+      P.real {ω | ¬ LinUCBConfidenceEvent A R reg β x ν ω} ≤ δ) :
+    P.real {ω |
+      ¬
+        regret ν A n ω ≤
+          (if n = 0 then 0 else gap ν (A 0 ω)) +
+            2 * (√((n : ℝ) * β n) *
+              √(2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ)))))} ≤ δ := by
+  refine le_trans ?_ h_conf_failure
+  simp_rw [measureReal_def]
+  gcongr 1
+  · simp
+  refine measure_mono_ae ?_
+  filter_upwards [regret_ae_imp_le_textbook_finite_action (A := A) (R := R)
+    (reg := reg) (β := β) (x := x) (ν := ν) (n := n) h h_mean_bound hβ_schedule
+    hreg_pos L2 hL2] with ω h_regret h_regret_failure h_confω
+  exact h_regret_failure (h_regret h_confω)
+
 /-- Corollary of `regret_ae_imp_le_textbook_finite_action` when the confidence event is known to
 hold almost surely. This is stronger than the textbook high-probability route and is mainly useful
 as a compatibility wrapper for earlier lemmas in this file. -/
