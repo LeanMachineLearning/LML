@@ -20,7 +20,7 @@ namespace MeasureTheory
 variable {Ω E : Type*} {mΩ : MeasurableSpace Ω} {mE : MeasurableSpace E} {P : Measure Ω}
   [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
 
-theorem condExp_inner_of_stronglyMeasurable_left {Ω : Type*} {m mΩ : MeasurableSpace Ω}
+lemma condExp_inner_of_stronglyMeasurable_left {Ω : Type*} {m mΩ : MeasurableSpace Ω}
     {μ : Measure Ω} {X g : Ω → E}
     (hX : StronglyMeasurable[m] X) (hXg : Integrable (fun ω ↦ ⟪X ω, g ω⟫) μ) (hg : Integrable g μ) :
     μ[fun ω ↦ ⟪X ω, g ω⟫ | m] =ᵐ[μ] fun ω ↦ ⟪X ω, μ[g | m] ω⟫ := by
