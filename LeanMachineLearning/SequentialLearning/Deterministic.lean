@@ -103,7 +103,7 @@ lemma action_zero_of_IsAlgEnvSeqUntil [h_det : IsDeterministicAlg alg]
 
 lemma action_ae_eq_of_IsAlgEnvSeqUntil [h_det : IsDeterministicAlg alg]
     (h : IsAlgEnvSeqUntil A Y alg env P N) (hn : n < N) :
-    A (n + 1) =ᵐ[P] fun ω ↦ nextAction alg n (IsAlgEnvSeq.hist A Y n ω) := by
+    A (n + 1) =ᵐ[P] fun ω ↦ nextAction alg n (history A Y n ω) := by
   have hA := h.measurable_action
   have hY := h.measurable_feedback
   have h_eq := (h.hasCondDistrib_action n hn).condDistrib_eq
@@ -121,12 +121,12 @@ lemma action_zero_ae_eq [h_det : IsDeterministicAlg alg] (h : IsAlgEnvSeq A Y al
   action_zero_of_IsAlgEnvSeqUntil (h.isAlgEnvSeqUntil 0)
 
 lemma action_ae_eq [h_det : IsDeterministicAlg alg] (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
-    A (n + 1) =ᵐ[P] fun ω ↦ nextAction alg n (IsAlgEnvSeq.hist A Y n ω) :=
+    A (n + 1) =ᵐ[P] fun ω ↦ nextAction alg n (history A Y n ω) :=
   action_ae_eq_of_IsAlgEnvSeqUntil (h.isAlgEnvSeqUntil (n + 1)) (by simp)
 
 lemma action_ae_all_eq [h_det : IsDeterministicAlg alg] (h : IsAlgEnvSeq A Y alg env P) :
     ∀ᵐ ω ∂P, A 0 ω = actionZero alg ∧
-      ∀ n, A (n + 1) ω = nextAction alg n (IsAlgEnvSeq.hist A Y n ω) := by
+      ∀ n, A (n + 1) ω = nextAction alg n (history A Y n ω) := by
   rw [eventually_and, ae_all_iff]
   exact ⟨action_zero_ae_eq h, action_ae_eq h⟩
 
@@ -186,7 +186,7 @@ lemma hasCondDistrib_feedback_zero [h_det : IsDeterministicEnv env]
 
 lemma hasCondDistrib_feedback [h_det : IsDeterministicEnv env]
     (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
-    HasCondDistrib (Y (n + 1)) (fun ω ↦ (IsAlgEnvSeq.hist A Y n ω, A (n + 1) ω))
+    HasCondDistrib (Y (n + 1)) (fun ω ↦ (history A Y n ω, A (n + 1) ω))
       (Kernel.deterministic (feedbackFun env n) (measurable_feedbackFun env n)) P := by
   rw [← feedback_eq_deterministic]
   exact h.hasCondDistrib_feedback n
@@ -267,12 +267,12 @@ lemma action_zero_detAlgorithm
 
 lemma action_detAlgorithm_ae_eq
     (h : IsAlgEnvSeq A Y (detAlgorithm nextA h_next action0) env P) (n : ℕ) :
-    A (n + 1) =ᵐ[P] fun ω ↦ nextA n (hist A Y n ω) :=
+    A (n + 1) =ᵐ[P] fun ω ↦ nextA n (history A Y n ω) :=
   (IsDeterministicAlg.action_ae_eq h n).trans (by simp)
 
 lemma action_detAlgorithm_ae_all_eq
     (h : IsAlgEnvSeq A Y (detAlgorithm nextA h_next action0) env P) :
-    ∀ᵐ ω ∂P, A 0 ω = action0 ∧ ∀ n, A (n + 1) ω = nextA n (hist A Y n ω) := by
+    ∀ᵐ ω ∂P, A 0 ω = action0 ∧ ∀ n, A (n + 1) ω = nextA n (history A Y n ω) := by
   filter_upwards [IsDeterministicAlg.action_ae_all_eq h] with ω hω using by simp [hω]
 
 end IsAlgEnvSeq
@@ -296,7 +296,7 @@ lemma action_zero_detAlgorithm
 
 lemma action_detAlgorithm_ae_eq
     (h : IsAlgEnvSeqUntil A Y (detAlgorithm nextA h_next action0) env P N) (hn : n < N) :
-    A (n + 1) =ᵐ[P] fun ω ↦ nextA n (IsAlgEnvSeq.hist A Y n ω) :=
+    A (n + 1) =ᵐ[P] fun ω ↦ nextA n (history A Y n ω) :=
   (IsDeterministicAlg.action_ae_eq_of_IsAlgEnvSeqUntil h hn).trans (by simp)
 
 end IsAlgEnvSeqUntil

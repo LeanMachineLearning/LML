@@ -67,10 +67,10 @@ structure IsBayesAlgEnvSeq
   hasCondDistrib_action_zero : HasCondDistrib (A 0) E (Kernel.const _ alg.p0) P
   hasCondDistrib_feedback_zero : HasCondDistrib (Y 0) (fun ω ↦ (E ω, A 0 ω)) κ P
   hasCondDistrib_action n :
-    HasCondDistrib (A (n + 1)) (fun ω ↦ (E ω, IsAlgEnvSeq.hist A Y n ω))
+    HasCondDistrib (A (n + 1)) (fun ω ↦ (E ω, history A Y n ω))
       ((alg.policy n).prodMkLeft _) P
   hasCondDistrib_feedback n :
-    HasCondDistrib (Y (n + 1)) (fun ω ↦ (IsAlgEnvSeq.hist A Y n ω, E ω, A (n + 1) ω))
+    HasCondDistrib (Y (n + 1)) (fun ω ↦ (history A Y n ω, E ω, A (n + 1) ω))
       (κ.prodMkLeft _) P
 
 namespace IsBayesAlgEnvSeq
@@ -84,7 +84,7 @@ lemma hasLaw_action_zero [IsProbabilityMeasure P] (h : IsBayesAlgEnvSeq Q κ alg
     HasLaw (A 0) alg.p0 P := h.hasCondDistrib_action_zero.hasLaw_of_const
 
 lemma hasCondDistrib_action' (h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
-    HasCondDistrib (A (n + 1)) (IsAlgEnvSeq.hist A Y n) (alg.policy n) P :=
+    HasCondDistrib (A (n + 1)) (history A Y n) (alg.policy n) P :=
   (h.hasCondDistrib_action n).comp_right' (by fun_prop)
 
 lemma hasCondDistrib_feedback' [IsFiniteKernel κ] (h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
@@ -125,7 +125,7 @@ lemma hasCondDistrib_IT_feedback [IsFiniteKernel κ] (h : IsBayesAlgEnvSeq Q κ 
       ((κ.sectR e).prodMkLeft _) (condDistrib (trajectory A Y) E P e) := by
   rw [← h.hasLaw_env.map_eq]
   have hc : HasCondDistrib (Y (n + 1))
-      (fun ω ↦ (E ω, IsAlgEnvSeq.hist A Y n ω, A (n + 1) ω))
+      (fun ω ↦ (E ω, history A Y n ω, A (n + 1) ω))
       (κ.comap (fun (e, _, a) ↦ (e, a)) (by fun_prop)) P :=
     (h.hasCondDistrib_feedback n).comp_right (MeasurableEquiv.prodAssoc.symm.trans
       ((MeasurableEquiv.prodCongr .prodComm (.refl _)).trans .prodAssoc))
@@ -134,9 +134,9 @@ lemma hasCondDistrib_IT_feedback [IsFiniteKernel κ] (h : IsBayesAlgEnvSeq Q κ 
     (measurable_trajectory h.measurable_action h.measurable_feedback).aemeasurable
 
 lemma hasLaw_IT_hist (h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
-    ∀ᵐ e ∂Q, HasLaw (IT.hist n) (condDistrib (IsAlgEnvSeq.hist A Y n) E P e)
+    ∀ᵐ e ∂Q, HasLaw (IT.hist n) (condDistrib (history A Y n) E P e)
       (condDistrib (trajectory A Y) E P e) := by
-  rw [← h.hasLaw_env.map_eq, show IsAlgEnvSeq.hist A Y n = IT.hist n ∘ trajectory A Y from rfl]
+  rw [← h.hasLaw_env.map_eq, show history A Y n = IT.hist n ∘ trajectory A Y from rfl]
   filter_upwards [condDistrib_comp E
     (measurable_trajectory h.measurable_action h.measurable_feedback).aemeasurable
     (IT.measurable_hist n)] with _ he
@@ -190,7 +190,7 @@ lemma IsAlgEnvSeq.isBayesAlgEnvSeq
   hasCondDistrib_action n := by
     let f : (Iic n → 𝓐 × 𝓔 × 𝓨) → 𝓔 × (Iic n → 𝓐 × 𝓨) :=
       fun h ↦ ((h ⟨0, by simp⟩).2.1, fun i ↦ ((h i).1, (h i).2.2))
-    have hc : HasCondDistrib (A (n + 1)) (IsAlgEnvSeq.hist A Y n)
+    have hc : HasCondDistrib (A (n + 1)) (history A Y n)
         (((alg.policy n).comap Prod.snd (by fun_prop)).comap f (by fun_prop)) P :=
       h.hasCondDistrib_action n
     exact hc.comp_right' (f := f)
@@ -198,7 +198,7 @@ lemma IsAlgEnvSeq.isBayesAlgEnvSeq
     let f : (Iic n → 𝓐 × 𝓔 × 𝓨) × 𝓐 → (Iic n → 𝓐 × 𝓨) × 𝓔 × 𝓐 :=
       fun p ↦ ((fun i ↦ ((p.1 i).1, (p.1 i).2.2)), (p.1 ⟨0, by simp⟩).2.1, p.2)
     have hc : HasCondDistrib (fun ω ↦ (Y (n + 1) ω).2)
-        (fun ω ↦ (IsAlgEnvSeq.hist A Y n ω, A (n + 1) ω))
+        (fun ω ↦ (history A Y n ω, A (n + 1) ω))
         ((Kernel.prodMkLeft ((Iic n) → 𝓐 × 𝓨) κ).comap f (by fun_prop)) P := by
       simpa [bayesStationaryEnv, Kernel.prodMkLeft, ← Kernel.comap_comp_right, Function.comp_def]
         using (h.hasCondDistrib_feedback n).snd
@@ -230,7 +230,7 @@ noncomputable
 def bayesTrajMeasurePosterior [StandardBorelSpace 𝓔] [Nonempty 𝓔]
     (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × 𝓐) 𝓨) [IsMarkovKernel κ]
     (alg : Algorithm 𝓐 𝓨) (n : ℕ) : Kernel (Iic n → 𝓐 × 𝓨) 𝓔 :=
-  condDistrib (fun ω ↦ (ω 0).2.1) (IsAlgEnvSeq.hist action (fun n ω ↦ (ω n).2.2) n)
+  condDistrib (fun ω ↦ (ω 0).2.1) (history action (fun n ω ↦ (ω n).2.2) n)
     (bayesTrajMeasure Q κ alg)
 deriving IsMarkovKernel
 

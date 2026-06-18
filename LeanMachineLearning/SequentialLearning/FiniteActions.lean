@@ -225,7 +225,7 @@ lemma adapted_pullCount_add_one [MeasurableSingletonClass 𝓐]
     Adapted (IsAlgEnvSeq.filtration hA hR') (fun n ↦ pullCount A a (n + 1)) := by
   intro n
   have : pullCount A a (n + 1) = (fun h : Iic n → 𝓐 × R ↦ pullCount' n h a) ∘
-      (IsAlgEnvSeq.hist A R' n) := by
+      (history A R' n) := by
     ext
     exact pullCount_add_one_eq_pullCount'
   rw [measurable_iff_comap_le]
@@ -564,7 +564,7 @@ lemma measurable_stepsUntil' [MeasurableSingletonClass 𝓐]
 lemma measurable_comap_indicator_stepsUntil_eq [MeasurableSingletonClass 𝓐]
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : 𝓐) (m n : ℕ) :
     Measurable[MeasurableSpace.comap
-        (fun ω : Ω ↦ (IsAlgEnvSeq.hist A R' (n-1) ω, A n ω)) inferInstance]
+        (fun ω : Ω ↦ (history A R' (n-1) ω, A n ω)) inferInstance]
       ({ω | stepsUntil A a m ω = ↑n}.indicator fun _ ↦ 1) := by
   by_cases hm : m = 0
   · simp only [hm]
@@ -631,11 +631,11 @@ lemma measurable_comap_indicator_stepsUntil_eq_zero [MeasurableSingletonClass �
 
 lemma measurableSet_stepsUntil_eq [MeasurableSingletonClass 𝓐]
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : 𝓐) (m n : ℕ) :
-    MeasurableSet[MeasurableSpace.comap (fun ω : Ω ↦ (IsAlgEnvSeq.hist A R' (n-1) ω, A n ω))
+    MeasurableSet[MeasurableSpace.comap (fun ω : Ω ↦ (history A R' (n-1) ω, A n ω))
         inferInstance]
       {ω : Ω | stepsUntil A a m ω = ↑n} := by
   let mProd := MeasurableSpace.comap
-    (fun ω : Ω ↦ (IsAlgEnvSeq.hist A R' (n-1) ω, A n ω)) inferInstance
+    (fun ω : Ω ↦ (history A R' (n-1) ω, A n ω)) inferInstance
   suffices Measurable[mProd] ({ω | stepsUntil A a m ω = ↑n}.indicator fun x ↦ 1) by
     rwa [measurable_indicator_const_iff] at this
   exact measurable_comap_indicator_stepsUntil_eq hA hR' a m n

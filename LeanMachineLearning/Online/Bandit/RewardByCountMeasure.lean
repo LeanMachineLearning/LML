@@ -95,8 +95,8 @@ lemma condIndepFun_reward_stepsUntil_action' [StandardBorelSpace Ω]
     simp only [hn]
     refine h_indep.of_measurable_right (hX := hA 0) ?_
     exact measurable_comap_indicator_stepsUntil_eq_zero a m
-  · have h_indep : R n ⟂ᵢ[A n, hA n; P] fun ω ↦ (IsAlgEnvSeq.hist A R (n - 1) ω, A n ω) :=
-      IsAlgEnvSeq.condIndepFun_feedback_hist_action_action' h n (by grind)
+  · have h_indep : R n ⟂ᵢ[A n, hA n; P] fun ω ↦ (history A R (n - 1) ω, A n ω) :=
+      IsAlgEnvSeq.condIndepFun_feedback_history_action_action' h n (by grind)
     refine h_indep.of_measurable_right (hX := hA n) ?_
     exact measurable_comap_indicator_stepsUntil_eq hA hR a m n
 
