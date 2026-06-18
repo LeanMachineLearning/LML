@@ -23,6 +23,10 @@ permissions:
   pull-requests: write    # Write access to pull requests
   actions: write          # Write access to GitHub Actions
 
+env:
+  LEAN_EXPOSITION_REPO: LeanMachineLearning/exposition
+  LEAN_EXPOSITION_REF: main
+
 jobs:
   build_project:
     runs-on: ubuntu-latest
@@ -53,7 +57,31 @@ jobs:
 
       - name: Build Verso Documentation
         run: |
-          ./build_tutorial.sh
+          ./scripts/build_docs.sh
+
+      - name: Clone lean-exposition
+        if: github.event_name == 'push'
+        run: |
+          git clone --depth 1 --branch "$LEAN_EXPOSITION_REF" \
+            "https://github.com/$LEAN_EXPOSITION_REPO" /tmp/lean-exposition
+
+      - name: Build exposition binary
+        if: github.event_name == 'push'
+        run: |
+          cd /tmp/lean-exposition && lake build exposition
+          echo "EXPOSITION_BIN=/tmp/lean-exposition/.lake/build/bin/exposition" >> "$GITHUB_ENV"
+
+      - name: Build exposition documentation
+        if: github.event_name == 'push'
+        run: |
+          lake env "$EXPOSITION_BIN" \
+            --root LeanMachineLearning \
+            --repo-url https://github.com/LeanMachineLearning/LML \
+            --site-url https://leanmachinelearning.org/LML/exposition \
+            --output ./exposition \
+            --exclude-lib LMLTutorial
+          mkdir -p home_page/exposition
+          cp -r exposition/html-multi/* home_page/exposition
 
       - name: Compile blueprint and documentation
         uses: leanprover-community/docgen-action@7b5b9a1822650bd45aaeb4182d94bceba2030f89 # 2026-04-14

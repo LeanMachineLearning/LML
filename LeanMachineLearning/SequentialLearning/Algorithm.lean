@@ -5,8 +5,8 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
-public import LeanMachineLearning.MeasureTheory.Measurable
-public import LeanMachineLearning.Probability.Kernel.IonescuTulcea.Traj
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Measurable
+public import LeanMachineLearning.ForMathlib.Probability.Kernel.IonescuTulcea.Traj
 
 /-!
 # Algorithms and environments
@@ -27,10 +27,6 @@ an algorithm interacting with an environment.
 * `prod_left alg`: an `Algorithm 𝓐 (𝓧 × 𝓨)` obtained from an algorithm `alg : Algorithm 𝓐 𝓨` by
   ignoring the `𝓧` component of each observation.
 
-## Notes
-
-The `ANCHOR` comments are used to mark code that appears in the tutorials.
-
 -/
 
 @[expose] public section
@@ -44,36 +40,37 @@ namespace Learning
 variable {𝓐 𝓨 Ω : Type*} {m𝓐 : MeasurableSpace 𝓐} {m𝓨 : MeasurableSpace 𝓨} {mΩ : MeasurableSpace Ω}
 
 /-- A stochastic, sequential algorithm. -/
--- ANCHOR: Algorithm
 structure Algorithm (𝓐 𝓨 : Type*) [MeasurableSpace 𝓐] [MeasurableSpace 𝓨] where
   /-- Policy or sampling rule: distribution of the next action. -/
   policy : (n : ℕ) → Kernel (Iic n → 𝓐 × 𝓨) 𝓐
+  /-- The policy is a Markov kernel. -/
   [h_policy : ∀ n, IsMarkovKernel (policy n)]
   /-- Distribution of the first action. -/
   p0 : Measure 𝓐
+  /-- The first action distribution is a probability measure. -/
   [hp0 : IsProbabilityMeasure p0]
--- ANCHOR_END: Algorithm
 
 instance (alg : Algorithm 𝓐 𝓨) (n : ℕ) : IsMarkovKernel (alg.policy n) := alg.h_policy n
 instance (alg : Algorithm 𝓐 𝓨) : IsProbabilityMeasure alg.p0 := alg.hp0
 
 /-- An algorithm with observations in `𝓧 × 𝓨` obtained from an algorithm with observations in `𝓨`
 by ignoring the `𝓧` component of each observation. -/
+@[simps]
 def Algorithm.prodLeft (𝓧 : Type*) [MeasurableSpace 𝓧] (alg : Algorithm 𝓐 𝓨) :
     Algorithm 𝓐 (𝓧 × 𝓨) where
   policy n := (alg.policy n).comap (fun h i ↦ ((h i).1, (h i).2.2)) (by fun_prop)
   p0 := alg.p0
 
 /-- A stochastic environment. -/
--- ANCHOR: Environment
 structure Environment (𝓐 𝓨 : Type*) [MeasurableSpace 𝓐] [MeasurableSpace 𝓨] where
   /-- Distribution of the next observation as function of the past history. -/
   feedback : (n : ℕ) → Kernel ((Iic n → 𝓐 × 𝓨) × 𝓐) 𝓨
+  /-- The feedback kernels are Markov kernels. -/
   [h_feedback : ∀ n, IsMarkovKernel (feedback n)]
   /-- Distribution of the first observation given the first action. -/
   ν0 : Kernel 𝓐 𝓨
+  /-- The initial observation kernel is a Markov kernel. -/
   [hp0 : IsMarkovKernel ν0]
--- ANCHOR_END: Environment
 
 instance (env : Environment 𝓐 𝓨) (n : ℕ) : IsMarkovKernel (env.feedback n) := env.h_feedback n
 instance (env : Environment 𝓐 𝓨) : IsMarkovKernel env.ν0 := env.hp0
@@ -86,6 +83,9 @@ def stepKernel (alg : Algorithm 𝓐 𝓨) (env : Environment 𝓐 𝓨) (n : �
   alg.policy n ⊗ₖ env.feedback n
 deriving IsMarkovKernel
 
+lemma stepKernel_def (alg : Algorithm 𝓐 𝓨) (env : Environment 𝓐 𝓨) (n : ℕ) :
+    stepKernel alg env n = alg.policy n ⊗ₖ env.feedback n := rfl
+
 @[simp]
 lemma fst_stepKernel (alg : Algorithm 𝓐 𝓨) (env : Environment 𝓐 𝓨) (n : ℕ) :
     (stepKernel alg env n).fst = alg.policy n := by
@@ -97,35 +97,43 @@ variable {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {alg : Algorithm �
     {P : Measure Ω} [IsFiniteMeasure P] {N : ℕ}
 
 /-- Step of the algorithm-environment sequence: the action-feedback pair at time `n`. -/
-def IsAlgEnvSeq.step (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨) (n : ℕ) (ω : Ω) : 𝓐 × 𝓨 :=
+def step (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨) (n : ℕ) (ω : Ω) : 𝓐 × 𝓨 :=
   (A n ω, Y n ω)
 
 @[fun_prop]
-lemma IsAlgEnvSeq.measurable_step (n : ℕ) (hA : Measurable (A n))
-    (hY : Measurable (Y n)) :
-    Measurable (IsAlgEnvSeq.step A Y n) := by
-  unfold IsAlgEnvSeq.step
+lemma measurable_step (n : ℕ) (hA : Measurable (A n)) (hY : Measurable (Y n)) :
+    Measurable (step A Y n) := by
+  unfold step
+  fun_prop
+
+/-- A random variable that gives the sequence of action-feedback pairs. -/
+def trajectory (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨) (ω : Ω) : ℕ → 𝓐 × 𝓨 := fun n ↦ (A n ω, Y n ω)
+
+@[fun_prop]
+lemma measurable_trajectory {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} (hA : ∀ n, Measurable (A n))
+    (hR : ∀ n, Measurable (Y n)) : Measurable (trajectory A Y) := by
+  unfold trajectory
   fun_prop
 
 /-- History of the algorithm-environment sequence up to time `n`. -/
-def IsAlgEnvSeq.hist (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨) (n : ℕ) (ω : Ω) : Iic n → 𝓐 × 𝓨 :=
+def history (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨) (n : ℕ) (ω : Ω) : Iic n → 𝓐 × 𝓨 :=
   fun i ↦ (A i ω, Y i ω)
 
 @[fun_prop]
-lemma IsAlgEnvSeq.measurable_hist (hA : ∀ n, Measurable (A n))
+lemma measurable_history (hA : ∀ n, Measurable (A n))
     (hY : ∀ n, Measurable (Y n)) (n : ℕ) :
-    Measurable (IsAlgEnvSeq.hist A Y n) := by
-  unfold IsAlgEnvSeq.hist
+    Measurable (history A Y n) := by
+  unfold history
   fun_prop
 
-lemma IsAlgEnvSeq.eval_comp_hist (n : ℕ) :
-    (fun x ↦ x ⟨n, by simp⟩) ∘ (hist A Y n) = step A Y n := rfl
+lemma eval_comp_history (n : ℕ) :
+    (fun x ↦ x ⟨n, by simp⟩) ∘ (history A Y n) = step A Y n := rfl
 
-lemma IsAlgEnvSeq.fst_eval_comp_hist (n : ℕ) :
-    (fun x ↦ (x ⟨n, by simp⟩).1) ∘ (hist A Y n) = A n := rfl
+lemma fst_eval_comp_history (n : ℕ) :
+    (fun x ↦ (x ⟨n, by simp⟩).1) ∘ (history A Y n) = A n := rfl
 
-lemma IsAlgEnvSeq.snd_eval_comp_hist (n : ℕ) :
-    (fun x ↦ (x ⟨n, by simp⟩).2) ∘ (hist A Y n) = Y n := rfl
+lemma snd_eval_comp_history (n : ℕ) :
+    (fun x ↦ (x ⟨n, by simp⟩).2) ∘ (history A Y n) = Y n := rfl
 
 section IsAlgEnvSeq
 
@@ -133,34 +141,46 @@ variable [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [No
 
 /-- An algorithm-environment sequence: a sequence of actions and feedbacks generated
 by an algorithm interacting with an environment. -/
--- ANCHOR: IsAlgEnvSeq
 structure IsAlgEnvSeq
     (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨) (alg : Algorithm 𝓐 𝓨) (env : Environment 𝓐 𝓨)
     (P : Measure Ω) [IsFiniteMeasure P] : Prop where
+  /-- The action sequence is measurable. -/
   measurable_action n : Measurable (A n) := by fun_prop
+  /-- The feedback sequence is measurable. -/
   measurable_feedback n : Measurable (Y n) := by fun_prop
+  /-- The first action has the correct law. -/
   hasLaw_action_zero : HasLaw (fun ω ↦ (A 0 ω)) alg.p0 P
+  /-- The first feedback has the correct conditional distribution. -/
   hasCondDistrib_feedback_zero : HasCondDistrib (Y 0) (A 0) env.ν0 P
+  /-- The next action has the correct conditional distribution given the history. -/
   hasCondDistrib_action n :
-    HasCondDistrib (A (n + 1)) (IsAlgEnvSeq.hist A Y n) (alg.policy n) P
+    HasCondDistrib (A (n + 1)) (history A Y n) (alg.policy n) P
+  /-- The next feedback has the correct conditional distribution given the history and
+  next action. -/
   hasCondDistrib_feedback n :
-    HasCondDistrib (Y (n + 1)) (fun ω ↦ (IsAlgEnvSeq.hist A Y n ω, A (n + 1) ω))
+    HasCondDistrib (Y (n + 1)) (fun ω ↦ (history A Y n ω, A (n + 1) ω))
       (env.feedback n) P
--- ANCHOR_END: IsAlgEnvSeq
 
 /-- An algorithm-environment sequence: a sequence of actions and feedbacks generated
 by an algorithm interacting with an environment. -/
 structure IsAlgEnvSeqUntil
     (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨) (alg : Algorithm 𝓐 𝓨) (env : Environment 𝓐 𝓨)
     (P : Measure Ω) [IsFiniteMeasure P] (N : ℕ) : Prop where
+  /-- The action sequence is measurable. -/
   measurable_action n : Measurable (A n) := by fun_prop
+  /-- The feedback sequence is measurable. -/
   measurable_feedback n : Measurable (Y n) := by fun_prop
+  /-- The first action has the correct law. -/
   hasLaw_action_zero : HasLaw (fun ω ↦ (A 0 ω)) alg.p0 P
+  /-- The first feedback has the correct conditional distribution. -/
   hasCondDistrib_feedback_zero : HasCondDistrib (Y 0) (A 0) env.ν0 P
+  /-- The next action has the correct conditional distribution given the history. -/
   hasCondDistrib_action n (hn : n < N) :
-    HasCondDistrib (A (n + 1)) (IsAlgEnvSeq.hist A Y n) (alg.policy n) P
+    HasCondDistrib (A (n + 1)) (history A Y n) (alg.policy n) P
+  /-- The next feedback has the correct conditional distribution given the history and
+  next action. -/
   hasCondDistrib_feedback n (hn : n < N) :
-    HasCondDistrib (Y (n + 1)) (fun ω ↦ (IsAlgEnvSeq.hist A Y n ω, A (n + 1) ω))
+    HasCondDistrib (Y (n + 1)) (fun ω ↦ (history A Y n ω, A (n + 1) ω))
       (env.feedback n) P
 
 lemma IsAlgEnvSeqUntil.mono (h : IsAlgEnvSeqUntil A Y alg env P N) {N' : ℕ} (hN : N' ≤ N) :
@@ -181,30 +201,44 @@ lemma IsAlgEnvSeq.isAlgEnvSeqUntil (h : IsAlgEnvSeq A Y alg env P) (N : ℕ) :
   hasCondDistrib_action n _ := h.hasCondDistrib_action n
   hasCondDistrib_feedback n _ := h.hasCondDistrib_feedback n
 
+@[fun_prop]
+lemma IsAlgEnvSeq.measurable_step (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
+    Measurable (step A Y n) := by
+  have hA := h.measurable_action
+  have hY := h.measurable_feedback
+  fun_prop
+
+@[fun_prop]
+lemma IsAlgEnvSeq.measurable_history (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
+    Measurable (history A Y n) := by
+  have hA := h.measurable_action
+  have hY := h.measurable_feedback
+  fun_prop
+
 lemma IsAlgEnvSeq.hasLaw_step_zero (h : IsAlgEnvSeq A Y alg env P) :
     HasLaw (step A Y 0) (alg.p0 ⊗ₘ env.ν0) P :=
   HasLaw.prod_of_hasCondDistrib h.hasLaw_action_zero h.hasCondDistrib_feedback_zero
 
 lemma IsAlgEnvSeqUntil.hasLaw_step_zero (h : IsAlgEnvSeqUntil A Y alg env P N) :
-    HasLaw (IsAlgEnvSeq.step A Y 0) (alg.p0 ⊗ₘ env.ν0) P :=
+    HasLaw (step A Y 0) (alg.p0 ⊗ₘ env.ν0) P :=
   HasLaw.prod_of_hasCondDistrib h.hasLaw_action_zero h.hasCondDistrib_feedback_zero
 
 lemma IsAlgEnvSeq.hasCondDistrib_step (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
-    HasCondDistrib (step A Y (n + 1)) (hist A Y n) (stepKernel alg env n) P :=
+    HasCondDistrib (step A Y (n + 1)) (history A Y n) (stepKernel alg env n) P :=
   HasCondDistrib.prod (h.hasCondDistrib_action n) (h.hasCondDistrib_feedback n)
 
 lemma IsAlgEnvSeqUntil.hasCondDistrib_step (h : IsAlgEnvSeqUntil A Y alg env P N)
     (n : ℕ) (hn : n < N) :
-    HasCondDistrib (IsAlgEnvSeq.step A Y (n + 1)) (IsAlgEnvSeq.hist A Y n)
+    HasCondDistrib (step A Y (n + 1)) (history A Y n)
       (stepKernel alg env n) P :=
   HasCondDistrib.prod (h.hasCondDistrib_action n hn) (h.hasCondDistrib_feedback n hn)
 
-lemma IsAlgEnvSeq.hasLaw_hist_zero (h : IsAlgEnvSeq A Y alg env P) : HasLaw (hist A Y 0)
+lemma IsAlgEnvSeq.hasLaw_history_zero (h : IsAlgEnvSeq A Y alg env P) : HasLaw (history A Y 0)
     ((P.map (step A Y 0)).map (MeasurableEquiv.piUnique (fun _ : Iic 0 ↦ 𝓐 × 𝓨)).symm) P where
-  aemeasurable := (measurable_hist h.measurable_action h.measurable_feedback 0).aemeasurable
+  aemeasurable := (h.measurable_history 0).aemeasurable
   map_eq := by
     have he : (MeasurableEquiv.piUnique (fun _ : Iic 0 ↦ 𝓐 × 𝓨)).symm ∘ step A Y 0 =
-        hist A Y 0 := by
+        history A Y 0 := by
       funext _ ⟨0, _⟩
       rfl
     rw [← he]
@@ -212,16 +246,16 @@ lemma IsAlgEnvSeq.hasLaw_hist_zero (h : IsAlgEnvSeq A Y alg env P) : HasLaw (his
     have hY := h.measurable_feedback
     exact (Measure.map_map (by fun_prop) (by fun_prop)).symm
 
-lemma IsAlgEnvSeq.hasLaw_hist_succ (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
-  HasLaw (hist A Y (n + 1))
-    ((P.map (hist A Y n) ⊗ₘ condDistrib (step A Y (n + 1)) (hist A Y n) P).map
+lemma IsAlgEnvSeq.hasLaw_history_succ (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
+  HasLaw (history A Y (n + 1))
+    ((P.map (history A Y n) ⊗ₘ condDistrib (step A Y (n + 1)) (history A Y n) P).map
         (MeasurableEquiv.IicSuccProd (fun _ ↦ 𝓐 × 𝓨) n).symm) P where
-  aemeasurable := (measurable_hist h.measurable_action h.measurable_feedback (n + 1)).aemeasurable
+  aemeasurable := (h.measurable_history (n + 1)).aemeasurable
   map_eq := by
     have he : (MeasurableEquiv.IicSuccProd (fun _ ↦ 𝓐 × 𝓨) n).symm ∘
-        (fun ω ↦ (hist A Y n ω, step A Y (n + 1) ω)) = hist A Y (n + 1) := by
+        (fun ω ↦ (history A Y n ω, step A Y (n + 1) ω)) = history A Y (n + 1) := by
       funext ω
-      exact (MeasurableEquiv.IicSuccProd (fun _ ↦ 𝓐 × 𝓨) n).symm_apply_apply (hist A Y (n + 1) ω)
+      exact (MeasurableEquiv.IicSuccProd (fun _ ↦ 𝓐 × 𝓨) n).symm_apply_apply (history A Y (n + 1) ω)
     have hA := h.measurable_action
     have hY := h.measurable_feedback
     rw [← he, ← Measure.map_map (by fun_prop) (by fun_prop)]
@@ -233,29 +267,29 @@ end IsAlgEnvSeq
 /-- Filtration generated by the history up to time `n`. -/
 def IsAlgEnvSeq.filtration (hA : ∀ n, Measurable (A n)) (hY : ∀ n, Measurable (Y n)) :
     Filtration ℕ mΩ where
-  seq i := MeasurableSpace.comap (hist A Y i) inferInstance
+  seq i := MeasurableSpace.comap (history A Y i) inferInstance
   mono' i j hij := by
     simp only
     rw [← measurable_iff_comap_le]
-    have : hist A Y i = (fun h k ↦ h ⟨k.1, by grind⟩) ∘ hist A Y j := rfl
+    have : history A Y i = (fun h k ↦ h ⟨k.1, by grind⟩) ∘ history A Y j := rfl
     rw [this]
     exact measurable_comp_comap _ (by fun_prop)
   le' i := by
     rw [← measurable_iff_comap_le]
-    exact measurable_hist hA hY i
+    exact Learning.measurable_history hA hY i
 
-lemma IsAlgEnvSeq.adapted_hist
+lemma IsAlgEnvSeq.adapted_history
     (hA : ∀ n, Measurable (A n)) (hY : ∀ n, Measurable (Y n)) :
-    Adapted (filtration hA hY) (IsAlgEnvSeq.hist A Y) :=
+    Adapted (filtration hA hY) (history A Y) :=
   fun _ ↦ measurable_iff_comap_le.mpr le_rfl
 
 lemma IsAlgEnvSeq.adapted_step
     (hA : ∀ n, Measurable (A n)) (hY : ∀ n, Measurable (Y n)) :
     Adapted (filtration hA hY) (step A Y) := by
   intro n
-  have : step A Y n = (fun h ↦ (h ⟨n, by simp⟩)) ∘ (hist A Y n) := by
+  have : step A Y n = (fun h ↦ (h ⟨n, by simp⟩)) ∘ (history A Y n) := by
     ext ω : 1
-    simp [hist, step]
+    simp [history, step]
   rw [this]
   exact measurable_comp_comap _ (by fun_prop)
 
@@ -263,9 +297,9 @@ lemma IsAlgEnvSeq.adapted_action
     (hA : ∀ n, Measurable (A n)) (hY : ∀ n, Measurable (Y n)) :
     Adapted (filtration hA hY) A := by
   intro n
-  have : A n = (fun h ↦ (h ⟨n, by simp⟩).1) ∘ (hist A Y n) := by
+  have : A n = (fun h ↦ (h ⟨n, by simp⟩).1) ∘ (history A Y n) := by
     ext ω : 1
-    simp [IsAlgEnvSeq.hist]
+    simp [history]
   rw [this]
   exact measurable_comp_comap _ (by fun_prop)
 
@@ -273,9 +307,9 @@ lemma IsAlgEnvSeq.adapted_feedback
     (hA : ∀ n, Measurable (A n)) (hY : ∀ n, Measurable (Y n)) :
     Adapted (filtration hA hY) Y := by
   intro n
-  have : Y n = (fun h ↦ (h ⟨n, by simp⟩).2) ∘ (hist A Y n) := by
+  have : Y n = (fun h ↦ (h ⟨n, by simp⟩).2) ∘ (history A Y n) := by
     ext ω : 1
-    simp [IsAlgEnvSeq.hist]
+    simp [history]
   rw [this]
   exact measurable_comp_comap _ (by fun_prop)
 
@@ -330,7 +364,7 @@ lemma IsAlgEnvSeq.filtrationAction_zero_eq_comap
 lemma IsAlgEnvSeq.filtrationAction_eq_comap
     {hA : ∀ n, Measurable (A n)} {hY : ∀ n, Measurable (Y n)} (n : ℕ) (hn : n ≠ 0) :
     filtrationAction hA hY n =
-      MeasurableSpace.comap (fun ω ↦ (hist A Y (n - 1) ω, A n ω)) inferInstance := by
+      MeasurableSpace.comap (fun ω ↦ (history A Y (n - 1) ω, A n ω)) inferInstance := by
   simp only [filtrationAction, filtration, ← MeasurableSpace.comap_prodMk, hn, ↓reduceIte]
   rfl
 

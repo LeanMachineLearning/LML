@@ -35,21 +35,28 @@ variable {𝓐 Ω : Type*} [DecidableEq 𝓐] {m𝓐 : MeasurableSpace 𝓐} {m�
 
 /-- Gap of an action `a`: difference between the highest mean of the actions and the mean of `a`. -/
 noncomputable
--- ANCHOR: gap
 def gap (ν : Kernel 𝓐 ℝ) (a : 𝓐) : ℝ := (⨆ i, (ν i)[id]) - (ν a)[id]
--- ANCHOR_END: gap
 
 omit [DecidableEq 𝓐] in
 lemma gap_nonneg [Finite 𝓐] : 0 ≤ gap ν a := by
   rw [gap, sub_nonneg]
   exact le_ciSup (f := fun i ↦ (ν i)[id]) (by simp) a
 
+omit [DecidableEq 𝓐] in
+/-- The gap is non-negative if the means are bounded by `u : ℝ` (even if `𝓐` is not `Finite`). -/
+lemma gap_nonneg_of_le {u : ℝ} (h : ∀ a, (ν a)[id] ≤ u) : 0 ≤ gap ν a := by
+  rw [gap, sub_nonneg]
+  exact le_ciSup ⟨u, Set.forall_mem_range.2 h⟩ a
+
+omit [DecidableEq 𝓐] in
+lemma gap_le_of_mem_Icc [Nonempty 𝓐] {l u : ℝ} (h : ∀ a, (ν a)[id] ∈ Set.Icc l u) :
+    gap ν a ≤ u - l := by
+  grind [gap, ciSup_le (fun i ↦ (h i).2)]
+
 /-- Regret of a sequence of pulls `k : ℕ → 𝓐` at time `t` for the reward kernel `ν ; Kernel 𝓐 ℝ`. -/
 noncomputable
--- ANCHOR: regret
 def regret (ν : Kernel 𝓐 ℝ) (A : ℕ → Ω → 𝓐) (t : ℕ) (ω : Ω) : ℝ :=
   t * (⨆ a, (ν a)[id]) - ∑ s ∈ range t, (ν (A s ω))[id]
--- ANCHOR_END: regret
 
 omit [DecidableEq 𝓐] in
 lemma regret_eq_sum_gap : regret ν A t ω = ∑ s ∈ range t, gap ν (A s ω) := by

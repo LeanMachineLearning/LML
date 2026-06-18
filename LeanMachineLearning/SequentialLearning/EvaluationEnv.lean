@@ -7,7 +7,7 @@ module
 
 public import LeanMachineLearning.SequentialLearning.Deterministic
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
-public import LeanMachineLearning.Probability.Independence.CondDistrib
+public import LeanMachineLearning.ForMathlib.Probability.Independence.CondDistrib
 
 /-!
 # Function evaluation environments

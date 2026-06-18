@@ -5,7 +5,7 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
-public import LeanMachineLearning.Probability.Independence.CondDistrib
+public import LeanMachineLearning.ForMathlib.Probability.Independence.CondDistrib
 public import Mathlib.Probability.HasLaw
 
 /-!
@@ -252,5 +252,22 @@ lemma HasCondDistrib.prod [IsFiniteMeasure μ] [IsFiniteKernel κ]
   rw [← Measure.compProd_assoc', ← h_condDistrib_Y, ← h_condDistrib_Z,
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
   rfl
+
+lemma HasCondDistrib.hasCondDistrib_sectR [IsFiniteMeasure μ] [StandardBorelSpace β] [Nonempty β]
+    {W : α → Ω'} {Z : α → γ} {f : Ω' → β} {g : Ω' → Ω} {η : Kernel (γ × β) Ω} (hf : Measurable f)
+    (hg : Measurable g) (hW : AEMeasurable W μ)
+    (hcd : HasCondDistrib (g ∘ W) (fun a ↦ (Z a, (f ∘ W) a)) η μ) :
+    ∀ᵐ z ∂(μ.map Z), HasCondDistrib g f (η.sectR z) (condDistrib W Z μ z) := by
+  have h_eq : condDistrib (g ∘ W) (fun a ↦ (Z a, (f ∘ W) a)) μ
+      =ᵐ[μ.map Z ⊗ₘ (condDistrib W Z μ).map f] η := by
+    rw [← Measure.compProd_congr (condDistrib_comp Z hW hf),
+        compProd_map_condDistrib (hf.comp_aemeasurable hW)]
+    exact hcd.condDistrib_eq
+  filter_upwards [
+    condDistrib_condDistrib_ae_eq_sectR_condDistrib hf hg hW hcd.aemeasurable_snd.fst,
+    Measure.ae_ae_of_ae_compProd h_eq] with z hc ha
+  refine ⟨hg.aemeasurable, hf.aemeasurable, ?_⟩
+  rw [Kernel.map_apply _ hf] at ha
+  filter_upwards [hc, ha] with b hcb hab using hcb.trans hab
 
 end ProbabilityTheory

@@ -7,7 +7,7 @@ module
 
 public import LeanMachineLearning.Online.Bandit.SumRewards
 public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
-public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
 
 /-!
 # UCB algorithm
@@ -26,7 +26,6 @@ variable {K : ℕ}
 
 section Algorithm
 
--- ANCHOR: UCB_def
 /-- The exploration bonus of the UCB algorithm, which corresponds to the width of
 a confidence interval. -/
 noncomputable def ucbWidth' (c : ℝ) (n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fin K) : ℝ :=
@@ -52,7 +51,6 @@ lemma UCB.measurable_nextArm (hK : 0 < K) (c : ℝ) (n : ℕ) : Measurable (next
 noncomputable
 def ucbAlgorithm (hK : 0 < K) (c : ℝ) : Algorithm (Fin K) ℝ :=
   detAlgorithm (UCB.nextArm hK c) (by fun_prop) ⟨0, hK⟩
--- ANCHOR_END: UCB_def
 end Algorithm
 
 namespace UCB
@@ -92,7 +90,7 @@ lemma measurable_ucbWidth (hA : ∀ n, Measurable (A n)) (c : ℝ) (a : Fin K) :
   fun_prop
 
 lemma ucbWidth_eq_ucbWidth' (c : ℝ) (a : Fin K) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
-    ucbWidth A c a n ω = ucbWidth' c (n - 1) (IsAlgEnvSeq.hist A R (n - 1) ω) a := by
+    ucbWidth A c a n ω = ucbWidth' c (n - 1) (history A R (n - 1) ω) a := by
   simp only [ucbWidth, pullCount_eq_pullCount' (A := A) (R' := R) hn, Nat.cast_nonneg, sqrt_div',
     ucbWidth']
   congr 4
@@ -106,13 +104,13 @@ lemma arm_zero [Nonempty (Fin K)]
 
 lemma arm_ae_eq_ucbNextArm [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (n : ℕ) :
-    A (n + 1) =ᵐ[P] fun ω ↦ nextArm hK c n (IsAlgEnvSeq.hist A R n ω) := by
+    A (n + 1) =ᵐ[P] fun ω ↦ nextArm hK c n (history A R n ω) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   exact h.action_detAlgorithm_ae_eq n
 
 lemma arm_ae_all_eq [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
-    ∀ᵐ h ∂P, A 0 h = ⟨0, hK⟩ ∧ ∀ n, A (n + 1) h = nextArm hK c n (IsAlgEnvSeq.hist A R n h) := by
+    ∀ᵐ h ∂P, A 0 h = ⟨0, hK⟩ ∧ ∀ n, A (n + 1) h = nextArm hK c n (history A R n h) := by
   rw [eventually_and, ae_all_iff]
   exact ⟨arm_zero h, arm_ae_eq_ucbNextArm h⟩
 
@@ -128,7 +126,7 @@ lemma ucbIndex_le_ucbIndex_arm [Nonempty (Fin K)]
   simp_rw [h_arm, empMean_eq_empMean' (by grind : n ≠ 0),
     ucbWidth_eq_ucbWidth' (A := A) (R := R) _ _ _ _ (by grind : n ≠ 0)]
   exact isMaxOn_measurableArgmax (fun h a ↦ empMean' (n - 1) h a + ucbWidth' c (n - 1) h a)
-    (IsAlgEnvSeq.hist A R (n - 1) h) a
+    (history A R (n - 1) h) a
 
 lemma forall_arm_eq_mod_of_lt [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
@@ -573,14 +571,12 @@ lemma expectation_pullCount_le [Nonempty (Fin K)]
   ring
 
 /-- Regret bound for the UCB algorithm. -/
--- ANCHOR: UCB.regret_le
-lemma regret_le [Nonempty (Fin K)]
+theorem regret_le [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (hσ2 : σ2 ≠ 0) (hc : 0 < c) (n : ℕ) :
     P[regret ν A n] ≤
       ∑ a, (8 * c * σ2 * log (n + 1) / gap ν a + gap ν a * (2 + 2 * (constSum c n).toReal)) := by
--- ANCHOR_END: UCB.regret_le
   refine (integral_regret_le_of_forall_integral_pullCount_le h
     (fun a h_gap ↦ expectation_pullCount_le h hν hσ2 hc a
       (lt_of_le_of_ne' gap_nonneg h_gap) n)).trans_eq ?_

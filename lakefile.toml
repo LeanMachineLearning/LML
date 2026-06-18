@@ -10,17 +10,23 @@ relaxedAutoImplicit = false
 weak.linter.mathlibStandardSet = true
 
 [[require]]
-name = "mathlib"
-git = "https://github.com/leanprover-community/mathlib4.git"
-
-[[require]]
-name = "checkdecls"
-git = "https://github.com/PatrickMassot/checkdecls.git"
-
-[[require]]
-name = "subverso"
-git = "https://github.com/leanprover/subverso"
+name = "verso"
+git = "https://github.com/leanprover/verso"
 rev = "main"
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "9a9483a92959bc92bd6a60176dd1fe597298c1f8"
 
 [[lean_lib]]
 name = "LeanMachineLearning"
+
+[[lean_lib]]
+name = "LMLTutorial"
+globs = ["LMLTutorial.*"]
+
+[[lean_exe]]
+name = "tutorial"
+srcDir = "LMLTutorial/"
+root = "Tutorial"

@@ -1,27 +1,42 @@
 /-
- - Created in 2025 by Rémy Degenne
+Copyright (c) 2025 Rémy Degenne. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Rémy Degenne
 -/
-
 import VersoManual
+import Mathlib.Probability.Martingale.Convergence
+import Mathlib.Probability.Martingale.OptionalStopping
+import Mathlib.Probability.Martingale.OptionalSampling
+
+set_option linter.style.header false
+set_option linter.style.setOption false
+set_option linter.hashCommand false
+set_option linter.style.longLine false
+set_option pp.rawOnError true
+set_option verso.code.warnLineLength 100
 
 open Verso.Genre Manual Verso.Genre.Manual.InlineLean Verso.Code.External
-
-set_option pp.rawOnError true
-
-set_option verso.exampleProject "../"
-
-set_option verso.exampleModule "LeanMachineLearning.Tutorial.Martingales"
 
 #doc (Manual) "Stochastic Processes and Martingales" =>
 %%%
 htmlSplit := .never
 %%%
 
+```lean -show
+open Filter
+open scoped ENNReal NNReal Topology
+
+open MeasureTheory ProbabilityTheory Set
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
+  {P : Measure Ω} [IsProbabilityMeasure P]
+```
+
 # Stochastic processes, filtrations, and martingales
 
-We define a measure space {anchorTerm Variables}`Ω`, with a probability mesure {anchorTerm Variables}`P : Measure Ω`.
+We define a measure space {lean}`Ω`, with a probability mesure {lean}`(P : Measure Ω)`.
 
-```anchor Variables
+```lean
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {P : Measure Ω} [IsProbabilityMeasure P]
 ```
@@ -30,14 +45,14 @@ Let then `X` be a stochastic process indexed by `ℕ`: a function `ℕ → Ω �
 Here `E` is a Banach space, a complete normed space (that's what the martingale property needs).
 We will often need a measurability condition on `X` in lemmas, but we don't add it yet.
 
-```anchor Variables2
+```lean
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
   {mE : MeasurableSpace E} {X : ℕ → Ω → E}
 ```
 
 A filtration is a monotone family of sub-σ-algebras indexed by `ℕ`.
-```anchor Filtration
-variable {𝓕 : Filtration ℕ mΩ}
+```lean
+variable {𝓕 : Filtration ℕ mΩ} {n : ℕ}
 
 example : ∀ n, 𝓕 n ≤ mΩ := Filtration.le 𝓕
 
@@ -45,8 +60,8 @@ example {i j : ℕ} (hij : i ≤ j) : 𝓕 i ≤ 𝓕 j := Filtration.mono 𝓕 
 ```
 
 If `X` is a martingale, then it is adapted to the filtration, which means that for all `n`,
-`X n` is (strongly) measurable with respect to {anchorTerm Filtration}`𝓕 n`.
-```anchor Martingale
+`X n` is (strongly) measurable with respect to {lean}`𝓕 n`.
+```lean
 example (hX : Martingale X 𝓕 P) : StronglyAdapted 𝓕 X := hX.stronglyAdapted
 
 example (hX : Martingale X 𝓕 P) (n : ℕ) : StronglyMeasurable[𝓕 n] (X n) := hX.stronglyAdapted n
@@ -69,8 +84,8 @@ example {Y : ℕ → Ω → ℝ} (hX : Submartingale Y 𝓕 P) {i j : ℕ} (hij 
 *Almost everywhere martingale convergence theorem*: An L¹-bounded submartingale converges
 almost everywhere to a `⨆ n, ℱ n`-measurable function.
 
-```anchor AeTendstoLimitProcess
-theorem ae_tendsto_limitProcess {Y : ℕ → Ω → ℝ} (hY : Submartingale Y 𝓕 P)
+```lean
+example {Y : ℕ → Ω → ℝ} (hY : Submartingale Y 𝓕 P)
     {R : ℝ≥0} (hbdd : ∀ n, eLpNorm (Y n) 1 P ≤ R) :
     ∀ᵐ ω ∂P, Tendsto (Y · ω) atTop (𝓝 (𝓕.limitProcess Y P ω)) := by
   classical
@@ -95,10 +110,10 @@ theorem ae_tendsto_limitProcess {Y : ℕ → Ω → ℝ} (hY : Submartingale Y �
 
 # Stopping times
 
-A stopping time with respect to a filtration indexed by `ℕ` is a random time {anchorTerm Variables3}`τ : Ω → ℕ∞` such that
-for all `n`, the set `{ω | τ ω ≤ n}` is measurable with respect to {anchorTerm Filtration}`𝓕 n`.
+A stopping time with respect to a filtration indexed by `ℕ` is a random time `τ : Ω → ℕ∞` such that
+for all `n`, the set `{ω | τ ω ≤ n}` is measurable with respect to {lean}`𝓕 n`.
 
-```anchor Variables3
+```lean
 variable {τ : Ω → ℕ∞} (hτ : IsStoppingTime 𝓕 τ)
 
 example (i : ℕ) : MeasurableSet[𝓕 i] {ω | τ ω ≤ i} := hτ.measurableSet_le i
@@ -107,8 +122,8 @@ example (i : ℕ) : MeasurableSet[𝓕 i] {ω | τ ω ≤ i} := hτ.measurableSe
 *The optional stopping theorem* (fair game theorem): an adapted integrable process `Y`
 is a submartingale if and only if for all bounded stopping times `τ` and `π` such that `τ ≤ π`, the
 stopped value of `Y` at `τ` has expectation smaller than its stopped value at `π`.
-```anchor submartingale_iff_expected_stoppedValue_mono
-theorem submartingale_iff_expected_stoppedValue_mono' {Y : ℕ → Ω → ℝ} (hadp : StronglyAdapted 𝓕 Y)
+```lean
+example {Y : ℕ → Ω → ℝ} (hadp : StronglyAdapted 𝓕 Y)
     (hint : ∀ i, Integrable (Y i) P) :
     Submartingale Y 𝓕 P ↔ ∀ τ π : Ω → ℕ∞, IsStoppingTime 𝓕 τ → IsStoppingTime 𝓕 π →
       τ ≤ π → (∃ N : ℕ, ∀ x, π x ≤ N) → P[stoppedValue Y τ] ≤ P[stoppedValue Y π] :=

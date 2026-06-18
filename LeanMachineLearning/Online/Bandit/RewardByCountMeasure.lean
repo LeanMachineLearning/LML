@@ -95,8 +95,8 @@ lemma condIndepFun_reward_stepsUntil_action' [StandardBorelSpace Ω]
     simp only [hn]
     refine h_indep.of_measurable_right (hX := hA 0) ?_
     exact measurable_comap_indicator_stepsUntil_eq_zero a m
-  · have h_indep : R n ⟂ᵢ[A n, hA n; P] fun ω ↦ (IsAlgEnvSeq.hist A R (n - 1) ω, A n ω) :=
-      IsAlgEnvSeq.condIndepFun_feedback_hist_action_action' h n (by grind)
+  · have h_indep : R n ⟂ᵢ[A n, hA n; P] fun ω ↦ (history A R (n - 1) ω, A n ω) :=
+      IsAlgEnvSeq.condIndepFun_feedback_history_action_action' h n (by grind)
     refine h_indep.of_measurable_right (hX := hA n) ?_
     exact measurable_comap_indicator_stepsUntil_eq hA hR a m n
 
@@ -157,7 +157,7 @@ lemma reward_cond_stepsUntil [StandardBorelSpace Ω] [Countable 𝓐]
 
 /-- The conditional distribution of the reward received at the `m`-th pull of action `a`
 given the time at which number of pulls is `m` is the constant kernel with value `ν a`. -/
-theorem condDistrib_rewardByCount_stepsUntil [StandardBorelSpace Ω] [Countable 𝓐]
+lemma condDistrib_rewardByCount_stepsUntil [StandardBorelSpace Ω] [Countable 𝓐]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : 𝓐) (m : ℕ) (hm : m ≠ 0) :
     condDistrib (rewardByCount A R a m) (fun ω ↦ stepsUntil A a m ω.1) 𝔓
       =ᵐ[(𝔓).map (fun ω ↦ stepsUntil A a m ω.1)] Kernel.const _ (ν a) := by

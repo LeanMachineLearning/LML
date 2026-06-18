@@ -5,7 +5,7 @@ Authors: Gaëtan Serré
 -/
 module
 
-public import LeanMachineLearning.Probability.Independence.IndepFun
+public import LeanMachineLearning.ForMathlib.Probability.Independence.IndepFun
 public import LeanMachineLearning.SequentialLearning.Algorithm
 
 /-!
@@ -72,7 +72,7 @@ lemma iIndep_action (h : IsAlgEnvSeq A Y (randomSampling μ) env P) :
   · have meas_fst : Measurable (fun (f : Iic n → 𝓐 × 𝓨) ↦ (fun i ↦ (f i).1)) := by
       fun_prop
     exact (condDistrib_eq.comp meas_fst measurable_id).symm
-  · exact (IsAlgEnvSeq.measurable_hist (h.measurable_action) (h.measurable_feedback) n).aemeasurable
+  · exact (h.measurable_history n).aemeasurable
 
 end randomSampling
 

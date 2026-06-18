@@ -1,13 +1,20 @@
-import Manual.References
+/-
+Copyright (c) 2025 Rémy Degenne. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Rémy Degenne
+-/
+import LMLTutorial.References
 import VersoManual
+import Mathlib.Probability.Kernel.Composition.Lemmas
+
+set_option linter.style.header false
+set_option linter.style.setOption false
+set_option linter.hashCommand false
+set_option linter.style.longLine false
+set_option pp.rawOnError true
+set_option verso.code.warnLineLength 100
 
 open Verso.Genre Manual Verso.Genre.Manual.InlineLean Verso.Code.External
-
-set_option pp.rawOnError true
-
-set_option verso.exampleProject "../"
-
-set_option verso.exampleModule "LeanMachineLearning.Tutorial.MarkovKernel"
 
 #doc (Manual) "Markov Kernels" =>
 %%%
@@ -24,7 +31,17 @@ In probability theory, we need functions to be measurable to be able to work wit
 A transition kernel from a measurable space `𝓧` to a measurable space `𝓨` is a function `𝓧 → Measure 𝓨` that is measurable.
 What it means in practice is that each time one wants to work with a function that takes measures as values, the right thing to do is to manipulate it as a kernel.
 
-```anchor Kernel
+```lean -show
+
+open MeasureTheory ProbabilityTheory
+open scoped ENNReal
+
+variable {𝓧 𝓨 : Type*} {m𝓧 : MeasurableSpace 𝓧} {m𝓨 : MeasurableSpace 𝓨}
+variable {P : Measure 𝓧} [IsProbabilityMeasure P]
+  {κ : Kernel 𝓧 𝓨} [IsMarkovKernel κ]
+```
+
+```lean
 example (κ : Kernel 𝓧 𝓨) (x : 𝓧) : Measure 𝓨 := κ x
 
 example (κ : Kernel 𝓧 𝓨) : Measurable κ := κ.measurable
@@ -35,7 +52,7 @@ example (f : 𝓧 → Measure 𝓨) (hf : Measurable f) : Kernel 𝓧 𝓨 := �
 Of course there is a big gap in that explanation: what does it mean for a measure-valued function to be measurable?
 
 Such a function is measurable if for every measurable set `B` of `𝓨`, the function `𝓧 → ℝ≥0∞` defined by `fun x ↦ κ x B` is measurable.
-```anchor Measurability
+```lean
 example (f : 𝓧 → Measure 𝓨) :
     Measurable f ↔ ∀ B : Set 𝓨, MeasurableSet B → Measurable (fun x : 𝓧 ↦ f x B) :=
   ⟨fun hf _ hB ↦ (Measure.measurable_coe hB).comp hf,
@@ -51,7 +68,7 @@ However, the measurability is important in non-discrete spaces.
 
 Kernels are fully specified by their action on measurable functions.
 That is, if two kernels `κ η : Kernel 𝓧 𝓨` are such that for every measurable function `f : 𝓨 → ℝ≥0∞` and every `x : 𝓧`, `∫ y, f y ∂(κ x) = ∫ y, f y ∂(η x)`, then `κ = η`.
-```anchor ExtFun
+```lean
 example (κ η : Kernel 𝓧 𝓨) :
     κ = η ↔ ∀ x f, Measurable f → ∫⁻ y, f y ∂(κ x) = ∫⁻ y, f y ∂(η x) :=
   Kernel.ext_fun_iff
@@ -65,7 +82,7 @@ If the supremum of `κ x univ` over `x : 𝓧` is finite, then `κ` is said to b
 Finally, Mathlib also contains the class of s-finite kernels, which are kernels that can be expressed as a countable sum of finite kernels.
 Those three properties are denoted by typeclasses {InlineLean.module}`[IsMarkovKernel κ]`, `[IsFiniteKernel κ]` and `[IsSFiniteKernel κ]` respectively.
 
-```anchor Markov
+```lean
 example (κ : Kernel 𝓧 𝓨) [IsMarkovKernel κ] (x : 𝓧) :
     κ x Set.univ = 1 := by simp
 

@@ -7,7 +7,7 @@ module
 
 public import LeanMachineLearning.Online.Bandit.SumRewards
 public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
-public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
 
 /-! # The Explore-Then-Commit Algorithm
 
@@ -86,7 +86,7 @@ lemma arm_zero [Nonempty (Fin K)]
 
 lemma arm_ae_eq_etcNextArm [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) (n : ℕ) :
-    A (n + 1) =ᵐ[P] fun ω ↦ nextArm hK m n (IsAlgEnvSeq.hist A R n ω) := by
+    A (n + 1) =ᵐ[P] fun ω ↦ nextArm hK m n (history A R n ω) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   exact h.action_detAlgorithm_ae_eq n
 
@@ -101,7 +101,7 @@ phase. -/
 lemma arm_mul [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) (hm : m ≠ 0) :
     A (K * m) =ᵐ[P] fun ω ↦ measurableArgmax (empMean' (K * m - 1))
-      (IsAlgEnvSeq.hist A R (K * m - 1) ω) := by
+      (history A R (K * m - 1) ω) := by
   have : K * m = (K * m - 1) + 1 := by
     have : 0 < K * m := Nat.mul_pos hK hm.bot_lt
     grind
@@ -176,7 +176,7 @@ lemma sumRewards_bestArm_le_of_arm_mul_eq [Nonempty (Fin K)]
       sumRewards A R a (K * m) h := by
   filter_upwards [arm_mul h hm, pullCount_mul h a, pullCount_mul h (bestArm ν)]
     with h h_arm ha h_best h_eq
-  have h_max := isMaxOn_measurableArgmax (empMean' (K * m - 1)) (IsAlgEnvSeq.hist A R (K * m - 1) h)
+  have h_max := isMaxOn_measurableArgmax (empMean' (K * m - 1)) (history A R (K * m - 1) h)
     (bestArm ν)
   rw [← h_arm, h_eq] at h_max
   rw [sumRewards_eq_pullCount_mul_empMean, sumRewards_eq_pullCount_mul_empMean, ha, h_best]
@@ -252,7 +252,7 @@ lemma expectation_pullCount_le [Nonempty (Fin K)]
   · exact (measurableSet_singleton _).preimage (by fun_prop)
 
 /-- Regret bound for the ETC algorithm. -/
-lemma regret_le [Nonempty (Fin K)]
+theorem regret_le [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (hm : m ≠ 0)
     (n : ℕ) (hn : K * m ≤ n) :

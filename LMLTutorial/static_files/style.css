@@ -3,6 +3,7 @@
   --accent-compl: #e8a0a0;
   --background: #fef9f9;
   --background-lighter: #fefcfc;
+  --verso-content-max-width: 60rem;
 }
 
 @font-face {

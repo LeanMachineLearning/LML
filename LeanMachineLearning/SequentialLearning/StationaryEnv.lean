@@ -5,7 +5,7 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
-public import LeanMachineLearning.Probability.Kernel.Composition.MapComap
+public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.MapComap
 public import LeanMachineLearning.SequentialLearning.Algorithm
 
 /-!
@@ -100,7 +100,7 @@ lemma hasCondDistrib_feedback [IsObliviousEnv env] (h : IsAlgEnvSeq A Y alg env 
     have h_eq := (h.hasCondDistrib_feedback n).condDistrib_eq
     rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)] at h_eq ⊢
     have : P.map (A (n + 1)) =
-        (P.map (fun x ↦ (IsAlgEnvSeq.hist A Y n x, A (n + 1) x))).snd := by
+        (P.map (fun x ↦ (history A Y n x, A (n + 1) x))).snd := by
       rw [Measure.snd_map_prodMk (by fun_prop)]
     simp only [feedback_eq_feedbackCondAction] at h_eq
     rw [this, ← Measure.snd_prodAssoc_compProd_prodMkLeft, ← h_eq,
@@ -109,9 +109,9 @@ lemma hasCondDistrib_feedback [IsObliviousEnv env] (h : IsAlgEnvSeq A Y alg env 
 
 /-- The feedback at time `n + 1` is conditionally independent of the history up to time `n`
 given the action at time `n + 1`. -/
-lemma condIndepFun_feedback_hist_action [StandardBorelSpace Ω]
+lemma condIndepFun_feedback_history_action [StandardBorelSpace Ω]
         [IsObliviousEnv env] (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
-    Y (n + 1) ⟂ᵢ[A (n + 1), h.measurable_action _ ; P] IsAlgEnvSeq.hist A Y n := by
+    Y (n + 1) ⟂ᵢ[A (n + 1), h.measurable_action _ ; P] history A Y n := by
   have hA := h.measurable_action
   have hY := h.measurable_feedback
   refine condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkLeft
@@ -121,20 +121,20 @@ lemma condIndepFun_feedback_hist_action [StandardBorelSpace Ω]
   rw [← feedback_eq_feedbackCondAction]
   exact h.hasCondDistrib_feedback n
 
-lemma condIndepFun_feedback_hist_action_action [StandardBorelSpace Ω]
+lemma condIndepFun_feedback_history_action_action [StandardBorelSpace Ω]
     [IsObliviousEnv env] (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
     Y (n + 1) ⟂ᵢ[A (n + 1), h.measurable_action (n + 1); P]
-      (fun ω ↦ (IsAlgEnvSeq.hist A Y n ω, A (n + 1) ω)) := by
-  have h_indep : Y (n + 1) ⟂ᵢ[A (n + 1), h.measurable_action (n + 1); P] IsAlgEnvSeq.hist A Y n :=
-    condIndepFun_feedback_hist_action h n
+      (fun ω ↦ (history A Y n ω, A (n + 1) ω)) := by
+  have h_indep : Y (n + 1) ⟂ᵢ[A (n + 1), h.measurable_action (n + 1); P] history A Y n :=
+    condIndepFun_feedback_history_action h n
   have hA := h.measurable_action
   have hY := h.measurable_feedback
   exact h_indep.prod_right (by fun_prop) (by fun_prop) (by fun_prop)
 
-lemma condIndepFun_feedback_hist_action_action' [StandardBorelSpace Ω]
+lemma condIndepFun_feedback_history_action_action' [StandardBorelSpace Ω]
         [IsObliviousEnv env] (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) (hn : n ≠ 0) :
-    Y n ⟂ᵢ[A n, h.measurable_action n; P] (fun ω ↦ (IsAlgEnvSeq.hist A Y (n - 1) ω, A n ω)) := by
-  have := condIndepFun_feedback_hist_action_action h (n - 1)
+    Y n ⟂ᵢ[A n, h.measurable_action n; P] (fun ω ↦ (history A Y (n - 1) ω, A n ω)) := by
+  have := condIndepFun_feedback_history_action_action h (n - 1)
   grind
 
 end IsObliviousEnv
@@ -142,11 +142,9 @@ end IsObliviousEnv
 /-- An oblivious environment, in which the distribution of the next feedback depends only on
 the last action, but in a possibly time-dependent manner. -/
 @[simps]
--- ANCHOR: obliviousEnv
 def obliviousEnv (ν : ℕ → Kernel 𝓐 𝓨) [∀ n, IsMarkovKernel (ν n)] : Environment 𝓐 𝓨 where
   feedback n := (ν (n + 1)).prodMkLeft _
   ν0 := ν 0
--- ANCHOR_END: obliviousEnv
 
 lemma feedback_obliviousEnv (ν : ℕ → Kernel 𝓐 𝓨) [∀ n, IsMarkovKernel (ν n)] (n : ℕ) :
     (obliviousEnv ν).feedback n = (ν (n + 1)).prodMkLeft _ := by simp [obliviousEnv]
@@ -181,9 +179,7 @@ lemma feedbackCondAction_obliviousEnv (ν : ℕ → Kernel 𝓐 𝓨) [hν : ∀
 
 /-- A stationary environment, in which the distribution of the next feedback depends only on the
 last action. -/
--- ANCHOR: stationaryEnv
 def stationaryEnv (ν : Kernel 𝓐 𝓨) [IsMarkovKernel ν] : Environment 𝓐 𝓨 := obliviousEnv fun _ ↦ ν
--- ANCHOR_END: stationaryEnv
 
 @[simp]
 lemma feedback_stationaryEnv (ν : Kernel 𝓐 𝓨) [IsMarkovKernel ν] (n : ℕ) :
@@ -242,21 +238,21 @@ lemma condExp_feedback_obliviousEnv_ae_eq_integral_id {E : Type*}
 
 /-- The feedback at time `n + 1` is conditionally independent of the history up to time `n`
 given the action at time `n + 1`. -/
-lemma condIndepFun_feedback_hist_action [StandardBorelSpace Ω]
+lemma condIndepFun_feedback_history_action [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A Y alg (stationaryEnv ν) P) (n : ℕ) :
-    Y (n + 1) ⟂ᵢ[A (n + 1), h.measurable_action _ ; P] hist A Y n :=
-  IsObliviousEnv.condIndepFun_feedback_hist_action h n
+    Y (n + 1) ⟂ᵢ[A (n + 1), h.measurable_action _ ; P] history A Y n :=
+  IsObliviousEnv.condIndepFun_feedback_history_action h n
 
-lemma condIndepFun_feedback_hist_action_action [StandardBorelSpace Ω]
+lemma condIndepFun_feedback_history_action_action [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A Y alg (stationaryEnv ν) P) (n : ℕ) :
     Y (n + 1) ⟂ᵢ[A (n + 1), h.measurable_action (n + 1); P]
-      (fun ω ↦ (hist A Y n ω, A (n + 1) ω)) :=
-  IsObliviousEnv.condIndepFun_feedback_hist_action_action h n
+      (fun ω ↦ (history A Y n ω, A (n + 1) ω)) :=
+  IsObliviousEnv.condIndepFun_feedback_history_action_action h n
 
-lemma condIndepFun_feedback_hist_action_action' [StandardBorelSpace Ω]
+lemma condIndepFun_feedback_history_action_action' [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A Y alg (stationaryEnv ν) P) (n : ℕ) (hn : n ≠ 0) :
-    Y n ⟂ᵢ[A n, h.measurable_action n; P] (fun ω ↦ (hist A Y (n - 1) ω, A n ω)) :=
-  IsObliviousEnv.condIndepFun_feedback_hist_action_action' h n hn
+    Y n ⟂ᵢ[A n, h.measurable_action n; P] (fun ω ↦ (history A Y (n - 1) ω, A n ω)) :=
+  IsObliviousEnv.condIndepFun_feedback_history_action_action' h n hn
 
 end IsAlgEnvSeq
 

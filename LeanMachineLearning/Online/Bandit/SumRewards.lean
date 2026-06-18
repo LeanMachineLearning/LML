@@ -5,9 +5,9 @@ Authors: Rémy Degenne
 -/
 module
 
+public import LeanMachineLearning.ForMathlib.Probability.Moments.SubGaussian
 public import LeanMachineLearning.Online.Bandit.ArrayProbSpace
 public import LeanMachineLearning.Online.Bandit.Regret
-public import LeanMachineLearning.Probability.Moments.SubGaussian
 public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
 
 /-! # Law of the sum of rewards

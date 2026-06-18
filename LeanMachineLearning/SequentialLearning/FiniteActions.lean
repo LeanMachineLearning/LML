@@ -225,7 +225,7 @@ lemma adapted_pullCount_add_one [MeasurableSingletonClass 𝓐]
     Adapted (IsAlgEnvSeq.filtration hA hR') (fun n ↦ pullCount A a (n + 1)) := by
   intro n
   have : pullCount A a (n + 1) = (fun h : Iic n → 𝓐 × R ↦ pullCount' n h a) ∘
-      (IsAlgEnvSeq.hist A R' n) := by
+      (history A R' n) := by
     ext
     exact pullCount_add_one_eq_pullCount'
   rw [measurable_iff_comap_le]
@@ -564,7 +564,7 @@ lemma measurable_stepsUntil' [MeasurableSingletonClass 𝓐]
 lemma measurable_comap_indicator_stepsUntil_eq [MeasurableSingletonClass 𝓐]
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : 𝓐) (m n : ℕ) :
     Measurable[MeasurableSpace.comap
-        (fun ω : Ω ↦ (IsAlgEnvSeq.hist A R' (n-1) ω, A n ω)) inferInstance]
+        (fun ω : Ω ↦ (history A R' (n-1) ω, A n ω)) inferInstance]
       ({ω | stepsUntil A a m ω = ↑n}.indicator fun _ ↦ 1) := by
   by_cases hm : m = 0
   · simp only [hm]
@@ -631,17 +631,17 @@ lemma measurable_comap_indicator_stepsUntil_eq_zero [MeasurableSingletonClass �
 
 lemma measurableSet_stepsUntil_eq [MeasurableSingletonClass 𝓐]
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : 𝓐) (m n : ℕ) :
-    MeasurableSet[MeasurableSpace.comap (fun ω : Ω ↦ (IsAlgEnvSeq.hist A R' (n-1) ω, A n ω))
+    MeasurableSet[MeasurableSpace.comap (fun ω : Ω ↦ (history A R' (n-1) ω, A n ω))
         inferInstance]
       {ω : Ω | stepsUntil A a m ω = ↑n} := by
   let mProd := MeasurableSpace.comap
-    (fun ω : Ω ↦ (IsAlgEnvSeq.hist A R' (n-1) ω, A n ω)) inferInstance
+    (fun ω : Ω ↦ (history A R' (n-1) ω, A n ω)) inferInstance
   suffices Measurable[mProd] ({ω | stepsUntil A a m ω = ↑n}.indicator fun x ↦ 1) by
     rwa [measurable_indicator_const_iff] at this
   exact measurable_comap_indicator_stepsUntil_eq hA hR' a m n
 
 /-- `stepsUntil a m` is a stopping time with respect to the filtration `filtrationAction`. -/
-theorem isStoppingTime_stepsUntil_filtrationAction [MeasurableSingletonClass 𝓐]
+lemma isStoppingTime_stepsUntil_filtrationAction [MeasurableSingletonClass 𝓐]
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : 𝓐) (m : ℕ) :
     IsStoppingTime (IsAlgEnvSeq.filtrationAction hA hR') (stepsUntil A a m) := by
   refine isStoppingTime_of_measurableSet_eq fun n ↦ ?_
@@ -777,17 +777,13 @@ def sumRewards' (n : ℕ) (h : Iic n → 𝓐 × ℝ) (a : 𝓐) :=
 
 /-- Empirical mean reward obtained when pulling action `a` up to time `t` (exclusive). -/
 noncomputable
--- ANCHOR: empMean
 def empMean (A : ℕ → Ω → 𝓐) (R' : ℕ → Ω → ℝ) (a : 𝓐) (t : ℕ) (ω : Ω) : ℝ :=
   sumRewards A R' a t ω / pullCount A a t ω
--- ANCHOR_END: empMean
 
 /-- Empirical mean of arm `a` at time `n`. -/
 noncomputable
--- ANCHOR: empMean'
 def empMean' (n : ℕ) (h : Iic n → 𝓐 × ℝ) (a : 𝓐) :=
   (sumRewards' n h a) / (pullCount' n h a)
--- ANCHOR_END: empMean'
 
 @[simp]
 lemma sumRewards_zero {R' : ℕ → Ω → ℝ} : sumRewards A R' a 0 = 0 := by ext; simp [sumRewards]
@@ -984,7 +980,7 @@ section CopiedFromPR
 
 open Set
 
-theorem _root_.MeasureTheory.StronglyMeasurable.div₀' {𝓐 β : Type*}
+lemma _root_.MeasureTheory.StronglyMeasurable.div₀' {𝓐 β : Type*}
     {m𝓐 : MeasurableSpace 𝓐} [TopologicalSpace β]
     [GroupWithZero β] [ContinuousMul β] [ContinuousInv₀ β]
     [TopologicalSpace.PseudoMetrizableSpace β]
