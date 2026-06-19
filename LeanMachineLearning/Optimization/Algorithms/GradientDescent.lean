@@ -38,7 +38,11 @@ variable {env : Environment E E}
 without projection.
 
 It is an algorithm that chooses actions in `E` and gets feedback in `E` (gradient of the function at
-the queried point). -/
+the queried point).
+The point `x (n + 1)` is defined as `x (n + 1) = x n - γ n • g n`, where `g n` is the feedback
+received at step `n`.
+Since the algorithm is expressed as a function of the history `hist : ℕ → Iic n → E × E`,
+we write `(hist ⟨n, …⟩).1` for `x n` and `(hist ⟨n, …⟩).2` for `g n`. -/
 noncomputable
 def gradientStep (γ : ℕ → ℝ) (x₀ : E) : Algorithm E E :=
   detAlgorithm (fun n hist ↦ (hist ⟨n, by grind⟩).1 - γ n • (hist ⟨n, by grind⟩).2) (by fun_prop) x₀
