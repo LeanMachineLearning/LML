@@ -332,12 +332,6 @@ lemma condDistrib_feedback_zero [StandardBorelSpace 𝓨] [Nonempty 𝓨]
       =ᵐ[(trajMeasure alg env).map (action 0)] env.ν0 :=
   (hasCondDistrib_feedback_zero alg env).condDistrib_eq
 
-lemma condDistrib_feedback [StandardBorelSpace 𝓨] [Nonempty 𝓨]
-    (alg : Algorithm 𝓐 𝓨) (env : Environment 𝓐 𝓨) (n : ℕ) :
-    condDistrib (feedback (n + 1)) (fun ω ↦ (hist n ω, action (n + 1) ω)) (trajMeasure alg env)
-      =ᵐ[(trajMeasure alg env).map (fun ω ↦ (hist n ω, action (n + 1) ω))] env.feedback n :=
-  (hasCondDistrib_feedback alg env n).condDistrib_eq
-
 lemma condDistrib_step [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
     (alg : Algorithm 𝓐 𝓨) (env : Environment 𝓐 𝓨) (n : ℕ) :
     condDistrib (step (n + 1)) (hist n) (trajMeasure alg env)
@@ -349,6 +343,12 @@ lemma condDistrib_action [StandardBorelSpace 𝓐] [Nonempty 𝓐]
     condDistrib (action (n + 1)) (hist n) (trajMeasure alg env)
       =ᵐ[(trajMeasure alg env).map (hist n)] alg.policy n :=
   (hasCondDistrib_action alg env n).condDistrib_eq
+
+lemma condDistrib_feedback [StandardBorelSpace 𝓨] [Nonempty 𝓨]
+    (alg : Algorithm 𝓐 𝓨) (env : Environment 𝓐 𝓨) (n : ℕ) :
+    condDistrib (feedback (n + 1)) (fun ω ↦ (hist n ω, action (n + 1) ω)) (trajMeasure alg env)
+      =ᵐ[(trajMeasure alg env).map (fun ω ↦ (hist n ω, action (n + 1) ω))] env.feedback n :=
+  (hasCondDistrib_feedback alg env n).condDistrib_eq
 
 lemma isAlgEnvSeq_trajMeasure (alg : Algorithm 𝓐 𝓨) (env : Environment 𝓐 𝓨) :
     IsAlgEnvSeq action feedback alg env (trajMeasure alg env) where
