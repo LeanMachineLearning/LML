@@ -135,6 +135,14 @@ lemma fst_eval_comp_history (n : ℕ) :
 lemma snd_eval_comp_history (n : ℕ) :
     (fun x ↦ (x ⟨n, by simp⟩).2) ∘ (history A Y n) = Y n := rfl
 
+lemma history_succ (n : ℕ) :
+    history A Y (n + 1) =
+      (MeasurableEquiv.IicSuccProd (fun ℕ ↦ 𝓐 × 𝓨) n).symm ∘
+        (fun ω ↦ (history A Y n ω, step A Y (n + 1) ω)) := by
+  funext ω
+  symm
+  exact (MeasurableEquiv.IicSuccProd (fun _ ↦ 𝓐 × 𝓨) n).symm_apply_apply (history A Y (n + 1) ω)
+
 section IsAlgEnvSeq
 
 
@@ -244,24 +252,6 @@ lemma IsAlgEnvSeq.hasLaw_history_zero (h : IsAlgEnvSeq A Y alg env P) : HasLaw (
     have hA := h.measurable_action
     have hY := h.measurable_feedback
     exact (Measure.map_map (by fun_prop) (by fun_prop)).symm
-
-variable [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
-
-lemma IsAlgEnvSeq.hasLaw_history_succ (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
-  HasLaw (history A Y (n + 1))
-    ((P.map (history A Y n) ⊗ₘ condDistrib (step A Y (n + 1)) (history A Y n) P).map
-        (MeasurableEquiv.IicSuccProd (fun _ ↦ 𝓐 × 𝓨) n).symm) P where
-  aemeasurable := (h.measurable_history (n + 1)).aemeasurable
-  map_eq := by
-    have he : (MeasurableEquiv.IicSuccProd (fun _ ↦ 𝓐 × 𝓨) n).symm ∘
-        (fun ω ↦ (history A Y n ω, step A Y (n + 1) ω)) = history A Y (n + 1) := by
-      funext ω
-      exact (MeasurableEquiv.IicSuccProd (fun _ ↦ 𝓐 × 𝓨) n).symm_apply_apply (history A Y (n + 1) ω)
-    have hA := h.measurable_action
-    have hY := h.measurable_feedback
-    rw [← he, ← Measure.map_map (by fun_prop) (by fun_prop)]
-    congr
-    exact (compProd_map_condDistrib (by fun_prop)).symm
 
 end IsAlgEnvSeq
 

@@ -84,7 +84,6 @@ open scoped Algorithm
 namespace IsAlgEnvSeq
 
 variable {Ω : Type*} [MeasurableSpace Ω]
-variable [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
 variable {alg : Algorithm 𝓐 𝓨} {env : Environment 𝓐 𝓨}
 variable {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 variable {P : Measure Ω} [IsFiniteMeasure P]
@@ -104,12 +103,17 @@ lemma absolutelyContinuous_map_history (h : IsAlgEnvSeq A Y alg env P)
     rw [h.hasLaw_step_zero.map_eq, h₀.hasLaw_step_zero.map_eq]
     exact Measure.AbsolutelyContinuous.compProd_left hc.p0 _
   | succ n ih =>
-    rw [(h.hasLaw_history_succ n).map_eq, (h₀.hasLaw_history_succ n).map_eq]
+    simp_rw [history_succ]
+    rw [← Measure.map_map (by fun_prop), ← Measure.map_map (by fun_prop)]
+    rotate_left
+    · exact (h₀.measurable_history n).prodMk (h₀.measurable_step (n + 1))
+    · exact (h.measurable_history n).prodMk (h.measurable_step (n + 1))
     apply Measure.AbsolutelyContinuous.map _ (by fun_prop)
-    rw [Measure.compProd_congr (h.hasCondDistrib_step n).condDistrib_eq,
-        Measure.compProd_congr (h₀.hasCondDistrib_step n).condDistrib_eq]
+    rw [(h.hasCondDistrib_step n).map_eq, (h₀.hasCondDistrib_step n).map_eq]
     apply Measure.AbsolutelyContinuous.compProd ih
     filter_upwards with h' using Measure.AbsolutelyContinuous.compProd_left_apply (hc.policy n h') _
+
+variable [MeasurableSpace.CountablyGenerated 𝓐]
 
 lemma hasLaw_history_withDensity (h : IsAlgEnvSeq A Y alg env P)
     (h₀ : IsAlgEnvSeq A₀ Y₀ alg₀ env P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) : HasLaw (history A Y n)
@@ -131,12 +135,14 @@ lemma hasLaw_history_withDensity (h : IsAlgEnvSeq A Y alg env P)
       have : IsMarkovKernel ((stepKernel alg₀ env n).withDensity ρ) := by
         rw [← hs]
         infer_instance
-      rw [(h.hasLaw_history_succ n).map_eq, (h₀.hasLaw_history_succ n).map_eq,
-          Measure.compProd_congr (h.hasCondDistrib_step n).condDistrib_eq,
-          Measure.compProd_congr (h₀.hasCondDistrib_step n).condDistrib_eq, ih, hs,
-          Measure.compProd_withDensity_withDensity (by fun_prop) (by fun_prop)]
+      simp_rw [history_succ]
+      rw [← Measure.map_map (by fun_prop), ← Measure.map_map (by fun_prop)]
+      rotate_left
+      · exact (h₀.measurable_history n).prodMk (h₀.measurable_step (n + 1))
+      · exact (h.measurable_history n).prodMk (h.measurable_step (n + 1))
+      rw [(h.hasCondDistrib_step n).map_eq, (h₀.hasCondDistrib_step n).map_eq, ih, hs,
+        Measure.compProd_withDensity_withDensity (by fun_prop) (by fun_prop)]
       exact map_equiv_withDensity (by fun_prop)
-
 end IsAlgEnvSeq
 
 end Learning
