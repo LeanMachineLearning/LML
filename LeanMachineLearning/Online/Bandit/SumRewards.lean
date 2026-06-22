@@ -140,15 +140,15 @@ variable {𝓐 Ω Ω' : Type*} [DecidableEq 𝓐] {m𝓐 : MeasurableSpace 𝓐}
 
 lemma sumRewards_eq_comp :
     sumRewards A R a n =
-     (fun p ↦ ∑ i ∈ range n, if (p i).1 = a then (p i).2 else 0) ∘ (fun ω n ↦ (A n ω, R n ω)) := by
+     (fun p ↦ ∑ i ∈ range n, if (p i).1 = a then (p i).2 else 0) ∘ (trajectory A R) := by
   ext
-  simp [sumRewards]
+  simp [sumRewards, trajectory]
 
 lemma pullCount_eq_comp :
     pullCount A a n =
-      (fun p ↦ ∑ i ∈ range n, if (p i).1 = a then 1 else 0) ∘ (fun ω n ↦ (A n ω, R n ω)) := by
+      (fun p ↦ ∑ i ∈ range n, if (p i).1 = a then 1 else 0) ∘ (trajectory A R) := by
   ext
-  simp [pullCount]
+  simp [pullCount, trajectory]
 
 -- todo: write those lemmas with IdentDistrib instead of equality of maps
 lemma _root_.Learning.IsAlgEnvSeq.law_sumRewards_unique [MeasurableSingletonClass 𝓐]
@@ -199,12 +199,12 @@ lemma _root_.Learning.IsAlgEnvSeq.law_pullCount_sumRewards_unique' [MeasurableSi
       refine measurable_sum _ fun i hi ↦ Measurable.ite ?_ (by fun_prop) (by fun_prop)
       exact (measurableSet_singleton _).preimage (by fun_prop)
   have h_eq_comp : (fun ω a ↦ (pullCount A a n ω, sumRewards A R a n ω))
-      = f ∘ (fun ω n ↦ (A n ω, R n ω)) := by
+      = f ∘ (trajectory A R) := by
     ext ω a : 2
     rw [pullCount_eq_comp (R := R), sumRewards_eq_comp]
     grind
   have h_eq_comp2 : (fun ω a ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω))
-      = f ∘ (fun ω n ↦ (A₂ n ω, R₂ n ω)) := by
+      = f ∘ (trajectory A₂ R₂) := by
     ext ω a : 2
     rw [pullCount_eq_comp (R := R₂), sumRewards_eq_comp]
     grind
@@ -231,13 +231,15 @@ lemma _root_.Learning.IsAlgEnvSeq.identDistrib_pullCount_sumRewards [MeasurableS
     (∑ i ∈ range n, if (τ i).1 = a then 1 else 0,
      ∑ i ∈ range n, if (τ i).1 = a then (τ i).2 else 0)
   have hc1 : (fun ω n a ↦ (pullCount A a n ω, sumRewards A R a n ω)) =
-      f ∘ (fun ω n ↦ (A n ω, R n ω)) := by
+      f ∘ (trajectory A R) := by
     ext ω n a : 3
-    simp_rw [Function.comp, f, pullCount, card_filter, sumRewards]
+    simp_rw [Function.comp, f, pullCount, card_filter, sumRewards, trajectory]
+    rfl
   have hc2 : (fun ω' n a ↦ (pullCount A₂ a n ω', sumRewards A₂ R₂ a n ω')) =
-      f ∘ (fun ω' n ↦ (A₂ n ω', R₂ n ω')) := by
+      f ∘ (trajectory A₂ R₂) := by
     ext ω' n a : 3
-    simp_rw [Function.comp, f, pullCount, card_filter, sumRewards]
+    simp_rw [Function.comp, f, pullCount, card_filter, sumRewards, trajectory]
+    rfl
   have hf : Measurable f := by
     simp_rw [f, measurable_pi_iff]
     intro n a
