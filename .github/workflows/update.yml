@@ -5,6 +5,11 @@ on:
     - cron: "0 */6 * * *"   # Check for updates every six hours
   workflow_dispatch:
 
+# One bump PR at a time, pin moves forward only. Each run picks the older
+# forward target: the latest mathlib release tag if it is ahead of the current
+# pin (so this project's vX.Y.Z can match mathlib's), otherwise the latest
+# known-good commit. Both bumps share one branch, so only one PR is ever open
+
 jobs:
   bump:
     runs-on: ubuntu-latest
@@ -14,11 +19,49 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Bump to latest mathlib
+      - name: Look up latest compatible release tag
+        id: release
+        uses: leanprover-community/downstream-reports/.github/actions/query-latest@main
+        with:
+          query-type: last-good-release
+
+      # Pick the query-type: bump to the release tag if it is ahead of the pin,
+      # else to the latest known-good commit. One bump runs, keeping one PR open.
+      - name: Pick the bump target
+        id: pick
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_COMMIT: ${{ steps.release.outputs.commit }}
+        run: |
+          set -euo pipefail
+          if [ -z "$TAG_COMMIT" ]; then
+            echo "query-type=last-known-good" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          UPSTREAM="leanprover-community/mathlib4"
+
+          # Get the pinned revision in our lake-manifest.json
+          PIN=$(jq -r '.packages[] | select(.name == "mathlib") | .rev' lake-manifest.json)
+
+          # Is the 'latest good release' ahead of our pin (so we could 'bump to it')?
+          # If so, we want to move there
+          # If not, then there is no 'tagged' release ahead of us, so we will just bump to the latest commit
+          status=$(gh api "repos/${UPSTREAM}/compare/${PIN}...${TAG_COMMIT}" --jq '.status' 2>/dev/null || echo "error")
+          echo "compare ${PIN}...${TAG_COMMIT} => ${status}"
+          if [ "$status" = "ahead" ]; then
+            echo "query-type=last-good-release" >> "$GITHUB_OUTPUT"
+          else
+            echo "query-type=last-known-good" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump mathlib
         id: bump
         uses: leanprover-community/downstream-reports/.github/actions/bump-to-latest@main
+        with:
+          query-type: ${{ steps.pick.outputs.query-type }}
 
-      - name: Open or update PR
+      - name: Open or update the bump PR
         if: steps.bump.outputs.updated == 'true'
         uses: leanprover-community/downstream-reports/.github/actions/open-bump-pr@main
         with:
