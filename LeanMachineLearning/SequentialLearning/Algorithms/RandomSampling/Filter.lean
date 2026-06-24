@@ -16,8 +16,8 @@ public import LeanMachineLearning.ForMathlib.Topology.Instances.ENNReal.Lemmas
 /-!
 # Random Sampling convergence lemmas
 
-This file contains several convergence lemmas for the `randomSampling` algorithm along with a
-`evalEnv` that evaluates the actions using a measurable function.
+This file contains several convergence lemmas for the `randomSampling` algorithm along with an
+`evalEnv` environment, that evaluates the actions using a measurable function.
 
 ## Main statements
 
