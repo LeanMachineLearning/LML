@@ -86,8 +86,7 @@ end AlgorithmDefinition
 
 namespace RoundRobin
 
-variable [StandardBorelSpace 𝓨] [Nonempty 𝓨]
-  {hK : 0 < K} {ν : Kernel (Fin K) 𝓨} [IsMarkovKernel ν]
+variable {hK : 0 < K} {ν : Kernel (Fin K) 𝓨} [IsMarkovKernel ν]
   {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {P : Measure Ω} [IsProbabilityMeasure P]
   {A : ℕ → Ω → Fin K} {Y : ℕ → Ω → 𝓨}

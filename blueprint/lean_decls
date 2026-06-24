@@ -70,7 +70,7 @@ Bandits.ArrayModel.measurable_reward
 Bandits.ArrayModel.hist_congr
 Bandits.ArrayModel.stepsUntil_congr
 Bandits.ArrayModel.truePast
-Bandits.ArrayModel.measurable_hist_todo
+Bandits.ArrayModel.measurable_hist_comap
 Bandits.ArrayModel.measurable_hist_truePast
 Bandits.ArrayModel.measurable_action_add_one_truePast
 Bandits.ArrayModel.measurable_pullCount_add_one_truePast
@@ -105,7 +105,6 @@ ProbabilityTheory.HasSubgaussianMGF.add_of_indepFun
 ProbabilityTheory.HasSubgaussianMGF.measure_ge_le
 ProbabilityTheory.HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun
 ProbabilityTheory.HasSubgaussianMGF.measure_sum_le_sum_le'
-Bandits.ArrayModel.identDistrib_pullCount_prod_sumRewards
 Bandits.ArrayModel.identDistrib_sum_range_snd
 Bandits.ArrayModel.prob_pullCount_prod_sumRewards_mem_le
 Bandits.prob_pullCount_prod_sumRewards_mem_le

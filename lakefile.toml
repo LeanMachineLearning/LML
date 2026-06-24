@@ -6,22 +6,27 @@ lintDriver = "batteries/runLinter"
 pp.unicode.fun = true
 autoImplicit = false
 relaxedAutoImplicit = false
-weak.linter.flexible = true # no rigid tactic (e.g. `exact`) after a flexible tactic (e.g. `simp`)
 # Enable all mathlib linters: automatically matches what mathlib uses.
 weak.linter.mathlibStandardSet = true
 
 [[require]]
+name = "verso"
+git = "https://github.com/leanprover/verso"
+rev = "main"
+
+[[require]]
 name = "mathlib"
-git = "https://github.com/leanprover-community/mathlib4.git"
-rev = "v4.29.0"
-
-[[require]]
-name = "checkdecls"
-git = "https://github.com/PatrickMassot/checkdecls.git"
-
-[[require]]
-name = "subverso"
-git = "https://github.com/leanprover/subverso"
+scope = "leanprover-community"
+rev = "fa97836994f0cf44850c4335da2a1df47b51f38f"
 
 [[lean_lib]]
 name = "LeanMachineLearning"
+
+[[lean_lib]]
+name = "LMLTutorial"
+globs = ["LMLTutorial.*"]
+
+[[lean_exe]]
+name = "tutorial"
+srcDir = "LMLTutorial/"
+root = "Tutorial"

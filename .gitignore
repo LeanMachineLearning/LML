@@ -40,10 +40,13 @@ blueprint/src/web.pdf
 
 ## Website
 /home_page/
+/exposition/
 
-## Tutorial
-/tutorial/.lake/
-/tutorial/_out/
+## Tutorial and docs
+/LMLTutorial/.lake/
+/LMLTutorial/_out/
+/LMLDocs/.lake/
+/LMLDocs/_out/
 
 ## Verso Blueprint
 /verso_blueprint/.lake/
