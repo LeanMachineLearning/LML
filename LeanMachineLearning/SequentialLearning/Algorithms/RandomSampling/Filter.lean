@@ -6,12 +6,12 @@ Authors: Gaëtan Serré
 -/
 module
 
-public import Mathlib
-public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling.Basic
-public import LeanMachineLearning.SequentialLearning.EvaluationEnv
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Order.MeasurableArg
 public import LeanMachineLearning.ForMathlib.Order.Interval.Finset
 public import LeanMachineLearning.ForMathlib.Topology.Instances.ENNReal.Lemmas
+public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling.Basic
+public import LeanMachineLearning.SequentialLearning.EvaluationEnv
+public import Mathlib.Topology.Separation.CompletelyRegular
 
 /-!
 # Random Sampling convergence lemmas
