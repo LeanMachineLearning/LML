@@ -5,11 +5,11 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
-public import LeanMachineLearning.MeasureTheory.Constructions.Polish.StandardBorel
-public import LeanMachineLearning.Probability.Independence.CondIndepFun
-public import LeanMachineLearning.Probability.Independence.IndepFun
-public import LeanMachineLearning.Probability.Independence.IndepInfinitePi
-public import LeanMachineLearning.Probability.Integrable
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Constructions.Polish.StandardBorel
+public import LeanMachineLearning.ForMathlib.Probability.Independence.CondIndepFun
+public import LeanMachineLearning.ForMathlib.Probability.Independence.IndepFun
+public import LeanMachineLearning.ForMathlib.Probability.Independence.IndepInfinitePi
+public import LeanMachineLearning.ForMathlib.Probability.Integrable
 public import LeanMachineLearning.SequentialLearning.FiniteActions
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
 public import Mathlib.Probability.Independence.Integration
@@ -608,6 +608,8 @@ lemma indepFun_fst_add_one_aux (ν : Kernel 𝓐 R) [IsMarkovKernel ν] (n : ℕ
     have h := h_indep.indepFun_finset₀ {n + 1} (Iic n) (by simp)
       (fun i ↦ (measurable_pi_apply i).aemeasurable)
     convert h.comp (measurable_pi_apply ⟨n + 1, by simp⟩) measurable_id using 1
+    · rfl
+    · rfl
   rw [indepFun_iff_measure_inter_preimage_eq_mul]
   intro s t hs ht
   let X : (ℕ → I) × (ℕ → 𝓐 → R) → I := fun ω ↦ ω.1 (n + 1)
@@ -628,7 +630,7 @@ lemma indepFun_fst_add_one_aux (ν : Kernel 𝓐 R) [IsMarkovKernel ν] (n : ℕ
     simp only [X, Y, Set.preimage_inter, Set.preimage_preimage]
     by_cases h : ω₁ (n + 1) ∈ s
     · simp [h]
-      grind
+      congr
     · simp [h]
   simp_rw [hY_fst, hX_fst, hXY]
   -- Factor the integral using independence
@@ -910,6 +912,9 @@ lemma indepFun_snd_hist_cond [Countable 𝓐] (alg : Algorithm 𝓐 R)
       fun ω ↦ (ω.1, fun k b ↦ if b = a then if m ≠ 0 then ω.2 (min k (m - 1)) b
         else Nonempty.some inferInstance else ω.2 k b) by
     convert this using 1
+    · rfl
+    · rfl
+    · rfl
     congr with ω
     simp only [Set.mem_preimage, Set.mem_singleton_iff, Prod.mk.injEq, Set.indicator_apply,
       Set.mem_setOf_eq, ite_eq_left_iff, not_and, zero_ne_one, imp_false,
@@ -949,37 +954,36 @@ lemma hasLaw_action_zero (alg : Algorithm 𝓐 R) (ν : Kernel 𝓐 R) [IsMarkov
 variable [StandardBorelSpace R] [Nonempty R]
 
 lemma hasCondDistrib_reward_zero (alg : Algorithm 𝓐 R) (ν : Kernel 𝓐 R) [IsMarkovKernel ν] :
-    HasCondDistrib (reward alg 0) (action alg 0) ν (arrayMeasure ν) where
-  condDistrib_eq := by
-    refine (condDistrib_ae_eq_cond (by fun_prop) (by fun_prop)).trans ?_
-    rw [Filter.EventuallyEq, ae_iff_of_countable]
-    intro a ha
-    simp only [reward_zero]
-    calc ((arrayMeasure ν)[|action alg 0 ⁻¹' {a}]).map (fun ω ↦ ω.2 0 (action alg 0 ω))
-    _ = ((arrayMeasure ν)[|action alg 0 ⁻¹' {a}]).map (fun ω ↦ ω.2 0 a) := by
-      refine Measure.map_congr
-        (ae_cond_of_forall_mem ((measurableSet_singleton _).preimage (by fun_prop)) ?_)
-      intro x hx
-      simp only [Set.mem_preimage, Set.mem_singleton_iff] at hx
-      simp [hx]
-    _ = ν a := by
-      rw [cond_of_indepFun]
-      · exact map_snd_apply_arrayMeasure 0 a
-      · have : (fun ω ↦ ω.1 0) ⟂ᵢ[arrayMeasure ν] fun ω ↦ ω.2 0 a :=
-          indepFun_fst_zero_snd_zero_action ν a
-        rw [action_zero]
-        exact this.comp (φ := initAlgFunction alg) (by fun_prop) measurable_id
-      · fun_prop
-      · fun_prop
-      · simp
-      · rwa [Measure.map_apply (by fun_prop) (by simp)] at ha
+    HasCondDistrib (reward alg 0) (action alg 0) ν (arrayMeasure ν) := by
+  refine hasCondDistrib_of_condDistrib_eq (by fun_prop) (by fun_prop) ?_
+  refine (condDistrib_ae_eq_cond (by fun_prop) (by fun_prop)).trans ?_
+  rw [Filter.EventuallyEq, ae_iff_of_countable]
+  intro a ha
+  simp only [reward_zero]
+  calc ((arrayMeasure ν)[|action alg 0 ⁻¹' {a}]).map (fun ω ↦ ω.2 0 (action alg 0 ω))
+  _ = ((arrayMeasure ν)[|action alg 0 ⁻¹' {a}]).map (fun ω ↦ ω.2 0 a) := by
+    refine Measure.map_congr
+      (ae_cond_of_forall_mem ((measurableSet_singleton _).preimage (by fun_prop)) ?_)
+    intro x hx
+    simp only [Set.mem_preimage, Set.mem_singleton_iff] at hx
+    simp [hx]
+  _ = ν a := by
+    rw [cond_of_indepFun]
+    · exact map_snd_apply_arrayMeasure 0 a
+    · have : (fun ω ↦ ω.1 0) ⟂ᵢ[arrayMeasure ν] fun ω ↦ ω.2 0 a :=
+        indepFun_fst_zero_snd_zero_action ν a
+      rw [action_zero]
+      exact this.comp (φ := initAlgFunction alg) (by fun_prop) measurable_id
+    · fun_prop
+    · fun_prop
+    · simp
+    · rwa [Measure.map_apply (by fun_prop) (by simp)] at ha
 
 lemma hasCondDistrib_action' (alg : Algorithm 𝓐 R) (ν : Kernel 𝓐 R) [IsMarkovKernel ν] (n : ℕ) :
     HasCondDistrib (action alg (n + 1)) (hist alg · n) (alg.policy n) (arrayMeasure ν) := by
   rw [action_add_one_eq]
   have h_fun ω := algFunction_map alg n (hist alg ω n)
-  refine ⟨by fun_prop, by fun_prop, ?_⟩
-  refine condDistrib_ae_eq_of_measure_eq_compProd _ (by fun_prop) ?_
+  refine ⟨by fun_prop, ?_⟩
   have h_indep : (arrayMeasure ν).map (fun ω ↦ (ω.1 (n + 1), hist alg ω n)) =
       (ℙ).prod ((arrayMeasure ν).map (hist alg · n)) := by
     have h_indep' := indepFun_fst_add_one_hist alg ν n
@@ -1041,7 +1045,7 @@ lemma hasCondDistrib_reward_pullCount_action
     change Measurable ((fun p : (probSpace 𝓐 R) × 𝓐 ↦ pullCount (action alg) p.2 (n + 1) p.1) ∘
       (fun ω : probSpace 𝓐 R ↦ (ω, action alg (n + 1) ω)))
     exact (measurable_uncurry_pullCount (by fun_prop) _).comp (by fun_prop)
-  refine ⟨by fun_prop, by fun_prop, ?_⟩
+  refine hasCondDistrib_of_condDistrib_eq (by fun_prop) (by fun_prop) ?_
   refine (condDistrib_ae_eq_cond
     (Measurable.prodMk (by fun_prop) (by fun_prop)) (by fun_prop)).trans ?_
   rw [Filter.EventuallyEq, ae_iff_of_countable]
@@ -1116,7 +1120,7 @@ lemma hasCondDistrib_reward_hist_action_pullCount
     change Measurable ((fun p : (probSpace 𝓐 R) × 𝓐 ↦ pullCount (action alg) p.2 (n + 1) p.1) ∘
       (fun ω : probSpace 𝓐 R ↦ (ω, action alg (n + 1) ω)))
     exact (measurable_uncurry_pullCount (by fun_prop) _).comp (by fun_prop)
-  refine ⟨by fun_prop, by fun_prop, ?_⟩
+  refine hasCondDistrib_of_condDistrib_eq (by fun_prop) (by fun_prop) ?_
   refine condDistrib_prod_of_forall_condDistrib_cond (by fun_prop) (by fun_prop) (by fun_prop) _ ?_
   intro (a, m) ham
   have h_eq : ((ν.prodMkRight _).prodMkLeft _).comap (fun ω : (Iic n → 𝓐 × R) ↦ (ω, a, m))
@@ -1176,7 +1180,7 @@ lemma hasCondDistrib_reward' (alg : Algorithm 𝓐 R) (ν : Kernel 𝓐 R) [IsMa
   suffices HasCondDistrib R' (fun ω ↦ (A ω, H ω)) (ν.prodMkRight _) (arrayMeasure ν) by
     have h_eq : (fun ω ↦ (H ω, A ω)) = MeasurableEquiv.prodComm ∘ (fun ω ↦ (A ω, H ω)) := rfl
     rw [h_eq]
-    exact this.comp_right (κ := ν.prodMkRight _) _
+    exact this.measurableEquiv_comp_right (κ := ν.prodMkRight _) _
   suffices HasCondDistrib R' (fun ω ↦ ((A ω, H ω), P ω))
       ((ν.prodMkRight _).prodMkRight _) (arrayMeasure ν) by
     -- use that `P` is measurable wrt `(A, H)` to drop it from the conditioning
@@ -1191,16 +1195,16 @@ lemma hasCondDistrib_reward' (alg : Algorithm 𝓐 R) (ν : Kernel 𝓐 R) [IsMa
     let e : ((𝓐 × ℕ) × (Iic n → 𝓐 × R)) ≃ᵐ ((𝓐 × (Iic n → 𝓐 × R)) × ℕ) :=
     { toFun := fun x ↦ ((x.1.1, x.2), x.1.2)
       invFun := fun x ↦ ((x.1.1, x.2), x.1.2)
-      measurable_toFun := by fun_prop
-      measurable_invFun := by fun_prop }
-    exact this.comp_right e
+      measurable_toFun := by simp only [Equiv.coe_fn_mk]; fun_prop
+      measurable_invFun := by simp only [Equiv.symm_mk, Equiv.coe_fn_mk]; fun_prop }
+    exact this.measurableEquiv_comp_right e
   suffices HasCondDistrib R' (fun ω ↦ (A ω, P ω)) (ν.prodMkRight _) (arrayMeasure ν) by
     have h_indep : H ⟂ᵢ[(fun ω ↦ (A ω, P ω)), (by fun_prop); arrayMeasure ν] R' :=
       (condIndepFun_reward_hist alg ν n).symm
     have h_condDistrib := this.condDistrib_eq
     rw [condIndepFun_iff_condDistrib_prod_ae_eq_prodMkRight (by fun_prop) (by fun_prop)
       (by fun_prop)] at h_indep
-    refine ⟨by fun_prop, by fun_prop, ?_⟩
+    refine hasCondDistrib_of_condDistrib_eq (by fun_prop) (by fun_prop) ?_
     refine h_indep.trans ?_
     rw [Filter.EventuallyEq, ae_map_iff] at h_condDistrib ⊢
     · simpa only [Kernel.prodMkRight_apply]
@@ -1230,6 +1234,7 @@ lemma hasCondDistrib_reward (alg : Algorithm 𝓐 R) (ν : Kernel 𝓐 R) [IsMar
     rw [hist_eq _ _ n]
   · simp only [reward]
     rw [hist_eq _ _ n]
+  · rfl
 
 lemma isAlgEnvSeq_arrayMeasure (alg : Algorithm 𝓐 R) (ν : Kernel 𝓐 R) [IsMarkovKernel ν] :
     IsAlgEnvSeq (action alg) (reward alg) alg (stationaryEnv ν) (arrayMeasure ν) where

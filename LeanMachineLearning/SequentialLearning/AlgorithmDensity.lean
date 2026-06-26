@@ -5,8 +5,8 @@ Authors: Paulo Rauber
 -/
 module
 
-public import LeanMachineLearning.Probability.Kernel.Composition.MeasureCompProd
-public import LeanMachineLearning.Probability.WithDensity
+public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.MeasureCompProd
+public import LeanMachineLearning.ForMathlib.Probability.WithDensity
 public import LeanMachineLearning.SequentialLearning.Algorithm
 
 /-!
@@ -32,7 +32,7 @@ concept that we also introduce here.
 * `absolutelyContinuous_map_hist`: the law of the history at time `n` under `alg` is absolutely
   continuous with respect to the law of the history at time `n` under `alg₀` when they
   are interacting with the same environment and `alg ≪ₐ alg₀`.
-* `hasLaw_hist_withDensity`: the law of the history at time `n` under `alg` is the law of the
+* `hasLaw_history_withDensity`: the law of the history at time `n` under `alg` is the law of the
   history at time `n` under `alg₀` with density `alg.density alg₀ n` when they are interacting
   with the same environment and `alg ≪ₐ alg₀`.
 
@@ -79,10 +79,11 @@ lemma measurable_density [MeasurableSpace.CountablyGenerated 𝓐] (alg alg₀ :
 
 end Algorithm
 
+open scoped Algorithm
+
 namespace IsAlgEnvSeq
 
 variable {Ω : Type*} [MeasurableSpace Ω]
-variable [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
 variable {alg : Algorithm 𝓐 𝓨} {env : Environment 𝓐 𝓨}
 variable {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 variable {P : Measure Ω} [IsFiniteMeasure P]
@@ -92,34 +93,36 @@ variable {alg₀ : Algorithm 𝓐 𝓨}
 variable {A₀ : ℕ → Ω₀ → 𝓐} {Y₀ : ℕ → Ω₀ → 𝓨}
 variable {P₀ : Measure Ω₀} [IsProbabilityMeasure P₀]
 
-open scoped Algorithm
-
-lemma absolutelyContinuous_map_hist (h : IsAlgEnvSeq A Y alg env P)
+lemma absolutelyContinuous_map_history (h : IsAlgEnvSeq A Y alg env P)
     (h₀ : IsAlgEnvSeq A₀ Y₀ alg₀ env P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) :
-    P.map (IsAlgEnvSeq.hist A Y n) ≪ P₀.map (IsAlgEnvSeq.hist A₀ Y₀ n) := by
+    P.map (history A Y n) ≪ P₀.map (history A₀ Y₀ n) := by
   induction n with
   | zero =>
-    rw [h.hasLaw_hist_zero.map_eq, h₀.hasLaw_hist_zero.map_eq]
+    rw [h.hasLaw_history_zero.map_eq, h₀.hasLaw_history_zero.map_eq]
     apply Measure.AbsolutelyContinuous.map _ (by fun_prop)
     rw [h.hasLaw_step_zero.map_eq, h₀.hasLaw_step_zero.map_eq]
     exact Measure.AbsolutelyContinuous.compProd_left hc.p0 _
   | succ n ih =>
-    rw [(h.hasLaw_hist_succ n).map_eq, (h₀.hasLaw_hist_succ n).map_eq]
+    simp_rw [history_succ]
+    rw [← Measure.map_map (by fun_prop), ← Measure.map_map (by fun_prop)]
+    rotate_left
+    · exact (h₀.measurable_history n).prodMk (h₀.measurable_step (n + 1))
+    · exact (h.measurable_history n).prodMk (h.measurable_step (n + 1))
     apply Measure.AbsolutelyContinuous.map _ (by fun_prop)
-    rw [Measure.compProd_congr (h.hasCondDistrib_step n).condDistrib_eq,
-        Measure.compProd_congr (h₀.hasCondDistrib_step n).condDistrib_eq]
+    rw [(h.hasCondDistrib_step n).map_eq, (h₀.hasCondDistrib_step n).map_eq]
     apply Measure.AbsolutelyContinuous.compProd ih
     filter_upwards with h' using Measure.AbsolutelyContinuous.compProd_left_apply (hc.policy n h') _
 
-lemma hasLaw_hist_withDensity (h : IsAlgEnvSeq A Y alg env P) (h₀ : IsAlgEnvSeq A₀ Y₀ alg₀ env P₀)
-   (hc : alg ≪ₐ alg₀) (n : ℕ) : HasLaw (IsAlgEnvSeq.hist A Y n)
-      ((P₀.map (IsAlgEnvSeq.hist A₀ Y₀ n)).withDensity (alg.density alg₀ n)) P where
-  aemeasurable :=
-    (IsAlgEnvSeq.measurable_hist h.measurable_action h.measurable_feedback n).aemeasurable
+variable [MeasurableSpace.CountablyGenerated 𝓐]
+
+lemma hasLaw_history_withDensity (h : IsAlgEnvSeq A Y alg env P)
+    (h₀ : IsAlgEnvSeq A₀ Y₀ alg₀ env P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) : HasLaw (history A Y n)
+      ((P₀.map (history A₀ Y₀ n)).withDensity (alg.density alg₀ n)) P where
+  aemeasurable := (h.measurable_history n).aemeasurable
   map_eq := by
     induction n with
     | zero =>
-      rw [h.hasLaw_hist_zero.map_eq, h₀.hasLaw_hist_zero.map_eq, h.hasLaw_step_zero.map_eq,
+      rw [h.hasLaw_history_zero.map_eq, h₀.hasLaw_history_zero.map_eq, h.hasLaw_step_zero.map_eq,
         h₀.hasLaw_step_zero.map_eq]
       rw [← Measure.withDensity_rnDeriv_eq _ _ hc.p0,
         Measure.compProd_withDensity_left (by fun_prop)]
@@ -132,10 +135,13 @@ lemma hasLaw_hist_withDensity (h : IsAlgEnvSeq A Y alg env P) (h₀ : IsAlgEnvSe
       have : IsMarkovKernel ((stepKernel alg₀ env n).withDensity ρ) := by
         rw [← hs]
         infer_instance
-      rw [(h.hasLaw_hist_succ n).map_eq, (h₀.hasLaw_hist_succ n).map_eq,
-          Measure.compProd_congr (h.hasCondDistrib_step n).condDistrib_eq,
-          Measure.compProd_congr (h₀.hasCondDistrib_step n).condDistrib_eq, ih, hs,
-          Measure.compProd_withDensity_withDensity (by fun_prop) (by fun_prop)]
+      simp_rw [history_succ]
+      rw [← Measure.map_map (by fun_prop), ← Measure.map_map (by fun_prop)]
+      rotate_left
+      · exact (h₀.measurable_history n).prodMk (h₀.measurable_step (n + 1))
+      · exact (h.measurable_history n).prodMk (h.measurable_step (n + 1))
+      rw [(h.hasCondDistrib_step n).map_eq, (h₀.hasCondDistrib_step n).map_eq, ih, hs,
+        Measure.compProd_withDensity_withDensity (by fun_prop) (by fun_prop)]
       exact map_equiv_withDensity (by fun_prop)
 
 end IsAlgEnvSeq

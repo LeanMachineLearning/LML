@@ -35,21 +35,28 @@ variable {𝓐 Ω : Type*} [DecidableEq 𝓐] {m𝓐 : MeasurableSpace 𝓐} {m�
 
 /-- Gap of an action `a`: difference between the highest mean of the actions and the mean of `a`. -/
 noncomputable
--- ANCHOR: gap
 def gap (ν : Kernel 𝓐 ℝ) (a : 𝓐) : ℝ := (⨆ i, (ν i)[id]) - (ν a)[id]
--- ANCHOR_END: gap
 
 omit [DecidableEq 𝓐] in
 lemma gap_nonneg [Finite 𝓐] : 0 ≤ gap ν a := by
   rw [gap, sub_nonneg]
   exact le_ciSup (f := fun i ↦ (ν i)[id]) (by simp) a
 
+omit [DecidableEq 𝓐] in
+/-- The gap is non-negative if the means are bounded by `u : ℝ` (even if `𝓐` is not `Finite`). -/
+lemma gap_nonneg_of_le {u : ℝ} (h : ∀ a, (ν a)[id] ≤ u) : 0 ≤ gap ν a := by
+  rw [gap, sub_nonneg]
+  exact le_ciSup ⟨u, Set.forall_mem_range.2 h⟩ a
+
+omit [DecidableEq 𝓐] in
+lemma gap_le_of_mem_Icc [Nonempty 𝓐] {l u : ℝ} (h : ∀ a, (ν a)[id] ∈ Set.Icc l u) :
+    gap ν a ≤ u - l := by
+  grind [gap, ciSup_le (fun i ↦ (h i).2)]
+
 /-- Regret of a sequence of pulls `k : ℕ → 𝓐` at time `t` for the reward kernel `ν ; Kernel 𝓐 ℝ`. -/
 noncomputable
--- ANCHOR: regret
 def regret (ν : Kernel 𝓐 ℝ) (A : ℕ → Ω → 𝓐) (t : ℕ) (ω : Ω) : ℝ :=
   t * (⨆ a, (ν a)[id]) - ∑ s ∈ range t, (ν (A s ω))[id]
--- ANCHOR_END: regret
 
 omit [DecidableEq 𝓐] in
 lemma regret_eq_sum_gap : regret ν A t ω = ∑ s ∈ range t, gap ν (A s ω) := by
@@ -75,7 +82,7 @@ lemma integral_regret_eq_sum_gap_mul_integral_pullCount
     (hA : ∀ n, Measurable (A n)) :
     P[regret ν A n] = ∑ a, gap ν a * P[fun ω ↦ (pullCount A a n ω : ℝ)] := by
   simp_rw [regret_eq_sum_pullCount_mul_gap]
-  rw [integral_finset_sum]
+  rw [integral_finsetSum]
   swap; · exact fun i _ ↦ (integrable_pullCount hA i n).mul_const _
   congr with a
   rw [integral_mul_const, mul_comm]
@@ -83,7 +90,7 @@ lemma integral_regret_eq_sum_gap_mul_integral_pullCount
 /-- To bound the expected regret, it suffices to bound the expected number of pulls for each action
 with positive gap. -/
 lemma integral_regret_le_of_forall_integral_pullCount_le
-    [Nonempty 𝓐] [StandardBorelSpace 𝓐] [Fintype 𝓐] {P : Measure Ω} [IsProbabilityMeasure P]
+    [StandardBorelSpace 𝓐] [Fintype 𝓐] {P : Measure Ω} [IsProbabilityMeasure P]
     {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ} {B : 𝓐 → ℝ}
     (h : IsAlgEnvSeq A R alg env P)
     (h_le : ∀ a, gap ν a ≠ 0 → ∫ ω, (pullCount A a n ω : ℝ) ∂P ≤ B a) :
