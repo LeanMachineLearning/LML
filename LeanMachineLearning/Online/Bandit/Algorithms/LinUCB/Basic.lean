@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026. All rights reserved.
+Copyright (c) 2026 Fawad Haider. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: OpenAI, Fawad Haider
 -/
@@ -7,11 +7,11 @@ module
 
 public import LeanMachineLearning.Online.Bandit.SumRewards
 public import LeanMachineLearning.SequentialLearning.Deterministic
-public import LeanMachineLearning.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
 public import Mathlib.Analysis.MeanInequalities
 public import Mathlib.Analysis.SpecialFunctions.Log.Deriv
 public import Mathlib.Analysis.Matrix.Order
-public import Mathlib.Data.Real.StarOrdered
+public import Mathlib.Algebra.Order.Star.Real
 public import Mathlib.LinearAlgebra.Matrix.PosDef
 public import Mathlib.LinearAlgebra.Matrix.SchurComplement
 public import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
