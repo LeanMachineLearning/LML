@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026. All rights reserved.
+Copyright (c) 2026 Fawad Haider. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: OpenAI, Fawad Haider
 -/
@@ -823,6 +823,7 @@ lemma unitary_conj_quadraticForm_eq
         star (U : Matrix (Fin d) (Fin d) ℝ) = 1
     exact Unitary.coe_mul_star_self U
   have hy : star Umat *ᵥ lambda = Matrix.vecMul lambda Umat := by
+    rw [Matrix.star_eq_conjTranspose, Matrix.conjTranspose_eq_transpose_of_trivial]
     simpa [Umat] using (Matrix.mulVec_transpose (U : Matrix (Fin d) (Fin d) ℝ) lambda)
   have hcancel_left : Umat * (star Umat * M * Umat) = M * Umat := by
     rw [Matrix.mul_assoc (star Umat) M Umat]
