@@ -27,7 +27,7 @@ We generally follow the [Mathlib style for coding and documentation](https://lea
 
 We place new material about machine learning in the `Learning` namespace, in an appropriate folder (e.g. `Online/Bandit` for bandits).
 
-For results about definitions from Mathlib, we place them in the same namespace as the original definition (typically `MeasureTheory` or `ProbabilityTheory`), and in a folder that corresponds to where they would be if added to Mathlib (e.g. `Probability/Independence` for results about independence).
+For results about definitions from Mathlib, we place them in the same namespace as the original definition (typically `MeasureTheory` or `ProbabilityTheory`), and in a subfolder of the `ForMathlib` folder that corresponds to where they would be if added to Mathlib (e.g. `ForMathlib/Probability/Independence` for results about independence).
 
 The `Tutorial` folder is reserved for material used in the tutorial, and should not be used for general contributions.
 

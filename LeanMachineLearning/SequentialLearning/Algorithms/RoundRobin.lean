@@ -86,25 +86,24 @@ end AlgorithmDefinition
 
 namespace RoundRobin
 
-variable [StandardBorelSpace 𝓨] [Nonempty 𝓨]
-  {hK : 0 < K} {ν : Kernel (Fin K) 𝓨} [IsMarkovKernel ν]
+variable {hK : 0 < K} {ν : Kernel (Fin K) 𝓨} [IsMarkovKernel ν]
   {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {P : Measure Ω} [IsProbabilityMeasure P]
   {A : ℕ → Ω → Fin K} {Y : ℕ → Ω → 𝓨}
 
-lemma action_zero [Nonempty (Fin K)]
+lemma action_zero
     (h : IsAlgEnvSeqUntil A Y (roundRobinAlgorithm hK) (stationaryEnv ν) P 0) :
     A 0 =ᵐ[P] fun _ ↦ ⟨0, hK⟩ := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   exact h.action_zero_detAlgorithm
 
-lemma action_ae_eq_roundRobinNextAction [Nonempty (Fin K)] (n : ℕ)
+lemma action_ae_eq_roundRobinNextAction (n : ℕ)
     (h : IsAlgEnvSeqUntil A Y (roundRobinAlgorithm hK) (stationaryEnv ν) P (n + 1)) :
     A (n + 1) =ᵐ[P] fun _ ↦ nextAction hK n :=
   h.action_detAlgorithm_ae_eq (by grind)
 
 /-- The action chosen at time `n` is the action `n % K`. -/
-lemma action_ae_eq [Nonempty (Fin K)] (n : ℕ)
+lemma action_ae_eq (n : ℕ)
     (h : IsAlgEnvSeqUntil A Y (roundRobinAlgorithm hK) (stationaryEnv ν) P n) :
     A n =ᵐ[P] fun _ ↦ ⟨n % K, Nat.mod_lt _ hK⟩ := by
   cases n with
@@ -114,7 +113,7 @@ lemma action_ae_eq [Nonempty (Fin K)] (n : ℕ)
     rw [hn_eq, nextAction]
 
 /-- At time `K * m`, the number of times each action is chosen is equal to `m`. -/
-lemma pullCount_mul [Nonempty (Fin K)] (m : ℕ)
+lemma pullCount_mul (m : ℕ)
     (h : IsAlgEnvSeqUntil A Y (roundRobinAlgorithm hK) (stationaryEnv ν) P (K * m - 1))
     (a : Fin K) :
     pullCount A a (K * m) =ᵐ[P] fun _ ↦ m := by
@@ -130,15 +129,14 @@ lemma pullCount_mul [Nonempty (Fin K)] (m : ℕ)
     sum_congr rfl fun s hs ↦ by rw [h_arm' hs]
   _ = m := sum_mod_range_mul hK m a
 
-lemma pullCount_eq_one [Nonempty (Fin K)]
-    (h : IsAlgEnvSeqUntil A Y (roundRobinAlgorithm hK) (stationaryEnv ν) P (K - 1))
-    (a : Fin K) :
+lemma pullCount_eq_one
+    (h : IsAlgEnvSeqUntil A Y (roundRobinAlgorithm hK) (stationaryEnv ν) P (K - 1)) (a : Fin K) :
     pullCount A a K =ᵐ[P] fun _ ↦ 1 := by
   suffices pullCount A a (K * 1) =ᵐ[P] fun _ ↦ 1 by simpa using this
   refine pullCount_mul 1 (P := P) (ν := ν) (Y := Y) (hK := hK) ?_ a
   simpa
 
-lemma time_gt_of_pullCount_gt_one [Nonempty (Fin K)]
+lemma time_gt_of_pullCount_gt_one
     (h : IsAlgEnvSeqUntil A Y (roundRobinAlgorithm hK) (stationaryEnv ν) P (K - 1)) (a : Fin K) :
     ∀ᵐ ω ∂P, ∀ n, 1 < pullCount A a n ω → K < n := by
   filter_upwards [pullCount_eq_one h a] with h h_eq n hn
@@ -146,7 +144,7 @@ lemma time_gt_of_pullCount_gt_one [Nonempty (Fin K)]
   by_contra! h_lt
   exact hn.not_ge (pullCount_mono _ h_lt _)
 
-lemma pullCount_pos_of_time_ge [Nonempty (Fin K)]
+lemma pullCount_pos_of_time_ge
     (h : IsAlgEnvSeqUntil A Y (roundRobinAlgorithm hK) (stationaryEnv ν) P (K - 1)) :
     ∀ᵐ ω ∂P, ∀ n, K ≤ n → ∀ b : Fin K, 0 < pullCount A b n ω := by
   have h_ae a := pullCount_eq_one h a
@@ -156,7 +154,7 @@ lemma pullCount_pos_of_time_ge [Nonempty (Fin K)]
   rw [← hω a]
   exact pullCount_mono _ hn _
 
-lemma pullCount_pos_of_pullCount_gt_one [Nonempty (Fin K)]
+lemma pullCount_pos_of_pullCount_gt_one
     (h : IsAlgEnvSeqUntil A Y (roundRobinAlgorithm hK) (stationaryEnv ν) P (K - 1)) (a : Fin K) :
     ∀ᵐ ω ∂P, ∀ n, 1 < pullCount A a n ω → ∀ b : Fin K, 0 < pullCount A b n ω := by
   filter_upwards [time_gt_of_pullCount_gt_one h a, pullCount_pos_of_time_ge h] with ω h1 h2 n h_gt a

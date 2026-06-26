@@ -5,7 +5,7 @@ Authors: Gaëtan Serré
 -/
 module
 
-public import LeanMachineLearning.Probability.Independence.IndepFun
+public import LeanMachineLearning.ForMathlib.Probability.Independence.IndepFun
 public import LeanMachineLearning.SequentialLearning.Algorithm
 
 /-!
@@ -33,8 +33,8 @@ open scoped Topology
 
 namespace Learning
 
-variable {𝓐 𝓨 Ω : Type*} [MeasurableSpace 𝓐] [MeasurableSpace 𝓨] [StandardBorelSpace 𝓐] [Nonempty 𝓐]
-  [StandardBorelSpace 𝓨] [Nonempty 𝓨] {μ : Measure 𝓐} [IsProbabilityMeasure μ] [MeasurableSpace Ω]
+variable {𝓐 𝓨 Ω : Type*} {m𝓐 : MeasurableSpace 𝓐} {m𝓨 : MeasurableSpace 𝓨} {mΩ : MeasurableSpace Ω}
+  {μ : Measure 𝓐} [IsProbabilityMeasure μ]
   {P : Measure Ω} [IsProbabilityMeasure P]
 
 open Set in
@@ -65,14 +65,14 @@ lemma iIndep_action (h : IsAlgEnvSeq A Y (randomSampling μ) env P) :
   have hA := h.measurable_action
   rw [iIndepFun_nat_iff_forall_indepFun (by fun_prop)]
   intro n
-  have condDistrib_eq := (h.hasCondDistrib_action n).condDistrib_eq
-  simp only [randomSampling_policy] at condDistrib_eq
-  have law_eq := (hasLaw_action h (n + 1)).map_eq
-  rw [← law_eq, ← indepFun_iff_condDistrib_eq_const ?_ (by fun_prop)] at condDistrib_eq
-  · have meas_fst : Measurable (fun (f : Iic n → 𝓐 × 𝓨) ↦ (fun i ↦ (f i).1)) := by
-      fun_prop
-    exact (condDistrib_eq.comp meas_fst measurable_id).symm
-  · exact (IsAlgEnvSeq.measurable_hist (h.measurable_action) (h.measurable_feedback) n).aemeasurable
+  have map_eq := (h.hasCondDistrib_action n).map_eq
+  simp only [randomSampling_policy, Measure.compProd_const] at map_eq
+  have law_eq : P.map (A (n + 1)) = μ := (hasLaw_action h (n + 1)).map_eq
+  rw [← law_eq, ← indepFun_iff_map_prod_eq_prod_map_map] at map_eq
+  · change A (n + 1) ⟂ᵢ[P] (fun (f : Iic n → 𝓐 × 𝓨) ↦ (fun i ↦ (f i).1))∘ (history A Y n)
+    refine map_eq.symm.comp measurable_id (by fun_prop)
+  · exact (h.measurable_history n).aemeasurable
+  · exact (h.measurable_action (n + 1)).aemeasurable
 
 end randomSampling
 
