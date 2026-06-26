@@ -25,14 +25,11 @@ variable {ι α : Type*} [LinearOrder α] [Fintype ι] [Nonempty ι] (f : ι →
 namespace Function
 
 /-- The maximum value of a tuple. -/
-abbrev max : α := univ.sup' (by simp) f
+@[to_dual /-- The minimum value of a tuple. -/]
+abbrev max : α := univ.sup' univ_nonempty f
 
-/-- The minimum value of a tuple. -/
-abbrev min : α := univ.inf' (by simp) f
-
+@[to_dual min_le]
 lemma le_max (x : ι) : f x ≤ max f := le_sup' _ (by simp)
-
-lemma min_le (x : ι) : min f ≤ f x := inf'_le _ (by simp)
 
 end Function
 
