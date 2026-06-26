@@ -324,7 +324,6 @@ on the selected action, has conditional kernel `rewardNoiseKernel ν`.
 This is the formal bridge from the repository's Markov-kernel environment model to the martingale
 noise process used in the textbook LinUCB self-normalized concentration proof. -/
 lemma hasCondDistrib_rewardNoise_action {alg : Algorithm (Fin K) ℝ}
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (t : ℕ) :
     HasCondDistrib (rewardNoise A R ν t) (A t) (rewardNoiseKernel ν) P := by
   have hR : HasCondDistrib (R t) (A t) ν P :=
@@ -363,7 +362,6 @@ This is the martingale-noise conditional-law statement needed before applying a 
 self-normalized concentration theorem: after the algorithm chooses `A t` from the past, the
 remaining centered reward noise has the centered law of that selected arm. -/
 lemma hasCondDistrib_rewardNoise_history_action {alg : Algorithm (Fin K) ℝ}
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) {t : ℕ} (ht : t ≠ 0) :
     HasCondDistrib (rewardNoise A R ν t)
       (fun ω ↦ (history A R (t - 1) ω, A t ω))
@@ -461,7 +459,6 @@ LinUCB reward noise given history and selected action is subgaussian.
 This is the scalar probabilistic input that a future vector self-normalized concentration theorem
 should consume for predictable projections of `η_t x_{A_t}`. -/
 lemma rewardNoise_condDistrib_history_action_subgaussian {alg : Algorithm (Fin K) ℝ}
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     {t : ℕ} (ht : t ≠ 0) :
@@ -503,7 +500,6 @@ This is the process-level law identity behind the conditional-law statement
 actual random variable `rewardNoise A R ν t` and the Markov-kernel description of its conditional
 law. -/
 lemma rewardNoise_map_eq_historyAction_kernel_comp {alg : Algorithm (Fin K) ℝ}
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {t : ℕ} (ht : t ≠ 0) :
     P.map (rewardNoise A R ν t) =
@@ -535,7 +531,6 @@ The proof first packages the centered reward-noise law as a kernel-level subgaus
 then uses `rewardNoise_map_eq_historyAction_kernel_comp` to transport the resulting integrability
 back to the actual process variable. -/
 lemma rewardNoise_integrable_exp_mul_history_action {alg : Algorithm (Fin K) ℝ}
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     {t : ℕ} (ht : t ≠ 0) (u : ℝ) :
@@ -569,7 +564,6 @@ Given the previous history and the selected action at time `t`, the conditional 
 This is the scalar conditional-subgaussian statement that the textbook vector self-normalized
 argument uses for predictable projections of the noise process. -/
 lemma rewardNoise_ae_condExp_exp_le_history_action {alg : Algorithm (Fin K) ℝ}
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     {t : ℕ} (ht : t ≠ 0) (u : ℝ) :
@@ -631,7 +625,6 @@ The explicit integrability hypothesis is needed for this fully general statement
 unbounded predictable coefficient does not automatically preserve global exponential
 integrability. Bounded-coefficient corollaries can discharge that hypothesis separately. -/
 lemma rewardNoise_constMul_ae_condExp_exp_le_history_action {alg : Algorithm (Fin K) ℝ}
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     {t : ℕ} (ht : t ≠ 0)
@@ -695,7 +688,6 @@ the later `HasCondSubgaussianMGF` wrappers, it does not replace the predictable 
 quantity `q(history, action)^2 * σ2`. -/
 lemma rewardNoise_constMul_ae_condExp_exp_sub_realizedVariance_le_one
     {alg : Algorithm (Fin K) ℝ}
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     {t : ℕ} (ht : t ≠ 0)
@@ -808,7 +800,7 @@ This repackages `rewardNoise_ae_condExp_exp_le_history_action` into Mathlib's
 `HasCondSubgaussianMGF` API, which is the API used by the existing martingale-sum concentration
 lemmas. -/
 lemma rewardNoise_hasCondSubgaussianMGF_filtrationAction {alg : Algorithm (Fin K) ℝ}
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     {t : ℕ} (ht : t ≠ 0) :
@@ -868,7 +860,6 @@ If `|q(history, action)| ≤ Q`, then `exp (u * q_t * η_t)` is dominated by
 arm-wise reward-noise subgaussian assumption. -/
 lemma rewardNoise_constMul_integrable_exp_mul_history_action_of_abs_le
     {alg : Algorithm (Fin K) ℝ}
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     {t : ℕ} (ht : t ≠ 0)
@@ -938,7 +929,7 @@ The remaining explicit integrability assumption is the only extra analytic side 
 wrapper. It is unavoidable at this level of generality for unbounded predictable coefficients. -/
 lemma rewardNoise_constMul_hasCondSubgaussianMGF_filtrationAction_of_integrable
     {alg : Algorithm (Fin K) ℝ}
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 c : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     {t : ℕ} (ht : t ≠ 0)
@@ -1017,7 +1008,7 @@ This is the bounded-coefficient version of
 integrability follows from the arm-wise reward-noise subgaussian assumption. -/
 lemma rewardNoise_constMul_hasCondSubgaussianMGF_filtrationAction_of_abs_le
     {alg : Algorithm (Fin K) ℝ}
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     {t : ℕ} (ht : t ≠ 0)
@@ -1376,7 +1367,7 @@ fixed direction `v`, if `|⟪v, x_a⟫| ≤ Q` for every finite action `a`, then
 projected noise `⟪v, x_{A_t}⟫η_t` is conditionally subgaussian with variance proxy `Q^2 σ2`. -/
 lemma projectedRewardFeatureNoise_hasCondSubgaussianMGF_filtrationAction_of_abs_le
     {alg : Algorithm (Fin K) ℝ}
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     {t : ℕ} (ht : t ≠ 0) (v : Feature d)
@@ -1405,7 +1396,6 @@ realized variance proxy `σ2 * ⟪v, x_{A_t}⟫²`. This is the fixed-direction 
 variance step used before the Gaussian-mixture/self-normalized argument in the textbook proof. -/
 lemma projectedRewardFeatureNoise_ae_condExp_exp_sub_realizedVariance_le_one_of_abs_le
     {alg : Algorithm (Fin K) ℝ}
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     {t : ℕ} (ht : t ≠ 0) (v : Feature d)
@@ -1437,7 +1427,6 @@ lemma projectedRewardFeatureNoise_ae_condExp_exp_sub_realizedVariance_le_one_of_
 predictable projection. -/
 lemma projectedRewardFeatureNoiseExpIncrement_integrable_of_abs_le
     {alg : Algorithm (Fin K) ℝ}
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     {t : ℕ} (ht : t ≠ 0) (v : Feature d)
@@ -1489,7 +1478,6 @@ lemma projectedRewardFeatureNoiseExpIncrement_integrable_of_abs_le
 /-- One-step conditional expectation bound for the named fixed-direction exponential increment. -/
 lemma projectedRewardFeatureNoiseExpIncrement_ae_condExp_le_one_of_abs_le
     {alg : Algorithm (Fin K) ℝ}
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     {t : ℕ} (ht : t ≠ 0) (v : Feature d)
@@ -1512,7 +1500,6 @@ next realized-variance exponential increment by `M` keeps conditional expectatio
 -/
 lemma projectedRewardFeatureNoiseExpIncrement_ae_condExp_mul_le_of_abs_le
     {alg : Algorithm (Fin K) ℝ}
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     {t : ℕ} (ht : t ≠ 0) (v : Feature d)
@@ -1568,7 +1555,7 @@ ingredient: after choosing a direction `v`, the sum of
 -/
 lemma projectedRewardFeatureNoise_sum_hasSubgaussianMGF_of_abs_le
     {alg : Algorithm (Fin K) ℝ}
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -1610,7 +1597,7 @@ The realized-variance penalty is nonnegative, so this process is pointwise bound
 subgaussian martingale-sum theorem. -/
 lemma projectedRewardFeatureNoiseExpProcess_integrable_of_abs_le
     {alg : Algorithm (Fin K) ℝ}
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -1654,7 +1641,7 @@ argument that integrates this inequality over directions and converts it into th
 self-normalized confidence radius. -/
 lemma integral_projectedRewardFeatureNoiseExpProcess_le_one_of_abs_le
     {alg : Algorithm (Fin K) ℝ}
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -1757,7 +1744,7 @@ remaining textbook step is to integrate these scalar exponentials over Gaussian 
 obtain the self-normalized determinant confidence event. -/
 lemma supermartingale_projectedRewardFeatureNoiseExpProcess_of_abs_le
     {alg : Algorithm (Fin K) ℝ}
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -1841,7 +1828,7 @@ This is the direct probability form of
 its scalar concentration facts. -/
 lemma probReal_projectedRewardFeatureNoise_sum_ge_le_of_abs_le
     {alg : Algorithm (Fin K) ℝ}
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -1909,7 +1896,6 @@ lemma dotProduct_initialCenteredResponseVector
 
 /-- The initial scalar reward noise is subgaussian for the deterministic initial LinUCB arm. -/
 lemma initialRewardNoise_hasSubgaussianMGF
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2) :
     HasSubgaussianMGF (rewardNoise A R ν 0) σ2 P := by
@@ -1944,7 +1930,6 @@ lemma initialRewardNoise_hasSubgaussianMGF
 
 /-- The time-zero fixed-direction projected reward-feature noise is subgaussian. -/
 lemma initialProjectedRewardFeatureNoise_hasSubgaussianMGF
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) :
@@ -1969,7 +1954,6 @@ lemma initialProjectedRewardFeatureNoise_hasSubgaussianMGF
 /-- The time-zero fixed-direction projected reward-feature noise is subgaussian under a uniform
 projection bound. -/
 lemma initialProjectedRewardFeatureNoise_hasSubgaussianMGF_of_abs_le
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -2000,7 +1984,6 @@ lemma initialProjectedRewardFeatureNoise_hasSubgaussianMGF_of_abs_le
 bound. At horizon zero the vector is zero; at every positive horizon it is the time-zero projected
 reward-feature noise. -/
 lemma dotProduct_initialCenteredResponseVector_hasSubgaussianMGF_of_abs_le
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -2087,7 +2070,6 @@ conditioning sigma-algebra is independent of the initial exponential increment. 
 reduces the conditional expectation to the ordinary expectation and applies the initial
 subgaussian MGF bound. -/
 lemma fullProjectedRewardFeatureNoiseExpIncrement_zero_ae_condExp_le_one
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (u : ℝ) :
@@ -2440,7 +2422,7 @@ lemma stronglyAdapted_fullProjectedRewardFeatureNoiseExpProcess_filtrationAction
 
 /-- The full fixed-direction projected centered response is a scalar subgaussian martingale sum. -/
 lemma fullProjectedRewardFeatureNoise_sum_hasSubgaussianMGF_of_abs_le
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -2486,7 +2468,6 @@ lemma fullProjectedRewardFeatureNoise_sum_hasSubgaussianMGF_of_abs_le
 /-- Predictable-multiplier form of the one-step bound for the full fixed-direction exponential
 increment at positive times. -/
 lemma fullProjectedRewardFeatureNoiseExpIncrement_ae_condExp_mul_le_of_abs_le
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     {t : ℕ} (ht : t ≠ 0) (v : Feature d)
@@ -2544,7 +2525,7 @@ lemma fullProjectedRewardFeatureNoiseExpIncrement_ae_condExp_mul_le_of_abs_le
 The realized-variance penalty is nonnegative, so this process is pointwise bounded by the ordinary
 exponential of the fixed-direction full centered reward-feature sum. -/
 lemma fullProjectedRewardFeatureNoiseExpProcess_integrable_of_abs_le
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -2587,7 +2568,7 @@ for every fixed direction `v` and scalar `u`,
 `E exp(u * ⟪v, S_n⟫ - u² / 2 * ∑_{t<n} σ² ⟪v, x_{A_t}⟫²) ≤ 1`, where
 `S_n` is the centered response vector. -/
 lemma integral_fullProjectedRewardFeatureNoiseExpProcess_le_one_of_abs_le
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -2722,7 +2703,7 @@ including the time-zero centered reward-feature contribution. The zero-time cond
 the deterministic initial action of `linUCBAlgorithm`; positive times reuse the standard
 history/action conditional-subgaussian increment bound. -/
 lemma supermartingale_fullProjectedRewardFeatureNoiseExpProcess_of_abs_le
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -2866,7 +2847,7 @@ lemma fullProjectedRewardFeatureNoiseExpProcess_eq_centeredResponseVector
 /-- Fixed-direction exponential-supermartingale bound stated directly for the centered response
 vector. This is the scalar form immediately before the textbook Gaussian-mixture argument. -/
 lemma integral_exp_dotProduct_centeredResponseVector_sub_fullRealizedVariance_le_one_of_abs_le
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -2884,7 +2865,7 @@ lemma integral_exp_dotProduct_centeredResponseVector_sub_fullRealizedVariance_le
 /-- Fixed-direction exponential-supermartingale bound with the realized variance written as the
 quadratic form of the non-ridge part of the design matrix. -/
 lemma integral_exp_dotProduct_centeredResponseVector_sub_designMatrix_sub_reg_le_one_of_abs_le
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -2907,7 +2888,7 @@ lemma integral_exp_dotProduct_centeredResponseVector_sub_designMatrix_sub_reg_le
 `σ² * (vᵀV_n v - reg * vᵀv)`. This is the algebraic form immediately before adding the Gaussian
 mixture's ridge term. -/
 lemma integral_exp_centeredResponse_sub_designMatrix_minus_reg_norm_le_one_of_abs_le
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -2929,7 +2910,7 @@ lemma integral_exp_centeredResponse_sub_designMatrix_minus_reg_norm_le_one_of_ab
 chosen automatically. This is the scalar theorem used immediately before the textbook
 Gaussian-mixture step. -/
 lemma integral_exp_centeredResponse_sub_designMatrix_minus_reg_norm_le_one
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (u : ℝ) :
@@ -2994,7 +2975,7 @@ lemma fullProjectedRewardFeatureNoiseExpProcess_one_eq_exp_centeredResponseDirec
 /-- Integrability of the named fixed-vector exponential integrand used by the textbook
 Gaussian-mixture proof. -/
 lemma integrable_exp_centeredResponseDirectionalExponent
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (lambda : Feature d) :
@@ -3020,7 +3001,7 @@ The remaining textbook Gaussian-mixture step has to integrate this fixed-`λ` su
 `λ`; this lemma supplies the pointwise-in-`λ` process without exposing the internal projected-noise
 process names. -/
 lemma supermartingale_exp_centeredResponseDirectionalExponent
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (lambda : Feature d) :
@@ -3055,7 +3036,7 @@ multiplier. This theorem packages the `u = 1` case around
 `centeredResponseDirectionalExponent`, which is the exact integrand exponent that the future
 Gaussian-mixture theorem must integrate over `λ`. -/
 lemma integral_exp_centeredResponseDirectionalExponent_le_one
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (lambda : Feature d) :
@@ -3072,7 +3053,7 @@ bound.
 This is the scalar probability step immediately after the exponential-supermartingale integral
 bound and immediately before the textbook Gaussian-mixture argument. -/
 lemma probReal_fullProjectedRewardFeatureNoiseExpProcess_ge_le_of_abs_le
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -3111,7 +3092,7 @@ lemma probReal_fullProjectedRewardFeatureNoiseExpProcess_ge_le_of_abs_le
 /-- Fixed-direction exponential-process tail bound at threshold `1 / δ`, with an explicit
 projection bound. -/
 lemma probReal_fullProjectedRewardFeatureNoiseExpProcess_ge_inv_delta_le_of_abs_le
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -3130,7 +3111,7 @@ lemma probReal_fullProjectedRewardFeatureNoiseExpProcess_ge_inv_delta_le_of_abs_
 /-- Fixed-direction exponential-process tail bound with the finite-action projection bound chosen
 automatically. -/
 lemma probReal_fullProjectedRewardFeatureNoiseExpProcess_ge_inv_delta_le
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (u : ℝ) {δ : ℝ} (hδ_pos : 0 < δ) :
@@ -3144,7 +3125,7 @@ lemma probReal_fullProjectedRewardFeatureNoiseExpProcess_ge_inv_delta_le
 /-- Fixed-direction exponential-process tail bound in the centered-response/design-matrix form
 used by the textbook Gaussian-mixture proof. -/
 lemma probReal_exp_centeredResponse_sub_designMatrix_minus_reg_norm_ge_inv_delta_le
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (u : ℝ) {δ : ℝ} (hδ_pos : 0 < δ) :
@@ -3166,7 +3147,7 @@ lemma probReal_exp_centeredResponse_sub_designMatrix_minus_reg_norm_ge_inv_delta
 
 /-- Fixed-direction subgaussianity of the full centered response vector. -/
 lemma dotProduct_centeredResponseVector_hasSubgaussianMGF_of_abs_le
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -3183,7 +3164,7 @@ lemma dotProduct_centeredResponseVector_hasSubgaussianMGF_of_abs_le
 
 /-- One-sided tail bound for a fixed direction of the full centered response vector. -/
 lemma probReal_dotProduct_centeredResponseVector_ge_le_of_abs_le
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -3245,7 +3226,7 @@ lemma projectedRewardFeatureNoise_sum_eq_dotProduct_positiveTimeCenteredResponse
 /-- Fixed-direction subgaussianity of the positive-time centered response vector. -/
 lemma dotProduct_positiveTimeCenteredResponseVector_hasSubgaussianMGF_of_abs_le
     {alg : Algorithm (Fin K) ℝ}
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -3262,7 +3243,7 @@ lemma dotProduct_positiveTimeCenteredResponseVector_hasSubgaussianMGF_of_abs_le
 /-- One-sided tail bound for a fixed direction of the positive-time centered response vector. -/
 lemma probReal_dotProduct_positiveTimeCenteredResponseVector_ge_le_of_abs_le
     {alg : Algorithm (Fin K) ℝ}
-    [StandardBorelSpace Ω] [Nonempty (Fin K)]
+    [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     (v : Feature d) (Q : ℝ) (hQ : 0 ≤ Q)
@@ -3286,7 +3267,6 @@ is the local scalar ingredient that the vector self-normalized argument must com
 directions. -/
 lemma rewardNoise_condDistrib_history_action_constMul_subgaussian
     {alg : Algorithm (Fin K) ℝ}
-    [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     {σ2 : ℝ≥0} (hν : RewardNoiseSubgaussian (K := K) ν σ2)
     {t : ℕ} (ht : t ≠ 0)
