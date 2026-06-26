@@ -68,13 +68,12 @@ lemma integrable_uncurry_actionMean_comp [Countable 𝓐] [MeasurableSingletonCl
 
 /-- A random variable that gives the action with the highest mean feedback. -/
 noncomputable
-def bestAction [Nonempty 𝓐] [Fintype 𝓐] [Encodable 𝓐] [MeasurableSingletonClass 𝓐]
-    (κ : Kernel (𝓔 × 𝓐) ℝ) (E : Ω → 𝓔) (ω : Ω) : 𝓐 :=
+def bestAction [Nonempty 𝓐] [Fintype 𝓐] (κ : Kernel (𝓔 × 𝓐) ℝ) (E : Ω → 𝓔) (ω : Ω) : 𝓐 :=
   argmax (fun a ↦ actionMean κ E a ω)
 
 @[fun_prop]
-lemma measurable_bestAction [Nonempty 𝓐] [Fintype 𝓐] [Encodable 𝓐] [MeasurableSingletonClass 𝓐]
-    {κ : Kernel (𝓔 × 𝓐) ℝ} {E : Ω → 𝓔} (hE : Measurable E) : Measurable (bestAction κ E) := by
+lemma measurable_bestAction [Nonempty 𝓐] [Fintype 𝓐] {κ : Kernel (𝓔 × 𝓐) ℝ} {E : Ω → 𝓔}
+    (hE : Measurable E) : Measurable (bestAction κ E) := by
   unfold bestAction
   fun_prop
 
@@ -95,9 +94,9 @@ lemma gap_le_of_mem_Icc [Nonempty 𝓐] {κ : Kernel (𝓔 × 𝓐) ℝ} {E : Ω
   Bandits.gap_le_of_mem_Icc (h (E ω))
 
 omit [MeasurableSpace Ω] in
-lemma gap_eq_sub [Nonempty 𝓐] [Fintype 𝓐] [Encodable 𝓐] [MeasurableSingletonClass 𝓐]
-    {κ : Kernel (𝓔 × 𝓐) ℝ} {E : Ω → 𝓔} {A : ℕ → Ω → 𝓐} {n : ℕ} {ω : Ω} :
-    gap κ E A n ω = actionMean κ E (bestAction κ E ω) ω - actionMean κ E (A n ω) ω := by
+lemma gap_eq_sub [Nonempty 𝓐] [Fintype 𝓐] {κ : Kernel (𝓔 × 𝓐) ℝ} {E : Ω → 𝓔} {A : ℕ → Ω → 𝓐}
+    {n : ℕ} {ω : Ω} : gap κ E A n ω =
+      actionMean κ E (bestAction κ E ω) ω - actionMean κ E (A n ω) ω := by
   rw [gap, Bandits.gap]
   congr
   apply le_antisymm
