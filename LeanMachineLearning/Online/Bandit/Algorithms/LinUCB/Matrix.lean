@@ -2402,7 +2402,7 @@ lemma index_zero_eq_initial_quadratic_form (A : ℕ → Ω → Fin K) (R : ℕ �
   simp [index_zero, width_zero]
 
 /-- The finite-action LinUCB process starts from the deterministic default arm. -/
-lemma arm_zero [Nonempty (Fin K)]
+lemma arm_zero
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P) :
     A 0 =ᵐ[P] fun _ ↦ ⟨0, hK⟩ := by
   exact h.action_zero_detAlgorithm
