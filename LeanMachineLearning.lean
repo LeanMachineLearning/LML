@@ -21,6 +21,7 @@ public import LeanMachineLearning.ForMathlib.Probability.WithDensity
 public import LeanMachineLearning.Online.Bandit.Algorithms.ETC
 public import LeanMachineLearning.Online.Bandit.Algorithms.LinUCB
 public import LeanMachineLearning.Online.Bandit.Algorithms.LinUCB.Basic
+public import LeanMachineLearning.Online.Bandit.Algorithms.LinUCB.ConcentrationCore
 public import LeanMachineLearning.Online.Bandit.Algorithms.LinUCB.ConfidenceEvents
 public import LeanMachineLearning.Online.Bandit.Algorithms.LinUCB.Matrix
 public import LeanMachineLearning.Online.Bandit.Algorithms.Regret.BayesRegretTS
