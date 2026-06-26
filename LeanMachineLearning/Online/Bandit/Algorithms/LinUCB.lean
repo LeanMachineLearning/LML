@@ -5,7 +5,6 @@ Authors: OpenAI, Fawad Haider
 -/
 module
 
-public import LeanMachineLearning.Online.Bandit.Algorithms.LinUCB.Regret
 
 /-!
 # LinUCB for finite-action linear bandits
