@@ -7,12 +7,14 @@ module
 
 public import LeanMachineLearning.Online.OnlineRegret
 public import LeanMachineLearning.SequentialLearning.Deterministic
+public import LeanMachineLearning.SequentialLearning.StationaryEnv
 
 import LeanMachineLearning.ForMathlib.Analysis.Calculus.Deriv.Slope
 import LeanMachineLearning.ForMathlib.MeasureTheory.Function.L2Space
+import LeanMachineLearning.Online.OnlineToBatch
 
 /-!
-# Online gradient descent
+# Online and stochastic gradient descent
 
 -/
 
@@ -25,9 +27,62 @@ namespace Learning
 
 variable {Ω E : Type*} {mΩ : MeasurableSpace Ω} {mE : MeasurableSpace E}
   [NormedAddCommGroup E] [InnerProductSpace ℝ E]
-  [SecondCountableTopology E] [CompleteSpace E] [BorelSpace E]
   {P : Measure Ω} [IsProbabilityMeasure P]
   {x x₀ : E} {X G : ℕ → Ω → E} {γ : ℕ → ℝ} {η : ℝ}
+
+section Linear
+
+lemma inner_eq_add (x y g : E) (hη : 0 < η) :
+    ⟪x - y, g⟫ = (2 * η)⁻¹ * (‖x - y‖ ^ 2 - ‖(x - η • g) - y‖ ^ 2) + (η / 2) * ‖g‖ ^ 2 := by
+  have hsub : (x - η • g) - y = (x - y) - η • g := by abel
+  rw [hsub, norm_sub_sq_real (x - y) (η • g)]
+  simp only [inner_smul_right, norm_smul, Real.norm_eq_abs, abs_of_pos hη]
+  field
+
+lemma sum_inner_le_sum' (x y g : ℕ → E) (hγ : ∀ n, 0 < γ n) (n : ℕ) :
+    ∑ i ∈ Finset.range n, ⟪x i - y i, g i⟫ ≤
+      ∑ i ∈ Finset.range n,
+        ((2 * γ i)⁻¹ * (‖x i - y i‖ ^ 2 - ‖(x i - γ i • g i) - y i‖ ^ 2) +
+          (γ i / 2) * ‖g i‖ ^ 2) := by
+  gcongr with i hi
+  rw [inner_eq_add (x i) (y i) (g i) (hγ i)]
+
+lemma sum_inner_le_sum (x g : ℕ → E) (y : E) (hγ : ∀ n, 0 < γ n)
+    (hx : ∀ n, x (n + 1) = x n - γ n • g n) (n : ℕ) :
+    ∑ i ∈ Finset.range n, ⟪x i - y, g i⟫ ≤
+      ∑ i ∈ Finset.range n,
+        ((2 * γ i)⁻¹ * (‖x i - y‖ ^ 2 - ‖x (i + 1) - y‖ ^ 2) + (γ i / 2) * ‖g i‖ ^ 2) :=
+  (sum_inner_le_sum' x (fun _ ↦ y) g hγ n).trans_eq <| by simp [hx]
+
+section ConstantStep
+
+lemma sum_inner_le_add (x g : ℕ → E) (y : E)
+    (hη : 0 < η) (hx : ∀ n, x (n + 1) = x n - η • g n) (n : ℕ) :
+    ∑ i ∈ Finset.range n, ⟪x i - y, g i⟫ ≤
+      (2 * η)⁻¹ * (‖x 0 - y‖ ^ 2 - ‖x n - y‖ ^ 2) + (η / 2) * ∑ i ∈ Finset.range n, ‖g i‖ ^ 2 := by
+  refine (sum_inner_le_sum x g y (fun _ ↦ hη) hx n).trans_eq ?_
+  rw [sum_add_distrib, ← mul_sum, ← mul_sum, Finset.sum_range_sub' (fun i ↦ ‖x i - y‖ ^ 2) n]
+
+/-- Lemma 14.1 in Understanding Machine Learning: From Theory to Algorithms. -/
+lemma gradient_descent_linear_regret (x g : ℕ → E) (y : E) (η : ℝ)
+    (hη : 0 < η) (hx : ∀ n, x (n + 1) = x n - η • g n) (n : ℕ) :
+    ∑ i ∈ Finset.range n, ⟪x i - y, g i⟫ ≤
+      (2 * η)⁻¹ * ‖x 0 - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, ‖g i‖ ^ 2 := by
+  grw [sum_inner_le_add x g y hη hx n]
+  gcongr
+  exact sub_le_self _ (sq_nonneg _)
+
+end ConstantStep
+
+lemma onlineRegret_gradientStep_le (x g : ℕ → E) (y : E) (η : ℝ)
+    (hη : 0 < η) (hx : ∀ n, x (n + 1) = x n - η • g n) (n : ℕ) :
+    onlineRegret (fun n x ↦ ⟪x, g n⟫) y x n ≤
+      (2 * η)⁻¹ * ‖x 0 - y‖ ^ 2 + (η / 2) * ∑ i ∈ range n, ‖g i‖ ^ 2 := by
+  simpa [onlineRegret, inner_sub_left] using gradient_descent_linear_regret x g y η hη hx n
+
+end Linear
+
+variable [SecondCountableTopology E] [CompleteSpace E] [BorelSpace E]
   {f : ℕ → E → ℝ} {hf : ∀ n, Measurable (∇ (f n))}
 
 section Definition
@@ -55,11 +110,11 @@ lemma action_gradientStep_ae_all_eq (h_seq : IsAlgEnvSeq X G (gradientStep γ x�
   h_seq.action_detAlgorithm_ae_all_eq
 
 lemma action_ae_eq_sub_sum (h_seq : IsAlgEnvSeq X G (gradientStep γ x₀) env P) (n : ℕ) :
-    X n =ᵐ[P] fun ω ↦ x₀ - ∑ i ∈ Finset.range n, γ i • G i ω := by
+    X n =ᵐ[P] fun ω ↦ x₀ - ∑ i ∈ range n, γ i • G i ω := by
   filter_upwards [h_seq.action_detAlgorithm_ae_all_eq] with ω ⟨hω0, hω⟩
   induction n with
   | zero => simpa
-  | succ n ih => rw [hω n, Finset.sum_range_succ, ← sub_sub]; congr
+  | succ n ih => rw [hω n, sum_range_succ, ← sub_sub]; congr
 
 end Definition
 
@@ -85,24 +140,24 @@ section Linear
 lemma integral_sum_inner_le (hη : 0 < η) (h_memLp : ∀ n, MemLp (G n) 2 P)
     (h : IsAlgEnvSeq X G (gradientStep (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (y : E) (n : ℕ) :
-    P[fun ω ↦ ∑ i ∈ Finset.range n, ⟪X i ω - y, G i ω⟫] ≤
-      (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
-  calc P[fun ω ↦ ∑ i ∈ Finset.range n, ⟪X i ω - y, G i ω⟫]
-  _ ≤ ∫ ω, (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, ‖G i ω‖ ^ 2 ∂P := by
+    P[fun ω ↦ ∑ i ∈ range n, ⟪X i ω - y, G i ω⟫] ≤
+      (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
+  calc P[fun ω ↦ ∑ i ∈ range n, ⟪X i ω - y, G i ω⟫]
+  _ ≤ ∫ ω, (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ range n, ‖G i ω‖ ^ 2 ∂P := by
     refine integral_mono_ae ?_ ?_ ?_
     · refine integrable_finsetSum _ fun i hi ↦ MemLp.integrable_inner ?_ (h_memLp i)
       exact (memLp_X h h_memLp i).sub (memLp_const _)
     · refine Integrable.add (integrable_const _) (Integrable.const_mul ?_ _)
       exact integrable_finsetSum _ fun i hi ↦ (h_memLp i).integrable_norm_pow (by simp)
     · filter_upwards [action_gradientStep_ae_all_eq h] with ω hω
-      refine (lem14dot1 _ _ y η hη hω.2 n).trans_eq ?_
+      refine (gradient_descent_linear_regret _ _ y η hη hω.2 n).trans_eq ?_
       congr
       exact hω.1
-  _ = (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
+  _ = (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
     rw [integral_add, integral_const_mul, integral_const_mul, integral_finsetSum]
     · simp
     · exact fun i hi ↦ (h_memLp i).integrable_norm_pow (by simp)
-    · exact integrable_const _
+    · fun_prop
     · refine Integrable.const_mul ?_ _
       exact integrable_finsetSum _ fun i hi ↦ (h_memLp i).integrable_norm_pow (by simp)
 
@@ -113,12 +168,12 @@ lemma integral_sum_sub_le (hf : ∀ n, ConvexOn ℝ .univ (f n)) (hdf : ∀ n, D
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ (f n) x) (h_memLp : ∀ n, MemLp (G n) 2 P)
     (h : IsAlgEnvSeq X G (gradientStep (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (h_int : ∀ n, Integrable (fun ω ↦ f n (X n ω)) P) (y : E) (n : ℕ) :
-    P[fun ω ↦ ∑ i ∈ Finset.range n, (f i (X i ω) - f i y)] ≤
-      (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
-  calc P[fun ω ↦ ∑ i ∈ Finset.range n, (f i (X i ω) - f i y)]
-  _ ≤ P[fun ω ↦ ∑ i ∈ Finset.range n, ⟪X i ω - y, G i ω⟫] :=
+    P[fun ω ↦ ∑ i ∈ range n, (f i (X i ω) - f i y)] ≤
+      (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
+  calc P[fun ω ↦ ∑ i ∈ range n, (f i (X i ω) - f i y)]
+  _ ≤ P[fun ω ↦ ∑ i ∈ range n, ⟪X i ω - y, G i ω⟫] :=
     integral_sum_sub_le_integral_sum_inner hf hdf h_unbiased h_memLp h (memLp_X h h_memLp) h_int y n
-  _ ≤ (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, P[fun ω ↦ ‖G i ω‖ ^ 2] :=
+  _ ≤ (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ range n, P[fun ω ↦ ‖G i ω‖ ^ 2] :=
     integral_sum_inner_le hη h_memLp h y n
 
 lemma integral_onlineRegret_le
@@ -129,7 +184,7 @@ lemma integral_onlineRegret_le
     (h_int : ∀ n, Integrable (fun ω ↦ f n (X n ω)) P)
     (y : E) (n : ℕ) :
     P[fun ω ↦ onlineRegret f y (X · ω) n] ≤
-      (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, P[fun ω ↦ ‖G i ω‖ ^ 2] :=
+      (2 * η)⁻¹ * ‖x₀ - y‖ ^ 2 + (η / 2) * ∑ i ∈ range n, P[fun ω ↦ ‖G i ω‖ ^ 2] :=
   integral_sum_sub_le hf hdf hη h_unbiased h_memLp h h_int y n
 
 lemma integral_apply_avg_le {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (hdf : Differentiable ℝ f)
@@ -139,42 +194,42 @@ lemma integral_apply_avg_le {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (hdf : D
     (h : IsAlgEnvSeq X G (gradientStep (fun _ ↦ η) x₀) (obliviousEnv gradKernel) P)
     (h_int : ∀ n, Integrable (fun ω ↦ f (X n ω)) P)
     (y : E) (n : ℕ) (hn : n ≠ 0)
-    (h_int_avg : Integrable (fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ Finset.range n, X i ω)) P) :
-    P[fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ Finset.range n, X i ω) - f y] ≤
+    (h_int_avg : Integrable (fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ range n, X i ω)) P) :
+    P[fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ range n, X i ω) - f y] ≤
       (2 * η * n)⁻¹ * ‖x₀ - y‖ ^ 2 +
-      (η / (2 * n)) * ∑ i ∈ Finset.range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
-  calc P[fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ Finset.range n, X i ω) - f y]
-  _ ≤ (n : ℝ)⁻¹ * P[fun ω ↦ ∑ i ∈ Finset.range n, (f (X i ω) - f y)] := by
+      (η / (2 * n)) * ∑ i ∈ range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
+  calc P[fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ range n, X i ω) - f y]
+  _ ≤ (n : ℝ)⁻¹ * P[fun ω ↦ ∑ i ∈ range n, (f (X i ω) - f y)] := by
     rw [← integral_const_mul]
     gcongr
     · exact h_int_avg.sub (integrable_const _)
     · refine Integrable.const_mul (integrable_finsetSum _ fun i hi ↦ ?_) _
       exact (h_int i).sub (integrable_const _)
-    exact fun ω ↦ hf.todo'3 _ y n hn
+    exact fun ω ↦ hf.apply_avg_sub_le_avg_sub _ y n hn
   _ ≤ (2 * η * n)⁻¹ * ‖x₀ - y‖ ^ 2 +
-      (η / (2 * n)) * ∑ i ∈ Finset.range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
+      (η / (2 * n)) * ∑ i ∈ range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
     grw [integral_sum_sub_le (fun _ ↦ hf) (fun _ ↦ hdf) hη h_unbiased h_memLp h h_int y n]
     refine le_of_eq ?_
     field
 
-theorem integral_apply_avg_const_div_sqrt {f : E → ℝ}
+theorem integral_apply_avg_le_const_div_sqrt {f : E → ℝ}
     (hf : ConvexOn ℝ .univ f) (hdf : Differentiable ℝ f)
     (h_unbiased : ∀ n x, (gradKernel n x)[id] = ∇ f x)
     {D L : ℝ} (hD_pos : 0 < D) (hL_pos : 0 < L)
     {y : E} (hxy_le : ‖x₀ - y‖ ≤ D) (hG_le : ∀ n ω, ‖G n ω‖ ≤ L)
     (h_int : ∀ n, Integrable (fun ω ↦ f (X n ω)) P)
     {n : ℕ} (hn : n ≠ 0)
-    (h_int_avg : Integrable (fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ Finset.range n, X i ω)) P)
+    (h_int_avg : Integrable (fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ range n, X i ω)) P)
     (h : IsAlgEnvSeq X G (gradientStep (fun _ ↦ D / (L * √n)) x₀) (obliviousEnv gradKernel) P) :
-    P[fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ Finset.range n, X i ω) - f y] ≤ D * L / √n := by
+    P[fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ range n, X i ω) - f y] ≤ D * L / √n := by
   let η := D / (L * √n)
   have hG_lp n : MemLp (G n) 2 P := by
     refine MemLp.mono (g := fun _ ↦ L) (memLp_const _)
       (have := h.measurable_feedback; by fun_prop) (ae_of_all _ fun ω ↦ ?_)
     simpa [abs_of_nonneg hL_pos.le] using hG_le n ω
-  calc P[fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ Finset.range n, X i ω) - f y]
+  calc P[fun ω ↦ f ((n : ℝ)⁻¹ • ∑ i ∈ range n, X i ω) - f y]
   _ ≤ (2 * η * n)⁻¹ * ‖x₀ - y‖ ^ 2 +
-      (η / (2 * n)) * ∑ i ∈ Finset.range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
+      (η / (2 * n)) * ∑ i ∈ range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
     refine integral_apply_avg_le hf hdf ?_ h_unbiased hG_lp h h_int y n hn h_int_avg
     positivity
   _ ≤ (2 * η * n)⁻¹ * D ^ 2 + (η / 2) * L ^ 2 := by

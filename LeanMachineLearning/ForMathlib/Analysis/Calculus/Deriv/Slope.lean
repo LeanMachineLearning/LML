@@ -76,7 +76,7 @@ lemma sub_le_inner_gradient [InnerProductSpace ℝ E] [CompleteSpace E] (hf : Co
   rw [add_comm]
   exact hf.le_add_inner_gradient hfx y
 
-lemma todo'3 [NormedSpace ℝ E] (hf : ConvexOn ℝ .univ f)
+lemma apply_avg_sub_le_avg_sub [NormedSpace ℝ E] (hf : ConvexOn ℝ .univ f)
     (x : ℕ → E) (y : E) (n : ℕ) (hn : n ≠ 0) :
     f ((n : ℝ)⁻¹ • ∑ i ∈ range n, x i) - f y ≤ (n : ℝ)⁻¹ • ∑ i ∈ range n, (f (x i) - f y) := by
   calc f ((n : ℝ)⁻¹ • ∑ i ∈ range n, x i) - f y
@@ -89,11 +89,11 @@ lemma todo'3 [NormedSpace ℝ E] (hf : ConvexOn ℝ .univ f)
     simp
     field
 
-lemma todo'2 [InnerProductSpace ℝ E] [CompleteSpace E]
+lemma apply_avg_sub_le_avg_inner [InnerProductSpace ℝ E] [CompleteSpace E]
     (hf : ConvexOn ℝ .univ f) (hdf : Differentiable ℝ f) (x : ℕ → E) (y : E) (n : ℕ) (hn : n ≠ 0) :
     f ((n : ℝ)⁻¹ • ∑ i ∈ range n, x i) - f y ≤ (n : ℝ)⁻¹ * ∑ i ∈ range n, ⟪x i - y, ∇ f (x i)⟫ := by
   calc f ((n : ℝ)⁻¹ • ∑ i ∈ range n, x i) - f y
-  _ ≤ (n : ℝ)⁻¹ * ∑ i ∈ range n, (f (x i) - f y) := todo'3 hf x y n hn
+  _ ≤ (n : ℝ)⁻¹ * ∑ i ∈ range n, (f (x i) - f y) := apply_avg_sub_le_avg_sub hf x y n hn
   _ ≤ (n : ℝ)⁻¹ * ∑ i ∈ range n, ⟪x i - y, ∇ f (x i)⟫ := by
     gcongr
     exact hf.sub_le_inner_gradient hdf.differentiableAt y
