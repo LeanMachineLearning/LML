@@ -83,9 +83,8 @@ lemma hasCondDistrib_feedback_history_action [IsObliviousEnv env]
       ((feedbackCondAction env (n + 1)).prodMkLeft _) P := by
   have hA := h.measurable_action
   have hR' := h.measurable_feedback
-  refine ⟨by fun_prop, by fun_prop, ?_⟩
-  have h_eq := (h.hasCondDistrib_feedback n).condDistrib_eq
-  rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)] at h_eq ⊢
+  refine ⟨by fun_prop, ?_⟩
+  have h_eq := (h.hasCondDistrib_feedback n).map_eq
   simpa only [feedback_eq_feedbackCondAction] using h_eq
 
 lemma hasCondDistrib_feedback [IsObliviousEnv env] (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
