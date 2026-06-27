@@ -400,14 +400,14 @@ lemma indepFun_snd_prod (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) (h_ind
   rfl
 
 -- cf. measurableSet_graph (Mathlib/MeasureTheory/Measure/Lebesgue/Basic.lean)
-lemma measurableSet_graph' {β Ω : Type*} [MeasurableSpace β] [MeasurableSpace Ω]
-    [StandardBorelSpace Ω] {f : β → Ω} (hf : Measurable f) :
-    MeasurableSet {p : β × Ω | p.2 = f p.1} := by
-  letI := upgradeStandardBorel Ω
-  exact (measurable_snd.prodMk (by fun_prop)) isClosed_diagonal.measurableSet
+lemma measurableSet_graph' {β Ω : Type*} {_ : MeasurableSpace β} {_ : MeasurableSpace Ω}
+    [MeasurableEq Ω] {f : β → Ω} (hf : Measurable f) :
+    MeasurableSet {p : β × Ω | p.2 = f p.1} :=
+  measurableSet_eq_fun (by fun_prop) (by fun_prop)
 
-omit [Nonempty Ω] [IsFiniteMeasure μ] in
-lemma ae_eq_of_map_prodMk_eq {f : β → Ω} (hf : Measurable f) (hX : AEMeasurable X μ)
+omit [IsFiniteMeasure μ] in
+lemma ae_eq_of_map_prodMk_eq {β Ω : Type*} {_ : MeasurableSpace β} {_ : MeasurableSpace Ω}
+    [MeasurableEq Ω] {X : α → β} {Y : α → Ω} {f : β → Ω} (hf : Measurable f) (hX : AEMeasurable X μ)
     (hY : AEMeasurable Y μ) (h : μ.map (fun ω ↦ (X ω, Y ω)) = μ.map (fun ω ↦ (X ω, f (X ω)))) :
     Y =ᵐ[μ] f ∘ X := by
   have hp : ∀ᵐ p ∂μ.map (fun ω ↦ (X ω, f (X ω))), p.2 = f p.1 :=

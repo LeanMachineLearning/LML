@@ -89,24 +89,20 @@ variable [IsProbabilityMeasure Q]
 lemma hasCondDistrib_env_history (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
     (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ Y₀ P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) :
     HasCondDistrib E (history A Y n) (condDistrib E₀ (history A₀ Y₀ n) P₀) P where
-  aemeasurable_fst := h.measurable_param.aemeasurable
-  aemeasurable_snd :=
-    (measurable_history h.measurable_action h.measurable_feedback n).aemeasurable
-  condDistrib_eq := by
+  aemeasurable := ((measurable_history h.measurable_action
+    h.measurable_feedback n).prodMk h.measurable_param).aemeasurable
+  map_eq := by
     have hA := h.measurable_action
     have hY := h.measurable_feedback
     have hA₀ := h₀.measurable_action
     have hY₀ := h₀.measurable_feedback
-    have hE := h.measurable_param
     have hE₀ := h₀.measurable_param
-    rw [condDistrib_ae_eq_iff_measure_eq_compProd _ h.measurable_param.aemeasurable,
-      ← map_swap_compProd_map_condDistrib (by fun_prop), h.hasLaw_env.map_eq,
+    rw [← map_swap_compProd_map_condDistrib (by fun_prop), h.hasLaw_env.map_eq,
       Measure.compProd_eq_compProd_withDensity_comp_snd (by fun_prop)
         (h.condDistrib_history_eq_condDistrib_hist_withDensity h₀ hc n),
       map_swap_withDensity_comp_snd (by fun_prop),
       ← h₀.hasLaw_env.map_eq, map_swap_compProd_map_condDistrib (by fun_prop),
-      ← compProd_map_condDistrib (by fun_prop),
-      ← Measure.compProd_withDensity_left (by fun_prop),
+      ← compProd_map_condDistrib (by fun_prop), ← Measure.compProd_withDensity_left (by fun_prop),
       ← (hasLaw_history_withDensity h h₀ hc n).map_eq]
 
 end IsBayesAlgEnvSeq

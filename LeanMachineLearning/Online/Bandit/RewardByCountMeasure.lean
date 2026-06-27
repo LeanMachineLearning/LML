@@ -18,14 +18,13 @@ open scoped ENNReal NNReal
 namespace Bandits
 
 variable {𝓐 Ω : Type*} {m𝓐 : MeasurableSpace 𝓐} {mΩ : MeasurableSpace Ω} [DecidableEq 𝓐]
-  [StandardBorelSpace 𝓐] [Nonempty 𝓐]
   {A : ℕ → Ω → 𝓐} {R : ℕ → Ω → ℝ} {P : Measure Ω} [IsProbabilityMeasure P]
   {alg : Algorithm 𝓐 ℝ} {ν : Kernel 𝓐 ℝ} [IsMarkovKernel ν]
   {h_inter : IsAlgEnvSeq A R alg (stationaryEnv ν) P}
 
 local notation "𝔓" => P.prod (streamMeasure ν)
 
-omit [DecidableEq 𝓐] [StandardBorelSpace 𝓐] [Nonempty 𝓐] in
+omit [DecidableEq 𝓐] in
 lemma hasLaw_Z (a : 𝓐) (m : ℕ) :
   HasLaw (fun ω ↦ ω.2 m a) (ν a) 𝔓 where
   map_eq := by
@@ -64,6 +63,8 @@ lemma condDistrib_reward'' [Countable 𝓐]
   filter_upwards [h_ra', h_prod] with ω h_eq h_prod
   rw [h_prod, h_eq]
 
+variable [StandardBorelSpace 𝓐]
+
 omit [DecidableEq 𝓐] in
 lemma reward_cond_action [Countable 𝓐]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : 𝓐) (n : ℕ)
@@ -80,6 +81,8 @@ lemma reward_cond_action [Countable 𝓐]
   specialize h_eq a hμa
   rw [h_ra] at h_eq
   exact h_eq.symm
+
+variable [Nonempty 𝓐]
 
 lemma condIndepFun_reward_stepsUntil_action' [StandardBorelSpace Ω]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (a : 𝓐) (m n : ℕ) :

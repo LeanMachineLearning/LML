@@ -16,7 +16,7 @@ public import Mathlib.Probability.Process.FiniteDimensionalLaws
 
 open Filter Finset Function MeasurableEquiv MeasurableSpace MeasureTheory Preorder ProbabilityTheory
 
-variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsFiniteMeasure P]
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω}
   {X : ℕ → Type*} [∀ n, MeasurableSpace (X n)]
   {κ : (n : ℕ) → Kernel (Π i : Iic n, X i) (X (n + 1))} [∀ n, IsMarkovKernel (κ n)]
   {μ₀ : Measure (X 0)} [IsProbabilityMeasure μ₀]
@@ -67,7 +67,7 @@ lemma MeasurableEquiv.coe_refl {α : Type*} {mα : MeasurableSpace α} :
     (MeasurableEquiv.refl α : α → α) = id := rfl
 
 set_option backward.isDefEq.respectTransparency false in
-lemma hasLaw_Iic_of_forall_hasCondDistrib' [∀ n, StandardBorelSpace (X n)] [∀ n, Nonempty (X n)]
+lemma hasLaw_Iic_of_forall_hasCondDistrib'
     {Y : (n : ℕ) → Ω → X n} (h0 : HasLaw (Y 0) μ₀ P) {N n : ℕ}
     (h_condDistrib : ∀ n < N, HasCondDistrib (Y (n + 1)) (fun ω ↦ fun i : Iic n ↦ Y i ω) (κ n) P)
     (hn : n ≤ N) :
@@ -121,8 +121,7 @@ lemma hasLaw_Iic_of_forall_hasCondDistrib' [∀ n, StandardBorelSpace (X n)] [�
     congr
     simp [MeasurableEquiv.coe_refl]
 
-lemma hasLaw_Iic_of_forall_hasCondDistrib [∀ n, StandardBorelSpace (X n)] [∀ n, Nonempty (X n)]
-    {Y : (n : ℕ) → Ω → X n} (h0 : HasLaw (Y 0) μ₀ P)
+lemma hasLaw_Iic_of_forall_hasCondDistrib {Y : (n : ℕ) → Ω → X n} (h0 : HasLaw (Y 0) μ₀ P)
     (h_condDistrib : ∀ n, HasCondDistrib (Y (n + 1)) (fun ω ↦ fun i : Iic n ↦ Y i ω) (κ n) P)
     (n : ℕ) :
     HasLaw (fun ω (i : Iic n) ↦ Y i ω)
@@ -136,27 +135,26 @@ lemma trajMeasure_map_frestrictLe (n : ℕ) :
   rw [trajMeasure, ← Measure.deterministic_comp_eq_map (by fun_prop), Measure.comp_assoc,
     Kernel.deterministic_comp_eq_map, traj_map_frestrictLe]
 
-lemma eq_trajMeasure_map_frestrictLe [∀ n, StandardBorelSpace (X n)] [∀ n, Nonempty (X n)]
-    {Y : (n : ℕ) → Ω → X n}
-    (h0 : HasLaw (Y 0) μ₀ P) {N : ℕ}
+lemma eq_trajMeasure_map_frestrictLe {Y : (n : ℕ) → Ω → X n} (h0 : HasLaw (Y 0) μ₀ P) {N : ℕ}
     (h_condDistrib : ∀ n < N, HasCondDistrib (Y (n + 1)) (fun ω ↦ fun i : Iic n ↦ Y i ω) (κ n) P) :
     P.map (fun ω (n : Iic N) ↦ Y n ω) = (trajMeasure μ₀ κ).map (frestrictLe N) := by
   rw [(hasLaw_Iic_of_forall_hasCondDistrib' h0 h_condDistrib le_rfl).map_eq,
     trajMeasure_map_frestrictLe]
 
--- todo: switch to `HasLaw`
 /-- Uniqueness of `trajMeasure`. -/
-lemma eq_trajMeasure [∀ n, StandardBorelSpace (X n)] [∀ n, Nonempty (X n)]
+lemma hasLaw_trajMeasure [IsFiniteMeasure P]
     {Y : (n : ℕ) → Ω → X n} (hY_meas : ∀ n, Measurable (Y n))
     (h0 : HasLaw (Y 0) μ₀ P)
     (h_condDistrib : ∀ n, HasCondDistrib (Y (n + 1)) (fun ω ↦ fun i : Iic n ↦ Y i ω) (κ n) P) :
-    P.map (fun ω n ↦ Y n ω) = trajMeasure μ₀ κ := by
-  refine IsProjectiveLimit.unique (P := fun (J : Finset ℕ) ↦ P.map (fun ω (i : J) ↦ Y i ω)) ?_ ?_
-  · exact isProjectiveLimit_map (by fun_prop)
-  rw [isProjectiveLimit_nat_iff]
-  swap; · exact isProjectiveMeasureFamily_map_restrict (by fun_prop)
-  intro n
-  rw [(hasLaw_Iic_of_forall_hasCondDistrib h0 h_condDistrib n).map_eq,
-    trajMeasure_map_frestrictLe]
+    HasLaw (fun ω n ↦ Y n ω) (trajMeasure μ₀ κ) P where
+  aemeasurable := by fun_prop
+  map_eq := by
+    refine IsProjectiveLimit.unique (P := fun (J : Finset ℕ) ↦ P.map (fun ω (i : J) ↦ Y i ω)) ?_ ?_
+    · exact isProjectiveLimit_map (by fun_prop)
+    rw [isProjectiveLimit_nat_iff]
+    swap; · exact isProjectiveMeasureFamily_map_restrict (by fun_prop)
+    intro n
+    rw [(hasLaw_Iic_of_forall_hasCondDistrib h0 h_condDistrib n).map_eq,
+      trajMeasure_map_frestrictLe]
 
 end ProbabilityTheory.Kernel

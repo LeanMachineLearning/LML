@@ -5,7 +5,7 @@ Authors: Paulo Rauber, Rémy Degenne
 -/
 module
 
-public import LeanMachineLearning.ForMathlib.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Order.MeasurableArg
 public import LeanMachineLearning.Online.Bandit.Regret
 
 /-!
@@ -68,14 +68,14 @@ lemma integrable_uncurry_actionMean_comp [Countable 𝓐] [MeasurableSingletonCl
 
 /-- A random variable that gives the action with the highest mean feedback. -/
 noncomputable
-def bestAction [Nonempty 𝓐] [Fintype 𝓐] [Encodable 𝓐] [MeasurableSingletonClass 𝓐]
-    (κ : Kernel (𝓔 × 𝓐) ℝ) (E : Ω → 𝓔) (ω : Ω) : 𝓐 :=
-  measurableArgmax (fun ω' a ↦ actionMean κ E a ω') ω
+def bestAction [Nonempty 𝓐] [Fintype 𝓐] (κ : Kernel (𝓔 × 𝓐) ℝ) (E : Ω → 𝓔) (ω : Ω) : 𝓐 :=
+  argmax (fun a ↦ actionMean κ E a ω)
 
 @[fun_prop]
-lemma measurable_bestAction [Nonempty 𝓐] [Fintype 𝓐] [Encodable 𝓐] [MeasurableSingletonClass 𝓐]
-    {κ : Kernel (𝓔 × 𝓐) ℝ} {E : Ω → 𝓔} (hE : Measurable E) : Measurable (bestAction κ E) :=
-  measurable_measurableArgmax (by fun_prop)
+lemma measurable_bestAction [Nonempty 𝓐] [Fintype 𝓐] {κ : Kernel (𝓔 × 𝓐) ℝ} {E : Ω → 𝓔}
+    (hE : Measurable E) : Measurable (bestAction κ E) := by
+  unfold bestAction
+  fun_prop
 
 /-- A random variable that gives the gap at time `n`. -/
 noncomputable
@@ -94,13 +94,13 @@ lemma gap_le_of_mem_Icc [Nonempty 𝓐] {κ : Kernel (𝓔 × 𝓐) ℝ} {E : Ω
   Bandits.gap_le_of_mem_Icc (h (E ω))
 
 omit [MeasurableSpace Ω] in
-lemma gap_eq_sub [Nonempty 𝓐] [Fintype 𝓐] [Encodable 𝓐] [MeasurableSingletonClass 𝓐]
-    {κ : Kernel (𝓔 × 𝓐) ℝ} {E : Ω → 𝓔} {A : ℕ → Ω → 𝓐} {n : ℕ} {ω : Ω} :
-    gap κ E A n ω = actionMean κ E (bestAction κ E ω) ω - actionMean κ E (A n ω) ω := by
+lemma gap_eq_sub [Nonempty 𝓐] [Fintype 𝓐] {κ : Kernel (𝓔 × 𝓐) ℝ} {E : Ω → 𝓔} {A : ℕ → Ω → 𝓐}
+    {n : ℕ} {ω : Ω} : gap κ E A n ω =
+      actionMean κ E (bestAction κ E ω) ω - actionMean κ E (A n ω) ω := by
   rw [gap, Bandits.gap]
   congr
   apply le_antisymm
-  · exact ciSup_le (isMaxOn_measurableArgmax (fun ω' a ↦ actionMean κ E a ω') ω)
+  · exact ciSup_le <| isMaxOn_argmax (fun a ↦ actionMean κ E a ω)
   · exact Finite.le_ciSup (fun a ↦ actionMean κ E a ω) _
 
 @[fun_prop]

@@ -77,8 +77,7 @@ lemma feedbackFun_onlineEvalEnv [MeasurableSpace.SeparatesPoints 𝓨] (n : ℕ)
 
 section OnlineEvalEnv
 
-variable [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
-  {Ω : Type*} {mΩ : MeasurableSpace Ω} {alg : Algorithm 𝓐 𝓨}
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {alg : Algorithm 𝓐 𝓨}
   {g : ℕ → 𝓐 → 𝓨} {hg : ∀ n, Measurable (g n)}
   {P : Measure Ω} [IsProbabilityMeasure P] {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 
@@ -87,14 +86,14 @@ lemma hascondDistrib_feedback_onlineEvalEnv
     HasCondDistrib (Y n) (A n) (Kernel.deterministic (g n) (hg n)) P := by
   simpa using IsObliviousEnv.hasCondDistrib_feedback h n
 
-lemma feedback_onlineEvalEnv_ae_eq_eval_action
+lemma feedback_onlineEvalEnv_ae_eq_eval_action [StandardBorelSpace 𝓨] [Nonempty 𝓨]
     (h : IsAlgEnvSeq A Y alg (onlineEvalEnv g hg) P) (n : ℕ) :
     Y n =ᵐ[P] g n ∘ A n :=
   ae_eq_of_condDistrib_eq_deterministic (hg n) (h.measurable_action n).aemeasurable
     (h.measurable_feedback n).aemeasurable
     (hascondDistrib_feedback_onlineEvalEnv h n).condDistrib_eq
 
-lemma forall_feedback_onlineEvalEnv_ae_eq_eval_action
+lemma forall_feedback_onlineEvalEnv_ae_eq_eval_action [StandardBorelSpace 𝓨] [Nonempty 𝓨]
     (h : IsAlgEnvSeq A Y alg (onlineEvalEnv g hg) P) :
     ∀ᵐ ω ∂P, ∀ n, Y n ω = g n (A n ω) := by
   rw [ae_all_iff]
@@ -125,22 +124,23 @@ lemma feedbackFun_evalEnv [MeasurableSpace.SeparatesPoints 𝓨] (n : ℕ) :
 
 section EvalEnv
 
-variable [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
-  {Ω : Type*} {mΩ : MeasurableSpace Ω} {alg : Algorithm 𝓐 𝓨} {f : 𝓐 → 𝓨} {hf : Measurable f}
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {alg : Algorithm 𝓐 𝓨} {f : 𝓐 → 𝓨} {hf : Measurable f}
   {P : Measure Ω} [IsProbabilityMeasure P] {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 
 lemma hascondDistrib_feedback_evalEnv (h : IsAlgEnvSeq A Y alg (evalEnv f hf) P) (n : ℕ) :
     HasCondDistrib (Y n) (A n) (Kernel.deterministic f hf) P := by
   simpa using IsObliviousEnv.hasCondDistrib_feedback h n
 
-lemma feedback_evalEnv_ae_eq_eval_action (h : IsAlgEnvSeq A Y alg (evalEnv f hf) P) (n : ℕ) :
+lemma feedback_evalEnv_ae_eq_eval_action [StandardBorelSpace 𝓨] [Nonempty 𝓨]
+  (h : IsAlgEnvSeq A Y alg (evalEnv f hf) P) (n : ℕ) :
     Y n =ᵐ[P] f ∘ A n := feedback_onlineEvalEnv_ae_eq_eval_action h n
 
-lemma forall_feedback_evalEnv_ae_eq_eval_action (h : IsAlgEnvSeq A Y alg (evalEnv f hf) P) :
+lemma forall_feedback_evalEnv_ae_eq_eval_action [StandardBorelSpace 𝓨] [Nonempty 𝓨]
+    (h : IsAlgEnvSeq A Y alg (evalEnv f hf) P) :
     ∀ᵐ ω ∂P, ∀ n, Y n ω = f (A n ω) := forall_feedback_onlineEvalEnv_ae_eq_eval_action h
 
 open Finset in
-lemma feedback_evalEnv_ae_eq_eval_action_comp {β : Type*}
+lemma feedback_evalEnv_ae_eq_eval_action_comp {β : Type*} [StandardBorelSpace 𝓨] [Nonempty 𝓨]
     (h : IsAlgEnvSeq A Y alg (evalEnv f hf) P) {n : ℕ} (g : (Iic n → 𝓨) → β) :
     ∀ᵐ ω ∂P, g (fun i ↦ Y i ω) = g (fun i ↦ f (A i ω)) := by
   filter_upwards [forall_feedback_evalEnv_ae_eq_eval_action h] with ω hω

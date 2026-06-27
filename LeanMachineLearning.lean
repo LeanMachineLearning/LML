@@ -1,12 +1,13 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
 public import LeanMachineLearning.ForMathlib.Analysis.Calculus.Deriv.Slope
-public import LeanMachineLearning.ForMathlib.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Constructions.Polish.StandardBorel
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Function.ConditionalExpectation.PullOut
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Function.L2Space
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measurable
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measure.AbsolutelyContinuous
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Order.Lattice
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Order.MeasurableArg
 public import LeanMachineLearning.ForMathlib.MeasureTheory.OuterMeasure.Basic
 public import LeanMachineLearning.ForMathlib.Probability.HasCondDistrib
 public import LeanMachineLearning.ForMathlib.Probability.Independence.CondDistrib

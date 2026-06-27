@@ -92,17 +92,18 @@ variable {P : Measure Ω} [IsProbabilityMeasure P]
 of the next action given the history so far is equal to the conditional distribution of the best
 action given the history so far. -/
 lemma TS.hasCondDistrib_action (hK : 0 < K) (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm hK Q κ) E A R P)
-    (n : ℕ) : HasCondDistrib (A (n + 1)) (history A R n)
+    (n : ℕ) :
+    HasCondDistrib (A (n + 1)) (history A R n)
       (condDistrib (bestAction κ E) (history A R n) P) P where
-  aemeasurable_fst := (h.measurable_action (n + 1)).aemeasurable
-  aemeasurable_snd :=
-    (measurable_history h.measurable_action h.measurable_feedback n).aemeasurable
-  condDistrib_eq := by
+  aemeasurable := ((measurable_history h.measurable_action h.measurable_feedback n).prodMk
+      (h.measurable_action (n + 1))).aemeasurable
+  map_eq := by
     have hm : Measurable (bestAction κ id) := by fun_prop
+    rw [(h.hasCondDistrib_action' n).map_eq]
+    refine Measure.compProd_congr ?_
     calc
       _ =ᵐ[P.map (history A R n)]
-          (IT.bayesTrajMeasurePosterior Q κ uniformAlgorithm n).map (bestAction κ id) :=
-          (h.hasCondDistrib_action' n).condDistrib_eq
+          (IT.bayesTrajMeasurePosterior Q κ uniformAlgorithm n).map (bestAction κ id) := by rfl
       _ =ᵐ[P.map (history A R n)]
           (condDistrib E (history A R n) P).map (bestAction κ id) := by
           filter_upwards [(h.hasCondDistrib_env_history

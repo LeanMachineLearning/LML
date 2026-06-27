@@ -83,7 +83,6 @@ lemma policy_eq_deterministic (alg : Algorithm 𝓐 𝓨) [h_det : IsDeterminist
 namespace IsDeterministicAlg
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
-  [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
   {alg : Algorithm 𝓐 𝓨} {env : Environment 𝓐 𝓨} {P : Measure Ω} [IsFiniteMeasure P]
   {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {n N : ℕ}
 
@@ -93,7 +92,7 @@ lemma hasLaw_action_zero_of_IsAlgEnvSeqUntil [h_det : IsDeterministicAlg alg]
   aemeasurable := have hA := h.measurable_action; by fun_prop
   map_eq := (h.hasLaw_action_zero).map_eq.trans (p0_eq_dirac alg)
 
-lemma action_zero_of_IsAlgEnvSeqUntil [h_det : IsDeterministicAlg alg]
+lemma action_zero_of_IsAlgEnvSeqUntil [MeasurableEq 𝓐] [h_det : IsDeterministicAlg alg]
     (h : IsAlgEnvSeqUntil A Y alg env P N) :
     A 0 =ᵐ[P] fun _ ↦ actionZero alg := by
   have h_eq : ∀ᵐ x ∂(P.map (A 0)), x = actionZero alg := by
@@ -101,32 +100,32 @@ lemma action_zero_of_IsAlgEnvSeqUntil [h_det : IsDeterministicAlg alg]
   have hA := h.measurable_action
   exact ae_of_ae_map (by fun_prop) h_eq
 
-lemma action_ae_eq_of_IsAlgEnvSeqUntil [h_det : IsDeterministicAlg alg]
-    (h : IsAlgEnvSeqUntil A Y alg env P N) (hn : n < N) :
+lemma action_ae_eq_of_IsAlgEnvSeqUntil [MeasurableEq 𝓐]
+    [h_det : IsDeterministicAlg alg] (h : IsAlgEnvSeqUntil A Y alg env P N) (hn : n < N) :
     A (n + 1) =ᵐ[P] fun ω ↦ nextAction alg n (history A Y n ω) := by
-  have hA := h.measurable_action
-  have hY := h.measurable_feedback
-  have h_eq := (h.hasCondDistrib_action n hn).condDistrib_eq
+  have h_eq := (h.hasCondDistrib_action n hn)
   rw [policy_eq_deterministic alg n] at h_eq
-  refine ae_eq_of_condDistrib_eq_deterministic (by fun_prop : Measurable (nextAction alg n))
-    (by fun_prop) (by fun_prop) h_eq
+  exact ae_eq_of_hasCondDistrib_deterministic (measurable_nextAction _ _) (by fun_prop)
+    (by fun_prop) h_eq
 
 lemma hasLaw_action_zero [h_det : IsDeterministicAlg alg] (h : IsAlgEnvSeq A Y alg env P) :
     HasLaw (A 0) (Measure.dirac (actionZero alg)) P where
   aemeasurable := have hA := h.measurable_action; by fun_prop
   map_eq := (h.hasLaw_action_zero).map_eq.trans (p0_eq_dirac alg)
 
-lemma action_zero_ae_eq [h_det : IsDeterministicAlg alg] (h : IsAlgEnvSeq A Y alg env P) :
+lemma action_zero_ae_eq [MeasurableEq 𝓐] [h_det : IsDeterministicAlg alg]
+    (h : IsAlgEnvSeq A Y alg env P) :
     A 0 =ᵐ[P] fun _ ↦ actionZero alg :=
   action_zero_of_IsAlgEnvSeqUntil (h.isAlgEnvSeqUntil 0)
 
-lemma action_ae_eq [h_det : IsDeterministicAlg alg] (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
+lemma action_ae_eq [MeasurableEq 𝓐] [h_det : IsDeterministicAlg alg]
+    (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
     A (n + 1) =ᵐ[P] fun ω ↦ nextAction alg n (history A Y n ω) :=
   action_ae_eq_of_IsAlgEnvSeqUntil (h.isAlgEnvSeqUntil (n + 1)) (by simp)
 
-lemma action_ae_all_eq [h_det : IsDeterministicAlg alg] (h : IsAlgEnvSeq A Y alg env P) :
-    ∀ᵐ ω ∂P, A 0 ω = actionZero alg ∧
-      ∀ n, A (n + 1) ω = nextAction alg n (history A Y n ω) := by
+lemma action_ae_all_eq [MeasurableEq 𝓐] [h_det : IsDeterministicAlg alg]
+    (h : IsAlgEnvSeq A Y alg env P) :
+    ∀ᵐ ω ∂P, A 0 ω = actionZero alg ∧ ∀ n, A (n + 1) ω = nextAction alg n (history A Y n ω) := by
   rw [eventually_and, ae_all_iff]
   exact ⟨action_zero_ae_eq h, action_ae_eq h⟩
 
@@ -171,7 +170,6 @@ lemma feedback_eq_deterministic (env : Environment 𝓐 𝓨) [IsDeterministicEn
 namespace IsDeterministicEnv
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
-  [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
   {alg : Algorithm 𝓐 𝓨} {env : Environment 𝓐 𝓨} {P : Measure Ω} [IsFiniteMeasure P]
   {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
   {f : (n : ℕ) → ((Iic n → 𝓐 × 𝓨) × 𝓐) → 𝓨} {hf : ∀ n, Measurable (f n)}
@@ -251,26 +249,25 @@ lemma feedbackFun_detEnvironment [MeasurableSpace.SeparatesPoints 𝓨] (n : ℕ
 namespace IsAlgEnvSeq
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
-  [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
   {alg : Algorithm 𝓐 𝓨} {ν : Kernel 𝓐 𝓨} [IsMarkovKernel ν]
   {P : Measure Ω} [IsProbabilityMeasure P] {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 
-lemma hasLaw_action_zero_detAlgorithm
+lemma hasLaw_action_zero_detAlgorithm [MeasurableEq 𝓐]
     (h : IsAlgEnvSeq A Y (detAlgorithm nextA h_next action0) env P) :
     HasLaw (A 0) (Measure.dirac action0) P := by
   simpa using IsDeterministicAlg.hasLaw_action_zero h
 
-lemma action_zero_detAlgorithm
+lemma action_zero_detAlgorithm [MeasurableEq 𝓐]
     (h : IsAlgEnvSeq A Y (detAlgorithm nextA h_next action0) env P) :
     A 0 =ᵐ[P] fun _ ↦ action0 :=
   (IsDeterministicAlg.action_zero_ae_eq h).trans (by simp)
 
-lemma action_detAlgorithm_ae_eq
+lemma action_detAlgorithm_ae_eq [MeasurableEq 𝓐]
     (h : IsAlgEnvSeq A Y (detAlgorithm nextA h_next action0) env P) (n : ℕ) :
     A (n + 1) =ᵐ[P] fun ω ↦ nextA n (history A Y n ω) :=
   (IsDeterministicAlg.action_ae_eq h n).trans (by simp)
 
-lemma action_detAlgorithm_ae_all_eq
+lemma action_detAlgorithm_ae_all_eq [MeasurableEq 𝓐]
     (h : IsAlgEnvSeq A Y (detAlgorithm nextA h_next action0) env P) :
     ∀ᵐ ω ∂P, A 0 ω = action0 ∧ ∀ n, A (n + 1) ω = nextA n (history A Y n ω) := by
   filter_upwards [IsDeterministicAlg.action_ae_all_eq h] with ω hω using by simp [hω]
@@ -280,21 +277,20 @@ end IsAlgEnvSeq
 namespace IsAlgEnvSeqUntil
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
-  [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
   {alg : Algorithm 𝓐 𝓨} {ν : Kernel 𝓐 𝓨} [IsMarkovKernel ν]
   {P : Measure Ω} [IsProbabilityMeasure P] {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {N n : ℕ}
 
-lemma hasLaw_action_zero_detAlgorithm
+lemma hasLaw_action_zero_detAlgorithm [MeasurableEq 𝓐]
     (h : IsAlgEnvSeqUntil A Y (detAlgorithm nextA h_next action0) env P N) :
     HasLaw (A 0) (Measure.dirac action0) P := by
   simpa using IsDeterministicAlg.hasLaw_action_zero_of_IsAlgEnvSeqUntil h
 
-lemma action_zero_detAlgorithm
+lemma action_zero_detAlgorithm [MeasurableEq 𝓐]
     (h : IsAlgEnvSeqUntil A Y (detAlgorithm nextA h_next action0) env P N) :
     A 0 =ᵐ[P] fun _ ↦ action0 :=
   (IsDeterministicAlg.action_zero_of_IsAlgEnvSeqUntil h).trans (by simp)
 
-lemma action_detAlgorithm_ae_eq
+lemma action_detAlgorithm_ae_eq [MeasurableEq 𝓐]
     (h : IsAlgEnvSeqUntil A Y (detAlgorithm nextA h_next action0) env P N) (hn : n < N) :
     A (n + 1) =ᵐ[P] fun ω ↦ nextA n (history A Y n ω) :=
   (IsDeterministicAlg.action_ae_eq_of_IsAlgEnvSeqUntil h hn).trans (by simp)

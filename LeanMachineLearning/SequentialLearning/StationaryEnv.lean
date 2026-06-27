@@ -73,7 +73,6 @@ lemma feedback_eq_feedbackCondAction (env : Environment 𝓐 𝓨) [IsObliviousE
 namespace IsObliviousEnv
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
-  [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
   {alg : Algorithm 𝓐 𝓨} {env : Environment 𝓐 𝓨} {P : Measure Ω} [IsFiniteMeasure P]
   {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {n N : ℕ}
   {ν : ℕ → Kernel 𝓐 𝓨} [∀ n, IsMarkovKernel (ν n)]
@@ -96,9 +95,8 @@ lemma hasCondDistrib_feedback [IsObliviousEnv env] (h : IsAlgEnvSeq A Y alg env 
   cases n with
   | zero => rw [← ν0_eq_feedbackCondAction]; exact h.hasCondDistrib_feedback_zero
   | succ n =>
-    refine ⟨by fun_prop, by fun_prop, ?_⟩
-    have h_eq := (h.hasCondDistrib_feedback n).condDistrib_eq
-    rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop)] at h_eq ⊢
+    refine ⟨by fun_prop, ?_⟩
+    have h_eq := (h.hasCondDistrib_feedback n).map_eq
     have : P.map (A (n + 1)) =
         (P.map (fun x ↦ (history A Y n x, A (n + 1) x))).snd := by
       rw [Measure.snd_map_prodMk (by fun_prop)]
@@ -106,6 +104,8 @@ lemma hasCondDistrib_feedback [IsObliviousEnv env] (h : IsAlgEnvSeq A Y alg env 
     rw [this, ← Measure.snd_prodAssoc_compProd_prodMkLeft, ← h_eq,
       Measure.snd_map_prodMk (by fun_prop), Measure.map_map (by fun_prop) (by fun_prop)]
     congr
+
+variable [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
 
 /-- The feedback at time `n + 1` is conditionally independent of the history up to time `n`
 given the action at time `n + 1`. -/
@@ -197,7 +197,6 @@ lemma feedbackCondAction_stationaryEnv (ν : Kernel 𝓐 𝓨) [hν : IsMarkovKe
     feedbackCondAction (stationaryEnv ν) n = ν := feedbackCondAction_obliviousEnv _ _
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
-  [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
   {alg : Algorithm 𝓐 𝓨} {ν : Kernel 𝓐 𝓨} [IsMarkovKernel ν]
   {P : Measure Ω} [IsProbabilityMeasure P] {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 
@@ -216,7 +215,7 @@ lemma hasCondDistrib_feedback_stationaryEnv
   simpa using IsObliviousEnv.hasCondDistrib_feedback h n
 
 /-- The conditional distribution of the feedback at time `n` given the action at time `n` is `ν`. -/
-lemma condDistrib_feedback_stationaryEnv
+lemma condDistrib_feedback_stationaryEnv [StandardBorelSpace 𝓨] [Nonempty 𝓨]
     (h : IsAlgEnvSeq A Y alg (stationaryEnv ν) P) (n : ℕ) :
     condDistrib (Y n) (A n) P =ᵐ[P.map (A n)] ν :=
   (hasCondDistrib_feedback_stationaryEnv h n).condDistrib_eq
@@ -239,17 +238,20 @@ lemma condExp_feedback_obliviousEnv_ae_eq_integral_id {E : Type*}
 /-- The feedback at time `n + 1` is conditionally independent of the history up to time `n`
 given the action at time `n + 1`. -/
 lemma condIndepFun_feedback_history_action [StandardBorelSpace Ω]
+    [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
     (h : IsAlgEnvSeq A Y alg (stationaryEnv ν) P) (n : ℕ) :
     Y (n + 1) ⟂ᵢ[A (n + 1), h.measurable_action _ ; P] history A Y n :=
   IsObliviousEnv.condIndepFun_feedback_history_action h n
 
 lemma condIndepFun_feedback_history_action_action [StandardBorelSpace Ω]
+    [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
     (h : IsAlgEnvSeq A Y alg (stationaryEnv ν) P) (n : ℕ) :
     Y (n + 1) ⟂ᵢ[A (n + 1), h.measurable_action (n + 1); P]
       (fun ω ↦ (history A Y n ω, A (n + 1) ω)) :=
   IsObliviousEnv.condIndepFun_feedback_history_action_action h n
 
 lemma condIndepFun_feedback_history_action_action' [StandardBorelSpace Ω]
+    [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
     (h : IsAlgEnvSeq A Y alg (stationaryEnv ν) P) (n : ℕ) (hn : n ≠ 0) :
     Y n ⟂ᵢ[A n, h.measurable_action n; P] (fun ω ↦ (history A Y (n - 1) ω, A n ω)) :=
   IsObliviousEnv.condIndepFun_feedback_history_action_action' h n hn

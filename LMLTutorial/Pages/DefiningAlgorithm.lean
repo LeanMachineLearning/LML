@@ -105,7 +105,7 @@ It starts by choosing each action once and then chooses $`\arg\max_a (\hat{\mu}_
 
 To define the algorithm, we first define the exploration bonus and the next action function, and then we use `detAlgorithm` to build the algorithm.
 We also need to prove that the next action function is measurable, which is done by the `measurable_nextArm` lemma.
-Note that we are careful to use a measurable version of the argmax function, `measurableArgmax`.
+Note that we are careful to use a measurable version of the argmax function, `argmax`.
 
 {docstring Bandits.ucbWidth'}
 

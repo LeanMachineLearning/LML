@@ -90,7 +90,7 @@ lemma integral_regret_eq_sum_gap_mul_integral_pullCount
 /-- To bound the expected regret, it suffices to bound the expected number of pulls for each action
 with positive gap. -/
 lemma integral_regret_le_of_forall_integral_pullCount_le
-    [Nonempty 𝓐] [StandardBorelSpace 𝓐] [Fintype 𝓐] {P : Measure Ω} [IsProbabilityMeasure P]
+    [StandardBorelSpace 𝓐] [Fintype 𝓐] {P : Measure Ω} [IsProbabilityMeasure P]
     {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ} {B : 𝓐 → ℝ}
     (h : IsAlgEnvSeq A R alg env P)
     (h_le : ∀ a, gap ν a ≠ 0 → ∫ ω, (pullCount A a n ω : ℝ) ∂P ≤ B a) :

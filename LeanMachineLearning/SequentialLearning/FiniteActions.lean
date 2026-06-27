@@ -939,7 +939,7 @@ lemma measurable_uncurry_empMean' [MeasurableEq 𝓐] (n : ℕ) :
   unfold empMean'
   fun_prop
 
-lemma IsAlgEnvSeq.isPredictable_sumRewards [StandardBorelSpace 𝓐] [Nonempty 𝓐] {R' : ℕ → Ω → ℝ}
+lemma IsAlgEnvSeq.isPredictable_sumRewards [StandardBorelSpace 𝓐] {R' : ℕ → Ω → ℝ}
     {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
     IsStronglyPredictable (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
@@ -960,7 +960,7 @@ lemma IsAlgEnvSeq.isPredictable_sumRewards [StandardBorelSpace 𝓐] [Nonempty �
     exact h_meas_i.mono ((IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback).mono
       (by lia)) le_rfl
 
-lemma IsAlgEnvSeq.stronglyAdapted_sumRewards_add_one [StandardBorelSpace 𝓐] [Nonempty 𝓐]
+lemma IsAlgEnvSeq.stronglyAdapted_sumRewards_add_one [StandardBorelSpace 𝓐]
     {R' : ℕ → Ω → ℝ} {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
     StronglyAdapted (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
@@ -969,7 +969,7 @@ lemma IsAlgEnvSeq.stronglyAdapted_sumRewards_add_one [StandardBorelSpace 𝓐] [
   rw [IsStronglyPredictable.iff_measurable_add_one] at h_predictable
   exact h_predictable.2
 
-lemma IsAlgEnvSeq.adapted_sumRewards_add_one [StandardBorelSpace 𝓐] [Nonempty 𝓐] {R' : ℕ → Ω → ℝ}
+lemma IsAlgEnvSeq.adapted_sumRewards_add_one [StandardBorelSpace 𝓐] {R' : ℕ → Ω → ℝ}
     {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
     Adapted (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
@@ -999,7 +999,7 @@ lemma _root_.MeasureTheory.StronglyMeasurable.div₀' {𝓐 β : Type*}
 
 end CopiedFromPR
 
-lemma IsAlgEnvSeq.isPredictable_empMean [StandardBorelSpace 𝓐] [Nonempty 𝓐] {R' : ℕ → Ω → ℝ}
+lemma IsAlgEnvSeq.isPredictable_empMean [StandardBorelSpace 𝓐] {R' : ℕ → Ω → ℝ}
     {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
     IsStronglyPredictable (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
@@ -1010,7 +1010,7 @@ lemma IsAlgEnvSeq.isPredictable_empMean [StandardBorelSpace 𝓐] [Nonempty 𝓐
   · have h_meas := (isPredictable_pullCount h.measurable_action h.measurable_feedback a).measurable
     fun_prop
 
-lemma IsAlgEnvSeq.stronglyAdapted_empMean_add_one [StandardBorelSpace 𝓐] [Nonempty 𝓐]
+lemma IsAlgEnvSeq.stronglyAdapted_empMean_add_one [StandardBorelSpace 𝓐]
     {R' : ℕ → Ω → ℝ} {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
     StronglyAdapted (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
@@ -1019,7 +1019,7 @@ lemma IsAlgEnvSeq.stronglyAdapted_empMean_add_one [StandardBorelSpace 𝓐] [Non
   rw [IsStronglyPredictable.iff_measurable_add_one] at h_predictable
   exact h_predictable.2
 
-lemma IsAlgEnvSeq.adapted_empMean_add_one [StandardBorelSpace 𝓐] [Nonempty 𝓐] {R' : ℕ → Ω → ℝ}
+lemma IsAlgEnvSeq.adapted_empMean_add_one [StandardBorelSpace 𝓐] {R' : ℕ → Ω → ℝ}
     {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
     Adapted (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
