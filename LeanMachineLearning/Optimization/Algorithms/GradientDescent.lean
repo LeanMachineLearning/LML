@@ -205,7 +205,7 @@ lemma integral_apply_avg_le {f : E → ℝ} (hf : ConvexOn ℝ .univ f) (hdf : D
     · exact h_int_avg.sub (integrable_const _)
     · refine Integrable.const_mul (integrable_finsetSum _ fun i hi ↦ ?_) _
       exact (h_int i).sub (integrable_const _)
-    exact fun ω ↦ hf.apply_avg_sub_le_avg_sub _ y n hn
+    exact fun ω ↦ hf.apply_avg_sub_le_avg_sub (by simp) y n hn
   _ ≤ (2 * η * n)⁻¹ * ‖x₀ - y‖ ^ 2 +
       (η / (2 * n)) * ∑ i ∈ range n, P[fun ω ↦ ‖G i ω‖ ^ 2] := by
     grw [integral_sum_sub_le (fun _ ↦ hf) (fun _ ↦ hdf) hη h_unbiased h_memLp h h_int y n]

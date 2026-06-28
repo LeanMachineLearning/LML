@@ -33,6 +33,7 @@ public import LeanMachineLearning.Online.Bandit.RewardByCountMeasure
 public import LeanMachineLearning.Online.Bandit.SumRewards
 public import LeanMachineLearning.Online.OnlineRegret
 public import LeanMachineLearning.Online.OnlineToBatch
+public import LeanMachineLearning.Online.Projection
 public import LeanMachineLearning.Optimization.Algorithms.GradientDescent
 public import LeanMachineLearning.SequentialLearning.Algorithm
 public import LeanMachineLearning.SequentialLearning.AlgorithmDensity

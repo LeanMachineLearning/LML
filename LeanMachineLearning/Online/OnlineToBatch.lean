@@ -81,7 +81,7 @@ lemma integral_sub_le_integral_inner (hf : ∀ n, ConvexOn ℝ .univ (f n))
   · refine MemLp.integrable_inner ?_ ?_
     · exact (hX_lp n).sub (memLp_const _)
     · exact memLp_gradient h h_unbiased h_memLp n
-  · exact fun ω ↦ (hf n).sub_le_inner_gradient (hdf n).differentiableAt y
+  · exact fun ω ↦ (hf n).sub_le_inner_gradient (hdf n).differentiableAt (by simp) (by simp)
 
 lemma integral_sum_sub_le_integral_sum_inner (hf : ∀ n, ConvexOn ℝ .univ (f n))
     (hdf : ∀ n, Differentiable ℝ (f n))
@@ -115,7 +115,7 @@ lemma integral_apply_avg_sub_le_integral_sum_sub
     · exact h_int_avg.sub (integrable_const _)
     · refine Integrable.const_mul (integrable_finsetSum _ fun i hi ↦ ?_) _
       exact (h_int i).sub (integrable_const _)
-    exact fun ω ↦ hf.apply_avg_sub_le_avg_sub _ y n hn
+    exact fun ω ↦ hf.apply_avg_sub_le_avg_sub (by simp) y n hn
   _ ≤ (n : ℝ)⁻¹ * P[fun ω ↦ ∑ i ∈ range n, ⟪X i ω - y, G i ω⟫] := by
     grw [integral_sum_sub_le_integral_sum_inner (fun _ ↦ hf) (fun _ ↦ hdf) h_unbiased h_memLp h
       hX_lp h_int y n]

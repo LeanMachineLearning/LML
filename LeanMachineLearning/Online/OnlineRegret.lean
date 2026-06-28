@@ -16,8 +16,8 @@ import LeanMachineLearning.ForMathlib.Analysis.Calculus.Deriv.Slope
 
 @[expose] public section
 
-open  Filter Real Finset
-open scoped Gradient ENNReal NNReal RealInnerProductSpace
+open Filter Real Finset
+open scoped Gradient RealInnerProductSpace
 
 namespace Learning
 
@@ -33,7 +33,7 @@ def onlineRegret {E F : Type*} [AddCommGroup F] (ℓ : ℕ → E → F) (y : E) 
 lemma apply_avg_sub_le_onlineRegret [NormedSpace ℝ E] {f : E → ℝ} (hf : ConvexOn ℝ .univ f)
     (x : ℕ → E) (y : E) (n : ℕ) (hn : n ≠ 0) :
     f ((n : ℝ)⁻¹ • ∑ i ∈ range n, x i) - f y ≤ (n : ℝ)⁻¹ • onlineRegret (fun _ ↦ f) y x n :=
-  hf.apply_avg_sub_le_avg_sub x y n hn
+  hf.apply_avg_sub_le_avg_sub (by simp) _ n hn
 
 variable [InnerProductSpace ℝ E] [CompleteSpace E]
 
@@ -43,7 +43,7 @@ lemma onlineRegret_le_onlineRegret_inner_gradient {f : ℕ → E → ℝ}
     onlineRegret f y x n ≤ onlineRegret (fun n y ↦ ⟪y, ∇ (f n) (x n)⟫) y x n := by
   simp only [onlineRegret, ← inner_sub_left]
   gcongr with i hi
-  exact (hf i).sub_le_inner_gradient (hdf i).differentiableAt _
+  exact (hf i).sub_le_inner_gradient (hdf i).differentiableAt (by simp) (by simp)
 
 lemma apply_avg_sub_le_onlineRegret_inner_gradient {f : E → ℝ}
     (hf : ConvexOn ℝ .univ f) (hdf : Differentiable ℝ f)
@@ -51,7 +51,7 @@ lemma apply_avg_sub_le_onlineRegret_inner_gradient {f : E → ℝ}
     f ((n : ℝ)⁻¹ • ∑ i ∈ range n, x i) - f y ≤
       (n : ℝ)⁻¹ * (onlineRegret (fun n y ↦ ⟪y, ∇ f (x n)⟫) y x n) := by
   simpa [onlineRegret, ← inner_sub_left] using
-    hf.apply_avg_sub_le_avg_inner hdf x y n hn
+    hf.apply_avg_sub_le_avg_inner hdf (by simp) (by simp) n hn
 
 end OnlineRegret
 
