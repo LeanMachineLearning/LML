@@ -140,6 +140,14 @@ lemma _root_.Measurable.proj [FiniteDimensional ℝ E] {s : Set E}
     Measurable (fun ω ↦ proj s (f ω)) :=
   (measurable_proj h_closed h_convex h_nonempty).comp hf
 
+/-- Projected online gradient descent with step sizes `γ : ℕ → ℝ` and initial point `x₀ : E`.
+
+It is an algorithm that chooses actions in `E` and gets feedback in `E` (gradient of the function at
+the queried point).
+The point `x (n + 1)` is defined as `x (n + 1) = proj s (x n - γ n • g n)`, where `g n` is
+the feedback received at step `n` and `proj s` is the projection onto `s`.
+Since the algorithm is expressed as a function of the history `hist : ℕ → Iic n → E × E`,
+we write `(hist ⟨n, …⟩).1` for `x n` and `(hist ⟨n, …⟩).2` for `g n`. -/
 noncomputable
 def projGradStep [FiniteDimensional ℝ E] {s : Set E}
     (h_closed : IsClosed s) (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty)

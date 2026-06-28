@@ -182,16 +182,14 @@ lemma dist_proj_le (h_closed : IsClosed s) (h_convex : Convex ℝ s) (h_nonempty
   nth_rw 1 [← proj_of_mem hy]
   exact dist_proj_proj_le h_closed h_convex h_nonempty x y
 
-lemma lipschitz_proj {s : Set E}
-    (h_closed : IsClosed s) (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty) :
+lemma lipschitzWith_proj (h_closed : IsClosed s) (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty) :
     LipschitzWith 1 (proj s) := by
   intro x y
   simp only [ENNReal.coe_one, one_mul, edist_dist]
   grw [dist_proj_proj_le h_closed h_convex h_nonempty x y]
 
-lemma continuous_proj {s : Set E}
-    (h_closed : IsClosed s) (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty) :
-  Continuous (proj s) := (lipschitz_proj h_closed h_convex h_nonempty).continuous
+lemma continuous_proj (h_closed : IsClosed s) (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty) :
+  Continuous (proj s) := (lipschitzWith_proj h_closed h_convex h_nonempty).continuous
 
 end Convex
 
