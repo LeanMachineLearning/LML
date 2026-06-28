@@ -6,6 +6,7 @@ Authors: Rémy Degenne
 module
 
 public import LeanMachineLearning.Online.OnlineRegret
+public import LeanMachineLearning.Online.Projection
 public import LeanMachineLearning.SequentialLearning.Deterministic
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
 
@@ -38,6 +39,14 @@ lemma inner_eq_add (x y g : E) (hη : 0 < η) :
   rw [hsub, norm_sub_sq_real (x - y) (η • g)]
   simp only [inner_smul_right, norm_smul, Real.norm_eq_abs, abs_of_pos hη]
   field
+
+lemma inner_le_add_proj [FiniteDimensional ℝ E] {s : Set E} (h_closed : IsClosed s)
+    (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty) (x g : E) {y : E} (hy : y ∈ s) (hη : 0 < η) :
+    ⟪x - y, g⟫ ≤ (2 * η)⁻¹ * (‖x - y‖ ^ 2 - ‖proj s (x - η • g) - y‖ ^ 2) + (η / 2) * ‖g‖ ^ 2 := by
+  rw [inner_eq_add x y g hη]
+  gcongr
+  rw [← dist_eq_norm, ← dist_eq_norm]
+  exact dist_proj_le h_closed h_convex h_nonempty (x - η • g) hy
 
 lemma sum_inner_le_sum' (x y g : ℕ → E) (hγ : ∀ n, 0 < γ n) (n : ℕ) :
     ∑ i ∈ Finset.range n, ⟪x i - y i, g i⟫ ≤
@@ -100,7 +109,9 @@ Since the algorithm is expressed as a function of the history `hist : ℕ → Ii
 we write `(hist ⟨n, …⟩).1` for `x n` and `(hist ⟨n, …⟩).2` for `g n`. -/
 noncomputable
 def gradientStep (γ : ℕ → ℝ) (x₀ : E) : Algorithm E E :=
-  detAlgorithm (fun n hist ↦ (hist ⟨n, by grind⟩).1 - γ n • (hist ⟨n, by grind⟩).2) (by fun_prop) x₀
+  let xn := fun (n : ℕ) (hist : Iic n → E × E) ↦ (hist ⟨n, by grind⟩).1
+  let gn := fun (n : ℕ) (hist : Iic n → E × E) ↦ (hist ⟨n, by grind⟩).2
+  detAlgorithm (fun n hist ↦ xn n hist - γ n • gn n hist) (by fun_prop) x₀
 
 lemma action_gradientStep_ae_eq (h_seq : IsAlgEnvSeq X G (gradientStep γ x₀) env P) (n : ℕ) :
     X (n + 1) =ᵐ[P] X n - γ n • G n := h_seq.action_detAlgorithm_ae_eq n
@@ -115,6 +126,28 @@ lemma action_ae_eq_sub_sum (h_seq : IsAlgEnvSeq X G (gradientStep γ x₀) env P
   induction n with
   | zero => simpa
   | succ n ih => rw [hω n, sum_range_succ, ← sub_sub]; congr
+
+omit [SecondCountableTopology E] [CompleteSpace E] in
+lemma measurable_proj [FiniteDimensional ℝ E] {s : Set E}
+    (h_closed : IsClosed s) (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty) :
+  Measurable (proj s) := (continuous_proj h_closed h_convex h_nonempty).measurable
+
+omit [SecondCountableTopology E] [CompleteSpace E] in
+protected
+lemma _root_.Measurable.proj [FiniteDimensional ℝ E] {s : Set E}
+    (h_closed : IsClosed s) (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty)
+    {f : Ω → E} (hf : Measurable f) :
+    Measurable (fun ω ↦ proj s (f ω)) :=
+  (measurable_proj h_closed h_convex h_nonempty).comp hf
+
+noncomputable
+def projGradStep [FiniteDimensional ℝ E] {s : Set E}
+    (h_closed : IsClosed s) (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty)
+    (γ : ℕ → ℝ) (x₀ : E) : Algorithm E E :=
+  let xn := fun (n : ℕ) (hist : Iic n → E × E) ↦ (hist ⟨n, by grind⟩).1
+  let gn := fun (n : ℕ) (hist : Iic n → E × E) ↦ (hist ⟨n, by grind⟩).2
+  detAlgorithm (fun n hist ↦ proj s (xn n hist - γ n • gn n hist))
+    (fun _ ↦ Measurable.proj h_closed h_convex h_nonempty (by fun_prop)) x₀
 
 end Definition
 
