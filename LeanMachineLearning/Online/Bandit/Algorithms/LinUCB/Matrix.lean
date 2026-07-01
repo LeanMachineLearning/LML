@@ -101,6 +101,144 @@ lemma dotProduct_mulVec_le_of_matrix_le {M N : Matrix (Fin d) (Fin d) ℝ}
   exact sub_nonneg.mp h_nonneg
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Hermitian matrices induce symmetric coordinate bilinear forms on feature vectors. -/
+lemma dotProduct_mulVec_comm_of_isHermitian {M : Matrix (Fin d) (Fin d) ℝ}
+    (hM : M.IsHermitian) (u v : Feature d) :
+    dotProduct u (M *ᵥ v) = dotProduct v (M *ᵥ u) := by
+  have hMT : Mᵀ = M := by
+    simpa using hM.eq
+  rw [Matrix.dotProduct_mulVec]
+  have huM : u ᵥ* M = M *ᵥ u := by
+    calc
+      u ᵥ* M = u ᵥ* Mᵀ := by rw [hMT]
+      _ = M *ᵥ u := Matrix.vecMul_transpose M u
+  rw [huM, dotProduct_comm]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Expansion of a Hermitian matrix quadratic form around a difference. -/
+lemma dotProduct_sub_mulVec_sub_eq {M : Matrix (Fin d) (Fin d) ℝ}
+    (hM : M.IsHermitian) (u v : Feature d) :
+    dotProduct (u - v) (M *ᵥ (u - v)) =
+      dotProduct u (M *ᵥ u) - 2 * dotProduct u (M *ᵥ v) +
+        dotProduct v (M *ᵥ v) := by
+  rw [Matrix.mulVec_sub, dotProduct_sub]
+  simp only [WithLp.ofLp_sub]
+  rw [sub_dotProduct, sub_dotProduct]
+  rw [dotProduct_mulVec_comm_of_isHermitian hM v u]
+  ring
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Triangle inequality for the norm induced by a positive-definite matrix. -/
+lemma dotProduct_sub_mulVec_sub_le_sqrt_add_sqrt_sq {M : Matrix (Fin d) (Fin d) ℝ}
+    (hM : M.PosDef) (u v : Feature d) :
+    dotProduct (u - v) (M *ᵥ (u - v)) ≤
+      (√(dotProduct u (M *ᵥ u)) + √(dotProduct v (M *ᵥ v))) ^ 2 := by
+  let uf : Fin d → ℝ := u
+  let vf : Fin d → ℝ := v
+  letI : SeminormedAddCommGroup (Fin d → ℝ) :=
+    Matrix.toSeminormedAddCommGroup M hM.posSemidef
+  letI : InnerProductSpace ℝ (Fin d → ℝ) :=
+    Matrix.toInnerProductSpace M hM.posSemidef
+  have hq_sub :
+      dotProduct (u - v) (M *ᵥ (u - v)) = inner ℝ (uf - vf) (uf - vf) := by
+    change (u - v).ofLp ⬝ᵥ M *ᵥ (u - v).ofLp = inner ℝ (uf - vf) (uf - vf)
+    simp only [WithLp.ofLp_sub]
+    change (uf - vf) ⬝ᵥ M *ᵥ (uf - vf) = (M *ᵥ (uf - vf)) ⬝ᵥ (uf - vf)
+    rw [dotProduct_comm]
+  have hq_u : dotProduct u (M *ᵥ u) = inner ℝ uf uf := by
+    change u.ofLp ⬝ᵥ M *ᵥ u.ofLp = inner ℝ uf uf
+    change uf ⬝ᵥ M *ᵥ uf = (M *ᵥ uf) ⬝ᵥ uf
+    rw [dotProduct_comm]
+  have hq_v : dotProduct v (M *ᵥ v) = inner ℝ vf vf := by
+    change v.ofLp ⬝ᵥ M *ᵥ v.ofLp = inner ℝ vf vf
+    change vf ⬝ᵥ M *ᵥ vf = (M *ᵥ vf) ⬝ᵥ vf
+    rw [dotProduct_comm]
+  have h_cross_sq := real_inner_mul_inner_self_le uf vf
+  have h_cross_sq_pow :
+      (inner ℝ uf vf) ^ 2 ≤ inner ℝ uf uf * inner ℝ vf vf := by
+    simpa [pow_two] using h_cross_sq
+  have h_cross_abs :
+      |inner ℝ uf vf| ≤ √(inner ℝ uf uf * inner ℝ vf vf) :=
+    Real.abs_le_sqrt h_cross_sq_pow
+  have h_sqrt_mul :
+      √(inner ℝ uf uf * inner ℝ vf vf) =
+        √(inner ℝ uf uf) * √(inner ℝ vf vf) :=
+    Real.sqrt_mul (real_inner_self_nonneg (x := uf)) (inner ℝ vf vf)
+  have h_sqrt_u_mul :
+      √(inner ℝ uf uf) * √(inner ℝ uf uf) = inner ℝ uf uf := by
+    rw [← sq, Real.sq_sqrt (real_inner_self_nonneg (x := uf))]
+  have h_sqrt_v_mul :
+      √(inner ℝ vf vf) * √(inner ℝ vf vf) = inner ℝ vf vf := by
+    rw [← sq, Real.sq_sqrt (real_inner_self_nonneg (x := vf))]
+  have h_neg_cross :
+      - inner ℝ uf vf ≤ √(inner ℝ uf uf) * √(inner ℝ vf vf) := by
+    exact (neg_le_abs (inner ℝ uf vf)).trans (h_cross_abs.trans_eq h_sqrt_mul)
+  have h_cross_comm : inner ℝ vf uf = inner ℝ uf vf := by
+    rw [real_inner_comm]
+  calc
+    dotProduct (u - v) (M *ᵥ (u - v))
+        = inner ℝ (uf - vf) (uf - vf) := hq_sub
+    _ = inner ℝ uf uf - inner ℝ uf vf - inner ℝ vf uf + inner ℝ vf vf := by
+          rw [inner_sub_sub_self]
+    _ = inner ℝ uf uf + inner ℝ vf vf - 2 * inner ℝ uf vf := by
+          rw [h_cross_comm]
+          ring
+    _ ≤ inner ℝ uf uf + inner ℝ vf vf +
+          2 * (√(inner ℝ uf uf) * √(inner ℝ vf vf)) := by
+          nlinarith [h_neg_cross]
+    _ = (√(inner ℝ uf uf) + √(inner ℝ vf vf)) ^ 2 := by
+          nlinarith [h_sqrt_u_mul, h_sqrt_v_mul]
+    _ = (√(dotProduct u (M *ᵥ u)) + √(dotProduct v (M *ᵥ v))) ^ 2 := by
+          rw [hq_u, hq_v]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Matrix Cauchy-Schwarz with an inverse-design factor. -/
+lemma abs_dotProduct_le_sqrt_mul_sqrt_inv_mulVec {M : Matrix (Fin d) (Fin d) ℝ}
+    (hM : M.PosDef) (hMdet : IsUnit M.det) (u v : Feature d) :
+    |dotProduct u v| ≤
+      √(dotProduct u (M *ᵥ u)) * √(dotProduct v (M⁻¹ *ᵥ v)) := by
+  let uf : Fin d → ℝ := u
+  let y : Fin d → ℝ := M⁻¹ *ᵥ v
+  letI : SeminormedAddCommGroup (Fin d → ℝ) :=
+    Matrix.toSeminormedAddCommGroup M hM.posSemidef
+  letI : InnerProductSpace ℝ (Fin d → ℝ) :=
+    Matrix.toInnerProductSpace M hM.posSemidef
+  have hMy : M *ᵥ y = v := by
+    simp [y, Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ hMdet]
+  have h_inner_uy :
+      inner ℝ uf y = dotProduct u v := by
+    change (M *ᵥ y) ⬝ᵥ uf = dotProduct u v
+    rw [hMy, dotProduct_comm]
+  have h_inner_uu :
+      inner ℝ uf uf = dotProduct u (M *ᵥ u) := by
+    change (M *ᵥ uf) ⬝ᵥ uf = dotProduct u (M *ᵥ u)
+    rw [dotProduct_comm]
+  have h_inner_yy :
+      inner ℝ y y = dotProduct v (M⁻¹ *ᵥ v) := by
+    change (M *ᵥ y) ⬝ᵥ y = dotProduct v (M⁻¹ *ᵥ v)
+    rw [hMy]
+  have hsq := real_inner_mul_inner_self_le uf y
+  rw [h_inner_uy, h_inner_uu, h_inner_yy] at hsq
+  have hsq' :
+      dotProduct u v ^ 2 ≤ dotProduct u (M *ᵥ u) * dotProduct v (M⁻¹ *ᵥ v) := by
+    simpa [pow_two] using hsq
+  have h_abs := Real.abs_le_sqrt hsq'
+  calc
+    |dotProduct u v|
+        ≤ √(dotProduct u (M *ᵥ u) * dotProduct v (M⁻¹ *ᵥ v)) := h_abs
+    _ = √(dotProduct u (M *ᵥ u)) * √(dotProduct v (M⁻¹ *ᵥ v)) := by
+        rw [Real.sqrt_mul (by simpa using hM.posSemidef.dotProduct_mulVec_nonneg u)]
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
+/-- Multiplying a wrapped inverse matrix-vector product by the original nonsingular matrix recovers
+the original feature vector in coordinates. -/
+lemma mulVec_matrixMulFeature_nonsing_inv (M : Matrix (Fin d) (Fin d) ℝ)
+    (hMdet : IsUnit M.det) (v : Feature d) :
+    Matrix.mulVec M (matrixMulFeature M⁻¹ v) = v := by
+  rw [mulVec_matrixMulFeature, Matrix.mul_nonsing_inv _ hMdet]
+  simp
+
+omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The inverse of the regularized identity is the reciprocal-scaled identity. -/
 lemma reg_smul_one_inv (hreg : reg ≠ 0) :
     (reg • (1 : Matrix (Fin d) (Fin d) ℝ))⁻¹ =
@@ -108,28 +246,7 @@ lemma reg_smul_one_inv (hreg : reg ≠ 0) :
   rw [Matrix.inv_eq_left_inv]
   simp [smul_smul, hreg]
 
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- The quadratic form induced by `(reg • I)⁻¹` is the squared norm divided by `reg`. -/
-lemma dotProduct_reg_smul_one_inv_mulVec (hreg : reg ≠ 0) (u : Feature d) :
-    dotProduct u (((reg • (1 : Matrix (Fin d) (Fin d) ℝ))⁻¹) *ᵥ u) =
-      dotProduct u u / reg := by
-  rw [reg_smul_one_inv (reg := reg) (d := d) hreg]
-  simp [Matrix.smul_mulVec, div_eq_inv_mul, mul_comm]
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Arm-specific form of `dotProduct_reg_smul_one_inv_mulVec`. -/
-lemma dotProduct_reg_smul_one_inv_mulVec_eq_featureSqNorm_div
-    (hreg : reg ≠ 0) (a : Fin K) :
-    dotProduct (x a) (((reg • (1 : Matrix (Fin d) (Fin d) ℝ))⁻¹) *ᵥ (x a)) =
-      featureSqNorm x a / reg := by
-  simpa [featureSqNorm] using
-    dotProduct_reg_smul_one_inv_mulVec (reg := reg) (d := d) hreg (x a)
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Reusable matrix-analysis theorem needed for the LinUCB width comparison.
-
-It states the usual inverse anti-monotonicity of positive-definite matrices in the PSD order:
-if `M` is positive definite and `M ≤ N`, then inversion reverses the order. -/
+/-- Matrix inverse anti-monotonicity on positive-definite matrices. -/
 def MatrixInvAntiMonoOnPosDef (d : ℕ) : Prop :=
   ∀ M N : Matrix (Fin d) (Fin d) ℝ, M.PosDef → M ≤ N → N⁻¹ ≤ M⁻¹
 
@@ -201,24 +318,13 @@ noncomputable def designTrace (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
   Matrix.trace (designMatrix A reg x n ω)
 
-/-- Before any observations, the design trace is the trace of `reg • I_d`, namely `reg * d`. -/
-lemma designTrace_zero (reg : ℝ) (x : Fin K → Feature d) (ω : Ω) :
-    designTrace A reg x 0 ω = reg * (d : ℝ) := by
-  simp [designTrace, designMatrix_zero]
-
-/-- Updating the design matrix by `x_a x_aᵀ` increases the trace by `x_aᵀ x_a`. -/
-lemma designTrace_succ (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (ω : Ω) :
-    designTrace A reg x (n + 1) ω =
-      designTrace A reg x n ω + featureSqNorm x (A n ω) := by
-  simp [designTrace, designMatrix_succ, featureSqNorm, Matrix.trace_vecMulVec]
-
 /-- Closed form for the design trace: initial regularization trace plus accumulated squared
 feature norms. -/
 lemma designTrace_eq_reg_mul_dim_add_sum_featureSqNorm
     (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (ω : Ω) :
     designTrace A reg x n ω =
-      reg * (d : ℝ) + ∑ t ∈ range n, featureSqNorm x (A t ω) := by
-  simp [designTrace, designMatrix, featureSqNorm, Matrix.trace_vecMulVec]
+      reg * (d : ℝ) + ∑ t ∈ range n, ‖x (A t ω)‖ ^ 2 := by
+  simp [designTrace, designMatrix, Matrix.trace_vecMulVec, dotProduct_self_eq_norm_sq]
 
 /-- With nonnegative regularization, the design trace is nonnegative. -/
 lemma designTrace_nonneg (hreg_nonneg : 0 ≤ reg) :
@@ -226,18 +332,18 @@ lemma designTrace_nonneg (hreg_nonneg : 0 ≤ reg) :
   rw [designTrace_eq_reg_mul_dim_add_sum_featureSqNorm]
   exact add_nonneg
     (mul_nonneg hreg_nonneg (Nat.cast_nonneg d))
-    (sum_nonneg fun t _ ↦ featureSqNorm_nonneg x (A t ω))
+    (sum_nonneg fun t _ ↦ sq_nonneg ‖x (A t ω)‖)
 
 /-- If every selected feature vector has squared norm at most `L2`, then the trace of the design
 matrix is at most `reg * d + n * L2`. -/
 lemma designTrace_le_reg_mul_dim_add_nat_mul_featureSqNorm_bound
     (L2 : ℝ)
-    (hL2 : ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2) :
+    (hL2 : ∀ t, t ∈ range n → ‖x (A t ω)‖ ^ 2 ≤ L2) :
     designTrace A reg x n ω ≤ reg * (d : ℝ) + (n : ℝ) * L2 := by
   rw [designTrace_eq_reg_mul_dim_add_sum_featureSqNorm]
   gcongr
   calc
-    (∑ t ∈ range n, featureSqNorm x (A t ω)) ≤ ∑ _t ∈ range n, L2 := by
+    (∑ t ∈ range n, ‖x (A t ω)‖ ^ 2) ≤ ∑ _t ∈ range n, L2 := by
       exact sum_le_sum fun t ht ↦ hL2 t ht
     _ = (n : ℝ) * L2 := by
       simp [nsmul_eq_mul]
@@ -247,7 +353,7 @@ omit [IsProbabilityMeasure P] in
 budget `reg * d + n * L2`. -/
 lemma designTrace_ae_le_reg_mul_dim_add_nat_mul_featureSqNorm_bound
     (L2 : ℝ)
-    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2) :
+    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → ‖x (A t ω)‖ ^ 2 ≤ L2) :
     ∀ᵐ ω ∂P, designTrace A reg x n ω ≤ reg * (d : ℝ) + (n : ℝ) * L2 := by
   filter_upwards [hL2] with ω hL2ω
   exact designTrace_le_reg_mul_dim_add_nat_mul_featureSqNorm_bound (A := A) (reg := reg)
@@ -258,7 +364,7 @@ omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 finite horizon. -/
 lemma featureSqNorm_ae_le_of_featureSqNormBound
     (L2 : ℝ) (hL2 : FeatureSqNormBound x L2) :
-    ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2 :=
+    ∀ᵐ ω ∂P, ∀ t, t ∈ range n → ‖x (A t ω)‖ ^ 2 ≤ L2 :=
   Filter.Eventually.of_forall fun ω t _ht ↦ hL2 (A t ω)
 
 /-- The process-level reward-feature vector built from history up to time `n` excluded. -/
@@ -266,60 +372,21 @@ noncomputable def responseVector (A : ℕ → Ω → Fin K) (R : ℕ → Ω → 
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : Feature d :=
   ∑ s ∈ range n, R s ω • x (A s ω)
 
-/-- The initial response vector before any rewards are included. -/
-lemma responseVector_zero (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
-    (x : Fin K → Feature d) (ω : Ω) :
-    responseVector A R x 0 ω = 0 := by
-  simp [responseVector]
-
-/-- The response-vector update after observing one additional reward. -/
-lemma responseVector_succ (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
-    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) :
-    responseVector A R x (n + 1) ω =
-      responseVector A R x n ω + R n ω • x (A n ω) := by
-  simp [responseVector, sum_range_succ]
-
-/-- The process-level regularized least-squares estimate. -/
+/-- Process-level regularized least-squares parameter estimate. -/
 noncomputable def thetaHat (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : Feature d :=
-  Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (responseVector A R x n ω)
+  matrixMulFeature (designMatrix A reg x n ω)⁻¹ (responseVector A R x n ω)
 
-/-- The initial least-squares estimate is zero because no reward-feature observations have been
-included yet. -/
-lemma thetaHat_zero (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
-    (reg : ℝ) (x : Fin K → Feature d) (ω : Ω) :
-    thetaHat A R reg x 0 ω = 0 := by
-  simp [thetaHat, responseVector_zero]
-
-/-- The process-level estimated linear reward. -/
+/-- Process-level estimated mean reward for an arm. -/
 noncomputable def estimatedReward (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     (reg : ℝ) (x : Fin K → Feature d) (a : Fin K) (n : ℕ) (ω : Ω) : ℝ :=
   dotProduct (thetaHat A R reg x n ω) (x a)
 
-/-- The initial estimated reward is zero for every arm. -/
-lemma estimatedReward_zero (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
-    (reg : ℝ) (x : Fin K → Feature d) (a : Fin K) (ω : Ω) :
-    estimatedReward A R reg x a 0 ω = 0 := by
-  simp [estimatedReward, thetaHat_zero]
-
-/-- The quadratic form `x_aᵀ V_n⁻¹ x_a` underlying the LinUCB confidence width. -/
+/-- Quadratic form inside the LinUCB confidence width. -/
 noncomputable def widthQuadraticForm (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (a : Fin K) (n : ℕ) (ω : Ω) : ℝ :=
   dotProduct (x a) (Matrix.mulVec (designMatrix A reg x n ω)⁻¹ (x a))
 
-/-- The initial width quadratic form is induced by the inverse regularized identity. -/
-lemma widthQuadraticForm_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
-    (x : Fin K → Feature d) (a : Fin K) (ω : Ω) :
-    widthQuadraticForm A reg x a 0 ω =
-      dotProduct (x a) (Matrix.mulVec (reg • 1)⁻¹ (x a)) := by
-  simp [widthQuadraticForm, designMatrix_zero]
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Nonnegative regularization makes every LinUCB width quadratic form nonnegative.
-
-The reason is purely matrix-theoretic: `V_n` is positive semidefinite, the nonsingular inverse of a
-positive semidefinite matrix is positive semidefinite in mathlib, and every quadratic form induced
-by a positive semidefinite matrix is nonnegative. -/
 lemma widthQuadraticForm_nonneg_of_reg_nonneg
     (hreg_nonneg : 0 ≤ reg) (a : Fin K) :
     0 ≤ widthQuadraticForm A reg x a n ω := by
@@ -338,186 +405,12 @@ lemma widthQuadraticForm_ae_nonneg_of_reg_nonneg
     widthQuadraticForm_nonneg_of_reg_nonneg (A := A) (reg := reg) (x := x)
       (n := t) (ω := ω) hreg_nonneg (A t ω)
 
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Positive-time version of `widthQuadraticForm_ae_nonneg_of_reg_nonneg`, matching the side
-condition shape used by the regret/width-sum bridge lemmas. -/
-lemma widthQuadraticForm_ae_pos_time_nonneg_of_reg_nonneg
-    (hreg_nonneg : 0 ≤ reg) :
-    ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω := by
-  filter_upwards [widthQuadraticForm_ae_nonneg_of_reg_nonneg (A := A) (reg := reg)
-    (x := x) (n := n) (P := P) hreg_nonneg] with ω h_nonnegω
-  intro t ht _ht0
-  exact h_nonnegω t ht
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- The matrix comparison needed to turn bounded feature vectors into the positive-time LinUCB
-width cap.
-
-Mathematically, this says `x_aᵀ V_t⁻¹ x_a ≤ ‖x_a‖² / reg`. Positive regularization proves it
-because `reg I ≤ V_t` and positive-definite matrix inversion reverses the PSD order. -/
-def WidthQuadraticFormLeFeatureSqNormDivReg
-    (A : ℕ → Ω → Fin K) (reg : ℝ) (x : Fin K → Feature d) : Prop :=
-  ∀ (a : Fin K) (n : ℕ) (ω : Ω),
-    widthQuadraticForm A reg x a n ω ≤ featureSqNorm x a / reg
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- If the inverse design matrix is bounded by the inverse regularized identity, then the LinUCB
-quadratic width is bounded by `featureSqNorm / reg` for one arm, time, and sample point. -/
-lemma widthQuadraticForm_le_featureSqNorm_div_reg_of_inv_le
-    (a : Fin K)
-    (h_inv : (designMatrix A reg x n ω)⁻¹ ≤
-      (reg • (1 : Matrix (Fin d) (Fin d) ℝ))⁻¹)
-    (hreg : reg ≠ 0) :
-    widthQuadraticForm A reg x a n ω ≤ featureSqNorm x a / reg := by
-  calc
-    widthQuadraticForm A reg x a n ω =
-        dotProduct (x a) (((designMatrix A reg x n ω)⁻¹) *ᵥ (x a)) := rfl
-    _ ≤ dotProduct (x a)
-        (((reg • (1 : Matrix (Fin d) (Fin d) ℝ))⁻¹) *ᵥ (x a)) :=
-        dotProduct_mulVec_le_of_matrix_le h_inv (x a)
-    _ = featureSqNorm x a / reg :=
-        dotProduct_reg_smul_one_inv_mulVec_eq_featureSqNorm_div
-          (reg := reg) (x := x) hreg a
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- A pointwise inverse-order comparison for all times and sample points gives the reusable
-`WidthQuadraticFormLeFeatureSqNormDivReg` property consumed by the regret route. -/
-lemma WidthQuadraticFormLeFeatureSqNormDivReg.of_inv_le
-    (hreg : reg ≠ 0)
-    (h_inv : DesignMatrixInvLeRegInv A reg x) :
-    WidthQuadraticFormLeFeatureSqNormDivReg A reg x := by
-  intro a n ω
-  exact widthQuadraticForm_le_featureSqNorm_div_reg_of_inv_le
-    (A := A) (reg := reg) (x := x) (n := n) (ω := ω) a
-    (h_inv.apply n ω) hreg
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Positive regularization bounds LinUCB quadratic widths by the squared feature norm divided by
-the regularization. -/
-lemma WidthQuadraticFormLeFeatureSqNormDivReg.of_reg_pos
-    (hreg_pos : 0 < reg) :
-    WidthQuadraticFormLeFeatureSqNormDivReg A reg x :=
-  WidthQuadraticFormLeFeatureSqNormDivReg.of_inv_le (A := A) (reg := reg) (x := x)
-    hreg_pos.ne' (DesignMatrixInvLeRegInv.of_reg_pos (A := A) (reg := reg) (x := x)
-      hreg_pos)
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- If `x_aᵀ V_n⁻¹ x_a ≤ ‖x_a‖² / reg` and the squared feature norm is at most `reg`, then the
-quadratic form is at most one. -/
-lemma widthQuadraticForm_le_one_of_featureSqNorm_le_reg
-    (a : Fin K)
-    (h_width : WidthQuadraticFormLeFeatureSqNormDivReg A reg x)
-    (hreg_pos : 0 < reg)
-    (h_feature_le : featureSqNorm x a ≤ reg) :
-    widthQuadraticForm A reg x a n ω ≤ 1 := by
-  refine (h_width a n ω).trans ?_
-  rwa [div_le_one hreg_pos]
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Almost-sure positive-time width cap from the matrix comparison and an almost-sure
-`featureSqNorm ≤ reg` bound along the selected actions. -/
-lemma widthQuadraticForm_ae_le_one_of_featureSqNorm_ae_le_reg
-    (h_width : WidthQuadraticFormLeFeatureSqNormDivReg A reg x)
-    (hreg_pos : 0 < reg)
-    (h_feature_le : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ reg) :
-    ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1 := by
-  filter_upwards [h_feature_le] with ω h_feature_leω
-  intro t ht _ht0
-  exact widthQuadraticForm_le_one_of_featureSqNorm_le_reg
-    (A := A) (reg := reg) (x := x) (n := t) (ω := ω) (A t ω) h_width hreg_pos
-    (h_feature_leω t ht)
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Almost-sure positive-time width cap from the matrix comparison and a selected-feature budget
-`featureSqNorm ≤ L2`, when `L2 ≤ reg`. -/
-lemma widthQuadraticForm_ae_le_one_of_featureSqNorm_ae_le
-    (h_width : WidthQuadraticFormLeFeatureSqNormDivReg A reg x)
-    (hreg_pos : 0 < reg) {L2 : ℝ}
-    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
-    (hL2_le_reg : L2 ≤ reg) :
-    ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1 := by
-  refine widthQuadraticForm_ae_le_one_of_featureSqNorm_ae_le_reg
-    (A := A) (reg := reg) (x := x) (n := n) (P := P) h_width hreg_pos ?_
-  filter_upwards [hL2] with ω hL2ω
-  intro t ht
-  exact (hL2ω t ht).trans hL2_le_reg
-
-/-- The process-level elliptical confidence width. -/
+/-- LinUCB elliptical confidence width for an arm. -/
 noncomputable def width (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (a : Fin K) (n : ℕ) (ω : Ω) : ℝ :=
   √(widthQuadraticForm A reg x a n ω)
 
-/-- The initial width is the quadratic form induced by the inverse regularized identity. -/
-lemma width_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
-    (x : Fin K → Feature d) (a : Fin K) (ω : Ω) :
-    width A reg x a 0 ω =
-      √(dotProduct (x a) (Matrix.mulVec (reg • 1)⁻¹ (x a))) := by
-  simp [width, widthQuadraticForm_zero]
-
-/-- Squaring the LinUCB width recovers the quadratic form inside the square root, provided that
-quadratic form is nonnegative. -/
-lemma width_sq_eq_quadratic_form (a : Fin K)
-    (h_nonneg : 0 ≤ widthQuadraticForm A reg x a n ω) :
-    width A reg x a n ω ^ 2 = widthQuadraticForm A reg x a n ω := by
-  simp [width, Real.sq_sqrt h_nonneg]
-
-/-- The accumulated squared LinUCB widths over positive times before horizon `n`. -/
-noncomputable def widthSqSum (A : ℕ → Ω → Fin K) (reg : ℝ)
-    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
-  ∑ t ∈ range n, (if t = 0 then 0 else width A reg x (A t ω) t ω) ^ 2
-
-/-- No positive-time widths are accumulated at horizon zero. -/
-lemma widthSqSum_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
-    (x : Fin K → Feature d) (ω : Ω) :
-    widthSqSum A reg x 0 ω = 0 := by
-  simp [widthSqSum]
-
-/-- Advancing the horizon adds the next positive-time squared width term. -/
-lemma widthSqSum_succ (A : ℕ → Ω → Fin K) (reg : ℝ)
-    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) :
-    widthSqSum A reg x (n + 1) ω =
-      widthSqSum A reg x n ω +
-        (if n = 0 then 0 else width A reg x (A n ω) n ω) ^ 2 := by
-  simp [widthSqSum, sum_range_succ]
-
-/-- At positive times, advancing the horizon adds the selected arm's squared width. -/
-lemma widthSqSum_succ_of_ne_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
-    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
-    widthSqSum A reg x (n + 1) ω =
-      widthSqSum A reg x n ω + width A reg x (A n ω) n ω ^ 2 := by
-  simp [widthSqSum_succ, hn]
-
-/-- The accumulated quadratic forms corresponding to the positive-time LinUCB widths. -/
-noncomputable def quadraticWidthSum (A : ℕ → Ω → Fin K) (reg : ℝ)
-    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
-  ∑ t ∈ range n,
-    if t = 0 then 0 else widthQuadraticForm A reg x (A t ω) t ω
-
-/-- No positive-time quadratic width forms are accumulated at horizon zero. -/
-lemma quadraticWidthSum_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
-    (x : Fin K → Feature d) (ω : Ω) :
-    quadraticWidthSum A reg x 0 ω = 0 := by
-  simp [quadraticWidthSum]
-
-/-- Advancing the horizon adds the next positive-time quadratic width form. -/
-lemma quadraticWidthSum_succ (A : ℕ → Ω → Fin K) (reg : ℝ)
-    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) :
-    quadraticWidthSum A reg x (n + 1) ω =
-      quadraticWidthSum A reg x n ω +
-        if n = 0 then 0 else widthQuadraticForm A reg x (A n ω) n ω := by
-  simp [quadraticWidthSum, sum_range_succ]
-
-/-- At positive times, advancing the horizon adds the selected arm's quadratic width form. -/
-lemma quadraticWidthSum_succ_of_ne_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
-    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
-    quadraticWidthSum A reg x (n + 1) ω =
-      quadraticWidthSum A reg x n ω + widthQuadraticForm A reg x (A n ω) n ω := by
-  simp [quadraticWidthSum_succ, hn]
-
-/-- The accumulated capped quadratic forms corresponding to the positive-time LinUCB widths. -/
+/-- Positive-time sum of capped quadratic width forms. -/
 noncomputable def cappedQuadraticWidthSum (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
   ∑ t ∈ range n,
@@ -537,100 +430,6 @@ lemma cappedQuadraticWidthSum_succ (A : ℕ → Ω → Fin K) (reg : ℝ)
         if n = 0 then 0 else min 1 (widthQuadraticForm A reg x (A n ω) n ω) := by
   simp [cappedQuadraticWidthSum, sum_range_succ]
 
-/-- At positive times, advancing the horizon adds the selected arm's capped quadratic width form. -/
-lemma cappedQuadraticWidthSum_succ_of_ne_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
-    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
-    cappedQuadraticWidthSum A reg x (n + 1) ω =
-      cappedQuadraticWidthSum A reg x n ω + min 1 (widthQuadraticForm A reg x (A n ω) n ω) := by
-  simp [cappedQuadraticWidthSum_succ, hn]
-
-/-- If every positive-time process-level quadratic width form is at most `1`, then the uncapped
-and capped process-level quadratic-width accumulators agree. -/
-lemma quadraticWidthSum_eq_cappedQuadraticWidthSum
-    (h_le_one : ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1) :
-    quadraticWidthSum A reg x n ω = cappedQuadraticWidthSum A reg x n ω := by
-  rw [quadraticWidthSum, cappedQuadraticWidthSum]
-  refine Finset.sum_congr rfl ?_
-  intro t ht
-  by_cases ht0 : t = 0
-  · simp [ht0]
-  · rw [if_neg ht0, if_neg ht0]
-    exact (min_eq_right (h_le_one t ht ht0)).symm
-
-/-- If the squared-width and quadratic-form accumulators agree through a positive time and the
-next quadratic form is nonnegative, then they still agree after adding the next term. -/
-lemma widthSqSum_eq_quadraticWidthSum_succ_of_ne_zero (A : ℕ → Ω → Fin K) (reg : ℝ)
-    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) (hn : n ≠ 0)
-    (h_eq : widthSqSum A reg x n ω = quadraticWidthSum A reg x n ω)
-    (h_nonneg : 0 ≤ widthQuadraticForm A reg x (A n ω) n ω) :
-    widthSqSum A reg x (n + 1) ω = quadraticWidthSum A reg x (n + 1) ω := by
-  rw [widthSqSum_succ_of_ne_zero (A := A) (reg := reg) (x := x) (n := n) (ω := ω) hn,
-    quadraticWidthSum_succ_of_ne_zero (A := A) (reg := reg) (x := x) (n := n)
-      (ω := ω) hn, h_eq]
-  rw [width_sq_eq_quadratic_form (A := A) (reg := reg) (x := x) (a := A n ω)
-    (n := n) (ω := ω) h_nonneg]
-
-/-- The accumulated squared widths equal the accumulated quadratic forms, provided each positive
-time quadratic form is nonnegative. -/
-lemma widthSqSum_eq_sum_quadratic_form
-    (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω) :
-    widthSqSum A reg x n ω = quadraticWidthSum A reg x n ω := by
-  rw [widthSqSum, quadraticWidthSum]
-  refine sum_congr rfl ?_
-  intro t ht
-  by_cases ht0 : t = 0
-  · simp [ht0]
-  · rw [if_neg ht0]
-    rw [if_neg ht0]
-    exact width_sq_eq_quadratic_form (A := A) (reg := reg) (x := x) (a := A t ω)
-      (n := t) (ω := ω) (h_nonneg t ht ht0)
-
-/-- A quadratic-form sum bound implies the corresponding bound on `widthSqSum`. This is the shape
-expected from a later elliptical-potential argument. -/
-lemma widthSqSum_le_of_sum_quadratic_form_le {W : ℝ}
-    (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_quad_le : quadraticWidthSum A reg x n ω ≤ W) :
-    widthSqSum A reg x n ω ≤ W := by
-  rw [widthSqSum_eq_sum_quadratic_form (A := A) (reg := reg) (x := x)
-    (n := n) (ω := ω) h_nonneg]
-  exact h_quad_le
-
-/-- A capped process-level quadratic-form sum bound implies the corresponding bound on
-`widthSqSum`, provided the positive-time process-level quadratic forms are nonnegative and at most
-`1`. -/
-lemma widthSqSum_le_of_capped_quadratic_width_sum_le {W : ℝ}
-    (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
-    (h_capped_le : cappedQuadraticWidthSum A reg x n ω ≤ W) :
-    widthSqSum A reg x n ω ≤ W := by
-  rw [widthSqSum_eq_sum_quadratic_form (A := A) (reg := reg) (x := x)
-    (n := n) (ω := ω) h_nonneg]
-  rw [quadraticWidthSum_eq_cappedQuadraticWidthSum (A := A) (reg := reg) (x := x)
-    (n := n) (ω := ω) h_le_one]
-  exact h_capped_le
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Almost surely, a capped process-level quadratic-form sum bound implies the corresponding bound
-on `widthSqSum`, provided the positive-time process-level quadratic forms are almost surely
-nonnegative and at most `1`. -/
-lemma widthSqSum_ae_le_of_capped_quadratic_width_sum_ae_le {W : ℝ}
-    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
-    (h_capped_le : ∀ᵐ ω ∂P, cappedQuadraticWidthSum A reg x n ω ≤ W) :
-    ∀ᵐ ω ∂P, widthSqSum A reg x n ω ≤ W := by
-  filter_upwards [h_nonneg, h_le_one, h_capped_le] with
-    ω h_nonnegω h_le_oneω h_capped_leω
-  exact widthSqSum_le_of_capped_quadratic_width_sum_le (A := A) (reg := reg) (x := x)
-    (n := n) (ω := ω) h_nonnegω h_le_oneω h_capped_leω
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- Determinant of the process-level LinUCB design matrix. -/
 noncomputable def designDet (A : ℕ → Ω → Fin K) (reg : ℝ)
     (x : Fin K → Feature d) (n : ℕ) (ω : Ω) : ℝ :=
@@ -712,35 +511,6 @@ lemma designDetRatio_eq_div_reg_pow :
   rw [designDetRatio, designDet_zero_eq_reg_pow]
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- If the process-level design matrix is diagonal, its determinant is the product of its diagonal
-entries. -/
-lemma designDet_eq_prod_of_designMatrix_eq_diagonal {diag : Fin d → ℝ}
-    (hdiag : designMatrix A reg x n ω = Matrix.diagonal diag) :
-    designDet A reg x n ω = ∏ i, diag i := by
-  unfold designDet
-  rw [hdiag, Matrix.det_diagonal]
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- If positive regularization makes the design matrix positive definite and that matrix is
-diagonal, then every diagonal entry is positive. -/
-lemma diagonal_pos_of_designMatrix_eq_diagonal {diag : Fin d → ℝ}
-    (hreg_pos : 0 < reg)
-    (hdiag : designMatrix A reg x n ω = Matrix.diagonal diag) :
-    ∀ i, 0 < diag i := by
-  have hpos : (Matrix.diagonal diag).PosDef := by
-    simpa [hdiag] using
-      designMatrix_posDef (A := A) (reg := reg) (x := x) (n := n) (ω := ω) hreg_pos
-  exact Matrix.posDef_diagonal_iff.mp hpos
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Diagonal-design form of the determinant ratio. -/
-lemma designDetRatio_eq_prod_div_reg_pow_of_designMatrix_eq_diagonal {diag : Fin d → ℝ}
-    (hdiag : designMatrix A reg x n ω = Matrix.diagonal diag) :
-    designDetRatio A reg x n ω = (∏ i, diag i) / reg ^ d := by
-  rw [designDetRatio_eq_div_reg_pow,
-    designDet_eq_prod_of_designMatrix_eq_diagonal (A := A) (reg := reg) (x := x)
-      (n := n) (ω := ω) hdiag]
-
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- Eigenvalues of the positive-definite process-level LinUCB design matrix.
 
@@ -823,7 +593,6 @@ lemma unitary_conj_quadraticForm_eq
         star (U : Matrix (Fin d) (Fin d) ℝ) = 1
     exact Unitary.coe_mul_star_self U
   have hy : star Umat *ᵥ lambda = Matrix.vecMul lambda Umat := by
-    rw [Matrix.star_eq_conjTranspose, Matrix.conjTranspose_eq_transpose_of_trivial]
     simpa [Umat] using (Matrix.mulVec_transpose (U : Matrix (Fin d) (Fin d) ℝ) lambda)
   have hcancel_left : Umat * (star Umat * M * Umat) = M * Umat := by
     rw [Matrix.mul_assoc (star Umat) M Umat]
@@ -901,22 +670,22 @@ lemma unitary_star_mulVec_measurePreserving
     (U : Matrix.unitaryGroup (Fin d) ℝ) :
     MeasurePreserving
     (fun lambda : Feature d =>
-        star (U : Matrix (Fin d) (Fin d) ℝ) *ᵥ lambda)
+        matrixMulFeature (star (U : Matrix (Fin d) (Fin d) ℝ)) lambda)
       volume volume := by
   let L : Feature d →ₗ[ℝ] Feature d :=
-    Matrix.toLin' (star (U : Matrix (Fin d) (Fin d) ℝ))
+    Matrix.toLpLin 2 2 (star (U : Matrix (Fin d) (Fin d) ℝ))
   have h_abs_det :
       |(star (U : Matrix (Fin d) (Fin d) ℝ)).det| = 1 :=
     abs_det_star_unitary U
   have hdet_ne : LinearMap.det L ≠ 0 := by
-    simpa [L, LinearMap.det_toLin'] using
+    simpa [L, LinearMap.det_toLpLin] using
       (Matrix.UnitaryGroup.det_isUnit (star U)).ne_zero
   refine ⟨L.continuous_of_finiteDimensional.measurable, ?_⟩
   change Measure.map L volume = volume
   rw [Measure.map_linearMap_addHaar_eq_smul_addHaar (μ := volume) hdet_ne]
   have hscale : ENNReal.ofReal |(LinearMap.det L)⁻¹| = 1 := by
     dsimp [L]
-    rw [LinearMap.det_toLin', abs_inv, h_abs_det]
+    rw [LinearMap.det_toLpLin, abs_inv, h_abs_det]
     norm_num
   rw [hscale, one_smul]
 
@@ -925,28 +694,26 @@ omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 feature coordinates. -/
 noncomputable def unitaryStarMulVecMeasurableEquiv
     (U : Matrix.unitaryGroup (Fin d) ℝ) : Feature d ≃ᵐ Feature d where
-  toFun lambda := star (U : Matrix (Fin d) (Fin d) ℝ) *ᵥ lambda
-  invFun lambda := (U : Matrix (Fin d) (Fin d) ℝ) *ᵥ lambda
+  toFun lambda := matrixMulFeature (star (U : Matrix (Fin d) (Fin d) ℝ)) lambda
+  invFun lambda := matrixMulFeature (U : Matrix (Fin d) (Fin d) ℝ) lambda
   left_inv lambda := by
-    change (U : Matrix (Fin d) (Fin d) ℝ) *ᵥ
-      (star (U : Matrix (Fin d) (Fin d) ℝ) *ᵥ lambda) = lambda
     have hunit :
         (U : Matrix (Fin d) (Fin d) ℝ) *
           star (U : Matrix (Fin d) (Fin d) ℝ) = 1 := by
       exact Unitary.coe_mul_star_self U
-    rw [Matrix.mulVec_mulVec, hunit, Matrix.one_mulVec]
+    ext i
+    simp [matrixMulFeature, Matrix.mulVec_mulVec, hunit]
   right_inv lambda := by
-    change star (U : Matrix (Fin d) (Fin d) ℝ) *ᵥ
-      ((U : Matrix (Fin d) (Fin d) ℝ) *ᵥ lambda) = lambda
     have hunit :
         star (U : Matrix (Fin d) (Fin d) ℝ) *
           (U : Matrix (Fin d) (Fin d) ℝ) = 1 := by
       exact Unitary.coe_star_mul_self U
-    rw [Matrix.mulVec_mulVec, hunit, Matrix.one_mulVec]
+    ext i
+    simp [matrixMulFeature, Matrix.mulVec_mulVec, hunit]
   measurable_toFun := (unitary_star_mulVec_measurePreserving U).measurable
   measurable_invFun := by
     change Measurable fun lambda : Feature d =>
-      (U : Matrix (Fin d) (Fin d) ℝ) *ᵥ lambda
+      matrixMulFeature (U : Matrix (Fin d) (Fin d) ℝ) lambda
     simpa using (unitary_star_mulVec_measurePreserving (star U)).measurable
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
@@ -955,7 +722,8 @@ lemma unitaryStarMulVecMeasurableEquiv_measurePreserving
     (U : Matrix.unitaryGroup (Fin d) ℝ) :
     MeasurePreserving (unitaryStarMulVecMeasurableEquiv U) volume volume := by
   change MeasurePreserving
-    (fun lambda : Feature d => star (U : Matrix (Fin d) (Fin d) ℝ) *ᵥ lambda)
+    (fun lambda : Feature d =>
+      matrixMulFeature (star (U : Matrix (Fin d) (Fin d) ℝ)) lambda)
     volume volume
   exact unitary_star_mulVec_measurePreserving U
 
@@ -1053,30 +821,6 @@ lemma designDet_ne_zero_of_initial_and_widthQuadraticForm_nonneg_lt
         (h_nonneg m (Nat.lt_succ_self m))
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Starting from a nonzero initial determinant, nonnegative selected quadratic forms imply that
-all design determinants through horizon `n` are nonzero. -/
-lemma designDet_ne_zero_of_initial_and_widthQuadraticForm_nonneg
-    (hdet0 : designDet A reg x 0 ω ≠ 0)
-    (h_nonneg : ∀ t, t ∈ range n → 0 ≤ widthQuadraticForm A reg x (A t ω) t ω) :
-    ∀ t, t ∈ range (n + 1) → designDet A reg x t ω ≠ 0 := by
-  intro t ht
-  exact designDet_ne_zero_of_initial_and_widthQuadraticForm_nonneg_lt (A := A) (reg := reg)
-    (x := x) (m := t) (ω := ω) hdet0 fun s hs ↦
-      h_nonneg s (mem_range.mpr (Nat.lt_of_lt_of_le hs (Nat.le_of_lt_succ (mem_range.mp ht))))
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Almost surely, a nonzero initial determinant and nonnegative selected quadratic forms imply
-that all design determinants through horizon `n` are nonzero. -/
-lemma designDet_ae_ne_zero_of_initial_and_widthQuadraticForm_ae_nonneg
-    (hdet0 : ∀ᵐ ω ∂P, designDet A reg x 0 ω ≠ 0)
-    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω) :
-    ∀ᵐ ω ∂P, ∀ t, t ∈ range (n + 1) → designDet A reg x t ω ≠ 0 := by
-  filter_upwards [hdet0, h_nonneg] with ω hdet0ω h_nonnegω
-  exact designDet_ne_zero_of_initial_and_widthQuadraticForm_nonneg (A := A) (reg := reg)
-    (x := x) (n := n) (ω := ω) hdet0ω h_nonnegω
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- If `det(V_n) ≠ 0`, then the one-step determinant ratio is
 `1 + x_{A_n}ᵀ V_n⁻¹ x_{A_n}`. -/
 lemma designDetStepRatio_eq_one_add_widthQuadraticForm
@@ -1156,110 +900,6 @@ lemma designDetRatio_pos_of_reg_pos (hreg_pos : 0 < reg) :
     (pow_pos hreg_pos d)
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Starting from a nonzero initial determinant, the cumulative determinant ratio is the finite
-product of the per-round determinant-update factors. -/
-lemma designDetRatio_eq_prod_one_add_widthQuadraticForm
-    (hdet0 : designDet A reg x 0 ω ≠ 0)
-    (h_nonneg : ∀ t, t ∈ range n → 0 ≤ widthQuadraticForm A reg x (A t ω) t ω) :
-    designDetRatio A reg x n ω =
-      ∏ t ∈ range n, (1 + widthQuadraticForm A reg x (A t ω) t ω) := by
-  induction n with
-  | zero =>
-      rw [designDetRatio_zero (A := A) (reg := reg) (x := x) (ω := ω) hdet0]
-      simp
-  | succ n ih =>
-      have hdetn : designDet A reg x n ω ≠ 0 :=
-        designDet_ne_zero_of_initial_and_widthQuadraticForm_nonneg_lt (A := A) (reg := reg)
-          (x := x) (m := n) (ω := ω) hdet0 fun t ht ↦
-            h_nonneg t (mem_range.mpr (Nat.lt_trans ht (Nat.lt_succ_self n)))
-      rw [designDetRatio_succ_eq_mul_one_add_widthQuadraticForm (A := A) (reg := reg)
-        (x := x) (n := n) (ω := ω) hdetn]
-      rw [ih fun t ht ↦ h_nonneg t
-        (mem_range.mpr (Nat.lt_trans (mem_range.mp ht) (Nat.lt_succ_self n)))]
-      simp [Finset.prod_range_succ]
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- If every selected quadratic form is in `[0, 1]`, the cumulative determinant ratio is at most
-`2 ^ n`. -/
-lemma designDetRatio_le_two_pow_of_initial_and_widthQuadraticForm_le_one
-    (hdet0 : designDet A reg x 0 ω ≠ 0)
-    (h_nonneg : ∀ t, t ∈ range n → 0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ t, t ∈ range n → widthQuadraticForm A reg x (A t ω) t ω ≤ 1) :
-    designDetRatio A reg x n ω ≤ (2 : ℝ) ^ n := by
-  rw [designDetRatio_eq_prod_one_add_widthQuadraticForm (A := A) (reg := reg)
-    (x := x) (n := n) (ω := ω) hdet0 h_nonneg]
-  calc
-    (∏ t ∈ range n, (1 + widthQuadraticForm A reg x (A t ω) t ω))
-        ≤ ∏ _t ∈ range n, (2 : ℝ) := by
-          exact Finset.prod_le_prod
-            (fun t ht ↦ by linarith [h_nonneg t ht])
-            (fun t ht ↦ by linarith [h_le_one t ht])
-    _ = (2 : ℝ) ^ n := by
-          simp
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Almost surely, if every selected quadratic form is in `[0, 1]`, the cumulative determinant
-ratio is at most `2 ^ n`. -/
-lemma designDetRatio_ae_le_two_pow_of_initial_and_widthQuadraticForm_ae_le_one
-    (hdet0 : ∀ᵐ ω ∂P, designDet A reg x 0 ω ≠ 0)
-    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1) :
-    ∀ᵐ ω ∂P, designDetRatio A reg x n ω ≤ (2 : ℝ) ^ n := by
-  filter_upwards [hdet0, h_nonneg, h_le_one] with ω hdet0ω h_nonnegω h_le_oneω
-  exact designDetRatio_le_two_pow_of_initial_and_widthQuadraticForm_le_one (A := A)
-    (reg := reg) (x := x) (n := n) (ω := ω) hdet0ω h_nonnegω h_le_oneω
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Almost surely, a nonzero regularization parameter and selected quadratic forms in `[0, 1]`
-imply the cumulative determinant ratio is at most `2 ^ n`. -/
-lemma designDetRatio_ae_le_two_pow_of_reg_ne_zero_and_widthQuadraticForm_ae_le_one
-    (hreg : reg ≠ 0)
-    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1) :
-    ∀ᵐ ω ∂P, designDetRatio A reg x n ω ≤ (2 : ℝ) ^ n := by
-  refine designDetRatio_ae_le_two_pow_of_initial_and_widthQuadraticForm_ae_le_one
-    (A := A) (reg := reg) (x := x) (n := n) (P := P) ?_ h_nonneg h_le_one
-  exact Filter.Eventually.of_forall fun ω ↦
-    designDet_zero_ne_zero_of_reg_ne_zero (A := A) (reg := reg) (x := x) (ω := ω) hreg
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Converts an almost-sure trace bound into the determinant-ratio bound supplied by a
-trace/determinant comparison theorem. -/
-lemma designDetRatio_ae_le_trace_budget_of_designTrace_ae_le
-    (T : ℝ)
-    (h_trace_le : ∀ᵐ ω ∂P, designTrace A reg x n ω ≤ T)
-    (h_ratio_of_trace : ∀ ω,
-      designTrace A reg x n ω ≤ T →
-        designDetRatio A reg x n ω ≤ (T / (reg * (d : ℝ))) ^ d) :
-    ∀ᵐ ω ∂P, designDetRatio A reg x n ω ≤ (T / (reg * (d : ℝ))) ^ d := by
-  filter_upwards [h_trace_le] with ω h_traceω
-  exact h_ratio_of_trace ω h_traceω
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Bounded selected feature norms give the concrete trace budget
-`reg * d + n * L2`; a trace/determinant comparison then gives the corresponding
-determinant-ratio bound. -/
-lemma designDetRatio_ae_le_trace_budget_of_featureSqNorm_bound
-    (L2 : ℝ)
-    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
-    (h_ratio_of_trace : ∀ ω,
-      designTrace A reg x n ω ≤ reg * (d : ℝ) + (n : ℝ) * L2 →
-        designDetRatio A reg x n ω ≤
-          ((reg * (d : ℝ) + (n : ℝ) * L2) / (reg * (d : ℝ))) ^ d) :
-    ∀ᵐ ω ∂P,
-      designDetRatio A reg x n ω ≤
-        ((reg * (d : ℝ) + (n : ℝ) * L2) / (reg * (d : ℝ))) ^ d := by
-  exact designDetRatio_ae_le_trace_budget_of_designTrace_ae_le (A := A) (reg := reg)
-    (x := x) (n := n) (P := P) (T := reg * (d : ℝ) + (n : ℝ) * L2)
-    (designTrace_ae_le_reg_mul_dim_add_nat_mul_featureSqNorm_bound (A := A) (reg := reg)
-      (x := x) (n := n) (P := P) L2 hL2)
-    h_ratio_of_trace
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- A determinant upper bound for `V_n` implies the corresponding determinant-ratio bound, using
 `det(V_0) = reg ^ d`. -/
 lemma designDetRatio_le_trace_budget_of_designDet_le
@@ -1305,7 +945,7 @@ omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 `det(V_n) ≤ ((reg * d + n * L2) / d) ^ d`. -/
 lemma designDetRatio_ae_le_trace_budget_of_featureSqNorm_bound_of_designDet_le
     (L2 : ℝ) (hreg_pos : 0 < reg) (hd : d ≠ 0)
-    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
+    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → ‖x (A t ω)‖ ^ 2 ≤ L2)
     (hdet_of_trace : ∀ ω,
       designTrace A reg x n ω ≤ reg * (d : ℝ) + (n : ℝ) * L2 →
         designDet A reg x n ω ≤
@@ -1410,7 +1050,7 @@ omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 determinant-ratio bound used by the elliptical-potential chain. -/
 lemma designDetRatio_ae_le_trace_budget_of_featureSqNorm_bound_of_matrix_det_trace_bound
     (L2 : ℝ) (hreg_pos : 0 < reg) (hd : d ≠ 0)
-    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
+    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → ‖x (A t ω)‖ ^ 2 ≤ L2)
     (hdet_trace : MatrixDetLeTraceAveragePow d) :
     ∀ᵐ ω ∂P,
       designDetRatio A reg x n ω ≤
@@ -1581,25 +1221,6 @@ lemma min_one_le_two_mul_log_one_add_of_nonneg {q : ℝ}
     exact hone_le_log_lower.trans (mul_le_mul_of_nonneg_left hlog (by norm_num))
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Under determinant nonvanishing and the usual `0 ≤ q ≤ 1` quadratic-form side conditions, the
-single capped quadratic-width term is bounded by the one-step log-determinant potential. -/
-lemma cappedWidthTerm_le_ellipticalPotentialStep
-    (hdet : designDet A reg x n ω ≠ 0)
-    (h_nonneg : 0 ≤ widthQuadraticForm A reg x (A n ω) n ω)
-    (h_le_one : n ≠ 0 → widthQuadraticForm A reg x (A n ω) n ω ≤ 1) :
-    (if n = 0 then 0 else min 1 (widthQuadraticForm A reg x (A n ω) n ω)) ≤
-      ellipticalPotentialStep A reg x n ω := by
-  by_cases hn : n = 0
-  · rw [if_pos hn,
-      ellipticalPotentialStep_eq_two_mul_log_one_add_widthQuadraticForm (A := A) (reg := reg)
-        (x := x) (n := n) (ω := ω) hdet]
-    exact mul_nonneg (by norm_num) (Real.log_nonneg (by linarith))
-  · rw [if_neg hn,
-      ellipticalPotentialStep_eq_two_mul_log_one_add_widthQuadraticForm (A := A) (reg := reg)
-        (x := x) (n := n) (ω := ω) hdet]
-    exact min_one_le_two_mul_log_one_add_of_nonneg_le_one h_nonneg (h_le_one hn)
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- Under determinant nonvanishing and nonnegativity of the selected quadratic form, the single
 capped quadratic-width term is bounded by the one-step log-determinant potential. This is the
 textbook form; no separate `q ≤ 1` assumption is needed because the term is already capped. -/
@@ -1617,23 +1238,6 @@ lemma cappedWidthTerm_le_ellipticalPotentialStep_of_nonneg
       ellipticalPotentialStep_eq_two_mul_log_one_add_widthQuadraticForm (A := A) (reg := reg)
         (x := x) (n := n) (ω := ω) hdet]
     exact min_one_le_two_mul_log_one_add_of_nonneg h_nonneg
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Almost surely, determinant nonvanishing and the standard quadratic-form side conditions imply
-the per-step one-step-potential bound required by the elliptical-potential induction shell. -/
-lemma cappedWidthTerm_ae_le_ellipticalPotentialStep_of_det_ne_zero
-    (hdet : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → designDet A reg x t ω ≠ 0)
-    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1) :
-    ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      (if t = 0 then 0 else min 1 (widthQuadraticForm A reg x (A t ω) t ω)) ≤
-        ellipticalPotentialStep A reg x t ω := by
-  filter_upwards [hdet, h_nonneg, h_le_one] with ω hdetω h_nonnegω h_le_oneω
-  intro t ht
-  exact cappedWidthTerm_le_ellipticalPotentialStep (A := A) (reg := reg) (x := x)
-    (n := t) (ω := ω) (hdetω t ht) (h_nonnegω t ht) (h_le_oneω t ht)
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- Almost surely, determinant nonvanishing and nonnegative selected quadratic forms imply the
@@ -1837,405 +1441,6 @@ lemma cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_reg_pos
       (n := n) (P := P) hreg_pos.le)
 
 omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- The process-level capped quadratic-width input expected from an elliptical-potential argument.
-
-It packages the three facts needed to turn a capped process-level quadratic-width estimate into the
-`widthSqSum` estimate used by the regret chain:
-
-* each positive-time process-level quadratic width form is nonnegative;
-* each positive-time process-level quadratic width form is at most `1`;
-* their capped process-level accumulated sum is bounded by `W`. -/
-def CappedQuadraticWidthBound (A : ℕ → Ω → Fin K) (reg : ℝ)
-    (x : Fin K → Feature d) (n : ℕ) (ω : Ω) (W : ℝ) : Prop :=
-  (∀ t, t ∈ range n → t ≠ 0 → 0 ≤ widthQuadraticForm A reg x (A t ω) t ω) ∧
-    (∀ t, t ∈ range n → t ≠ 0 → widthQuadraticForm A reg x (A t ω) t ω ≤ 1) ∧
-      cappedQuadraticWidthSum A reg x n ω ≤ W
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Build the packaged process-level capped quadratic-width input from its component facts. -/
-lemma cappedQuadraticWidthBound_of_nonneg_le_one_and_sum_le {W : ℝ}
-    (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
-    (h_sum_le : cappedQuadraticWidthSum A reg x n ω ≤ W) :
-    CappedQuadraticWidthBound A reg x n ω W := by
-  exact ⟨h_nonneg, h_le_one, h_sum_le⟩
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Base case for the packaged process-level capped quadratic-width input. At horizon zero, the
-nonnegativity and `≤ 1` side conditions are vacuous, and the capped sum is zero. -/
-lemma cappedQuadraticWidthBound_zero {W : ℝ} (hW : 0 ≤ W) :
-    CappedQuadraticWidthBound A reg x 0 ω W := by
-  refine cappedQuadraticWidthBound_of_nonneg_le_one_and_sum_le (A := A) (reg := reg)
-    (x := x) (n := 0) (ω := ω) ?_ ?_ ?_
-  · intro t ht _
-    simp at ht
-  · intro t ht _
-    simp at ht
-  · simpa [cappedQuadraticWidthSum_zero] using hW
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Base case for the packaged process-level capped quadratic-width input when the constant bound
-is supplied through the log-determinant potential. -/
-lemma cappedQuadraticWidthBound_zero_of_ellipticalPotential_le_bound {W : ℝ}
-    (hdet : designDet A reg x 0 ω ≠ 0) (h_potential_le : ellipticalPotential A reg x 0 ω ≤ W) :
-    CappedQuadraticWidthBound A reg x 0 ω W := by
-  refine cappedQuadraticWidthBound_of_nonneg_le_one_and_sum_le (A := A) (reg := reg)
-    (x := x) (n := 0) (ω := ω) ?_ ?_ ?_
-  · intro t ht _
-    simp at ht
-  · intro t ht _
-    simp at ht
-  · exact (cappedQuadraticWidthSum_le_ellipticalPotential_zero (A := A) (reg := reg)
-      (x := x) (ω := ω) hdet).trans h_potential_le
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- The packaged process-level capped quadratic-width input is monotone in the numeric bound. -/
-lemma cappedQuadraticWidthBound_mono {W W' : ℝ}
-    (h_bound : CappedQuadraticWidthBound A reg x n ω W) (hW : W ≤ W') :
-    CappedQuadraticWidthBound A reg x n ω W' := by
-  exact ⟨h_bound.1, h_bound.2.1, h_bound.2.2.trans hW⟩
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Almost surely, build the packaged process-level capped quadratic-width input from its component
-facts. -/
-lemma cappedQuadraticWidthBound_ae_of_nonneg_le_one_and_sum_ae_le {W : ℝ}
-    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
-    (h_sum_le : ∀ᵐ ω ∂P, cappedQuadraticWidthSum A reg x n ω ≤ W) :
-    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W := by
-  filter_upwards [h_nonneg, h_le_one, h_sum_le] with
-    ω h_nonnegω h_le_oneω h_sum_leω
-  exact cappedQuadraticWidthBound_of_nonneg_le_one_and_sum_le (A := A) (reg := reg)
-    (x := x) (n := n) (ω := ω) h_nonnegω h_le_oneω h_sum_leω
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Almost surely, the packaged process-level capped quadratic-width input is monotone in the
-numeric bound. -/
-lemma cappedQuadraticWidthBound_ae_mono {W W' : ℝ}
-    (h_bound : ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W) (hW : W ≤ W') :
-    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W' := by
-  filter_upwards [h_bound] with ω h_boundω
-  exact cappedQuadraticWidthBound_mono (A := A) (reg := reg) (x := x) (n := n)
-    (ω := ω) h_boundω hW
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- A capped-sum bound by the log-determinant potential, together with a constant bound on that
-potential, gives the packaged process-level capped quadratic-width input. -/
-lemma cappedQuadraticWidthBound_of_ellipticalPotential_le_bound {W : ℝ}
-    (h_nonneg : ∀ t, t ∈ range n → t ≠ 0 →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
-    (h_elliptical :
-      cappedQuadraticWidthSum A reg x n ω ≤ ellipticalPotential A reg x n ω)
-    (h_potential_le : ellipticalPotential A reg x n ω ≤ W) :
-    CappedQuadraticWidthBound A reg x n ω W := by
-  exact cappedQuadraticWidthBound_of_nonneg_le_one_and_sum_le (A := A) (reg := reg)
-    (x := x) (n := n) (ω := ω) h_nonneg h_le_one (h_elliptical.trans h_potential_le)
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Almost surely, a capped-sum bound by the log-determinant potential and an almost-sure constant
-bound on that potential give the packaged process-level capped quadratic-width input. -/
-lemma cappedQuadraticWidthBound_ae_of_ellipticalPotential_ae_le_bound {W : ℝ}
-    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
-    (h_elliptical : ∀ᵐ ω ∂P,
-      cappedQuadraticWidthSum A reg x n ω ≤ ellipticalPotential A reg x n ω)
-    (h_potential_le : ∀ᵐ ω ∂P, ellipticalPotential A reg x n ω ≤ W) :
-    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W := by
-  filter_upwards [h_nonneg, h_le_one, h_elliptical, h_potential_le] with
-    ω h_nonnegω h_le_oneω h_ellipticalω h_potential_leω
-  exact cappedQuadraticWidthBound_of_ellipticalPotential_le_bound (A := A) (reg := reg)
-    (x := x) (n := n) (ω := ω) h_nonnegω h_le_oneω h_ellipticalω h_potential_leω
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Almost surely, per-step bounds by log-determinant potential increments and a final constant
-bound on the potential give the packaged process-level capped quadratic-width input. -/
-lemma cappedQuadraticWidthBound_ae_of_ellipticalPotential_step_ae_le_bound {W : ℝ}
-    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
-    (hdet : ∀ᵐ ω ∂P, designDet A reg x 0 ω ≠ 0)
-    (h_step : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      (if t = 0 then 0 else min 1 (widthQuadraticForm A reg x (A t ω) t ω)) ≤
-        ellipticalPotentialIncrement A reg x t ω)
-    (h_potential_le : ∀ᵐ ω ∂P, ellipticalPotential A reg x n ω ≤ W) :
-    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W := by
-  exact cappedQuadraticWidthBound_ae_of_ellipticalPotential_ae_le_bound (A := A)
-    (reg := reg) (x := x) (n := n) (P := P) (W := W) h_nonneg h_le_one
-    (cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_step_ae_le (A := A)
-      (reg := reg) (x := x) (n := n) (P := P) hdet h_step)
-    h_potential_le
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Almost surely, one-step determinant-ratio potential bounds, their bridge to cumulative
-potential increments, and a final constant bound on the potential give the packaged process-level
-capped quadratic-width input.
-
-This is the packaged form of the determinant-update interface: once the true matrix determinant
-lemma proves the `h_step` assumption and the log/telescoping algebra proves
-`h_step_le_increment`, the existing regret chain can consume the resulting bound. -/
-lemma cappedQuadraticWidthBound_ae_of_ellipticalPotential_stepPotential_ae_le_bound {W : ℝ}
-    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
-    (hdet : ∀ᵐ ω ∂P, designDet A reg x 0 ω ≠ 0)
-    (h_step : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      (if t = 0 then 0 else min 1 (widthQuadraticForm A reg x (A t ω) t ω)) ≤
-        ellipticalPotentialStep A reg x t ω)
-    (h_step_le_increment : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      ellipticalPotentialStep A reg x t ω ≤ ellipticalPotentialIncrement A reg x t ω)
-    (h_potential_le : ∀ᵐ ω ∂P, ellipticalPotential A reg x n ω ≤ W) :
-    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W := by
-  exact cappedQuadraticWidthBound_ae_of_ellipticalPotential_ae_le_bound (A := A)
-    (reg := reg) (x := x) (n := n) (P := P) (W := W) h_nonneg h_le_one
-    (cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_stepPotential_ae_le (A := A)
-      (reg := reg) (x := x) (n := n) (P := P) hdet h_step h_step_le_increment)
-    h_potential_le
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Almost surely, one-step determinant-ratio potential bounds, determinant nonvanishing up to the
-horizon, and a final constant bound on the potential give the packaged process-level capped
-quadratic-width input.
-
-This is the determinant-nonvanishing version of the one-step interface: it isolates the one-step
-matrix inequality from the final log-determinant bound. -/
-lemma cappedQuadraticWidthBound_ae_of_ellipticalPotential_stepPotential_ae_le_bound_of_det_ne_zero
-    {W : ℝ}
-    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
-    (hdet : ∀ᵐ ω ∂P, ∀ t, t ∈ range (n + 1) → designDet A reg x t ω ≠ 0)
-    (h_step : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      (if t = 0 then 0 else min 1 (widthQuadraticForm A reg x (A t ω) t ω)) ≤
-        ellipticalPotentialStep A reg x t ω)
-    (h_potential_le : ∀ᵐ ω ∂P, ellipticalPotential A reg x n ω ≤ W) :
-    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W := by
-  exact cappedQuadraticWidthBound_ae_of_ellipticalPotential_ae_le_bound (A := A)
-    (reg := reg) (x := x) (n := n) (P := P) (W := W) h_nonneg h_le_one
-    (cappedQuadraticWidthSum_ae_le_ellipticalPotential_of_stepPotential_ae_le_of_det_ne_zero
-      (A := A) (reg := reg) (x := x) (n := n) (P := P) hdet h_step)
-    h_potential_le
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Almost surely, the determinant-update step, determinant nonvanishing up to the horizon, and a
-final constant bound on the log-determinant potential give the packaged capped quadratic-width
-input used by the regret chain.
-
-The assumptions now match the concrete obligations left for a full elliptical-potential proof:
-
-* prove all relevant design determinants are nonzero;
-* prove selected quadratic forms are nonnegative and at most `1` at positive times;
-* prove the final log-determinant potential is at most `W`. -/
-lemma cappedQuadraticWidthBound_ae_of_det_update_ellipticalPotential_le_bound {W : ℝ}
-    (hdet : ∀ᵐ ω ∂P, ∀ t, t ∈ range (n + 1) → designDet A reg x t ω ≠ 0)
-    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
-    (h_potential_le : ∀ᵐ ω ∂P, ellipticalPotential A reg x n ω ≤ W) :
-    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W := by
-  have hdet_range_n : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → designDet A reg x t ω ≠ 0 := by
-    filter_upwards [hdet] with ω hdetω
-    intro t ht
-    exact hdetω t (mem_range.mpr (Nat.lt_trans (mem_range.mp ht) (Nat.lt_succ_self n)))
-  have h_nonneg_positive : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω := by
-    filter_upwards [h_nonneg] with ω h_nonnegω
-    intro t ht _
-    exact h_nonnegω t ht
-  exact cappedQuadraticWidthBound_ae_of_ellipticalPotential_stepPotential_ae_le_bound_of_det_ne_zero
-    (A := A) (reg := reg) (x := x) (n := n) (P := P) (W := W)
-    h_nonneg_positive h_le_one hdet
-    (cappedWidthTerm_ae_le_ellipticalPotentialStep_of_det_ne_zero (A := A) (reg := reg)
-      (x := x) (n := n) (P := P) hdet_range_n h_nonneg h_le_one)
-    h_potential_le
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Almost surely, a nonzero initial determinant, the determinant-update step, and a final constant
-bound on the log-determinant potential give the packaged capped quadratic-width input used by the
-regret chain.
-
-This removes the need to assume determinant nonvanishing at every time: it is derived inductively
-from `det(V_0) ≠ 0` and nonnegative selected quadratic forms. -/
-lemma cappedQuadraticWidthBound_ae_of_initial_det_update_ellipticalPotential_le_bound {W : ℝ}
-    (hdet0 : ∀ᵐ ω ∂P, designDet A reg x 0 ω ≠ 0)
-    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
-    (h_potential_le : ∀ᵐ ω ∂P, ellipticalPotential A reg x n ω ≤ W) :
-    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W := by
-  exact cappedQuadraticWidthBound_ae_of_det_update_ellipticalPotential_le_bound (A := A)
-    (reg := reg) (x := x) (n := n) (P := P) (W := W)
-    (designDet_ae_ne_zero_of_initial_and_widthQuadraticForm_ae_nonneg (A := A)
-      (reg := reg) (x := x) (n := n) (P := P) hdet0 h_nonneg)
-    h_nonneg h_le_one h_potential_le
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Almost surely, a nonzero regularization parameter, the determinant-update step, and a final
-constant bound on the log-determinant potential give the packaged capped quadratic-width input used
-by the regret chain. -/
-lemma cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_ellipticalPotential_le_bound {W : ℝ}
-    (hreg : reg ≠ 0)
-    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
-    (h_potential_le : ∀ᵐ ω ∂P, ellipticalPotential A reg x n ω ≤ W) :
-    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W := by
-  refine cappedQuadraticWidthBound_ae_of_initial_det_update_ellipticalPotential_le_bound
-    (A := A) (reg := reg) (x := x) (n := n) (P := P) (W := W) ?_ h_nonneg h_le_one
-    h_potential_le
-  exact Filter.Eventually.of_forall fun ω ↦
-    designDet_zero_ne_zero_of_reg_ne_zero (A := A) (reg := reg) (x := x) (ω := ω) hreg
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Positive regularization discharges the determinant-nonvanishing and quadratic-form
-nonnegativity obligations in the log-determinant elliptical-potential chain. -/
-lemma cappedQuadraticWidthBound_ae_of_reg_pos_det_update_ellipticalPotential_le_bound {W : ℝ}
-    (hreg_pos : 0 < reg)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
-    (h_potential_le : ∀ᵐ ω ∂P, ellipticalPotential A reg x n ω ≤ W) :
-    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W := by
-  exact cappedQuadraticWidthBound_ae_of_det_update_ellipticalPotential_le_bound
-    (A := A) (reg := reg) (x := x) (n := n) (P := P) (W := W)
-    (designDet_ae_ne_zero_of_reg_pos (A := A) (reg := reg) (x := x)
-      (n := n + 1) (P := P) hreg_pos)
-    (widthQuadraticForm_ae_nonneg_of_reg_nonneg (A := A) (reg := reg) (x := x)
-      (n := n) (P := P) hreg_pos.le)
-    h_le_one h_potential_le
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Almost surely, a nonzero initial determinant, nonnegative selected quadratic forms, a
-determinant-ratio upper bound, and the determinant-update step give the packaged capped
-quadratic-width input used by the regret chain.
-
-This version accepts the determinant-ratio bound directly and converts it into the
-`ellipticalPotential ≤ 2 * log D` bound internally. -/
-lemma cappedQuadraticWidthBound_ae_of_initial_det_update_designDetRatio_le_bound {D : ℝ}
-    (hdet0 : ∀ᵐ ω ∂P, designDet A reg x 0 ω ≠ 0)
-    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
-    (h_ratio_le : ∀ᵐ ω ∂P, designDetRatio A reg x n ω ≤ D) :
-    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω (2 * Real.log D) := by
-  exact cappedQuadraticWidthBound_ae_of_initial_det_update_ellipticalPotential_le_bound
-    (A := A) (reg := reg) (x := x) (n := n) (P := P) (W := 2 * Real.log D)
-    hdet0 h_nonneg h_le_one
-    (ellipticalPotential_ae_le_two_mul_log_of_designDetRatio_ae_le (A := A)
-      (reg := reg) (x := x) (n := n) (P := P)
-      (designDetRatio_ae_pos_of_initial_and_widthQuadraticForm_ae_nonneg (A := A)
-        (reg := reg) (x := x) (n := n) (P := P) hdet0 h_nonneg)
-      h_ratio_le)
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Almost surely, a nonzero regularization parameter, nonnegative selected quadratic forms, a
-determinant-ratio upper bound, and the determinant-update step give the packaged capped
-quadratic-width input used by the regret chain.
-
-This is the most direct interface for the final determinant-bound part of the finite-action
-elliptical-potential argument: after proving `designDetRatio ≤ D`, the theorem supplies the
-`CappedQuadraticWidthBound` with bound `2 * log D`. -/
-lemma cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_designDetRatio_le_bound {D : ℝ}
-    (hreg : reg ≠ 0)
-    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
-    (h_ratio_le : ∀ᵐ ω ∂P, designDetRatio A reg x n ω ≤ D) :
-    ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω (2 * Real.log D) := by
-  refine cappedQuadraticWidthBound_ae_of_initial_det_update_designDetRatio_le_bound
-    (A := A) (reg := reg) (x := x) (n := n) (P := P) ?_ h_nonneg h_le_one h_ratio_le
-  exact Filter.Eventually.of_forall fun ω ↦
-    designDet_zero_ne_zero_of_reg_ne_zero (A := A) (reg := reg) (x := x) (ω := ω) hreg
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- A simple explicit determinant-ratio bound for the capped quadratic-width input.
-
-If `reg ≠ 0` and every selected quadratic form is almost surely in `[0, 1]`, then the determinant
-ratio is at most `2 ^ n`, so the existing determinant-update/elliptical-potential chain gives the
-packaged capped-width bound with budget `2 * log (2 ^ n)`. -/
-lemma cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_two_pow_bound
-    (hreg : reg ≠ 0)
-    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1) :
-    ∀ᵐ ω ∂P,
-      CappedQuadraticWidthBound A reg x n ω (2 * Real.log ((2 : ℝ) ^ n)) := by
-  refine cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_designDetRatio_le_bound
-    (A := A) (reg := reg) (x := x) (n := n) (P := P) (D := (2 : ℝ) ^ n)
-    hreg h_nonneg ?_ ?_
-  · filter_upwards [h_le_one] with ω h_le_oneω
-    exact fun t ht _ ↦ h_le_oneω t ht
-  · exact designDetRatio_ae_le_two_pow_of_reg_ne_zero_and_widthQuadraticForm_ae_le_one
-      (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg h_nonneg h_le_one
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Trace-budget interface for the determinant part of the finite-action elliptical-potential
-argument.
-
-Given a determinant-ratio bound `designDetRatio ≤ (T / (reg * d)) ^ d`, where `T` is an upper bound
-on `trace(V_n)`, this theorem feeds that determinant-ratio bound into the determinant-update and
-elliptical-potential chain. -/
-lemma cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_trace_budget_bound
-    (hreg : reg ≠ 0)
-    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
-    (T : ℝ)
-    (h_ratio_le : ∀ᵐ ω ∂P,
-      designDetRatio A reg x n ω ≤ (T / (reg * (d : ℝ))) ^ d) :
-    ∀ᵐ ω ∂P,
-      CappedQuadraticWidthBound A reg x n ω
-        (2 * Real.log ((T / (reg * (d : ℝ))) ^ d)) := by
-  exact cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_designDetRatio_le_bound
-    (A := A) (reg := reg) (x := x) (n := n) (P := P)
-    (D := (T / (reg * (d : ℝ))) ^ d) hreg h_nonneg h_le_one h_ratio_le
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Feature-norm-budget interface for the determinant part of the finite-action
-elliptical-potential argument.
-
-If selected feature vectors have squared norm at most `L2`, then `trace(V_n) ≤ reg * d + n * L2`.
-Given a deterministic trace/determinant comparison that turns this trace budget into the
-determinant-ratio bound, this theorem supplies the packaged capped-width input with the explicit
-budget `2 * log (((reg * d + n * L2) / (reg * d)) ^ d)`. -/
-lemma cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_featureSqNorm_budget_bound
-    (hreg : reg ≠ 0)
-    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
-    (L2 : ℝ)
-    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
-    (h_ratio_of_trace : ∀ ω,
-      designTrace A reg x n ω ≤ reg * (d : ℝ) + (n : ℝ) * L2 →
-        designDetRatio A reg x n ω ≤
-          ((reg * (d : ℝ) + (n : ℝ) * L2) / (reg * (d : ℝ))) ^ d) :
-    ∀ᵐ ω ∂P,
-      CappedQuadraticWidthBound A reg x n ω
-        (2 * Real.log (((reg * (d : ℝ) + (n : ℝ) * L2) / (reg * (d : ℝ))) ^ d)) := by
-  exact cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_trace_budget_bound
-    (A := A) (reg := reg) (x := x) (n := n) (P := P)
-    (T := reg * (d : ℝ) + (n : ℝ) * L2) hreg h_nonneg h_le_one
-    (designDetRatio_ae_le_trace_budget_of_featureSqNorm_bound (A := A) (reg := reg)
-      (x := x) (n := n) (P := P) L2 hL2 h_ratio_of_trace)
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
 /-- The explicit feature-norm determinant budget can be rewritten in the common
 `d * log(1 + n L² / (reg d))` form. -/
 lemma featureSqNorm_budget_log_eq_dim_mul_log_one_add
@@ -2258,7 +1463,7 @@ quadratic-width sum directly and does not assume the individual quadratic forms 
 lemma cappedQuadraticWidthSum_ae_le_featureSqNorm_budget_of_matrix_det_trace_bound
     (hreg_pos : 0 < reg) (hd : d ≠ 0)
     (L2 : ℝ)
-    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
+    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → ‖x (A t ω)‖ ^ 2 ≤ L2)
     (hdet_trace : MatrixDetLeTraceAveragePow d) :
     ∀ᵐ ω ∂P,
       cappedQuadraticWidthSum A reg x n ω ≤
@@ -2285,123 +1490,12 @@ lemma cappedQuadraticWidthSum_ae_le_featureSqNorm_budget_of_matrix_det_trace_bou
     ω h_capped_le h_potentialω
   exact h_capped_le.trans h_potentialω
 
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Feature-norm-budget interface with the log term rewritten in the standard
-`2 * d * log(1 + n L² / (reg d))` shape. -/
-lemma cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_featureSqNorm_budget_bound'
-    (hreg : reg ≠ 0) (hd : d ≠ 0)
-    (h_nonneg : ∀ᵐ ω ∂P, ∀ t, t ∈ range n →
-      0 ≤ widthQuadraticForm A reg x (A t ω) t ω)
-    (h_le_one : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → t ≠ 0 →
-      widthQuadraticForm A reg x (A t ω) t ω ≤ 1)
-    (L2 : ℝ)
-    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
-    (h_ratio_of_trace : ∀ ω,
-      designTrace A reg x n ω ≤ reg * (d : ℝ) + (n : ℝ) * L2 →
-        designDetRatio A reg x n ω ≤
-          ((reg * (d : ℝ) + (n : ℝ) * L2) / (reg * (d : ℝ))) ^ d) :
-    ∀ᵐ ω ∂P,
-      CappedQuadraticWidthBound A reg x n ω
-        (2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ)))) := by
-  have hden : reg * (d : ℝ) ≠ 0 := by
-    exact mul_ne_zero hreg (by exact_mod_cast hd)
-  rw [← featureSqNorm_budget_log_eq_dim_mul_log_one_add (reg := reg) (n := n) L2 hden]
-  exact cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_featureSqNorm_budget_bound
-    (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg h_nonneg h_le_one L2 hL2
-    h_ratio_of_trace
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Feature-norm-budget interface with the determinant/trace comparison stated as a determinant
-upper bound for `V_n`, rather than directly as a determinant-ratio bound. -/
-lemma cappedQuadraticWidthBound_ae_of_reg_pos_det_update_featureSqNorm_budget_bound_of_designDet_le
-    (hreg_pos : 0 < reg) (hd : d ≠ 0)
-    (L2 : ℝ)
-    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
-    (hL2_le_reg : L2 ≤ reg)
-    (hdet_of_trace : ∀ ω,
-      designTrace A reg x n ω ≤ reg * (d : ℝ) + (n : ℝ) * L2 →
-        designDet A reg x n ω ≤
-          ((reg * (d : ℝ) + (n : ℝ) * L2) / (d : ℝ)) ^ d) :
-    ∀ᵐ ω ∂P,
-      CappedQuadraticWidthBound A reg x n ω
-        (2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ)))) := by
-  refine cappedQuadraticWidthBound_ae_of_reg_ne_zero_det_update_featureSqNorm_budget_bound'
-    (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos.ne' hd
-    (widthQuadraticForm_ae_nonneg_of_reg_nonneg (A := A) (reg := reg) (x := x)
-      (n := n) (P := P) hreg_pos.le)
-    (widthQuadraticForm_ae_le_one_of_featureSqNorm_ae_le (A := A) (reg := reg)
-      (x := x) (n := n) (P := P)
-      (WidthQuadraticFormLeFeatureSqNormDivReg.of_reg_pos (A := A) (reg := reg)
-        (x := x) hreg_pos)
-      hreg_pos hL2 hL2_le_reg)
-    L2 hL2 ?_
-  intro ω h_traceω
-  exact designDetRatio_le_trace_budget_of_designDet_le (A := A) (reg := reg)
-    (x := x) (n := n) (ω := ω) (T := reg * (d : ℝ) + (n : ℝ) * L2) hreg_pos hd
-    (hdet_of_trace ω h_traceω)
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Feature-norm-budget interface consuming the reusable positive-semidefinite determinant/trace
-comparison `det(M) ≤ (trace(M) / d) ^ d`. -/
-lemma cappedQuadraticWidthBound_ae_of_matrix_det_trace_bound
-    (hreg_pos : 0 < reg) (hd : d ≠ 0)
-    (L2 : ℝ)
-    (hL2 : ∀ᵐ ω ∂P, ∀ t, t ∈ range n → featureSqNorm x (A t ω) ≤ L2)
-    (hL2_le_reg : L2 ≤ reg)
-    (hdet_trace : MatrixDetLeTraceAveragePow d) :
-    ∀ᵐ ω ∂P,
-      CappedQuadraticWidthBound A reg x n ω
-        (2 * (d : ℝ) * Real.log (1 + (n : ℝ) * L2 / (reg * (d : ℝ)))) := by
-  refine
-    cappedQuadraticWidthBound_ae_of_reg_pos_det_update_featureSqNorm_budget_bound_of_designDet_le
-    (A := A) (reg := reg) (x := x) (n := n) (P := P) hreg_pos hd
-    L2 hL2 hL2_le_reg ?_
-  intro ω h_traceω
-  exact designDet_le_trace_budget_of_matrix_det_trace_bound (A := A) (reg := reg)
-    (x := x) (n := n) (ω := ω) hdet_trace hreg_pos.le hd
-    (reg * (d : ℝ) + (n : ℝ) * L2) h_traceω
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- The packaged process-level capped quadratic-width input implies the `widthSqSum` bound consumed
-by the regret chain. -/
-lemma widthSqSum_le_of_capped_quadratic_width_bound {W : ℝ}
-    (h_bound : CappedQuadraticWidthBound A reg x n ω W) :
-    widthSqSum A reg x n ω ≤ W := by
-  exact widthSqSum_le_of_capped_quadratic_width_sum_le (A := A) (reg := reg) (x := x)
-    (n := n) (ω := ω) h_bound.1 h_bound.2.1 h_bound.2.2
-
-omit [IsMarkovKernel ν] [IsProbabilityMeasure P] in
-/-- Almost surely, the packaged process-level capped quadratic-width input implies the `widthSqSum`
-bound consumed by the regret chain. -/
-lemma widthSqSum_ae_le_of_capped_quadratic_width_bound_ae {W : ℝ}
-    (h_bound : ∀ᵐ ω ∂P, CappedQuadraticWidthBound A reg x n ω W) :
-    ∀ᵐ ω ∂P, widthSqSum A reg x n ω ≤ W := by
-  filter_upwards [h_bound] with ω h_boundω
-  exact widthSqSum_le_of_capped_quadratic_width_bound (A := A) (reg := reg) (x := x)
-    (n := n) (ω := ω) (W := W) h_boundω
-
 /-- The process-level LinUCB optimistic index. -/
 noncomputable def index (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     (reg : ℝ) (β : ℕ → ℝ) (x : Fin K → Feature d) (a : Fin K)
     (n : ℕ) (ω : Ω) : ℝ :=
   estimatedReward A R reg x a n ω + √(β (n + 1)) * width A reg x a n ω
 
-/-- At time zero, the LinUCB index is only the confidence bonus because the estimated reward is
-zero. -/
-lemma index_zero (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
-    (reg : ℝ) (β : ℕ → ℝ) (x : Fin K → Feature d) (a : Fin K) (ω : Ω) :
-    index A R reg β x a 0 ω = √(β 1) * width A reg x a 0 ω := by
-  simp [index, estimatedReward_zero]
-
-/-- At time zero, the LinUCB index is the confidence schedule times the initial quadratic-form
-width. -/
-lemma index_zero_eq_initial_quadratic_form (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
-    (reg : ℝ) (β : ℕ → ℝ) (x : Fin K → Feature d) (a : Fin K) (ω : Ω) :
-    index A R reg β x a 0 ω =
-      √(β 1) * √(dotProduct (x a) (Matrix.mulVec (reg • 1)⁻¹ (x a))) := by
-  simp [index_zero, width_zero]
-
-/-- The finite-action LinUCB process starts from the deterministic default arm. -/
 lemma arm_zero [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P) :
     A 0 =ᵐ[P] fun _ ↦ ⟨0, hK⟩ := by
