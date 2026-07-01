@@ -7,7 +7,7 @@ module
 
 public import LeanMachineLearning.Online.Bandit.SumRewards
 public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
-public import LeanMachineLearning.ForMathlib.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Order.MeasurableArg
 
 /-!
 # UCB algorithm
@@ -37,13 +37,12 @@ noncomputable
 def UCB.nextArm (hK : 0 < K) (c : ℝ) (n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   if n < K - 1 then RoundRobin.nextAction hK n else
-  measurableArgmax (fun h a ↦ empMean' n h a + ucbWidth' c n h a) h
+  argmax (fun a ↦ empMean' n h a + ucbWidth' c n h a)
 
 @[fun_prop]
 lemma UCB.measurable_nextArm (hK : 0 < K) (c : ℝ) (n : ℕ) : Measurable (nextArm hK c n) := by
   refine Measurable.ite (by simp) (by fun_prop) ?_
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  refine measurable_measurableArgmax fun a ↦ ?_
   unfold ucbWidth'
   fun_prop
 
@@ -122,8 +121,8 @@ lemma ucbIndex_le_ucbIndex_arm
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   simp_rw [h_arm, empMean_eq_empMean' (by grind : n ≠ 0),
     ucbWidth_eq_ucbWidth' (A := A) (R := R) _ _ _ _ (by grind : n ≠ 0)]
-  exact isMaxOn_measurableArgmax (fun h a ↦ empMean' (n - 1) h a + ucbWidth' c (n - 1) h a)
-    (history A R (n - 1) h) a
+  exact isMaxOn_argmax (fun a ↦ empMean' (n - 1) (history A R (n - 1) h) a
+    + ucbWidth' c (n - 1) (history A R (n - 1) h) a) _
 
 lemma forall_arm_eq_mod_of_lt (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
     ∀ᵐ h ∂P, ∀ n < K, A n h = ⟨n % K, Nat.mod_lt _ hK⟩ := by
