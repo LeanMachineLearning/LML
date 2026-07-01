@@ -40,6 +40,17 @@ lemma inner_eq_add (x y g : E) (hη : 0 < η) :
   simp only [inner_smul_right, norm_smul, Real.norm_eq_abs, abs_of_pos hη]
   field
 
+lemma inner_eq_add' (x y g : ℕ → E) (hx : ∀ n, x (n + 1) = x n - γ n • g n)
+    (hγ : ∀ n, 0 < γ n) (i : ℕ) :
+    ⟪x i - y i, g i⟫ =
+      (2 * γ i)⁻¹ * (‖x i - y i‖ ^ 2 - ‖x (i + 1) - y i‖ ^ 2) + (γ i / 2) * ‖g i‖ ^ 2 := by
+  have hsub : (x i - γ i • g i) - y i = (x i - y i) - γ i • g i := by abel
+  simp only [hx]
+  rw [hsub, norm_sub_sq_real (x i - y i) (γ i • g i)]
+  simp only [inner_smul_right, norm_smul, Real.norm_eq_abs, abs_of_pos (hγ i)]
+  specialize hγ i
+  field
+
 lemma inner_le_add_proj [FiniteDimensional ℝ E] {s : Set E} (h_closed : IsClosed s)
     (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty) (x g : E) {y : E} (hy : y ∈ s) (hη : 0 < η) :
     ⟪x - y, g⟫ ≤ (2 * η)⁻¹ * (‖x - y‖ ^ 2 - ‖proj s (x - η • g) - y‖ ^ 2) + (η / 2) * ‖g‖ ^ 2 := by
@@ -48,38 +59,83 @@ lemma inner_le_add_proj [FiniteDimensional ℝ E] {s : Set E} (h_closed : IsClos
   rw [← dist_eq_norm, ← dist_eq_norm]
   exact dist_proj_le h_closed h_convex h_nonempty (x - η • g) hy
 
-lemma sum_inner_le_sum' (x y g : ℕ → E) (hγ : ∀ n, 0 < γ n) (n : ℕ) :
-    ∑ i ∈ Finset.range n, ⟪x i - y i, g i⟫ ≤
-      ∑ i ∈ Finset.range n,
-        ((2 * γ i)⁻¹ * (‖x i - y i‖ ^ 2 - ‖(x i - γ i • g i) - y i‖ ^ 2) +
-          (γ i / 2) * ‖g i‖ ^ 2) := by
-  gcongr with i hi
-  rw [inner_eq_add (x i) (y i) (g i) (hγ i)]
+lemma inner_le_add_proj' [FiniteDimensional ℝ E] {s : Set E} (h_closed : IsClosed s)
+    (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty) (x g : ℕ → E)
+    (hx : ∀ n, x (n + 1) = proj s (x n - γ n • g n)) {y : ℕ → E} (hy : ∀ i, y i ∈ s)
+    (hγ : ∀ i, 0 < γ i) (i : ℕ) :
+    ⟪x i - y i, g i⟫ ≤
+      (2 * γ i)⁻¹ * (‖x i - y i‖ ^ 2 - ‖x (i + 1) - y i‖ ^ 2) + (γ i / 2) * ‖g i‖ ^ 2 := by
+  grw [inner_le_add_proj h_closed h_convex h_nonempty (x i) (g i) (hy i) (hγ i)]
+  simp [hx]
 
+lemma todo (x y g : ℕ → E)
+    (h : ∀ i, ⟪x i - y i, g i⟫ ≤
+      (2 * γ i)⁻¹ * (‖x i - y i‖ ^ 2 - ‖x (i + 1) - y i‖ ^ 2) + (γ i / 2) * ‖g i‖ ^ 2) (n : ℕ) :
+    ∑ i ∈ range n, ⟪x i - y i, g i⟫ ≤
+      ∑ i ∈ range n,
+        ((2 * γ i)⁻¹ * (‖x i - y i‖ ^ 2 - ‖x (i + 1) - y i‖ ^ 2) + (γ i / 2) * ‖g i‖ ^ 2) := by
+  grw [h]
+
+-- todo: change `y` to `ℕ → E` ?
 lemma sum_inner_le_sum (x g : ℕ → E) (y : E) (hγ : ∀ n, 0 < γ n)
     (hx : ∀ n, x (n + 1) = x n - γ n • g n) (n : ℕ) :
-    ∑ i ∈ Finset.range n, ⟪x i - y, g i⟫ ≤
-      ∑ i ∈ Finset.range n,
-        ((2 * γ i)⁻¹ * (‖x i - y‖ ^ 2 - ‖x (i + 1) - y‖ ^ 2) + (γ i / 2) * ‖g i‖ ^ 2) :=
-  (sum_inner_le_sum' x (fun _ ↦ y) g hγ n).trans_eq <| by simp [hx]
+    ∑ i ∈ range n, ⟪x i - y, g i⟫ ≤
+      ∑ i ∈ range n,
+        ((2 * γ i)⁻¹ * (‖x i - y‖ ^ 2 - ‖x (i + 1) - y‖ ^ 2) + (γ i / 2) * ‖g i‖ ^ 2) := by
+  refine todo x (fun _ ↦ y) g (fun i ↦ ?_) n
+  grw [inner_eq_add' x (fun _ ↦ y) g hx hγ]
+
+lemma sum_inner_le_sum_proj [FiniteDimensional ℝ E] {s : Set E} (h_closed : IsClosed s)
+    (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty) (x g : ℕ → E) (y : E) (hys : y ∈ s)
+    (hγ : ∀ n, 0 < γ n) (hx : ∀ n, x (n + 1) = proj s (x n - γ n • g n)) (n : ℕ) :
+    ∑ i ∈ range n, ⟪x i - y, g i⟫ ≤
+      ∑ i ∈ range n,
+        ((2 * γ i)⁻¹ * (‖x i - y‖ ^ 2 - ‖x (i + 1) - y‖ ^ 2) + (γ i / 2) * ‖g i‖ ^ 2) := by
+  refine todo x (fun _ ↦ y) g (fun i ↦ ?_) n
+  grw [inner_le_add_proj' h_closed h_convex h_nonempty x g hx (fun _ ↦ hys) hγ]
 
 section ConstantStep
 
+lemma todo' (x g : ℕ → E) (y : E)
+    (h : ∀ i, ⟪x i - y, g i⟫ ≤
+      (2 * η)⁻¹ * (‖x i - y‖ ^ 2 - ‖x (i + 1) - y‖ ^ 2) + (η / 2) * ‖g i‖ ^ 2) (n : ℕ) :
+    ∑ i ∈ range n, ⟪x i - y, g i⟫ ≤
+      (2 * η)⁻¹ * (‖x 0 - y‖ ^ 2 - ‖x n - y‖ ^ 2) + (η / 2) * ∑ i ∈ range n, ‖g i‖ ^ 2 := by
+  refine (todo x (fun _ ↦ y) g h n).trans_eq ?_
+  rw [sum_add_distrib, ← mul_sum, ← mul_sum, Finset.sum_range_sub' (fun i ↦ ‖x i - y‖ ^ 2) n]
+
 lemma sum_inner_le_add (x g : ℕ → E) (y : E)
     (hη : 0 < η) (hx : ∀ n, x (n + 1) = x n - η • g n) (n : ℕ) :
-    ∑ i ∈ Finset.range n, ⟪x i - y, g i⟫ ≤
-      (2 * η)⁻¹ * (‖x 0 - y‖ ^ 2 - ‖x n - y‖ ^ 2) + (η / 2) * ∑ i ∈ Finset.range n, ‖g i‖ ^ 2 := by
-  refine (sum_inner_le_sum x g y (fun _ ↦ hη) hx n).trans_eq ?_
-  rw [sum_add_distrib, ← mul_sum, ← mul_sum, Finset.sum_range_sub' (fun i ↦ ‖x i - y‖ ^ 2) n]
+    ∑ i ∈ range n, ⟪x i - y, g i⟫ ≤
+      (2 * η)⁻¹ * (‖x 0 - y‖ ^ 2 - ‖x n - y‖ ^ 2) + (η / 2) * ∑ i ∈ range n, ‖g i‖ ^ 2 :=
+  todo' x g y (fun i ↦ (inner_eq_add' x (fun _ ↦ y) g hx (fun _ ↦ hη) i).le) n
+
+lemma todo'' (x g : ℕ → E) (y : E)
+    (h : ∀ i, ⟪x i - y, g i⟫ ≤
+      (2 * η)⁻¹ * (‖x i - y‖ ^ 2 - ‖x (i + 1) - y‖ ^ 2) + (η / 2) * ‖g i‖ ^ 2)
+    (hη : 0 < η) (n : ℕ) :
+    ∑ i ∈ range n, ⟪x i - y, g i⟫ ≤
+      (2 * η)⁻¹ * ‖x 0 - y‖ ^ 2 + (η / 2) * ∑ i ∈ range n, ‖g i‖ ^ 2 := by
+  grw [todo' x g y h n]
+  gcongr
+  exact sub_le_self _ (sq_nonneg _)
 
 /-- Lemma 14.1 in Understanding Machine Learning: From Theory to Algorithms. -/
 lemma gradient_descent_linear_regret (x g : ℕ → E) (y : E) (η : ℝ)
     (hη : 0 < η) (hx : ∀ n, x (n + 1) = x n - η • g n) (n : ℕ) :
-    ∑ i ∈ Finset.range n, ⟪x i - y, g i⟫ ≤
-      (2 * η)⁻¹ * ‖x 0 - y‖ ^ 2 + (η / 2) * ∑ i ∈ Finset.range n, ‖g i‖ ^ 2 := by
-  grw [sum_inner_le_add x g y hη hx n]
-  gcongr
-  exact sub_le_self _ (sq_nonneg _)
+    ∑ i ∈ range n, ⟪x i - y, g i⟫ ≤
+      (2 * η)⁻¹ * ‖x 0 - y‖ ^ 2 + (η / 2) * ∑ i ∈ range n, ‖g i‖ ^ 2 :=
+  todo'' x g y (fun i ↦ (inner_eq_add' x (fun _ ↦ y) g hx (fun _ ↦ hη) i).le) hη n
+
+lemma proj_gradient_descent_linear_regret [FiniteDimensional ℝ E] {s : Set E}
+    (h_closed : IsClosed s) (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty)
+    (x g : ℕ → E) {y : E} (hys : y ∈ s) (hη : 0 < η)
+    (hx : ∀ n, x (n + 1) = proj s (x n - η • g n)) (n : ℕ) :
+    ∑ i ∈ range n, ⟪x i - y, g i⟫ ≤
+      (2 * η)⁻¹ * ‖x 0 - y‖ ^ 2 + (η / 2) * ∑ i ∈ range n, ‖g i‖ ^ 2 :=
+  todo'' x g y
+    (fun i ↦ inner_le_add_proj' h_closed h_convex h_nonempty x g hx (fun _ ↦ hys) (fun _ ↦ hη) i)
+    hη n
 
 end ConstantStep
 
@@ -88,6 +144,15 @@ lemma onlineRegret_gradientStep_le (x g : ℕ → E) (y : E) (η : ℝ)
     onlineRegret (fun n x ↦ ⟪x, g n⟫) y x n ≤
       (2 * η)⁻¹ * ‖x 0 - y‖ ^ 2 + (η / 2) * ∑ i ∈ range n, ‖g i‖ ^ 2 := by
   simpa [onlineRegret, inner_sub_left] using gradient_descent_linear_regret x g y η hη hx n
+
+lemma onlineRegret_projGradStep_le [FiniteDimensional ℝ E] {s : Set E}
+    (h_closed : IsClosed s) (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty)
+    (x g : ℕ → E) {y : E} (hys : y ∈ s) (η : ℝ)
+    (hη : 0 < η) (hx : ∀ n, x (n + 1) = proj s (x n - η • g n)) (n : ℕ) :
+    onlineRegret (fun n x ↦ ⟪x, g n⟫) y x n ≤
+      (2 * η)⁻¹ * ‖x 0 - y‖ ^ 2 + (η / 2) * ∑ i ∈ range n, ‖g i‖ ^ 2 := by
+  simpa [onlineRegret, inner_sub_left] using
+    proj_gradient_descent_linear_regret h_closed h_convex h_nonempty x g hys hη hx n
 
 end Linear
 
