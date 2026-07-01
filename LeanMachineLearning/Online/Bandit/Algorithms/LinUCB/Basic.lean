@@ -7,8 +7,8 @@ module
 
 public import LeanMachineLearning.Online.Bandit.SumRewards
 public import LeanMachineLearning.SequentialLearning.Deterministic
-public import LeanMachineLearning.ForMathlib.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
 public import Mathlib.Analysis.MeanInequalities
+public import Mathlib.Analysis.InnerProductSpace.PiL2
 public import Mathlib.Analysis.SpecialFunctions.Log.Deriv
 public import Mathlib.Analysis.Matrix.Order
 public import Mathlib.Algebra.Order.Star.Real
@@ -36,39 +36,28 @@ section Algorithm
 
 namespace LinUCB
 
-/-- Feature vectors for finite-dimensional linear bandits. -/
-abbrev Feature (d : ℕ) := Fin d → ℝ
+/-- Feature vectors for finite-dimensional linear bandits.
 
-/-- The standard coordinate direction in `Feature d`. -/
-def coordinateDirection (i : Fin d) : Feature d :=
-  fun j ↦ if j = i then 1 else 0
+We use mathlib's Euclidean space model so that LinUCB's feature vectors carry the standard
+inner-product and norm structure of `ℝ^d`. Coordinate formulas remain available through the
+coercion `Feature d → (Fin d → ℝ)`, which is useful for the matrix identities below. -/
+abbrev Feature (d : ℕ) := EuclideanSpace ℝ (Fin d)
 
-/-- Dot product with a coordinate direction extracts that coordinate. -/
-lemma dotProduct_coordinateDirection (u : Feature d) (i : Fin d) :
-    dotProduct (coordinateDirection i) u = u i := by
-  simp only [dotProduct, coordinateDirection]
-  rw [Finset.sum_eq_single i]
-  · simp
-  · intro j _hj hji
-    simp [hji]
-  · intro hi
-    simp at hi
+/-- View a coordinate matrix-vector product as a Euclidean feature vector. -/
+noncomputable def matrixMulFeature (M : Matrix (Fin d) (Fin d) ℝ) (v : Feature d) :
+    Feature d :=
+  WithLp.toLp 2 (Matrix.mulVec M v)
 
-/-- Dot product with the negative coordinate direction extracts the negated coordinate. -/
-lemma dotProduct_neg_coordinateDirection (u : Feature d) (i : Fin d) :
-    dotProduct (-coordinateDirection i) u = -u i := by
-  rw [neg_dotProduct, dotProduct_coordinateDirection]
+lemma mulVec_matrixMulFeature (M N : Matrix (Fin d) (Fin d) ℝ) (v : Feature d) :
+    Matrix.mulVec M (matrixMulFeature N v) = Matrix.mulVec (M * N) v := by
+  ext i
+  simp [matrixMulFeature, Matrix.mulVec_mulVec]
 
-/-- Squared Euclidean norm of a finite-action feature vector, written as the dot product
-`x_aᵀ x_a`. -/
-def featureSqNorm (x : Fin K → Feature d) (a : Fin K) : ℝ :=
-  dotProduct (x a) (x a)
-
-/-- The squared feature norm is nonnegative. -/
-lemma featureSqNorm_nonneg (x : Fin K → Feature d) (a : Fin K) :
-    0 ≤ featureSqNorm x a := by
-  rw [featureSqNorm, dotProduct]
-  exact sum_nonneg fun i _ ↦ mul_self_nonneg (x a i)
+/-- The coordinate dot product of a feature vector with itself is its squared Euclidean norm. -/
+lemma dotProduct_self_eq_norm_sq (u : Feature d) :
+    dotProduct u u = ‖u‖ ^ 2 := by
+  rw [← real_inner_self_eq_norm_sq]
+  simp [dotProduct, inner]
 
 /-- The squared Euclidean norm of an arbitrary feature vector is nonnegative. -/
 lemma dotProduct_self_nonneg (u : Feature d) :
@@ -104,7 +93,7 @@ lemma abs_dotProduct_le_sqrt_mul_sqrt_of_sq_norm_le
 This is the finite-action version of the textbook assumption `‖x‖₂ ≤ L`, written here in squared
 form as `‖x_a‖₂² ≤ L2` for every action. -/
 def FeatureSqNormBound (x : Fin K → Feature d) (L2 : ℝ) : Prop :=
-  ∀ a, featureSqNorm x a ≤ L2
+  ∀ a, ‖x a‖ ^ 2 ≤ L2
 
 /-- A uniform squared feature-norm bound is nonnegative whenever the finite action set is
 nonempty. -/
@@ -112,32 +101,9 @@ lemma FeatureSqNormBound.nonneg [Nonempty (Fin K)]
     {x : Fin K → Feature d} {L2 : ℝ} (hL2 : FeatureSqNormBound x L2) :
     0 ≤ L2 := by
   classical
-  exact (featureSqNorm_nonneg x (Classical.arbitrary (Fin K))).trans
+  exact (sq_nonneg ‖x (Classical.arbitrary (Fin K))‖).trans
     (hL2 (Classical.arbitrary (Fin K)))
 
-/-- A squared feature-norm bound controls every coordinate of every feature vector. -/
-lemma abs_feature_coord_le_sqrt_of_featureSqNorm_le
-    (x : Fin K → Feature d) {L2 : ℝ} {a : Fin K}
-    (hL2 : featureSqNorm x a ≤ L2) (i : Fin d) :
-    |x a i| ≤ √L2 := by
-  have hcoord_sq_le_norm : (x a i) ^ 2 ≤ featureSqNorm x a := by
-    rw [featureSqNorm, dotProduct]
-    simpa [pow_two] using
-      (Finset.single_le_sum
-        (s := Finset.univ) (a := i)
-        (fun j _hj ↦ mul_self_nonneg (x a j)) (Finset.mem_univ i))
-  exact Real.abs_le_sqrt (hcoord_sq_le_norm.trans hL2)
-
-/-- A uniform squared feature-norm bound controls the coordinate projection of every feature
-vector. -/
-lemma abs_dotProduct_coordinateDirection_feature_le_sqrt
-    (x : Fin K → Feature d) {L2 : ℝ} (hL2 : FeatureSqNormBound x L2)
-    (i : Fin d) (a : Fin K) :
-    |dotProduct (coordinateDirection i) (x a)| ≤ √L2 := by
-  simpa [dotProduct_coordinateDirection] using
-    abs_feature_coord_le_sqrt_of_featureSqNorm_le (x := x) (hL2 a) i
-
-/-- For a fixed direction and finite action set, all arm-feature projections are bounded. -/
 lemma exists_abs_dotProduct_feature_bound (x : Fin K → Feature d) (v : Feature d) :
     ∃ Q : ℝ, 0 ≤ Q ∧ ∀ a, |dotProduct v (x a)| ≤ Q := by
   refine ⟨∑ a, |dotProduct v (x a)|, ?_, ?_⟩
@@ -159,7 +125,7 @@ noncomputable def responseVector' (x : Fin K → Feature d)
 /-- History-level regularized least-squares estimate. -/
 noncomputable def thetaHat' (reg : ℝ) (x : Fin K → Feature d)
     (n : ℕ) (h : Iic n → Fin K × ℝ) : Feature d :=
-  Matrix.mulVec (designMatrix' reg x n h)⁻¹ (responseVector' x n h)
+  matrixMulFeature (designMatrix' reg x n h)⁻¹ (responseVector' x n h)
 
 /-- History-level estimated reward of an arm. -/
 noncomputable def estimatedReward' (reg : ℝ) (x : Fin K → Feature d)
@@ -176,20 +142,7 @@ noncomputable def width' (reg : ℝ) (x : Fin K → Feature d)
     (n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fin K) : ℝ :=
   √(widthQuadraticForm' reg x n h a)
 
-/-- Squaring the history-level LinUCB width recovers its quadratic form, provided that quadratic
-form is nonnegative. -/
-lemma width'_sq_eq_quadratic_form (reg : ℝ) (x : Fin K → Feature d)
-    (n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fin K)
-    (h_nonneg : 0 ≤ widthQuadraticForm' reg x n h a) :
-    width' reg x n h a ^ 2 = widthQuadraticForm' reg x n h a := by
-  simp [width', Real.sq_sqrt h_nonneg]
-
-/-- LinUCB optimistic index of an arm.
-
-The parameter `β` is a confidence-radius schedule. Since `h : Iic n → Fin K × ℝ`
-contains the observations through time `n`, this index is used to choose the arm
-at time `n + 1`, and we evaluate the schedule at `n + 2`
--/
+/-- History-level LinUCB optimistic index for a candidate arm. -/
 noncomputable def index' (reg : ℝ) (β : ℕ → ℝ) (x : Fin K → Feature d)
     (n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fin K) : ℝ :=
   estimatedReward' reg x n h a + √(β (n + 2)) * width' reg x n h a
