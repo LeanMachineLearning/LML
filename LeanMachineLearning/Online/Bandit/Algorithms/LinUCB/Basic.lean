@@ -11,6 +11,7 @@ public import Mathlib.Analysis.MeanInequalities
 public import Mathlib.Analysis.InnerProductSpace.PiL2
 public import Mathlib.Analysis.SpecialFunctions.Log.Deriv
 public import Mathlib.Analysis.Matrix.Order
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Order.MeasurableArg
 public import Mathlib.Algebra.Order.Star.Real
 public import Mathlib.LinearAlgebra.Matrix.PosDef
 public import Mathlib.LinearAlgebra.Matrix.SchurComplement
@@ -192,9 +193,13 @@ lemma measurable_matrix_inv_apply {α : Type*} {mα : MeasurableSpace α}
     (hM : ∀ i j, Measurable fun a ↦ M a i j) (i j : Fin d) :
     Measurable fun a ↦ (M a)⁻¹ i j := by
   simp_rw [Matrix.inv_def]
-  change Measurable fun a ↦ Ring.inverse (M a).det * (M a).adjugate i j
-  simpa [Ring.inverse_eq_inv] using
-    (measurable_matrix_det_apply M hM).inv.mul (measurable_matrix_adjugate_apply M hM i j)
+  have hdet : Measurable fun a ↦ ((M a).det)⁻¹ :=
+    (measurable_matrix_det_apply M hM).inv
+  have hadj : Measurable fun a ↦ (M a).adjugate i j :=
+    measurable_matrix_adjugate_apply M hM i j
+  convert hdet.mul hadj using 1
+  ext a
+  simp [Ring.inverse_eq_inv, Matrix.smul_apply]
 
 @[fun_prop]
 lemma measurable_thetaHat'_apply (reg : ℝ) (x : Fin K → Feature d) (n : ℕ) (i : Fin d) :
@@ -247,7 +252,7 @@ noncomputable def nextArm (hK : 0 < K) (reg : ℝ) (β : ℕ → ℝ)
     (x : Fin K → Feature d)
     (n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  measurableArgmax (fun h a ↦ index' reg β x n h a) h
+  argmax (fun a ↦ index' reg β x n h a)
 
 @[fun_prop]
 lemma measurable_nextArm (hK : 0 < K) (reg : ℝ) (β : ℕ → ℝ)
@@ -255,7 +260,8 @@ lemma measurable_nextArm (hK : 0 < K) (reg : ℝ) (β : ℕ → ℝ)
     (n : ℕ) :
     Measurable (nextArm hK reg β x n) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  exact measurable_measurableArgmax fun a ↦ measurable_index' reg β x n a
+  unfold nextArm
+  fun_prop
 
 end LinUCB
 

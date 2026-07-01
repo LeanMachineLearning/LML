@@ -7,7 +7,7 @@ module
 
 public import LeanMachineLearning.Online.Bandit.SumRewards
 public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
-public import LeanMachineLearning.ForMathlib.MeasureTheory.Constructions.BorelSpace.MeasurableArgMax
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Order.MeasurableArg
 
 /-! # The Explore-Then-Commit Algorithm
 
@@ -33,7 +33,7 @@ def ETC.nextArm (hK : 0 < K) (m n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   if hn : n < K * m - 1 then RoundRobin.nextAction hK n
   else
-    if hn_eq : n = K * m - 1 then measurableArgmax (empMean' n) h
+    if hn_eq : n = K * m - 1 then argmax (empMean' n h)
     else (h ⟨n, by simp⟩).1
 
 /-- The next arm pulled by ETC is chosen in a measurable way. -/
@@ -44,7 +44,7 @@ lemma ETC.measurable_nextArm (hK : 0 < K) (m n : ℕ) : Measurable (nextArm hK m
   simp only [dite_eq_ite]
   refine Measurable.ite (by simp) (by fun_prop) ?_
   refine Measurable.ite (by simp) ?_ (by fun_prop)
-  exact measurable_measurableArgmax fun a ↦ by fun_prop
+  fun_prop
 
 /-- The Explore-Then-Commit algorithm: deterministic algorithm that chooses the next arm according
 to `ETC.nextArm`. -/
@@ -98,8 +98,8 @@ lemma arm_of_lt (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
 phase. -/
 lemma arm_mul [Nonempty (Fin K)]
     (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) (hm : m ≠ 0) :
-    A (K * m) =ᵐ[P] fun ω ↦ measurableArgmax (empMean' (K * m - 1))
-      (history A R (K * m - 1) ω) := by
+    A (K * m) =ᵐ[P]
+      fun ω ↦ argmax (empMean' (K * m - 1) (history A R (K * m - 1) ω)) := by
   have : K * m = (K * m - 1) + 1 := by
     have : 0 < K * m := Nat.mul_pos hK hm.bot_lt
     grind
@@ -169,8 +169,8 @@ lemma sumRewards_bestArm_le_of_arm_mul_eq [Nonempty (Fin K)]
       sumRewards A R a (K * m) h := by
   filter_upwards [arm_mul h hm, pullCount_mul h a, pullCount_mul h (bestArm ν)]
     with h h_arm ha h_best h_eq
-  have h_max := isMaxOn_measurableArgmax (empMean' (K * m - 1)) (history A R (K * m - 1) h)
-    (bestArm ν)
+  have h_max := isMaxOn_argmax
+    (empMean' (K * m - 1) (history A R (K * m - 1) h)) (bestArm ν)
   rw [← h_arm, h_eq] at h_max
   rw [sumRewards_eq_pullCount_mul_empMean, sumRewards_eq_pullCount_mul_empMean, ha, h_best]
   · gcongr
