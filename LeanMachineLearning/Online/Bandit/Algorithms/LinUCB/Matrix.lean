@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Fawad Haider. All rights reserved.
+Copyright (c) 2026 OpenAI, Fawad Haider. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: OpenAI, Fawad Haider
 -/
@@ -146,11 +146,9 @@ lemma dotProduct_sub_mulVec_sub_le_sqrt_add_sqrt_sq {M : Matrix (Fin d) (Fin d) 
     change (uf - vf) ⬝ᵥ M *ᵥ (uf - vf) = (M *ᵥ (uf - vf)) ⬝ᵥ (uf - vf)
     rw [dotProduct_comm]
   have hq_u : dotProduct u (M *ᵥ u) = inner ℝ uf uf := by
-    change u.ofLp ⬝ᵥ M *ᵥ u.ofLp = inner ℝ uf uf
     change uf ⬝ᵥ M *ᵥ uf = (M *ᵥ uf) ⬝ᵥ uf
     rw [dotProduct_comm]
   have hq_v : dotProduct v (M *ᵥ v) = inner ℝ vf vf := by
-    change v.ofLp ⬝ᵥ M *ᵥ v.ofLp = inner ℝ vf vf
     change vf ⬝ᵥ M *ᵥ vf = (M *ᵥ vf) ⬝ᵥ vf
     rw [dotProduct_comm]
   have h_cross_sq := real_inner_mul_inner_self_le uf vf
@@ -593,7 +591,8 @@ lemma unitary_conj_quadraticForm_eq
         star (U : Matrix (Fin d) (Fin d) ℝ) = 1
     exact Unitary.coe_mul_star_self U
   have hy : star Umat *ᵥ lambda = Matrix.vecMul lambda Umat := by
-    simpa [Umat] using (Matrix.mulVec_transpose (U : Matrix (Fin d) (Fin d) ℝ) lambda)
+    simpa [Umat, Matrix.star_eq_conjTranspose, Matrix.conjTranspose_eq_transpose_of_trivial] using
+      (Matrix.mulVec_transpose (U : Matrix (Fin d) (Fin d) ℝ) lambda)
   have hcancel_left : Umat * (star Umat * M * Umat) = M * Umat := by
     rw [Matrix.mul_assoc (star Umat) M Umat]
     rw [← Matrix.mul_assoc Umat (star Umat) (M * Umat)]
@@ -1496,7 +1495,7 @@ noncomputable def index (A : ℕ → Ω → Fin K) (R : ℕ → Ω → ℝ)
     (n : ℕ) (ω : Ω) : ℝ :=
   estimatedReward A R reg x a n ω + √(β (n + 1)) * width A reg x a n ω
 
-lemma arm_zero [Nonempty (Fin K)]
+lemma arm_zero
     (h : IsAlgEnvSeq A R (linUCBAlgorithm hK reg β x) (stationaryEnv ν) P) :
     A 0 =ᵐ[P] fun _ ↦ ⟨0, hK⟩ := by
   exact h.action_zero_detAlgorithm
