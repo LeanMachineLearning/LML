@@ -7,7 +7,7 @@ module
 
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measure.AbsolutelyContinuous
 public import LeanMachineLearning.SequentialLearning.AlgorithmDensity
-public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling
+public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling.Basic
 
 /-! # The Uniform algorithm
 
