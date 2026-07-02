@@ -24,7 +24,6 @@ public import LeanMachineLearning.Online.Bandit.Algorithms.LinUCB
 public import LeanMachineLearning.Online.Bandit.Algorithms.LinUCB.Basic
 public import LeanMachineLearning.Online.Bandit.Algorithms.Regret.BayesRegretTS
 public import LeanMachineLearning.Online.Bandit.Algorithms.TS
-public import LeanMachineLearning.Online.Bandit.Algorithms.LinUCB
 public import LeanMachineLearning.Online.Bandit.Algorithms.UCB
 public import LeanMachineLearning.Online.Bandit.ArrayProbSpace
 public import LeanMachineLearning.Online.Bandit.BayesRegret
