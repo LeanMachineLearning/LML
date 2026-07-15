@@ -6,6 +6,7 @@ public import LeanMachineLearning.ForMathlib.MeasureTheory.Measure.AbsolutelyCon
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Order.Lattice
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Order.MeasurableArg
 public import LeanMachineLearning.ForMathlib.MeasureTheory.OuterMeasure.Basic
+public import LeanMachineLearning.ForMathlib.Order.Interval.Finset
 public import LeanMachineLearning.ForMathlib.Probability.HasCondDistrib
 public import LeanMachineLearning.ForMathlib.Probability.Independence.CondDistrib
 public import LeanMachineLearning.ForMathlib.Probability.Independence.CondIndepFun
@@ -19,6 +20,7 @@ public import LeanMachineLearning.ForMathlib.Probability.Kernel.IonescuTulcea.Tr
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.KernelSub
 public import LeanMachineLearning.ForMathlib.Probability.Moments.SubGaussian
 public import LeanMachineLearning.ForMathlib.Probability.WithDensity
+public import LeanMachineLearning.ForMathlib.Topology.Instances.ENNReal.Lemmas
 public import LeanMachineLearning.Online.Bandit.Algorithms.ETC
 public import LeanMachineLearning.Online.Bandit.Algorithms.Regret.BayesRegretTS
 public import LeanMachineLearning.Online.Bandit.Algorithms.TS
@@ -31,7 +33,8 @@ public import LeanMachineLearning.Online.Bandit.SumRewards
 public import LeanMachineLearning.SequentialLearning.Algorithm
 public import LeanMachineLearning.SequentialLearning.AlgorithmDensity
 public import LeanMachineLearning.SequentialLearning.AlgorithmDensityBayes
-public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling
+public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling.Basic
+public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling.Filter
 public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
 public import LeanMachineLearning.SequentialLearning.Algorithms.Uniform
 public import LeanMachineLearning.SequentialLearning.BayesStationaryEnv
