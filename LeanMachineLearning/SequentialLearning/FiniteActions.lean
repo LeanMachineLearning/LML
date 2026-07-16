@@ -696,7 +696,8 @@ lemma rewardByCount_of_stepsUntil_ne_top (h : stepsUntil A a m ω.1 ≠ ⊤) :
 
 lemma rewardByCount_eq_stoppedValue (h : stepsUntil A a m ω.1 ≠ ⊤) :
     rewardByCount A R' a m ω = stoppedValue R' (stepsUntil A a m) ω.1 := by
-  rw [rewardByCount_of_stepsUntil_ne_top h, stoppedValue]
+  unfold stoppedValue
+  rw [rewardByCount_of_stepsUntil_ne_top h]
   lift stepsUntil A a m ω.1 to ℕ using h with n
   simp
 

@@ -143,12 +143,14 @@ lemma sumRewards_eq_comp :
      (fun p ↦ ∑ i ∈ range n, if (p i).1 = a then (p i).2 else 0) ∘ (trajectory A R) := by
   ext
   simp [sumRewards, trajectory]
+  grind
 
 lemma pullCount_eq_comp :
     pullCount A a n =
       (fun p ↦ ∑ i ∈ range n, if (p i).1 = a then 1 else 0) ∘ (trajectory A R) := by
   ext
   simp [pullCount, trajectory]
+  rfl
 
 -- todo: write those lemmas with IdentDistrib instead of equality of maps
 lemma _root_.Learning.IsAlgEnvSeq.law_sumRewards_unique [MeasurableSingletonClass 𝓐]

@@ -477,6 +477,7 @@ lemma truePast_eq_of_pullCount_eq (alg : Algorithm 𝓐 R)
     truePast alg a n ω = (ω.1, fun i b ↦ if b = a then if m ≠ 0 then
       ω.2 (min i (m - 1)) a else Nonempty.some inferInstance else ω.2 i b) := by
   simp [truePast, h_pc]
+  grind
 
 lemma truePast_eq_of_pullCount_eq_of_ne_zero (alg : Algorithm 𝓐 R)
     (a : 𝓐) (n m : ℕ) (ω : probSpace 𝓐 R)
@@ -484,6 +485,7 @@ lemma truePast_eq_of_pullCount_eq_of_ne_zero (alg : Algorithm 𝓐 R)
     truePast alg a n ω = (ω.1, fun i b ↦ if b = a then
       ω.2 (min i (m - 1)) a else ω.2 i b) := by
   simp [truePast, h_pc, hm]
+  grind
 
 lemma measurable_hist_truePast [Countable 𝓐] (alg : Algorithm 𝓐 R)
     (a : 𝓐) (n : ℕ) :
@@ -569,12 +571,14 @@ lemma measurable_pullCount_action_add_one_hist (alg : Algorithm 𝓐 R) (n : ℕ
 
 end MeasurabilityAdvanced
 
+set_option backward.isDefEq.respectTransparency false in
 omit [Nonempty 𝓐] [StandardBorelSpace 𝓐] [DecidableEq 𝓐] in
 lemma map_snd_apply_arrayMeasure {ν : Kernel 𝓐 R} [IsMarkovKernel ν] (n : ℕ) (a : 𝓐) :
     (arrayMeasure ν).map (fun ω ↦ ω.2 n a) = ν a := by
   calc (arrayMeasure ν).map (fun ω ↦ ω.2 n a)
   _ = (arrayMeasure ν).snd.map (fun ω ↦ ω n a) := by
-    rw [Measure.snd, Measure.map_map (by fun_prop) (by fun_prop)]
+    unfold Measure.snd
+    rw [Measure.map_map (by fun_prop) (by fun_prop)]
     rfl
   _ = ν a := by
     rw [arrayMeasure, Measure.snd_prod, streamMeasure]
@@ -653,6 +657,7 @@ lemma indepFun_fst_add_one_hist [Countable 𝓐] (alg : Algorithm 𝓐 R)
   (indepFun_fst_add_one_aux ν n).of_measurable_right (measurable_hist_comap alg n)
 
 -- proved by Claude
+set_option backward.isDefEq.respectTransparency false in
 omit [Nonempty 𝓐] [StandardBorelSpace 𝓐] [StandardBorelSpace R] in
 lemma indepFun_snd_apply_aux (ν : Kernel 𝓐 R) [IsMarkovKernel ν] (a : 𝓐) (m : ℕ) :
     (fun ω ↦ ω.2 m a) ⟂ᵢ[arrayMeasure ν]
@@ -912,9 +917,7 @@ lemma indepFun_snd_hist_cond [Countable 𝓐] (alg : Algorithm 𝓐 R)
       fun ω ↦ (ω.1, fun k b ↦ if b = a then if m ≠ 0 then ω.2 (min k (m - 1)) b
         else Nonempty.some inferInstance else ω.2 k b) by
     convert this using 1
-    · rfl
-    · rfl
-    · rfl
+    congr!
     congr with ω
     simp only [Set.mem_preimage, Set.mem_singleton_iff, Prod.mk.injEq, Set.indicator_apply,
       Set.mem_setOf_eq, ite_eq_left_iff, not_and, zero_ne_one, imp_false,
@@ -938,6 +941,7 @@ section Laws
 
 variable [Countable 𝓐]
 
+set_option backward.isDefEq.respectTransparency false in
 lemma hasLaw_action_zero (alg : Algorithm 𝓐 R) (ν : Kernel 𝓐 R) [IsMarkovKernel ν] :
     HasLaw (action alg 0) alg.p0 (arrayMeasure ν) where
   map_eq := by
