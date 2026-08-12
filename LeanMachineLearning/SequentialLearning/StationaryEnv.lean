@@ -8,6 +8,8 @@ module
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.MapComap
 public import LeanMachineLearning.SequentialLearning.Algorithm
 
+meta import LeanSpec
+
 /-!
 # Oblivious and stationary environments
 
@@ -193,12 +195,14 @@ namespace IsAlgEnvSeq
 
 /-- The conditional distribution of the feedback at time `n` given the action at time `n`
 is `ν n`. -/
+@[specifies obliviousEnv]
 lemma hasCondDistrib_feedback_obliviousEnv {ν : ℕ → Kernel 𝓐 𝓨} [∀ n, IsMarkovKernel (ν n)]
     (h : IsAlgEnvSeq A Y alg (obliviousEnv ν) P) (n : ℕ) :
     HasCondDistrib (Y n) (A n) (ν n) P := by
   simpa using IsObliviousEnv.hasCondDistrib_feedback h n
 
 /-- The conditional distribution of the feedback at time `n` given the action at time `n` is `ν`. -/
+@[specifies stationaryEnv]
 lemma hasCondDistrib_feedback_stationaryEnv
     (h : IsAlgEnvSeq A Y alg (stationaryEnv ν) P) (n : ℕ) :
     HasCondDistrib (Y n) (A n) ν P :=

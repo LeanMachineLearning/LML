@@ -19,6 +19,12 @@ name = "mathlib"
 scope = "leanprover-community"
 rev = "v4.33.0"
 
+[[require]]
+name = "LeanSpec"
+git = "https://github.com/LeanMachineLearning/exposition"
+rev = "v4.33.0"
+subDir = "LeanSpec"
+
 [[lean_lib]]
 name = "LeanMachineLearning"
 
