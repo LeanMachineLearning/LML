@@ -13,7 +13,7 @@ import Mathlib.Analysis.Calculus.Deriv.Slope
 import Mathlib.Analysis.Calculus.LocalExtr.Basic
 
 /-!
-# Convexity lemmas
+# Convexity lemmas about derivatives and gradients
 
 -/
 
