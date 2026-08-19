@@ -45,7 +45,7 @@ lemma _root_.IsClosed.exists_isMinOn_dist [ProperSpace E]
   obtain ⟨y, hy, hy_min⟩ := h_compact.exists_isMinOn h3 h_cont.continuousOn
   refine ⟨y, hy.2, ?_⟩
   intro u hu
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   by_cases h1 : u ∈ closedBall x (dist x z)
   · specialize hy_min ⟨h1, hu⟩
     grind
@@ -57,12 +57,12 @@ lemma _root_.IsClosed.proj_mem [Zero E] [ProperSpace E]
     (h_closed : IsClosed s) (h_nonempty : s.Nonempty) (x : E) :
     proj s x ∈ s := by
   have h := h_closed.exists_isMinOn_dist h_nonempty x
-  rw [proj, dif_pos h]
+  rw [proj, dite_eq_left h]
   exact h.choose_spec.1
 
 lemma isMinOn_proj_of_exists [Zero E] {x : E} (h : ∃ y ∈ s, IsMinOn (dist x) s y) :
     IsMinOn (dist x) s (proj s x) := by
-  rw [proj, dif_pos h]
+  rw [proj, dite_eq_left h]
   exact h.choose_spec.2
 
 /-- If the set is closed and nonempty, then the projection is a minimizer of the distance. -/
@@ -87,7 +87,7 @@ lemma _root_.IsClosed.isMinOn_norm_sq_proj {E : Type*} [NormedAddCommGroup E] [P
     {s : Set E} (h_closed : IsClosed s) (h_nonempty : s.Nonempty) (x : E) :
     IsMinOn (fun y ↦ ‖y - x‖ ^ 2) s (proj s x) := by
   intro y hy
-  simp only [Set.mem_setOf_eq, sq_le_sq, abs_dist, ← dist_eq_norm, dist_comm _ x]
+  simp only [Set.mem_ofPred_eq, sq_le_sq, abs_dist, ← dist_eq_norm, dist_comm _ x]
   exact h_closed.isMinOn_proj h_nonempty x hy
 
 section Convex

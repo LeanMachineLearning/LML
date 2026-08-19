@@ -37,7 +37,7 @@ lemma memLp_gradient (h : IsAlgEnvSeq X G alg (obliviousEnv ν) P)
     (h_memLp : ∀ n, MemLp (G n) 2 P) (n : ℕ) :
     MemLp (fun ω ↦ ∇ (f n) (X n ω)) 2 P := by
   let M n := MeasurableSpace.comap (X n) inferInstance
-  have h_lp : MemLp P[G n | M n] 2 P := (h_memLp n).condExp (m := M n)
+  have h_lp : MemLp P[G n | M n] 2 P := (h_memLp n).condExp (m := M n) (by simp)
   have h_ae := h.condExp_feedback_obliviousEnv_ae_eq_integral_id n
       ((h_memLp n).integrable (by simp))
   refine h_lp.ae_eq <| h_ae.trans ?_
