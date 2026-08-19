@@ -233,7 +233,7 @@ lemma integral_sum_range_actionMean_bestAction_sub_ucb_bestAction_le {alg : Algo
         intro ω hω
         apply sum_nonpos
         intro t ht
-        rw [Set.mem_compl_iff, Set.mem_setOf_eq] at hω
+        rw [Set.mem_compl_iff, Set.mem_ofPred_eq] at hω
         push Not at hω
         grind [hω t (mem_range.mp ht), ucb, actionMean]
     _ ≤ ∫ ω in F, ∑ t ∈ range n, (u - l) ∂P := by
@@ -284,7 +284,7 @@ lemma integral_sum_range_ucb_action_sub_actionMean_action_le {alg : Algorithm (F
         · apply setIntegral_mono_on (Integrable.integrableOn (by fun_prop))
             (Integrable.integrableOn (by fun_prop)) hF.compl
           intro ω hω
-          rw [Set.mem_compl_iff, Set.mem_setOf_eq] at hω
+          rw [Set.mem_compl_iff, Set.mem_ofPred_eq] at hω
           push Not at hω
           exact sum_ucb_sub_mean_le (fun a ↦ (κ (E ω, a))[id]) (hm (E ω)) hlu
             (fun t ht hpc ↦ hω t ht (A t ω) hpc)

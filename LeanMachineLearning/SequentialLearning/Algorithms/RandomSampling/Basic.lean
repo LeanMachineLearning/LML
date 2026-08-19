@@ -5,8 +5,9 @@ Authors: Gaëtan Serré
 -/
 module
 
-public import LeanMachineLearning.ForMathlib.Probability.Independence.IndepFun
 public import LeanMachineLearning.SequentialLearning.Algorithm
+
+import LeanMachineLearning.ForMathlib.Probability.Independence.IndepFun
 
 /-!
 # Random Sampling
@@ -33,8 +34,8 @@ open scoped Topology
 
 namespace Learning
 
-variable {𝓐 𝓨 Ω : Type*} {m𝓐 : MeasurableSpace 𝓐} {m𝓨 : MeasurableSpace 𝓨} {mΩ : MeasurableSpace Ω}
-  {μ : Measure 𝓐} [IsProbabilityMeasure μ]
+variable {𝓐 𝓨 Ω : Type*} {m𝓐 : MeasurableSpace 𝓐} {m𝓨 : MeasurableSpace 𝓨}
+  {mΩ : MeasurableSpace Ω} {μ : Measure 𝓐} [IsProbabilityMeasure μ]
   {P : Measure Ω} [IsProbabilityMeasure P]
 
 open Set in

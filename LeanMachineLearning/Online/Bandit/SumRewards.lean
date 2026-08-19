@@ -50,7 +50,7 @@ lemma prob_pullCount_prod_sumRewards_mem_le (a : 𝓐) (n : ℕ)
   calc 𝔓 ((fun ω ↦ (pullCount A a n ω, ∑ i ∈ range (pullCount A a n ω), ω.2 i a)) ⁻¹' s)
   _ ≤ 𝔓 {ω | ∃ k ≤ n, (k, ∑ i ∈ range k, ω.2 i a) ∈ s} := by
     refine measure_mono fun ω hω ↦ ?_
-    simp only [Set.mem_setOf_eq] at hω ⊢
+    simp only [Set.mem_ofPred_eq] at hω ⊢
     exact ⟨pullCount A a n ω, pullCount_le _ _ _, hω⟩
   _ = 𝔓 (⋃ k ∈ (range (n + 1)).filter (· ∈ Prod.fst '' s),
       {ω | (k, ∑ i ∈ range k, ω.2 i a) ∈ s}) := by congr 1; ext; simp; grind
@@ -109,14 +109,14 @@ lemma prob_sumRewards_le_sumRewards_le [Fintype 𝓐] (a : 𝓐) (n m₁ m₂ : 
   _ ≤ 𝔓 ((fun ω ↦ (∑ i ∈ range m₁, ω.2 i (bestArm ν), ∑ i ∈ range m₂, ω.2 i a)) ⁻¹'
         {p | p.1 ≤ p.2}) := by
       refine measure_mono fun ω hω ↦ ?_
-      simp only [Set.preimage_setOf_eq, Set.mem_setOf_eq] at hω ⊢
+      simp only [Set.preimage_ofPred_eq, Set.mem_ofPred_eq] at hω ⊢
       grind
   _ = streamMeasure ν
       {ω | ∑ i ∈ range m₁, ω i (bestArm ν) ≤ ∑ i ∈ range m₂, ω i a} := by
     rw [← Measure.snd_prod (μ := (Measure.infinitePi fun (_ : ℕ) ↦ (volume : Measure unitInterval)))
       (ν := streamMeasure ν), Measure.snd, Measure.map_apply (by fun_prop)]
     · rfl
-    simp only [measurableSet_setOf]
+    simp only [measurableSet_setOfPred]
     fun_prop
 
 lemma probReal_sumRewards_le_sumRewards_le [Fintype 𝓐] (a : 𝓐) (n m₁ m₂ : ℕ) :
@@ -143,12 +143,14 @@ lemma sumRewards_eq_comp :
      (fun p ↦ ∑ i ∈ range n, if (p i).1 = a then (p i).2 else 0) ∘ (trajectory A R) := by
   ext
   simp [sumRewards, trajectory]
+  grind
 
 lemma pullCount_eq_comp :
     pullCount A a n =
       (fun p ↦ ∑ i ∈ range n, if (p i).1 = a then 1 else 0) ∘ (trajectory A R) := by
   ext
   simp [pullCount, trajectory]
+  rfl
 
 -- todo: write those lemmas with IdentDistrib instead of equality of maps
 lemma _root_.Learning.IsAlgEnvSeq.law_sumRewards_unique [MeasurableSingletonClass 𝓐]
@@ -346,7 +348,7 @@ lemma probReal_sumRewards_le_sumRewards_le [Fintype 𝓐] [MeasurableSingletonCl
   refine le_trans (le_of_eq ?_)
     (ArrayModel.probReal_sumRewards_le_sumRewards_le (alg := alg) a n m₁ m₂)
   let s := {p : ℕ × ℕ × ℝ × ℝ | p.1 = m₁ ∧ p.2.1 = m₂ ∧ p.2.2.1 ≤ p.2.2.2}
-  have hs : MeasurableSet s := by simp only [measurableSet_setOf, s]; fun_prop
+  have hs : MeasurableSet s := by simp only [measurableSet_setOfPred, s]; fun_prop
   change P.real ((fun ω ↦ (pullCount A (bestArm ν) n ω,
       pullCount A a n ω, sumRewards A R (bestArm ν) n ω, sumRewards A R a n ω)) ⁻¹' s) =
     (ArrayModel.arrayMeasure ν).real
@@ -512,7 +514,7 @@ lemma prob_sumRewards_sub_pullCount_mul_ge_le_of_Fintype [Fintype 𝓐] [Measura
     _ ≤ ∑ a, P {ω | ∃ t < n, pullCount A a t ω ≠ 0 ∧
                 √(2 * pullCount A a t ω * σ2 * Real.log (1 / δ)) ≤
                   sumRewards A R a t ω - pullCount A a t ω * (ν a)[id]} := by
-        rw [Set.setOf_exists]
+        rw [Set.ofPred_exists]
         exact measure_iUnion_fintype_le _ _
     _ ≤ ∑ a, ENNReal.ofReal ((n - 1) * δ) :=
         sum_le_sum fun a _ ↦ prob_sumRewards_sub_pullCount_mul_ge_le hσ2 (hν a) h hδ

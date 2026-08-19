@@ -226,7 +226,7 @@ lemma expectation_pullCount_le [Nonempty (Fin K)]
   have : (fun ω ↦ (pullCount A a n ω : ℝ))
       =ᵐ[P] fun ω ↦ m + (n - K * m) * {ω' | A (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
     filter_upwards [pullCount_of_ge h a hm hn] with ω h
-    simp only [h, Set.indicator_apply, Set.mem_setOf_eq, mul_ite, mul_one, mul_zero, Nat.cast_add,
+    simp only [h, Set.indicator_apply, Set.mem_ofPred_eq, mul_ite, mul_one, mul_zero, Nat.cast_add,
       Nat.cast_ite, CharP.cast_eq_zero, add_right_inj]
     norm_cast
   rw [integral_congr_ae this, integral_add (integrable_const _), integral_const_mul]

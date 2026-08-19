@@ -5,7 +5,6 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
-public import LeanMachineLearning.ForMathlib.MeasureTheory.Constructions.Polish.StandardBorel
 public import LeanMachineLearning.ForMathlib.Probability.Independence.CondIndepFun
 public import LeanMachineLearning.ForMathlib.Probability.Independence.IndepFun
 public import LeanMachineLearning.ForMathlib.Probability.Independence.IndepInfinitePi
@@ -436,7 +435,7 @@ lemma stepsUntil_indicator_congr (alg : Algorithm 𝓐 R) (a : 𝓐) (m n : ℕ)
         ω =
       {ω | action alg (n + 1) ω = a ∧ pullCount (action alg) a (n + 1) ω = m}.indicator
         (fun _ ↦ 1) ω' := by
-  simp only [Set.indicator_apply, Set.mem_setOf_eq]
+  simp only [Set.indicator_apply, Set.mem_ofPred_eq]
   simp_rw [stepsUntil_congr alg a m n hω1 hω2_ne hω2_eq]
 
 end Congruence
@@ -477,6 +476,7 @@ lemma truePast_eq_of_pullCount_eq (alg : Algorithm 𝓐 R)
     truePast alg a n ω = (ω.1, fun i b ↦ if b = a then if m ≠ 0 then
       ω.2 (min i (m - 1)) a else Nonempty.some inferInstance else ω.2 i b) := by
   simp [truePast, h_pc]
+  grind
 
 lemma truePast_eq_of_pullCount_eq_of_ne_zero (alg : Algorithm 𝓐 R)
     (a : 𝓐) (n m : ℕ) (ω : probSpace 𝓐 R)
@@ -484,6 +484,7 @@ lemma truePast_eq_of_pullCount_eq_of_ne_zero (alg : Algorithm 𝓐 R)
     truePast alg a n ω = (ω.1, fun i b ↦ if b = a then
       ω.2 (min i (m - 1)) a else ω.2 i b) := by
   simp [truePast, h_pc, hm]
+  grind
 
 lemma measurable_hist_truePast [Countable 𝓐] (alg : Algorithm 𝓐 R)
     (a : 𝓐) (n : ℕ) :
@@ -569,12 +570,14 @@ lemma measurable_pullCount_action_add_one_hist (alg : Algorithm 𝓐 R) (n : ℕ
 
 end MeasurabilityAdvanced
 
+set_option backward.isDefEq.respectTransparency false in
 omit [Nonempty 𝓐] [StandardBorelSpace 𝓐] [DecidableEq 𝓐] in
 lemma map_snd_apply_arrayMeasure {ν : Kernel 𝓐 R} [IsMarkovKernel ν] (n : ℕ) (a : 𝓐) :
     (arrayMeasure ν).map (fun ω ↦ ω.2 n a) = ν a := by
   calc (arrayMeasure ν).map (fun ω ↦ ω.2 n a)
   _ = (arrayMeasure ν).snd.map (fun ω ↦ ω n a) := by
-    rw [Measure.snd, Measure.map_map (by fun_prop) (by fun_prop)]
+    unfold Measure.snd
+    rw [Measure.map_map (by fun_prop) (by fun_prop)]
     rfl
   _ = ν a := by
     rw [arrayMeasure, Measure.snd_prod, streamMeasure]
@@ -653,6 +656,7 @@ lemma indepFun_fst_add_one_hist [Countable 𝓐] (alg : Algorithm 𝓐 R)
   (indepFun_fst_add_one_aux ν n).of_measurable_right (measurable_hist_comap alg n)
 
 -- proved by Claude
+set_option backward.isDefEq.respectTransparency false in
 omit [Nonempty 𝓐] [StandardBorelSpace 𝓐] [StandardBorelSpace R] in
 lemma indepFun_snd_apply_aux (ν : Kernel 𝓐 R) [IsMarkovKernel ν] (a : 𝓐) (m : ℕ) :
     (fun ω ↦ ω.2 m a) ⟂ᵢ[arrayMeasure ν]
@@ -817,12 +821,12 @@ lemma indepFun_snd_apply_aux (ν : Kernel 𝓐 R) [IsMarkovKernel ν] (a : 𝓐)
         have h_indep := indep_iSup_of_disjoint h_le h_iindep' h_disjoint
         convert h_indep using 2
         · simp only [Set.mem_singleton_iff, iSup_iSup_eq_left]
-        · simp only [ne_eq, Set.mem_setOf_eq, iSup_subtype']
+        · simp only [ne_eq, Set.mem_ofPred_eq, iSup_subtype']
       have h_proj_preimage : proj ⁻¹' t' = (fun ω₂ ↦ (rows_lt_m ω₂, other_cols ω₂)) ⁻¹'
           {p | ((fun r k ↦ if hm : m ≠ 0 then
             r ⟨min k (m - 1), Finset.mem_Iio.mpr (h_row_bound hm k)⟩
             else Nonempty.some inferInstance) p.1, p.2) ∈ t'}
-          := by ext ω₂; simp only [Set.mem_preimage, Set.mem_setOf_eq, h_proj_factor]
+          := by ext ω₂; simp only [Set.mem_preimage, Set.mem_ofPred_eq, h_proj_factor]
       rw [indepFun_iff_measure_inter_preimage_eq_mul] at h_indep_combined
       rw [h_proj_preimage]
       let T : Set ((Iio m → R) × (ℕ → {b : 𝓐 // b ≠ a} → R)) :=
@@ -912,12 +916,10 @@ lemma indepFun_snd_hist_cond [Countable 𝓐] (alg : Algorithm 𝓐 R)
       fun ω ↦ (ω.1, fun k b ↦ if b = a then if m ≠ 0 then ω.2 (min k (m - 1)) b
         else Nonempty.some inferInstance else ω.2 k b) by
     convert this using 1
-    · rfl
-    · rfl
-    · rfl
+    congr!
     congr with ω
     simp only [Set.mem_preimage, Set.mem_singleton_iff, Prod.mk.injEq, Set.indicator_apply,
-      Set.mem_setOf_eq, ite_eq_left_iff, not_and, zero_ne_one, imp_false,
+      Set.mem_ofPred_eq, ite_eq_left_iff, not_and, zero_ne_one, imp_false,
       Classical.not_imp, Decidable.not_not, and_congr_right_iff]
     intro ha
     simp [ha]
@@ -938,6 +940,7 @@ section Laws
 
 variable [Countable 𝓐]
 
+set_option backward.isDefEq.respectTransparency false in
 lemma hasLaw_action_zero (alg : Algorithm 𝓐 R) (ν : Kernel 𝓐 R) [IsMarkovKernel ν] :
     HasLaw (action alg 0) alg.p0 (arrayMeasure ν) where
   map_eq := by
@@ -1069,7 +1072,7 @@ lemma hasCondDistrib_reward_pullCount_action
         pullCount (action alg) a (n + 1) ω = m}).indicator 1 ⁻¹' {1}] := by
     congr with ω
     simp only [Set.mem_preimage, Set.mem_singleton_iff, Prod.mk.injEq, Set.indicator_apply,
-      Set.mem_setOf_eq, Pi.one_apply, ite_eq_left_iff, not_and, zero_ne_one, imp_false,
+      Set.mem_ofPred_eq, Pi.one_apply, ite_eq_left_iff, not_and, zero_ne_one, imp_false,
       Classical.not_imp, Decidable.not_not, and_congr_right_iff]
     intro ha
     simp [ha]
@@ -1084,7 +1087,7 @@ lemma hasCondDistrib_reward_pullCount_action
     · rw [Measure.map_apply (by fun_prop) (by simp)] at ham
       convert ham
       ext ω
-      simp only [Set.mem_preimage, Set.indicator_apply, Set.mem_setOf_eq, Pi.one_apply,
+      simp only [Set.mem_preimage, Set.indicator_apply, Set.mem_ofPred_eq, Pi.one_apply,
         Set.mem_singleton_iff, ite_eq_left_iff, not_and, zero_ne_one, imp_false, Classical.not_imp,
         Decidable.not_not, Prod.mk.injEq, and_congr_right_iff]
       intro ha
@@ -1146,7 +1149,7 @@ lemma hasCondDistrib_reward_hist_action_pullCount
     · simp
     · convert ham
       ext ω
-      simp only [Set.mem_preimage, Set.indicator_apply, Set.mem_setOf_eq, Pi.one_apply,
+      simp only [Set.mem_preimage, Set.indicator_apply, Set.mem_ofPred_eq, Pi.one_apply,
         Set.mem_singleton_iff, ite_eq_left_iff, not_and, zero_ne_one, imp_false, Classical.not_imp,
         Decidable.not_not, Prod.mk.injEq, and_congr_right_iff]
       intro ha

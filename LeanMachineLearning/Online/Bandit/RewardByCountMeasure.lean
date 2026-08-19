@@ -144,7 +144,7 @@ lemma reward_cond_stepsUntil [StandardBorelSpace Ω] [Countable 𝓐]
       (fun ω ↦ R n ω.1) := by
     congr 2 with ω
     simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_singleton_iff, Set.indicator_apply,
-      Set.mem_setOf_eq, Pi.one_apply, ite_eq_left_iff, zero_ne_one, imp_false, Decidable.not_not]
+      Set.mem_ofPred_eq, Pi.one_apply, ite_eq_left_iff, zero_ne_one, imp_false, Decidable.not_not]
     rw [and_comm]
   _ = 𝓛[fun ω ↦ R n ω.1 | fun ω ↦ A n ω.1 ← a; 𝔓] := by
     rw [cond_of_condIndepFun (by fun_prop)]

@@ -149,7 +149,7 @@ lemma measurableSet_eq (κ η : Kernel α β) [IsFiniteKernel κ] [IsFiniteKerne
   classical
   have h_sub : {a | κ a = η a} = {a | (κ - η) a = 0} ∩ {a | (η - κ) a = 0} := by
     ext1 a
-    simp only [Set.mem_setOf_eq, Set.mem_inter_iff, sub_apply_eq_zero_iff_le]
+    simp only [Set.mem_ofPred_eq, Set.mem_inter_iff, sub_apply_eq_zero_iff_le]
     exact ⟨fun h ↦ by simp [h], fun h ↦ le_antisymm h.1 h.2⟩
   rw [h_sub]
   refine MeasurableSet.inter ?_ ?_

@@ -216,7 +216,7 @@ lemma prob_ucbIndex_le [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
       1 / (n + 1) ^ (c - 1) := by
   let s : Set (ℕ × ℝ) := {(m, x) | 0 < m ∧ x / m + √(2 * (c * σ2) * log (↑n + 1) / m) ≤ (ν a)[id]}
   have hs : MeasurableSet s := by
-    simp only [Nat.cast_nonneg, sqrt_div', id_eq, measurableSet_setOf, s]
+    simp only [Nat.cast_nonneg, sqrt_div', id_eq, measurableSet_setOfPred, s]
     fun_prop
   classical
   calc P {h | 0 < pullCount A a n h ∧ empMean A R a n h + ucbWidth A (c * σ2) a n h ≤ (ν a)[id]}
@@ -234,8 +234,8 @@ lemma prob_ucbIndex_le [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
     refine Finset.sum_congr rfl fun k hk ↦ ?_
     congr with ω
     have hk : 0 < k := by grind
-    simp only [Nat.cast_nonneg, sqrt_div', id_eq, Set.preimage_setOf_eq, hk, true_and,
-      Set.mem_setOf_eq, s]
+    simp only [Nat.cast_nonneg, sqrt_div', id_eq, Set.preimage_ofPred_eq, hk, true_and,
+      Set.mem_ofPred_eq, s]
     grind
   _ ≤ ∑ k ∈ Icc 1 n, (1 : ℝ≥0∞) / (n + 1) ^ c := by
     gcongr with k hk
@@ -259,7 +259,7 @@ lemma prob_ucbIndex_ge [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
       (ν a)[id] ≤ empMean A R a n h - ucbWidth A (c * σ2) a n h} ≤ 1 / (n + 1) ^ (c - 1) := by
   let s : Set (ℕ × ℝ) := {(m, x) | 0 < m ∧ (ν a)[id] ≤ x / m - √(2 * (c * σ2) * log (↑n + 1) / m)}
   have hs : MeasurableSet s := by
-    simp only [Nat.cast_nonneg, sqrt_div', id_eq, measurableSet_setOf, s]
+    simp only [Nat.cast_nonneg, sqrt_div', id_eq, measurableSet_setOfPred, s]
     fun_prop
   classical
   calc P {h | 0 < pullCount A a n h ∧ (ν a)[id] ≤ empMean A R a n h - ucbWidth A (c * σ2) a n h}
@@ -277,8 +277,8 @@ lemma prob_ucbIndex_ge [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
     refine Finset.sum_congr rfl fun k hk ↦ ?_
     congr with ω
     have hk : 0 < k := by grind
-    simp only [id_eq, Nat.cast_nonneg, sqrt_div', Set.preimage_setOf_eq, hk, true_and,
-      Set.mem_setOf_eq, s]
+    simp only [id_eq, Nat.cast_nonneg, sqrt_div', Set.preimage_ofPred_eq, hk, true_and,
+      Set.mem_ofPred_eq, s]
     grind
   _ ≤ ∑ k ∈ Icc 1 n, (1 : ℝ≥0∞) / (n + 1) ^ c := by
     gcongr with k hk
@@ -397,7 +397,7 @@ lemma some_sum_eq_zero [Nonempty (Fin K)]
   have h_gt := time_gt_of_pullCount_gt_one h a (ν := ν) (c := c * σ2) (hK := hK)
   filter_upwards [h_ae, h_gt] with ω h_le h_time_ge
   simp only [id_eq, tsub_le_iff_right, sum_eq_zero_iff, mem_range, Set.indicator_apply_eq_zero,
-    Set.mem_setOf_eq, Pi.one_apply, one_ne_zero, imp_false, not_and, not_le]
+    Set.mem_ofPred_eq, Pi.one_apply, one_ne_zero, imp_false, not_and, not_le]
   intro k hn h_arm hC_lt h_le_best
   by_contra! h_le_arm
   have h := pullCount_arm_le (by positivity : 0 ≤ c * σ2) h_le_best (by simpa) ?_ ?_ ?_
@@ -472,12 +472,12 @@ lemma expectation_pullCount_le'
       (measurableSet_lt (by fun_prop) (by fun_prop))
   have h_meas_1 b : Measurable fun h ↦ {s | 0 < pullCount A a s h ∧ (ν a)[id] <
       empMean A R a s h - ucbWidth A (c * σ2) a s h}.indicator (1 : ℕ → ℕ) b := by
-    simp only [id_eq, Set.indicator_apply, Set.mem_setOf_eq, Pi.one_apply]
+    simp only [id_eq, Set.indicator_apply, Set.mem_ofPred_eq, Pi.one_apply]
     exact Measurable.ite (h_set_1 _) (by fun_prop) (by fun_prop)
   have h_meas_2 b : Measurable fun h ↦ {s | 0 < pullCount A (bestArm ν) s h ∧
       empMean A R (bestArm ν) s h + ucbWidth A (c * σ2) (bestArm ν) s h <
           (ν (bestArm ν))[id]}.indicator (1 : ℕ → ℕ) b := by
-    simp only [id_eq, Set.indicator_apply, Set.mem_setOf_eq, Pi.one_apply]
+    simp only [id_eq, Set.indicator_apply, Set.mem_ofPred_eq, Pi.one_apply]
     exact Measurable.ite (h_set_2 _) (by fun_prop) (by fun_prop)
   calc ∫⁻ ω, pullCount A a n ω ∂P
   _ ≤ ∫⁻ ω, C a + 1 +

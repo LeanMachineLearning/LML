@@ -457,7 +457,7 @@ lemma condDistrib_prod_of_forall_condDistrib_cond [Countable Ω'] [IsFiniteMeasu
       (Measure.map (fun ω ↦ (X ω, Z ω)) μ ⊗ₘ κ) (s ∩ {p | p.1.2 = b}) by
     have hs_iUnion : s = ⋃ b, s ∩ {p | p.1.2 = b} := by
       ext p
-      simp only [Set.mem_iUnion, Set.mem_inter_iff, Set.mem_setOf_eq]
+      simp only [Set.mem_iUnion, Set.mem_inter_iff, Set.mem_ofPred_eq]
       grind
     have h_disj : Pairwise (Function.onFun Disjoint fun b ↦ s ∩ {p | p.1.2 = b}) := by
       intro i j hij
@@ -486,13 +486,13 @@ lemma condDistrib_prod_of_forall_condDistrib_cond [Countable Ω'] [IsFiniteMeasu
           ((measurableSet_singleton _).preimage (by fun_prop))
       · fun_prop
       · exact (measurableSet_singleton _).preimage (by fun_prop)
-      simp only [Set.preimage_setOf_eq]
+      simp only [Set.preimage_ofPred_eq]
       classical
       have h_le : ∫⁻ a, (κ (X a, Z a)) {a_1 | Z a = b} ∂μ ≤
           ∫⁻ a, {a' | Z a' = b}.indicator (fun _ ↦ κ.bound) a ∂μ := by
         gcongr with a
         by_cases hZ : Z a = b
-        · simp only [hZ, Set.setOf_true, Set.mem_setOf_eq, Set.indicator_of_mem]
+        · simp only [hZ, Set.ofPred_true, Set.mem_ofPred_eq, Set.indicator_of_mem]
           exact κ.measure_le_bound _ _
         · simp [hZ]
       refine le_antisymm (h_le.trans ?_) zero_le
@@ -525,8 +525,8 @@ lemma condDistrib_prod_of_forall_condDistrib_cond [Countable Ω'] [IsFiniteMeasu
     rw [← h1, ← mul_assoc, ENNReal.mul_inv_cancel hb (by simp), one_mul]
   convert h1'
   · ext x
-    simp only [Set.preimage_inter, Set.preimage_setOf_eq, Set.mem_inter_iff, Set.mem_preimage,
-      Set.mem_setOf_eq]
+    simp only [Set.preimage_inter, Set.preimage_ofPred_eq, Set.mem_inter_iff, Set.mem_preimage,
+      Set.mem_ofPred_eq]
     grind
   · rw [Measure.compProd_apply, Measure.compProd_apply, lintegral_map, lintegral_map]
     rotate_left
@@ -538,7 +538,7 @@ lemma condDistrib_prod_of_forall_condDistrib_cond [Countable Ω'] [IsFiniteMeasu
     · exact hs'
     · exact hs.inter ((measurableSet_singleton _).preimage (by fun_prop))
     rw [lintegral_cond, ← mul_assoc, ENNReal.mul_inv_cancel hb (by simp), one_mul]
-    simp only [Set.preimage_inter, Set.preimage_setOf_eq, Kernel.coe_comap, Function.comp_apply]
+    simp only [Set.preimage_inter, Set.preimage_ofPred_eq, Kernel.coe_comap, Function.comp_apply]
     classical
     have h_eq : (fun a ↦ κ (X a, Z a) (Prod.mk (X a, Z a) ⁻¹' s ∩ {a_1 | Z a = b})) =
         {a | Z a = b}.indicator
@@ -550,7 +550,7 @@ lemma condDistrib_prod_of_forall_condDistrib_cond [Countable Ω'] [IsFiniteMeasu
     swap; · exact (measurableSet_singleton _).preimage (by fun_prop)
     refine setLIntegral_congr_fun ((measurableSet_singleton _).preimage (by fun_prop)) fun a ha ↦ ?_
     congr 1 with ω
-    simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_setOf_eq, and_iff_left_iff_imp]
+    simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_ofPred_eq, and_iff_left_iff_imp]
     grind
 
 lemma cond_of_indepFun [IsZeroOrProbabilityMeasure μ] (h : IndepFun X T μ)

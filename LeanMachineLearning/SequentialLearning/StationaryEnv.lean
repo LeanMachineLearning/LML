@@ -201,7 +201,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
 
 namespace IsAlgEnvSeq
 
-/-- The conditional distribution of the feedback at time `n` given the action at time `n` is `ν`. -/
+/-- The conditional distribution of the feedback at time `n` given the action at time `n`
+is `ν n`. -/
 lemma hasCondDistrib_feedback_obliviousEnv {ν : ℕ → Kernel 𝓐 𝓨} [∀ n, IsMarkovKernel (ν n)]
     (h : IsAlgEnvSeq A Y alg (obliviousEnv ν) P) (n : ℕ) :
     HasCondDistrib (Y n) (A n) (ν n) P := by
@@ -210,8 +211,8 @@ lemma hasCondDistrib_feedback_obliviousEnv {ν : ℕ → Kernel 𝓐 𝓨} [∀ 
 /-- The conditional distribution of the feedback at time `n` given the action at time `n` is `ν`. -/
 lemma hasCondDistrib_feedback_stationaryEnv
     (h : IsAlgEnvSeq A Y alg (stationaryEnv ν) P) (n : ℕ) :
-    HasCondDistrib (Y n) (A n) ν P := by
-  simpa using IsObliviousEnv.hasCondDistrib_feedback h n
+    HasCondDistrib (Y n) (A n) ν P :=
+  hasCondDistrib_feedback_obliviousEnv h n
 
 /-- The conditional distribution of the feedback at time `n` given the action at time `n` is `ν`. -/
 lemma condDistrib_feedback_stationaryEnv [StandardBorelSpace 𝓨] [Nonempty 𝓨]

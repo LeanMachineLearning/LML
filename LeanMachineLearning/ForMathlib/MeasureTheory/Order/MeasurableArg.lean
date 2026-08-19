@@ -35,19 +35,19 @@ end Function
 
 section Argmax
 
-@[to_dual exists_argmin]
+@[to_dual]
 lemma exists_argmax : ∃ i, f i = f.max := by
   obtain ⟨i, -, hi⟩ := Finset.exists_mem_eq_sup' (by simp : Finset.univ.Nonempty) f
   exact ⟨i, hi.symm⟩
 
 /-- The index of the maximum value of a tuple. -/
-@[to_dual argmin /-- The index of the minimum value of a tuple. -/]
+@[to_dual /-- The index of the minimum value of a tuple. -/]
 noncomputable def argmax := (exists_argmax f).choose
 
-@[to_dual argmin_spec]
+@[to_dual]
 lemma argmax_spec : f (argmax f) = f.max := (exists_argmax f).choose_spec
 
-@[to_dual isMinOn_argmin]
+@[to_dual]
 lemma isMaxOn_argmax (x : ι) : f x ≤ f (argmax f) := by
   rw [argmax_spec f]
   exact f.le_max x
@@ -62,7 +62,7 @@ lemma measurable_max [MeasurableSup₂ α] : Measurable (fun (t : ι → α) => 
   ext
   simp [Function.max]
 
-@[to_dual (attr := fun_prop) measurable_argmin]
+@[to_dual (attr := fun_prop)]
 lemma measurable_argmax [MeasurableSpace ι] [MeasurableEq α] [MeasurableSup₂ α] :
     Measurable fun f : ι → α ↦ argmax f := by
   refine measurable_to_countable' fun i ↦ ?_
@@ -74,7 +74,7 @@ lemma measurable_argmax [MeasurableSpace ι] [MeasurableEq α] [MeasurableSup₂
     refine MeasurableSet.iUnion fun S ↦ (.iUnion fun hS ↦ ?_)
     exact measurableSet_eq_fun (by fun_prop) measurable_const
   ext f
-  simp only [Set.mem_setOf_eq, Set.mem_iUnion, exists_prop, exists_eq_right']
+  simp only [Set.mem_ofPred_eq, Set.mem_iUnion, exists_prop, exists_eq_right']
   constructor
   · intro hf x hx
     rw [← hf]
