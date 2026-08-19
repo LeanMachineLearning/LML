@@ -6,7 +6,7 @@ Authors: Rémy Degenne
 module
 
 public import Mathlib.Analysis.Calculus.Gradient.Basic
-public import Mathlib.Analysis.InnerProductSpace.NormPow
+public import LeanMachineLearning.ForMathlib.Analysis.InnerProductSpace.NormPow
 
 import LeanMachineLearning.ForMathlib.Analysis.Calculus.Deriv.Slope
 
@@ -106,21 +106,6 @@ lemma gradient_norm_sub_sq (x y : E) : ∇ (fun z ↦ ‖z - x‖ ^ 2) y = 2 •
 lemma gradient_dist_sq (x y : E) : ∇ (fun z ↦ dist x z ^ 2) y = 2 • (y - x) := by
   simp only [dist_eq_norm, norm_sub_rev x]
   exact gradient_norm_sub_sq x y
-
-section
--- Mathlib.Analysis.InnerProductSpace.NormPow
-
-variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
-variable {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
-
-theorem Differentiable.norm_pow {f : F → E} (hf : Differentiable ℝ f) {p : ℕ} (hp : 1 < p) :
-    Differentiable ℝ (fun x ↦ ‖f x‖ ^ p) := by
-  suffices Differentiable ℝ (fun x ↦ ‖f x‖ ^ (p : ℝ)) by
-    convert this using 1
-    simp
-  exact hf.norm_rpow (by simp [hp])
-
-end
 
 lemma inner_proj_nonpos (h_closed : IsClosed s) (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty)
     (x : E) {y : E} (hy : y ∈ s) :

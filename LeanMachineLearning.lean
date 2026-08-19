@@ -1,6 +1,7 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
 public import LeanMachineLearning.ForMathlib.Analysis.Calculus.Deriv.Slope
+public import LeanMachineLearning.ForMathlib.Analysis.InnerProductSpace.NormPow
 public import LeanMachineLearning.ForMathlib.Analysis.InnerProductSpace.Projection
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Function.ConditionalExpectation.PullOut
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Function.L2Space
