@@ -5,8 +5,8 @@ Authors: Rémy Degenne
 -/
 module
 
+public import LeanMachineLearning.ForMathlib.Analysis.InnerProductSpace.Projection
 public import LeanMachineLearning.Online.OnlineRegret
-public import LeanMachineLearning.Online.Projection
 public import LeanMachineLearning.SequentialLearning.Deterministic
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
 
