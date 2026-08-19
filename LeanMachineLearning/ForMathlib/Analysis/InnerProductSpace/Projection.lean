@@ -95,18 +95,6 @@ section Convex
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
   {s : Set E}
 
-lemma gradient_norm_sub_sq (x y : E) : ∇ (fun z ↦ ‖z - x‖ ^ 2) y = 2 • (y - x) := by
-  have h := ((hasFDerivAt_id y).sub_const x).norm_sq.hasGradientAt.gradient
-  simp only [id_eq, map_sub, ContinuousLinearMap.comp_id, map_nsmul] at h
-  rw [h]
-  congr
-  · exact (InnerProductSpace.toDual ℝ E).symm_apply_apply _
-  · exact (InnerProductSpace.toDual ℝ E).symm_apply_apply _
-
-lemma gradient_dist_sq (x y : E) : ∇ (fun z ↦ dist x z ^ 2) y = 2 • (y - x) := by
-  simp only [dist_eq_norm, norm_sub_rev x]
-  exact gradient_norm_sub_sq x y
-
 lemma inner_proj_nonpos (h_closed : IsClosed s) (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty)
     (x : E) {y : E} (hy : y ∈ s) :
     ⟪proj s x - x, proj s x - y⟫ ≤ 0 := by
