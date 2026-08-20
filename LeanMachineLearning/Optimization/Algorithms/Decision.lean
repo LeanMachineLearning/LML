@@ -44,18 +44,19 @@ lemma measurable_decision_inter {s : Set α} (hs : MeasurableSet s) :
 
 /-- The Markov kernel that samples from the decision set according to a given
 measure `μ`. -/
-noncomputable def decision_kernel : Kernel (Iic n → α × β) α := by
-  refine ⟨fun data ↦ cond μ <| decision n data, ?_⟩
-  rw [Measure.measurable_measure]
-  intro s hs
-  simp only [ProbabilityTheory.cond, Measure.smul_apply, smul_eq_mul]
-  refine Measurable.mul ?_ ?_
-  · refine Measurable.inv ?_
-    convert measurable_decision_inter μ measurableSet_decision_prod (MeasurableSet.univ)
-    simp [Set.inter_univ]
-  · simp_rw [μ.restrict_apply hs]
-    convert measurable_decision_inter μ measurableSet_decision_prod hs using 1
-    simp [Set.inter_comm]
+noncomputable def decision_kernel : Kernel (Iic n → α × β) α where
+  toFun data := cond μ <| decision n data
+  measurable' := by
+    rw [Measure.measurable_measure]
+    intro s hs
+    simp only [ProbabilityTheory.cond, Measure.smul_apply, smul_eq_mul]
+    refine Measurable.mul ?_ ?_
+    · refine Measurable.inv ?_
+      convert measurable_decision_inter μ measurableSet_decision_prod (MeasurableSet.univ)
+      simp [Set.inter_univ]
+    · simp_rw [μ.restrict_apply hs]
+      convert measurable_decision_inter μ measurableSet_decision_prod hs using 1
+      simp [Set.inter_comm]
 
 /- We need that the decisions has non-zero measure at each iteration,
 ensuring that the algorithm can sample from it. -/
