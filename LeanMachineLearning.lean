@@ -15,6 +15,7 @@ public import LeanMachineLearning.ForMathlib.Probability.Integrable
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Basic
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.MapComap
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.MeasureCompProd
+public import LeanMachineLearning.ForMathlib.Probability.Kernel.Cond
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.IonescuTulcea.Traj
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.KernelSub
 public import LeanMachineLearning.ForMathlib.Probability.Moments.SubGaussian
