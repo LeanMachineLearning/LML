@@ -64,7 +64,7 @@ open LIPO
 
 /- We need that the set of potential maximizers has non-zero measure at each iteration,
 ensuring that the algorithm can sample from it. -/
-variable (h : ∀ n (data : Iic n → α × ℝ), μ (potential_max κ data) ≠ 0)
+variable (h : ∀ ⦃n⦄ ⦃data : Iic n → α × ℝ⦄, μ (potential_max κ data) ≠ 0)
 
 /-- The LIPO (LIPschitz Optimization) algorithm for global optimization.
 This algorithm optimizes an unknown function assuming only that it has a finite Lipschitz

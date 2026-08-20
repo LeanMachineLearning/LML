@@ -116,7 +116,7 @@ open RankOpt
 /- We need that the set of potential maximizers has non-zero measure at each iteration,
 ensuring that the algorithm can sample from it. -/
 variable {𝓡 : Set (RankRule α)} (h𝓡 : 𝓡.Countable)
-  (h : ∀ n (data : Iic n → α × β), μ (potential_max data 𝓡) ≠ 0)
+  (h : ∀ ⦃n⦄ ⦃data : Iic n → α × β⦄, μ (potential_max data 𝓡) ≠ 0)
 
 /-- The RankOpt algorithm for global optimization.
 This algorithm uses a ranking approach to optimize an unknown function. It maintains a hypothesis
