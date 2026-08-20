@@ -49,7 +49,7 @@ end RankRule
 variable {α β : Type*} [MeasurableSpace α] (μ : Measure α) [IsProbabilityMeasure μ] {n : ℕ}
   [TopologicalSpace β] [MeasurableSpace β] [BorelSpace β] [LinearOrder β]
   [SecondCountableTopology β] [OpensMeasurableSpace β] [OrderClosedTopology β]
-  (data : Iic n → α × β)
+  (𝓡 : Set (RankRule α)) (data : Iic n → α × β)
 
 namespace RankOpt
 
@@ -75,11 +75,13 @@ noncomputable abbrev argmaxF := (data <| argmax (fun i ↦ (data i).2)).1
 Contains all points `x` for which there exists a ranking rule `r` in the hypothesis class `𝓡`
 that: (1) has zero ranking loss (perfectly consistent with the observed data),
 and (2) ranks `x` at least as high as the current best observed point. -/
-def potentialMax (𝓡 : Set (RankRule α)) :=
+def potentialMax :=
     {x | ∃ (r : 𝓡), rankingLoss data r = 0 ∧ 0 ≤ (r.1.1 x (argmaxF data)).1}
 
-lemma measurableSet_potential_max_prod {𝓡 : Set (RankRule α)} (h𝓡 : 𝓡.Countable) :
-    MeasurableSet {p : (Iic n → α × β) × α | p.2 ∈ potentialMax p.1 𝓡} := by
+variable {𝓡}
+
+lemma measurableSet_potential_max_prod (h𝓡 : 𝓡.Countable) (n : ℕ) :
+    MeasurableSet {p : (Iic n → α × β) × α | p.2 ∈ potentialMax 𝓡 p.1} := by
   simp only [potentialMax, Set.mem_ofPred_eq, measurableSet_setOfPred]
   have : Countable (𝓡) := h𝓡.to_subtype
   refine Measurable.exists fun r ↦ (.and ?_ ?_)
@@ -115,13 +117,14 @@ open RankOpt
 
 /- We need that the set of potential maximizers has non-zero measure at each iteration,
 ensuring that the algorithm can sample from it. -/
-variable {𝓡 : Set (RankRule α)} (h𝓡 : 𝓡.Countable)
-  (h : ∀ ⦃n⦄ ⦃data : Iic n → α × β⦄, μ (potentialMax data 𝓡) ≠ 0)
+variable {𝓡} (h𝓡 : 𝓡.Countable) (h₀ : ∀ ⦃n⦄ ⦃data : Iic n → α × β⦄, μ (potentialMax 𝓡 data) ≠ 0)
 
 /-- The RankOpt algorithm for global optimization.
 This algorithm uses a ranking approach to optimize an unknown function. It maintains a hypothesis
 class `𝓡` of ranking rules. It starts with an arbitrary probability measure `μ` as initial
 distribution and samples from the set of points that could be optimal according to ranking rules
 consistent with the observed data [(Malherbe et al., 2017)](https://arxiv.org/abs/1603.04381). -/
-noncomputable def RankOpt : Algorithm α β :=
-  Decision μ (fun n ↦ measurableSet_potential_max_prod (n := n) h𝓡) h
+noncomputable def RankOpt : Algorithm α β := by
+  refine Decision μ (fun n↦ Kernel.const _ μ) (measurableSet_potential_max_prod h𝓡) ?_ ?_
+  · simp [h₀]
+  · simp

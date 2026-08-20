@@ -50,7 +50,7 @@ Lipschitz constant. -/
 def potentialMax :=
   {x | (fun i ↦ (data i).2).max ≤ (fun i ↦ (data i).2 + κ * dist (data i).1 x).min}
 
-lemma measurableSetPotentialMaxProd :
+lemma measurableSetPotentialMaxProd (n : ℕ) :
     MeasurableSet {p : (Iic n → α × ℝ) × α | p.2 ∈ potentialMax κ p.1} := by
   unfold potentialMax
   simp only [Set.mem_ofPred_eq, measurableSet_setOfPred]
@@ -64,12 +64,14 @@ open LIPO
 
 /- We need that the set of potential maximizers has non-zero measure at each iteration,
 ensuring that the algorithm can sample from it. -/
-variable (h : ∀ ⦃n⦄ ⦃data : Iic n → α × ℝ⦄, μ (potentialMax κ data) ≠ 0)
+variable (h₀ : ∀ n (data : Iic n → α × ℝ), μ (potentialMax κ data) ≠ 0)
 
 /-- The LIPO (LIPschitz Optimization) algorithm for global optimization.
 This algorithm optimizes an unknown function assuming only that it has a finite Lipschitz
 constant `κ`. It starts with an arbitrary probability measure `μ` as initial distribution and
 iteratively samples from the set of potential maximizers, ensuring consistency and convergence to
 the global optimum [(Malherbe et al., 2017)](https://arxiv.org/abs/1703.02628). -/
-noncomputable def LIPO : Algorithm α ℝ :=
-  Decision μ (fun _ ↦ measurableSetPotentialMaxProd κ) h
+noncomputable def LIPO : Algorithm α ℝ := by
+  refine Decision μ (fun n↦ Kernel.const _ μ) (measurableSetPotentialMaxProd κ) ?_ ?_
+  · simp [h₀]
+  · simp
