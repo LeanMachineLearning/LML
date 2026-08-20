@@ -18,7 +18,7 @@ kernel is defined through the decision rules.
 
 ## Main definitions
 
-* `decision_kernel`: The Markov kernel that samples from the decision set rules according to a
+* `decisionKernel`: The Markov kernel that samples from the decision set rules according to a
 given measure `μ`.
 * `Decision`: The Decision algorithm that starts by sampling from the initial measure `μ` and then
 samples points satisfying the decision rules at each iteration using the defined kernel.
@@ -44,7 +44,7 @@ lemma measurable_decision_inter {s : Set α} (hs : MeasurableSet s) :
 
 /-- The Markov kernel that samples from the decision set according to a given
 measure `μ`. -/
-noncomputable def decision_kernel : Kernel (Iic n → α × β) α where
+noncomputable def decisionKernel : Kernel (Iic n → α × β) α where
   toFun data := cond μ <| decision n data
   measurable' := by
     rw [Measure.measurable_measure]
@@ -64,6 +64,6 @@ variable (h : ∀ n (data : Iic n → α × β), μ (decision n data) ≠ 0)
 
 /-- The interface for decision-based optimization algorithms. -/
 noncomputable def Decision : Algorithm α β where
-  policy _ := decision_kernel μ measurableSet_decision_prod
+  policy _ := decisionKernel μ measurableSet_decision_prod
   p0 := μ
   h_policy n := ⟨fun data ↦ cond_isProbabilityMeasure (h n data)⟩

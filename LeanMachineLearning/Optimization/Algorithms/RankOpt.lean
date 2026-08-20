@@ -23,7 +23,7 @@ case of the `Decision` algorithm.
 
 * `RankRule`: A rank rule is a measurable function that compares pairs of points.
   It returns 1 if the first point is ranked higher, -1 if lower, and 0 if equal.
-* `potential_max`: The set of potential maximizers for the RankOpt algorithm.
+* `potentialMax`: The set of potential maximizers for the RankOpt algorithm.
 * `RankOpt`: The RankOpt algorithm that samples from the set of potential maximizers using a given
   probability measure at each iteration.
 
@@ -55,42 +55,42 @@ namespace RankOpt
 
 /-- Computes the ranking from observed function values.
 Returns 1 if `y₁ > y₂`, 0 if `y₁ = y₂`, and -1 if `y₁ < y₂`. -/
-noncomputable def ranking_data (y₁ y₂ : β) := if y₂ < y₁ then 1 else if y₂ = y₁ then 0 else -1
+noncomputable def rankingData (y₁ y₂ : β) := if y₂ < y₁ then 1 else if y₂ = y₁ then 0 else -1
 
 /-- Indicator function checking if two rankings agree.
 Returns 1 if both values are equal, 0 otherwise. -/
-noncomputable abbrev rindicator (r₁ r₂ : ℝ) := if r₁ = r₂ then (1 : ℝ) else 0
+noncomputable abbrev rIndicator (r₁ r₂ : ℝ) := if r₁ = r₂ then (1 : ℝ) else 0
 
 /-- Computes the ranking loss for a rank rule.
 Measures the agreement between a candidate rule `r` and the rankings induced by the observed
 function values on all pairs of data points, normalized by the number of pairs. -/
-noncomputable def ranking_loss (r : RankRule α) :=
+noncomputable def rankingLoss (r : RankRule α) :=
   2 * (n * (n + 1) : ℝ)⁻¹ * ∑ ij ∈ {(i, j) : Iic n × Iic n | i ≤ j},
-    rindicator (r.1 (data ij.1).1 (data ij.2).1) (ranking_data (data ij.1).2 (data ij.2).2)
+    rIndicator (r.1 (data ij.1).1 (data ij.2).1) (rankingData (data ij.1).2 (data ij.2).2)
 
 /-- The point in the observed data with the maximum function value. -/
-noncomputable abbrev argmax_f := (data <| argmax (fun i ↦ (data i).2)).1
+noncomputable abbrev argmaxF := (data <| argmax (fun i ↦ (data i).2)).1
 
 /-- The set of potential maximizers for the RankOpt algorithm.
 Contains all points `x` for which there exists a ranking rule `r` in the hypothesis class `𝓡`
 that: (1) has zero ranking loss (perfectly consistent with the observed data),
 and (2) ranks `x` at least as high as the current best observed point. -/
-def potential_max (𝓡 : Set (RankRule α)) :=
-    {x | ∃ (r : 𝓡), ranking_loss data r = 0 ∧ 0 ≤ (r.1.1 x (argmax_f data)).1}
+def potentialMax (𝓡 : Set (RankRule α)) :=
+    {x | ∃ (r : 𝓡), rankingLoss data r = 0 ∧ 0 ≤ (r.1.1 x (argmaxF data)).1}
 
 lemma measurableSet_potential_max_prod {𝓡 : Set (RankRule α)} (h𝓡 : 𝓡.Countable) :
-    MeasurableSet {p : (Iic n → α × β) × α | p.2 ∈ potential_max p.1 𝓡} := by
-  simp only [potential_max, Set.mem_ofPred_eq, measurableSet_setOfPred]
+    MeasurableSet {p : (Iic n → α × β) × α | p.2 ∈ potentialMax p.1 𝓡} := by
+  simp only [potentialMax, Set.mem_ofPred_eq, measurableSet_setOfPred]
   have : Countable (𝓡) := h𝓡.to_subtype
   refine Measurable.exists fun r ↦ (.and ?_ ?_)
-  · simp only [ranking_loss]
+  · simp only [rankingLoss]
     refine Measurable.eq ?_ measurable_const
     refine Measurable.const_mul (measurable_sum _ fun i hi ↦ ?_) _
-    simp only [rindicator]
+    simp only [rIndicator]
     refine Measurable.ite (measurableSet_eq_fun ?_ ?_) measurable_const measurable_const
     · have := r.1.2
       fun_prop
-    · simp only [ranking_data]
+    · simp only [rankingData]
       have : Measurable (fun (z : ℤ) ↦ (z : ℝ)) := by fun_prop
       refine this.comp ?_
       refine Measurable.ite ?_ measurable_const <| .ite ?_ measurable_const measurable_const
@@ -116,7 +116,7 @@ open RankOpt
 /- We need that the set of potential maximizers has non-zero measure at each iteration,
 ensuring that the algorithm can sample from it. -/
 variable {𝓡 : Set (RankRule α)} (h𝓡 : 𝓡.Countable)
-  (h : ∀ ⦃n⦄ ⦃data : Iic n → α × β⦄, μ (potential_max data 𝓡) ≠ 0)
+  (h : ∀ ⦃n⦄ ⦃data : Iic n → α × β⦄, μ (potentialMax data 𝓡) ≠ 0)
 
 /-- The RankOpt algorithm for global optimization.
 This algorithm uses a ranking approach to optimize an unknown function. It maintains a hypothesis
