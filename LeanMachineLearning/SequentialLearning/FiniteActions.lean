@@ -324,7 +324,7 @@ lemma stepsUntil_eq_leastGE (a : 𝓐) (hm : m ≠ 0) :
     exact exists_pullCount_eq_of_le hs hm
   by_cases h_exists : ∃ s, m ≤ pullCount A a (s + 1) ω
   swap; · simp_rw [h_iff]; simp [h_exists]
-  rw [if_pos h_exists, dif_pos]
+  rw [ite_eq_left h_exists, dite_eq_left]
   swap; · rwa [h_iff]
   simp only [ENat.some_eq_natCast, Nat.cast_inj]
   rw [Nat.find_eq_iff]
@@ -476,7 +476,7 @@ lemma stepsUntil_eq_iff {ω : Ω} (n : ℕ) :
     refine ⟨pullCount_add_one_eq_of_stepsUntil_eq_coe h, fun k hk ↦ ?_⟩
     exact pullCount_lt_of_le_stepsUntil a ω h_exists (by rw [h]; exact mod_cast hk)
   · classical
-    rw [stepsUntil_eq_dite a m ω, dif_pos ⟨n, h.1⟩]
+    rw [stepsUntil_eq_dite a m ω, dite_eq_left ⟨n, h.1⟩]
     simp only [Nat.cast_inj]
     rw [Nat.find_eq_iff]
     exact ⟨h.1, fun k hk ↦ (h.2 k hk).ne⟩
@@ -810,7 +810,7 @@ lemma sumRewards_eq_of_pullCount_eq {R' : ℕ → Ω → ℝ} {s t : ℕ}
       intro ha
       have h1 := ha ▸ pullCount_action_eq_pullCount_add_one (A := A) t ω
       lia
-    rw [sumRewards_add_one, if_neg hne, add_zero, ih h_eq_t]
+    rw [sumRewards_add_one, ite_eq_right hne, add_zero, ih h_eq_t]
 
 lemma sumRewards_eq_pullCount_mul_empMean {R' : ℕ → Ω → ℝ} {ω : Ω}
     (h_pull : pullCount A a t ω ≠ 0) :
@@ -825,9 +825,9 @@ lemma sum_rewardByCount_eq_sumRewards {R' : ℕ → Ω → ℝ} (a : 𝓐) (t : 
     · rw [← hta] at ht ⊢
       rw [pullCount_action_eq_pullCount_add_one, sum_Icc_succ_top (Nat.le_add_left 1 _), ht]
       unfold sumRewards
-      rw [sum_range_succ, if_pos rfl, rewardByCount_pullCount_add_one_eq_reward]
+      rw [sum_range_succ, ite_eq_left rfl, rewardByCount_pullCount_add_one_eq_reward]
     · unfold sumRewards
-      rwa [pullCount_eq_pullCount_of_action_ne hta, sum_range_succ, if_neg hta, add_zero]
+      rwa [pullCount_eq_pullCount_of_action_ne hta, sum_range_succ, ite_eq_right hta, add_zero]
 
 lemma sumRewards_add_one_eq_sumRewards' {R' : ℕ → Ω → ℝ} {n : ℕ} {ω : Ω} :
     sumRewards A R' a (n + 1) ω = sumRewards' n (fun i ↦ (A i ω, R' i ω)) a := by

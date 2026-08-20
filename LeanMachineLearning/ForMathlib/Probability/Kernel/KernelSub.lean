@@ -74,7 +74,7 @@ lemma sub_of_not_isSFiniteKernel_right [∀ η : Kernel α β, Decidable (IsSFin
 lemma sub_of_isSFiniteKernel [IsSFiniteKernel κ] [IsSFiniteKernel η]
     [∀ η : Kernel α β, Decidable (IsSFiniteKernel η)] :
     κ - η = η.withDensity (fun a ↦ κ.rnDeriv η a - 1) + κ.singularPart η := by
-  rw [sub_def, dif_pos]
+  rw [sub_def, dite_eq_left]
   exact ⟨inferInstance, inferInstance⟩
 
 -- todo name

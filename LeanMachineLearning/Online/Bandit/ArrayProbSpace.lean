@@ -495,7 +495,7 @@ lemma measurable_hist_truePast [Countable 𝓐] (alg : Algorithm 𝓐 R)
     by_cases hb : b = a
     · subst hb
       simp only [truePast, ↓reduceIte]
-      rw [min_eq_left, if_pos (by grind)]
+      rw [min_eq_left, ite_eq_left (by grind)]
       grind
     · simp [truePast, hb]
   rw [h_eq]
