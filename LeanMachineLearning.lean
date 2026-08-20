@@ -29,6 +29,9 @@ public import LeanMachineLearning.Online.Bandit.BayesRegret
 public import LeanMachineLearning.Online.Bandit.Regret
 public import LeanMachineLearning.Online.Bandit.RewardByCountMeasure
 public import LeanMachineLearning.Online.Bandit.SumRewards
+public import LeanMachineLearning.Optimization.Algorithms.Decision
+public import LeanMachineLearning.Optimization.Algorithms.LIPO
+public import LeanMachineLearning.Optimization.Algorithms.RankOpt
 public import LeanMachineLearning.SequentialLearning.Algorithm
 public import LeanMachineLearning.SequentialLearning.AlgorithmDensity
 public import LeanMachineLearning.SequentialLearning.AlgorithmDensityBayes
