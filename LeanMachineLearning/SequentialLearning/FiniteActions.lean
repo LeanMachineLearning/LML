@@ -651,7 +651,7 @@ lemma isStoppingTime_stepsUntil_filtrationAction [MeasurableSingletonClass 𝓐]
   · subst hn
     simp only [WithTop.coe_zero]
     exact measurableSet_stepsUntil_eq_zero a m
-  · rw [IsAlgEnvSeq.filtrationAction_eq_comap _ hn]
+  · rw [h.filtrationAction_eq_comap _ hn]
     exact measurableSet_stepsUntil_eq h a m n
 
 end Measurability
@@ -766,6 +766,13 @@ lemma sum_comp_pullCount [Fintype 𝓐] [AddCommMonoid R] (f : ℕ → R) (t : �
     split_ifs
     · simp [sum_range_succ]
     · simp
+
+lemma sum_pullCount' [Fintype 𝓐] (n : ℕ) (h : Iic n → 𝓐 × ℝ) : ∑ a, pullCount' n h a = n + 1 := by
+  simp_rw [pullCount'_eq_sum]
+  rw [Finset.sum_comm]
+  have hcol (s : Iic n) : ∑ a, (if (h s).1 = a then (1 : ℕ) else 0) = 1 := by
+    simp [Finset.sum_ite_eq univ (h s).1 (fun _ ↦ (1 : ℕ))]
+  simp [hcol]
 
 section SumRewards
 
