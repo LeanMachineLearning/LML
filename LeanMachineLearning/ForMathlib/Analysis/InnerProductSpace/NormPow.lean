@@ -6,9 +6,9 @@ Authors: Rémy Degenne
 module
 
 public import Mathlib.Analysis.Calculus.Gradient.Basic
-public import Mathlib.Analysis.InnerProductSpace.NormPow
 
 import LeanMachineLearning.ForMathlib.Analysis.Calculus.Deriv.Slope
+import Mathlib.Analysis.InnerProductSpace.NormPow
 
 /-!
 # Differentiability of the norm to a power
