@@ -651,7 +651,7 @@ lemma isStoppingTime_stepsUntil_filtrationAction [MeasurableSingletonClass 𝓐]
   · subst hn
     simp only [WithTop.coe_zero]
     exact measurableSet_stepsUntil_eq_zero a m
-  · rw [IsAlgEnvSeq.filtrationAction_eq_comap _ hn]
+  · rw [h.filtrationAction_eq_comap _ hn]
     exact measurableSet_stepsUntil_eq h a m n
 
 end Measurability
