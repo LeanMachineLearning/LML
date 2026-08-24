@@ -9,7 +9,7 @@ public import LeanMachineLearning.ForMathlib.Probability.Independence.CondIndepF
 public import LeanMachineLearning.ForMathlib.Probability.Independence.IndepFun
 public import LeanMachineLearning.ForMathlib.Probability.Independence.IndepInfinitePi
 public import LeanMachineLearning.ForMathlib.Probability.Integrable
-public import LeanMachineLearning.SequentialLearning.FiniteActions
+public import LeanMachineLearning.SequentialLearning.SumRewards
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
 public import Mathlib.Probability.Independence.Integration
 public import Mathlib.Probability.Kernel.Representation
