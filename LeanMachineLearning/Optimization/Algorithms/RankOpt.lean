@@ -125,6 +125,6 @@ class `𝓡` of ranking rules. It starts with an arbitrary probability measure `
 distribution and samples from the set of points that could be optimal according to ranking rules
 consistent with the observed data [(Malherbe et al., 2017)](https://arxiv.org/abs/1603.04381). -/
 noncomputable def RankOpt : Algorithm α β := by
-  refine Decision μ (fun n↦ Kernel.const _ μ) (measurableSet_potential_max_prod h𝓡) ?_ ?_
+  refine Decision μ (fun n ↦ Kernel.const _ μ) (measurableSet_potential_max_prod h𝓡) ?_ ?_
   · simp [h₀]
   · simp
