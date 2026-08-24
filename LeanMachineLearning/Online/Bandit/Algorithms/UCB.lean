@@ -132,7 +132,7 @@ lemma forall_arm_eq_mod_of_lt (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationa
   | zero => exact arm_zero h
   | succ n _ =>
     filter_upwards [arm_ae_eq_ucbNextArm h n] with h h_eq
-    rw [h_eq, nextArm, if_pos]
+    rw [h_eq, nextArm, ite_eq_left]
     · rfl
     · grind
 

@@ -221,8 +221,8 @@ lemma measurable_uncurry_pullCount' [MeasurableEq 𝓐] (n : ℕ) :
   fun_prop
 
 lemma adapted_pullCount_add_one [MeasurableSingletonClass 𝓐]
-    (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : 𝓐) :
-    Adapted (IsAlgEnvSeq.filtration hA hR') (fun n ↦ pullCount A a (n + 1)) := by
+    (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
+    Adapted h.filtration (fun n ↦ pullCount A a (n + 1)) := by
   intro n
   have : pullCount A a (n + 1) = (fun h : Iic n → 𝓐 × R ↦ pullCount' n h a) ∘
       (history A R' n) := by
@@ -234,15 +234,15 @@ lemma adapted_pullCount_add_one [MeasurableSingletonClass 𝓐]
   exact measurable_comp_comap _ (measurable_pullCount' n a)
 
 lemma stronglyAdapted_pullCount_add_one [MeasurableSingletonClass 𝓐]
-    (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : 𝓐) :
-    StronglyAdapted (IsAlgEnvSeq.filtration hA hR') (fun n ↦ pullCount A a (n + 1)) :=
-  (adapted_pullCount_add_one hA hR' a).stronglyAdapted
+    (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
+    StronglyAdapted h.filtration (fun n ↦ pullCount A a (n + 1)) :=
+  (adapted_pullCount_add_one h a).stronglyAdapted
 
 lemma isPredictable_pullCount [MeasurableSingletonClass 𝓐]
-    (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : 𝓐) :
-    IsStronglyPredictable (IsAlgEnvSeq.filtration hA hR') (pullCount A a) := by
+    (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
+    IsStronglyPredictable h.filtration (pullCount A a) := by
   rw [IsStronglyPredictable.iff_measurable_add_one]
-  refine ⟨?_, stronglyAdapted_pullCount_add_one hA hR' a⟩
+  refine ⟨?_, stronglyAdapted_pullCount_add_one h a⟩
   simp only [pullCount_zero]
   fun_prop
 
@@ -324,7 +324,7 @@ lemma stepsUntil_eq_leastGE (a : 𝓐) (hm : m ≠ 0) :
     exact exists_pullCount_eq_of_le hs hm
   by_cases h_exists : ∃ s, m ≤ pullCount A a (s + 1) ω
   swap; · simp_rw [h_iff]; simp [h_exists]
-  rw [if_pos h_exists, dif_pos]
+  rw [ite_eq_left h_exists, dite_eq_left]
   swap; · rwa [h_iff]
   simp only [ENat.some_eq_natCast, Nat.cast_inj]
   rw [Nat.find_eq_iff]
@@ -476,7 +476,7 @@ lemma stepsUntil_eq_iff {ω : Ω} (n : ℕ) :
     refine ⟨pullCount_add_one_eq_of_stepsUntil_eq_coe h, fun k hk ↦ ?_⟩
     exact pullCount_lt_of_le_stepsUntil a ω h_exists (by rw [h]; exact mod_cast hk)
   · classical
-    rw [stepsUntil_eq_dite a m ω, dif_pos ⟨n, h.1⟩]
+    rw [stepsUntil_eq_dite a m ω, dite_eq_left ⟨n, h.1⟩]
     simp only [Nat.cast_inj]
     rw [Nat.find_eq_iff]
     exact ⟨h.1, fun k hk ↦ (h.2 k hk).ne⟩
@@ -513,14 +513,14 @@ lemma stepsUntil_eq_congr {ω' : Ω} (h_eq : ∀ i ≤ n, A i ω = A i ω') :
 section Measurability
 
 lemma isStoppingTime_stepsUntil [MeasurableSingletonClass 𝓐]
-    (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : 𝓐) (hm : m ≠ 0) :
-    IsStoppingTime (IsAlgEnvSeq.filtration hA hR') (stepsUntil A a m) := by
+    (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) (hm : m ≠ 0) :
+    IsStoppingTime h.filtration (stepsUntil A a m) := by
   rw [stepsUntil_eq_leastGE _ hm]
   refine StronglyAdapted.isStoppingTime_leastGE _ fun n ↦ ?_
-  suffices StronglyMeasurable[IsAlgEnvSeq.filtration hA hR' n] (pullCount A a (n + 1)) by
+  suffices StronglyMeasurable[h.filtration n] (pullCount A a (n + 1)) by
     fun_prop
   refine Measurable.stronglyMeasurable ?_
-  exact adapted_pullCount_add_one hA hR' a n
+  exact adapted_pullCount_add_one h a n
 
 -- todo: get this from the stopping time property?
 @[fun_prop]
@@ -562,7 +562,7 @@ lemma measurable_stepsUntil' [MeasurableSingletonClass 𝓐]
   (measurable_stepsUntil hA a m).comp measurable_fst
 
 lemma measurable_comap_indicator_stepsUntil_eq [MeasurableSingletonClass 𝓐]
-    (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : 𝓐) (m n : ℕ) :
+    (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) (m n : ℕ) :
     Measurable[MeasurableSpace.comap
         (fun ω : Ω ↦ (history A R' (n-1) ω, A n ω)) inferInstance]
       ({ω | stepsUntil A a m ω = ↑n}.indicator fun _ ↦ 1) := by
@@ -596,17 +596,19 @@ lemma measurable_comap_indicator_stepsUntil_eq [MeasurableSingletonClass 𝓐]
     by_cases hn : n = 0
     · simp only [hn, pullCount_zero]
       exact measurable_const
-    have h_meas := adapted_pullCount_add_one hA hR' a (n - 1)
+    have h_meas := adapted_pullCount_add_one h a (n - 1)
     have : 1 ≤ n := by grind
     convert h_meas using 1
     · rfl
     · simp [Nat.sub_add_cancel this]
 
 lemma measurable_indicator_stepsUntil_eq [MeasurableSingletonClass 𝓐]
-    (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : 𝓐) (m n : ℕ) :
+    (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) (m n : ℕ) :
     Measurable ({ω : Ω | stepsUntil A a m ω = ↑n}.indicator fun _ ↦ 1) := by
-  refine (measurable_comap_indicator_stepsUntil_eq hA hR' a m n).mono ?_ le_rfl
+  refine (measurable_comap_indicator_stepsUntil_eq h a m n).mono ?_ le_rfl
   refine Measurable.comap_le ?_
+  have hA := h.measurable_action
+  have hR' := h.measurable_feedback
   fun_prop
 
 lemma measurableSet_stepsUntil_eq_zero [MeasurableSingletonClass 𝓐] (a : 𝓐) (m : ℕ) :
@@ -630,7 +632,7 @@ lemma measurable_comap_indicator_stepsUntil_eq_zero [MeasurableSingletonClass �
   exact measurableSet_stepsUntil_eq_zero a m
 
 lemma measurableSet_stepsUntil_eq [MeasurableSingletonClass 𝓐]
-    (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : 𝓐) (m n : ℕ) :
+    (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) (m n : ℕ) :
     MeasurableSet[MeasurableSpace.comap (fun ω : Ω ↦ (history A R' (n-1) ω, A n ω))
         inferInstance]
       {ω : Ω | stepsUntil A a m ω = ↑n} := by
@@ -638,19 +640,19 @@ lemma measurableSet_stepsUntil_eq [MeasurableSingletonClass 𝓐]
     (fun ω : Ω ↦ (history A R' (n-1) ω, A n ω)) inferInstance
   suffices Measurable[mProd] ({ω | stepsUntil A a m ω = ↑n}.indicator fun x ↦ 1) by
     rwa [measurable_indicator_const_iff] at this
-  exact measurable_comap_indicator_stepsUntil_eq hA hR' a m n
+  exact measurable_comap_indicator_stepsUntil_eq h a m n
 
 /-- `stepsUntil a m` is a stopping time with respect to the filtration `filtrationAction`. -/
 lemma isStoppingTime_stepsUntil_filtrationAction [MeasurableSingletonClass 𝓐]
-    (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (a : 𝓐) (m : ℕ) :
-    IsStoppingTime (IsAlgEnvSeq.filtrationAction hA hR') (stepsUntil A a m) := by
+    (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) (m : ℕ) :
+    IsStoppingTime h.filtrationAction (stepsUntil A a m) := by
   refine isStoppingTime_of_measurableSet_eq fun n ↦ ?_
   by_cases hn : n = 0
   · subst hn
     simp only [WithTop.coe_zero]
     exact measurableSet_stepsUntil_eq_zero a m
-  · rw [IsAlgEnvSeq.filtrationAction_eq_comap _ hn]
-    exact measurableSet_stepsUntil_eq hA hR' a m n
+  · rw [h.filtrationAction_eq_comap _ hn]
+    exact measurableSet_stepsUntil_eq h a m n
 
 end Measurability
 
@@ -765,6 +767,13 @@ lemma sum_comp_pullCount [Fintype 𝓐] [AddCommMonoid R] (f : ℕ → R) (t : �
     · simp [sum_range_succ]
     · simp
 
+lemma sum_pullCount' [Fintype 𝓐] (n : ℕ) (h : Iic n → 𝓐 × ℝ) : ∑ a, pullCount' n h a = n + 1 := by
+  simp_rw [pullCount'_eq_sum]
+  rw [Finset.sum_comm]
+  have hcol (s : Iic n) : ∑ a, (if (h s).1 = a then (1 : ℕ) else 0) = 1 := by
+    simp [Finset.sum_ite_eq univ (h s).1 (fun _ ↦ (1 : ℕ))]
+  simp [hcol]
+
 section SumRewards
 
 /-- Sum of rewards obtained when pulling action `a` up to time `t` (exclusive). -/
@@ -810,7 +819,7 @@ lemma sumRewards_eq_of_pullCount_eq {R' : ℕ → Ω → ℝ} {s t : ℕ}
       intro ha
       have h1 := ha ▸ pullCount_action_eq_pullCount_add_one (A := A) t ω
       lia
-    rw [sumRewards_add_one, if_neg hne, add_zero, ih h_eq_t]
+    rw [sumRewards_add_one, ite_eq_right hne, add_zero, ih h_eq_t]
 
 lemma sumRewards_eq_pullCount_mul_empMean {R' : ℕ → Ω → ℝ} {ω : Ω}
     (h_pull : pullCount A a t ω ≠ 0) :
@@ -825,9 +834,9 @@ lemma sum_rewardByCount_eq_sumRewards {R' : ℕ → Ω → ℝ} (a : 𝓐) (t : 
     · rw [← hta] at ht ⊢
       rw [pullCount_action_eq_pullCount_add_one, sum_Icc_succ_top (Nat.le_add_left 1 _), ht]
       unfold sumRewards
-      rw [sum_range_succ, if_pos rfl, rewardByCount_pullCount_add_one_eq_reward]
+      rw [sum_range_succ, ite_eq_left rfl, rewardByCount_pullCount_add_one_eq_reward]
     · unfold sumRewards
-      rwa [pullCount_eq_pullCount_of_action_ne hta, sum_range_succ, if_neg hta, add_zero]
+      rwa [pullCount_eq_pullCount_of_action_ne hta, sum_range_succ, ite_eq_right hta, add_zero]
 
 lemma sumRewards_add_one_eq_sumRewards' {R' : ℕ → Ω → ℝ} {n : ℕ} {ω : Ω} :
     sumRewards A R' a (n + 1) ω = sumRewards' n (fun i ↦ (A i ω, R' i ω)) a := by
@@ -943,8 +952,7 @@ lemma measurable_uncurry_empMean' [MeasurableEq 𝓐] (n : ℕ) :
 lemma IsAlgEnvSeq.isPredictable_sumRewards [StandardBorelSpace 𝓐] {R' : ℕ → Ω → ℝ}
     {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
-    IsStronglyPredictable (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
-      (sumRewards A R' a) := by
+    IsStronglyPredictable h.filtration (sumRewards A R' a) := by
   rw [IsStronglyPredictable.iff_measurable_add_one]
   constructor
   · simp only [sumRewards_zero]
@@ -952,20 +960,17 @@ lemma IsAlgEnvSeq.isPredictable_sumRewards [StandardBorelSpace 𝓐] {R' : ℕ �
   refine fun n ↦ Measurable.stronglyMeasurable ?_
   refine measurable_fun_sum _ fun i hi ↦ Measurable.ite ?_ ?_ (by fun_prop)
   · refine (measurableSet_singleton a).preimage ?_
-    have h_meas_i := IsAlgEnvSeq.adapted_action h.measurable_action h.measurable_feedback i
+    have h_meas_i := h.adapted_action i
     simp only [mem_range] at hi
-    exact h_meas_i.mono ((IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback).mono
-      (by lia)) le_rfl
-  · have h_meas_i := IsAlgEnvSeq.adapted_feedback h.measurable_action h.measurable_feedback i
+    exact h_meas_i.mono (h.filtration.mono (by lia)) le_rfl
+  · have h_meas_i := h.adapted_feedback i
     simp only [mem_range] at hi
-    exact h_meas_i.mono ((IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback).mono
-      (by lia)) le_rfl
+    exact h_meas_i.mono (h.filtration.mono (by lia)) le_rfl
 
 lemma IsAlgEnvSeq.stronglyAdapted_sumRewards_add_one [StandardBorelSpace 𝓐]
     {R' : ℕ → Ω → ℝ} {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
-    StronglyAdapted (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
-      (fun n ↦ sumRewards A R' a (n + 1)) := by
+    StronglyAdapted h.filtration (fun n ↦ sumRewards A R' a (n + 1)) := by
   have h_predictable := h.isPredictable_sumRewards a
   rw [IsStronglyPredictable.iff_measurable_add_one] at h_predictable
   exact h_predictable.2
@@ -973,8 +978,7 @@ lemma IsAlgEnvSeq.stronglyAdapted_sumRewards_add_one [StandardBorelSpace 𝓐]
 lemma IsAlgEnvSeq.adapted_sumRewards_add_one [StandardBorelSpace 𝓐] {R' : ℕ → Ω → ℝ}
     {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
-    Adapted (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
-      (fun n ↦ sumRewards A R' a (n + 1)) :=
+    Adapted h.filtration (fun n ↦ sumRewards A R' a (n + 1)) :=
   (h.stronglyAdapted_sumRewards_add_one a).adapted
 
 section CopiedFromPR
@@ -1003,19 +1007,17 @@ end CopiedFromPR
 lemma IsAlgEnvSeq.isPredictable_empMean [StandardBorelSpace 𝓐] {R' : ℕ → Ω → ℝ}
     {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
-    IsStronglyPredictable (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
-      (empMean A R' a) := by
+    IsStronglyPredictable h.filtration (empMean A R' a) := by
   unfold empMean
   refine StronglyMeasurable.div₀' ?_ ?_
   · exact h.isPredictable_sumRewards a
-  · have h_meas := (isPredictable_pullCount h.measurable_action h.measurable_feedback a).measurable
+  · have h_meas := (isPredictable_pullCount h a).measurable
     fun_prop
 
 lemma IsAlgEnvSeq.stronglyAdapted_empMean_add_one [StandardBorelSpace 𝓐]
     {R' : ℕ → Ω → ℝ} {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
-    StronglyAdapted (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
-      (fun n ↦ empMean A R' a (n + 1)) := by
+    StronglyAdapted h.filtration (fun n ↦ empMean A R' a (n + 1)) := by
   have h_predictable := h.isPredictable_empMean a
   rw [IsStronglyPredictable.iff_measurable_add_one] at h_predictable
   exact h_predictable.2
@@ -1023,8 +1025,7 @@ lemma IsAlgEnvSeq.stronglyAdapted_empMean_add_one [StandardBorelSpace 𝓐]
 lemma IsAlgEnvSeq.adapted_empMean_add_one [StandardBorelSpace 𝓐] {R' : ℕ → Ω → ℝ}
     {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ}
     (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
-    Adapted (IsAlgEnvSeq.filtration h.measurable_action h.measurable_feedback)
-      (fun n ↦ empMean A R' a (n + 1)) :=
+    Adapted h.filtration (fun n ↦ empMean A R' a (n + 1)) :=
   (h.stronglyAdapted_empMean_add_one a).adapted
 
 end SumRewards

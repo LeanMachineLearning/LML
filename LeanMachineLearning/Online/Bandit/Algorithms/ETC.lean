@@ -105,7 +105,7 @@ lemma arm_mul [Nonempty (Fin K)]
     grind
   rw [this]
   filter_upwards [arm_ae_eq_etcNextArm h (K * m - 1)] with ω hn_eq
-  rw [hn_eq, nextArm, dif_neg (by simp), dif_pos rfl]
+  rw [hn_eq, nextArm, dite_eq_right (by simp), dite_eq_left rfl]
   exact this ▸ rfl
 
 /-- For `n ≥ K * m`, the arm pulled at time `n + 1` is the same as the arm pulled at time `n`. -/
@@ -113,7 +113,7 @@ lemma arm_add_one_of_ge (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv 
     {n : ℕ} (hm : m ≠ 0) (hn : K * m ≤ n) :
     A (n + 1) =ᵐ[P] fun ω ↦ A n ω := by
   filter_upwards [arm_ae_eq_etcNextArm h n] with ω hn_eq
-  rw [hn_eq, nextArm, dif_neg (by grind), dif_neg]
+  rw [hn_eq, nextArm, dite_eq_right (by grind), dite_eq_right]
   · rfl
   · have : 0 < K * m := Nat.mul_pos hK hm.bot_lt
     grind
