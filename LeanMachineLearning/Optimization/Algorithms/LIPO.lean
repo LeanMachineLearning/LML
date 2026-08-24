@@ -50,7 +50,7 @@ Lipschitz constant. -/
 def potentialMax :=
   {x | (fun i ↦ (data i).2).max ≤ (fun i ↦ (data i).2 + κ * dist (data i).1 x).min}
 
-lemma measurableSetPotentialMaxProd (n : ℕ) :
+lemma measurableSet_potentialMax_prod (n : ℕ) :
     MeasurableSet {p : (Iic n → α × ℝ) × α | p.2 ∈ potentialMax κ p.1} := by
   unfold potentialMax
   simp only [Set.mem_ofPred_eq, measurableSet_setOfPred]
