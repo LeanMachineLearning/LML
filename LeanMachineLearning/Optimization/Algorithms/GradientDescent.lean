@@ -31,6 +31,16 @@ variable {Ω E : Type*} {mΩ : MeasurableSpace Ω} {mE : MeasurableSpace E}
   {P : Measure Ω} [IsProbabilityMeasure P]
   {x x₀ : E} {X G : ℕ → Ω → E} {γ : ℕ → ℝ} {η : ℝ}
 
+lemma measurable_proj [FiniteDimensional ℝ E] [BorelSpace E] {s : Set E}
+    (h_closed : IsClosed s) (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty) :
+  Measurable (proj s) := (continuous_proj h_closed h_convex h_nonempty).measurable
+
+protected lemma _root_.Measurable.proj [FiniteDimensional ℝ E] [BorelSpace E] {s : Set E}
+    (h_closed : IsClosed s) (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty)
+    {f : Ω → E} (hf : Measurable f) :
+    Measurable (fun ω ↦ proj s (f ω)) :=
+  (measurable_proj h_closed h_convex h_nonempty).comp hf
+
 section Linear
 
 lemma inner_eq_add (x y g : E) (hη : 0 < η) :
@@ -192,18 +202,8 @@ lemma action_ae_eq_sub_sum (h_seq : IsAlgEnvSeq X G (gradientStep γ x₀) env P
   | zero => simpa
   | succ n ih => rw [hω n, sum_range_succ, ← sub_sub]; congr
 
-omit [SecondCountableTopology E] [CompleteSpace E] in
-lemma measurable_proj [FiniteDimensional ℝ E] {s : Set E}
-    (h_closed : IsClosed s) (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty) :
-  Measurable (proj s) := (continuous_proj h_closed h_convex h_nonempty).measurable
-
-omit [SecondCountableTopology E] [CompleteSpace E] in
-protected
-lemma _root_.Measurable.proj [FiniteDimensional ℝ E] {s : Set E}
-    (h_closed : IsClosed s) (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty)
-    {f : Ω → E} (hf : Measurable f) :
-    Measurable (fun ω ↦ proj s (f ω)) :=
-  (measurable_proj h_closed h_convex h_nonempty).comp hf
+variable [FiniteDimensional ℝ E]
+  {s : Set E} {h_closed : IsClosed s} {h_convex : Convex ℝ s} {h_nonempty : s.Nonempty}
 
 /-- Projected online gradient descent with step sizes `γ : ℕ → ℝ` and initial point `x₀ : E`.
 
@@ -214,13 +214,23 @@ the feedback received at step `n` and `proj s` is the projection onto `s`.
 Since the algorithm is expressed as a function of the history `hist : ℕ → Iic n → E × E`,
 we write `(hist ⟨n, …⟩).1` for `x n` and `(hist ⟨n, …⟩).2` for `g n`. -/
 noncomputable
-def projGradStep [FiniteDimensional ℝ E] {s : Set E}
+def projGradStep (s : Set E)
     (h_closed : IsClosed s) (h_convex : Convex ℝ s) (h_nonempty : s.Nonempty)
-    (γ : ℕ → ℝ) (x₀ : E) : Algorithm E E :=
+    (γ : ℕ → ℝ) (x₀ : E) :
+    Algorithm E E :=
   let xn := fun (n : ℕ) (hist : Iic n → E × E) ↦ (hist ⟨n, by grind⟩).1
   let gn := fun (n : ℕ) (hist : Iic n → E × E) ↦ (hist ⟨n, by grind⟩).2
   detAlgorithm (fun n hist ↦ proj s (xn n hist - γ n • gn n hist))
     (fun _ ↦ Measurable.proj h_closed h_convex h_nonempty (by fun_prop)) x₀
+
+lemma action_projGradStep_ae_eq
+    (h_seq : IsAlgEnvSeq X G (projGradStep s h_closed h_convex h_nonempty γ x₀) env P) {n : ℕ} :
+    X (n + 1) =ᵐ[P] fun ω ↦ proj s (X n ω - γ n • G n ω) := h_seq.action_detAlgorithm_ae_eq n
+
+lemma action_projGradStep_ae_all_eq
+    (h_seq : IsAlgEnvSeq X G (projGradStep s h_closed h_convex h_nonempty γ x₀) env P) :
+    ∀ᵐ ω ∂P, X 0 ω = x₀ ∧ ∀ n, X (n + 1) ω = proj s (X n ω - γ n • G n ω) :=
+  h_seq.action_detAlgorithm_ae_all_eq
 
 end Definition
 
