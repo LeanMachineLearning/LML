@@ -80,7 +80,7 @@ def potentialMax :=
 
 variable {𝓡}
 
-lemma measurableSet_potential_max_prod (h𝓡 : 𝓡.Countable) (n : ℕ) :
+lemma measurableSet_potentialMax_prod (h𝓡 : 𝓡.Countable) (n : ℕ) :
     MeasurableSet {p : (Iic n → α × β) × α | p.2 ∈ potentialMax 𝓡 p.1} := by
   simp only [potentialMax, Set.mem_ofPred_eq, measurableSet_setOfPred]
   have : Countable (𝓡) := h𝓡.to_subtype
@@ -125,6 +125,6 @@ class `𝓡` of ranking rules. It starts with an arbitrary probability measure `
 distribution and samples from the set of points that could be optimal according to ranking rules
 consistent with the observed data [(Malherbe et al., 2017)](https://arxiv.org/abs/1603.04381). -/
 noncomputable def RankOpt : Algorithm α β := by
-  refine Decision μ (fun n ↦ Kernel.const _ μ) (measurableSet_potential_max_prod h𝓡) ?_ ?_
+  refine Decision μ (fun n ↦ Kernel.const _ μ) (measurableSet_potentialMax_prod h𝓡) ?_ ?_
   · simp [h₀]
   · simp

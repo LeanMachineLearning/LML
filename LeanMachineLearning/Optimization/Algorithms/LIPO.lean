@@ -72,6 +72,6 @@ constant `κ`. It starts with an arbitrary probability measure `μ` as initial d
 iteratively samples from the set of potential maximizers, ensuring consistency and convergence to
 the global optimum [(Malherbe et al., 2017)](https://arxiv.org/abs/1703.02628). -/
 noncomputable def LIPO : Algorithm α ℝ := by
-  refine Decision μ (fun n↦ Kernel.const _ μ) (measurableSetPotentialMaxProd κ) ?_ ?_
+  refine Decision μ (fun n↦ Kernel.const _ μ) (measurableSet_potentialMax_prod κ) ?_ ?_
   · simp [h₀]
   · simp
