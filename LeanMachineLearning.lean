@@ -1,5 +1,10 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
+public import LeanMachineLearning.ForMathlib.Analysis.Calculus.Deriv.Slope
+public import LeanMachineLearning.ForMathlib.Analysis.InnerProductSpace.NormPow
+public import LeanMachineLearning.ForMathlib.Analysis.InnerProductSpace.Projection
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Function.ConditionalExpectation.PullOut
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Function.L2Space
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measurable
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measure.AbsolutelyContinuous
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Order.Lattice
@@ -29,6 +34,9 @@ public import LeanMachineLearning.Online.Bandit.BayesRegret
 public import LeanMachineLearning.Online.Bandit.Regret
 public import LeanMachineLearning.Online.Bandit.RewardByCountMeasure
 public import LeanMachineLearning.Online.Bandit.SumRewards
+public import LeanMachineLearning.Online.OnlineRegret
+public import LeanMachineLearning.Online.OnlineToBatch
+public import LeanMachineLearning.Optimization.Algorithms.GradientDescent
 public import LeanMachineLearning.SequentialLearning.Algorithm
 public import LeanMachineLearning.SequentialLearning.AlgorithmDensity
 public import LeanMachineLearning.SequentialLearning.AlgorithmDensityBayes
