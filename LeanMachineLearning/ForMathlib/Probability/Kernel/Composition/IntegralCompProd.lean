@@ -9,7 +9,7 @@ public import Mathlib.Probability.Kernel.Composition.IntegralCompProd
 
 import Mathlib.Analysis.Convex.Integral
 
-/-
+/-!
 # Lp functions with respect to a composition of kernels and measures
 -/
 
