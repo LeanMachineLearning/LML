@@ -13,6 +13,7 @@ public import LeanMachineLearning.ForMathlib.Probability.Independence.IndepFun
 public import LeanMachineLearning.ForMathlib.Probability.Independence.IndepInfinitePi
 public import LeanMachineLearning.ForMathlib.Probability.Integrable
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Basic
+public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.IntegralCompProd
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.MapComap
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.MeasureCompProd
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.IonescuTulcea.Traj
