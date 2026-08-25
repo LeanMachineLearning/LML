@@ -29,6 +29,7 @@ public import LeanMachineLearning.Online.Bandit.BayesRegret
 public import LeanMachineLearning.Online.Bandit.Regret
 public import LeanMachineLearning.Online.Bandit.RewardByCountMeasure
 public import LeanMachineLearning.Online.Bandit.SumRewards
+public import LeanMachineLearning.SequentialLearning.ActionIndicator
 public import LeanMachineLearning.SequentialLearning.Algorithm
 public import LeanMachineLearning.SequentialLearning.AlgorithmDensity
 public import LeanMachineLearning.SequentialLearning.AlgorithmDensityBayes
@@ -39,9 +40,12 @@ public import LeanMachineLearning.SequentialLearning.Algorithms.Uniform
 public import LeanMachineLearning.SequentialLearning.BayesStationaryEnv
 public import LeanMachineLearning.SequentialLearning.Deterministic
 public import LeanMachineLearning.SequentialLearning.EvaluationEnv
+public import LeanMachineLearning.SequentialLearning.FeedbackMartingale
 public import LeanMachineLearning.SequentialLearning.FiniteActions
 public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
+public import LeanMachineLearning.SequentialLearning.Means
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
+public import LeanMachineLearning.SequentialLearning.SumRewards
 public import LeanMachineLearning.Tactic.EqLift
 public import LeanMachineLearning.Tactic.EqLift.ForMathlib.Kernel
 public import LeanMachineLearning.Tactic.EqLift.ForMathlib.MeasurableEquiv

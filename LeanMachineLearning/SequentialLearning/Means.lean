@@ -5,7 +5,6 @@ Authors: Rémy Degenne
 -/
 module
 
-public import LeanMachineLearning.ForMathlib.Probability.Process.Filtration
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
 public import Mathlib.Analysis.Convex.Integral
 
@@ -118,14 +117,6 @@ lemma IsAlgEnvSeq.stronglyAdapted_means_filtrationAction [SecondCountableTopolog
     (h : IsAlgEnvSeq A Y alg env P) :
     StronglyAdapted h.filtrationAction (fun n ω ↦ env.means A Y (A n ω) n ω) :=
   (h.adapted_means_filtrationAction).stronglyAdapted
-
-lemma IsAlgEnvSeq.isStronglyPredictable_means [SecondCountableTopology 𝓨] [BorelSpace 𝓨]
-    (h : IsAlgEnvSeq A Y alg env P) :
-    IsStronglyPredictable (h.filtrationAction.shiftUp 1) (fun n ω ↦ env.means A Y (A n ω) n ω) := by
-  refine .of_measurable_add_one ?_ ?_
-  · refine (h.stronglyAdapted_means_filtrationAction 0).mono ?_
-    exact h.filtrationAction.mono (by grind : 0 ≤ 1)
-  · exact fun n ↦ h.stronglyAdapted_means_filtrationAction (n + 1)
 
 lemma IsAlgEnvSeq.adapted_means [SecondCountableTopology 𝓨] [BorelSpace 𝓨]
     (h : IsAlgEnvSeq A Y alg env P) :

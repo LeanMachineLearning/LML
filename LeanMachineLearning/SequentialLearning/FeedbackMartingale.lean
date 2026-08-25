@@ -7,12 +7,10 @@ module
 
 public import LeanMachineLearning.SequentialLearning.ActionIndicator
 public import LeanMachineLearning.SequentialLearning.Means
-public import LeanMachineLearning.SequentialLearning.StationaryEnv
 
 /-!
-# TODO
+# Martingale decomposition of the sum of rewards
 
-TODO: extend beyond oblivious environments, to general environments?
 -/
 
 @[expose] public section
@@ -25,32 +23,69 @@ namespace Learning
 
 variable {Ω 𝓐 𝓨 : Type*} {mΩ : MeasurableSpace Ω} {m𝓐 : MeasurableSpace 𝓐} {m𝓨 : MeasurableSpace 𝓨}
   [NormedAddCommGroup 𝓨] [NormedSpace ℝ 𝓨]
-  {P : Measure Ω} [IsProbabilityMeasure P]
+  {P : Measure Ω} [IsFiniteMeasure P]
   {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {alg : Algorithm 𝓐 𝓨} {env : Environment 𝓐 𝓨}
 
--- todo: use range instead of Iic? It would become a martingale with respect to filtrationAction
--- without the shiftUp
-noncomputable def respMart
-    (env : Environment 𝓐 𝓨) (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨) (k : 𝓐) (n : ℕ) (ω : Ω) : 𝓨 :=
-  ∑ m ∈ Iic n, {ω | A m ω = k}.indicator (fun ω ↦ Y m ω - env.means A Y (A m ω) m ω) ω
+/-- The sum of noise terms for action `k`.
+This is the martingale part of `sumRewards A Y k` for the filtration
+`IsAlgEnvSeq.filtrationAction`. -/
+noncomputable
+def noiseSum (env : Environment 𝓐 𝓨) (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨) (k : 𝓐) (n : ℕ) (ω : Ω) : 𝓨 :=
+  ∑ m ∈ range n, {ω | A m ω = k}.indicator (fun ω ↦ Y m ω - env.means A Y (A m ω) m ω) ω
 
-lemma respMart_succ (k : 𝓐) (n : ℕ) :
-    respMart env A Y k (n + 1) = respMart env A Y k n +
-      {ω | A (n + 1) ω = k}.indicator
-        (fun ω ↦ Y (n + 1) ω - env.means A Y (A (n + 1) ω) (n + 1) ω) := by
+/-- The sum of mean terms for action `k`.
+This is the predictable part of `sumRewards A Y k` for the filtration
+`IsAlgEnvSeq.filtrationAction`. -/
+noncomputable
+def meanSum (env : Environment 𝓐 𝓨) (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨) (k : 𝓐) (n : ℕ) (ω : Ω) : 𝓨 :=
+  ∑ m ∈ range n, {ω | A m ω = k}.indicator (fun ω ↦ env.means A Y (A m ω) m ω) ω
+
+lemma noiseSum_add_meanSum' (k : 𝓐) (n : ℕ) (ω : Ω) :
+    noiseSum env A Y k n ω + meanSum env A Y k n ω =
+      ∑ m ∈ range n, {ω | A m ω = k}.indicator (Y m) ω := by
+  simp only [noiseSum, meanSum, ← sum_add_distrib]
+  congr with m
+  by_cases h : A m ω = k <;> simp [h]
+
+lemma noiseSum_add_meanSum [DecidableEq 𝓐] (k : 𝓐) (n : ℕ) (ω : Ω) :
+    noiseSum env A Y k n ω + meanSum env A Y k n ω = sumRewards A Y k n ω := by
+  unfold sumRewards
+  rw [noiseSum_add_meanSum' k n ω]
+  congr with m
+  by_cases h : A m ω = k <;> simp [h]
+
+@[simp]
+lemma noiseSum_zero (k : 𝓐) : noiseSum env A Y k 0 = fun _ ↦ 0 := by unfold noiseSum; simp
+
+@[simp]
+lemma meanSum_zero (k : 𝓐) : meanSum env A Y k 0 = fun _ ↦ 0 := by unfold meanSum; simp
+
+lemma noiseSum_succ (k : 𝓐) (n : ℕ) :
+    noiseSum env A Y k (n + 1) = noiseSum env A Y k n +
+      {ω | A n ω = k}.indicator (fun ω ↦ Y n ω - env.means A Y (A n ω) n ω) := by
   ext ω
-  simp [respMart]
+  simp [noiseSum, Finset.sum_range_succ]
 
-lemma respMart_succ_sub (k : 𝓐) (n : ℕ) (ω : Ω) :
-    respMart env A Y k (n + 1) ω - respMart env A Y k n ω
-      = {ω | A (n + 1) ω = k}.indicator
-        (fun ω ↦ Y (n + 1) ω - env.means A Y (A (n + 1) ω) (n + 1) ω) ω := by
-  simp [respMart_succ]
+lemma noiseSum_succ_sub (k : 𝓐) (n : ℕ) (ω : Ω) :
+    noiseSum env A Y k (n + 1) ω - noiseSum env A Y k n ω
+      = {ω | A n ω = k}.indicator (fun ω ↦ Y n ω - env.means A Y (A n ω) n ω) ω := by
+  simp [noiseSum_succ]
 
-variable [MeasurableSingletonClass 𝓐]
+lemma meanSum_succ (k : 𝓐) (n : ℕ) :
+    meanSum env A Y k (n + 1) = meanSum env A Y k n +
+      {ω | A n ω = k}.indicator (fun ω ↦ env.means A Y (A n ω) n ω) := by
+  ext ω
+  simp [meanSum, Finset.sum_range_succ]
+
+lemma meanSum_succ_sub (k : 𝓐) (n : ℕ) (ω : Ω) :
+    meanSum env A Y k (n + 1) ω - meanSum env A Y k n ω
+      = {ω | A n ω = k}.indicator (fun ω ↦ env.means A Y (A n ω) n ω) ω := by
+  simp [meanSum_succ]
+
+variable [MeasurableSingletonClass 𝓐] [SecondCountableTopology 𝓨]
 
 @[fun_prop]
-lemma integrable_respMart_increment [SecondCountableTopology 𝓨] [OpensMeasurableSpace 𝓨]
+lemma integrable_noiseSum_increment [OpensMeasurableSpace 𝓨]
     {m : ℕ} (h : IsAlgEnvSeq A Y alg env P) (hint : Integrable (Y m) P) (k : 𝓐) :
     Integrable (fun ω ↦ {ω | A m ω = k}.indicator
       (fun ω ↦ Y m ω - env.means A Y (A m ω) m ω) ω) P := by
@@ -58,48 +93,80 @@ lemma integrable_respMart_increment [SecondCountableTopology 𝓨] [OpensMeasura
     (h.measurable_action _ (measurableSet_singleton k))
 
 @[fun_prop]
-lemma integrable_respMart [SecondCountableTopology 𝓨] [OpensMeasurableSpace 𝓨]
-    (h : IsAlgEnvSeq A Y alg env P) (hint : ∀ n, Integrable (Y n) P) (k : 𝓐) (n : ℕ) :
-    Integrable (respMart env A Y k n) P :=
-  integrable_finsetSum _ fun m _ ↦ integrable_respMart_increment h (hint m) k
+lemma integrable_meanSum_increment [OpensMeasurableSpace 𝓨]
+    {m : ℕ} (h : IsAlgEnvSeq A Y alg env P) (hint : Integrable (Y m) P) (k : 𝓐) :
+    Integrable (fun ω ↦ {ω | A m ω = k}.indicator (fun ω ↦ env.means A Y (A m ω) m ω) ω) P := by
+  exact (h.integrable_means_action hint).indicator
+    (h.measurable_action _ (measurableSet_singleton k))
 
-lemma memLp_respMart_increment [SecondCountableTopology 𝓨] [BorelSpace 𝓨]
+@[fun_prop]
+lemma integrable_noiseSum [OpensMeasurableSpace 𝓨]
+    (h : IsAlgEnvSeq A Y alg env P) (hint : ∀ n, Integrable (Y n) P) (k : 𝓐) (n : ℕ) :
+    Integrable (noiseSum env A Y k n) P :=
+  integrable_finsetSum _ fun m _ ↦ integrable_noiseSum_increment h (hint m) k
+
+@[fun_prop]
+lemma integrable_meanSum [OpensMeasurableSpace 𝓨]
+    (h : IsAlgEnvSeq A Y alg env P) (hint : ∀ n, Integrable (Y n) P) (k : 𝓐) (n : ℕ) :
+    Integrable (meanSum env A Y k n) P :=
+  integrable_finsetSum _ fun m _ ↦ integrable_meanSum_increment h (hint m) k
+
+lemma memLp_noiseSum_increment [BorelSpace 𝓨]
     {m : ℕ} (k : 𝓐) (h : IsAlgEnvSeq A Y alg env P) {p : ℝ≥0∞} (hp1 : 1 ≤ p) (hp_top : p ≠ ∞)
     (hY : MemLp (Y m) p P) :
     MemLp ({ω | A m ω = k}.indicator (fun ω ↦ Y m ω - env.means A Y (A m ω) m ω)) p P := by
   refine (hY.sub ?_).indicator (h.measurable_action _ (measurableSet_singleton k))
   exact h.memLp_means_action hp1 hp_top hY
 
-lemma memLp_respMart [SecondCountableTopology 𝓨] [BorelSpace 𝓨]
+lemma memLp_meanSum_increment [BorelSpace 𝓨]
+    {m : ℕ} (k : 𝓐) (h : IsAlgEnvSeq A Y alg env P) {p : ℝ≥0∞} (hp1 : 1 ≤ p) (hp_top : p ≠ ∞)
+    (hY : MemLp (Y m) p P) :
+    MemLp ({ω | A m ω = k}.indicator (fun ω ↦ env.means A Y (A m ω) m ω)) p P := by
+  exact (h.memLp_means_action hp1 hp_top hY).indicator
+    (h.measurable_action _ (measurableSet_singleton k))
+
+lemma memLp_noiseSum [BorelSpace 𝓨]
     (h : IsAlgEnvSeq A Y alg env P) {p : ℝ≥0∞} (hp1 : 1 ≤ p) (hp_top : p ≠ ∞)
     (hY : ∀ n, MemLp (Y n) p P) (k : 𝓐) (n : ℕ) :
-    MemLp (respMart env A Y k n) p P :=
-  memLp_finsetSum _ fun m _ ↦ memLp_respMart_increment k h hp1 hp_top (hY m)
+    MemLp (noiseSum env A Y k n) p P :=
+  memLp_finsetSum _ fun m _ ↦ memLp_noiseSum_increment k h hp1 hp_top (hY m)
+
+lemma memLp_meanSum [BorelSpace 𝓨]
+    (h : IsAlgEnvSeq A Y alg env P) {p : ℝ≥0∞} (hp1 : 1 ≤ p) (hp_top : p ≠ ∞)
+    (hY : ∀ n, MemLp (Y n) p P) (k : 𝓐) (n : ℕ) :
+    MemLp (meanSum env A Y k n) p P :=
+  memLp_finsetSum _ fun m _ ↦ memLp_meanSum_increment k h hp1 hp_top (hY m)
 
 section Martingale
 
-variable [SecondCountableTopology 𝓨]
+variable [BorelSpace 𝓨]
 
-lemma IsAlgEnvSeq.adapted_respMart [BorelSpace 𝓨] (h : IsAlgEnvSeq A Y alg env P) (k : 𝓐) :
-    Adapted h.filtration (respMart env A Y k) := by
+lemma IsAlgEnvSeq.adapted_noiseSum (h : IsAlgEnvSeq A Y alg env P) (k : 𝓐) :
+    Adapted h.filtrationAction (noiseSum env A Y k) := by
   refine fun n ↦ Finset.measurable_fun_sum _ fun m hm ↦ ?_
-  have hAm : Measurable[h.filtration n] (A m) := h.adapted_action.measurable_le (by grind)
-  have hYm : Measurable[h.filtration n] (Y m) := h.adapted_feedback.measurable_le (by grind)
+  have hAm : Measurable[h.filtrationAction n] (A m) :=
+    h.adapted_action_filtrationAction.measurable_le (by grind)
+  have hYm : Measurable[h.filtrationAction n] (Y m) :=
+    h.measurable_feedback_filtrationAction_of_lt (by grind)
   refine (hYm.sub ?_).indicator (hAm (measurableSet_singleton k))
-  exact h.adapted_means.measurable_le (by grind)
+  exact h.adapted_means_filtrationAction.measurable_le (by grind)
 
-lemma IsAlgEnvSeq.stronglyAdapted_respMart [BorelSpace 𝓨] (h : IsAlgEnvSeq A Y alg env P) (k : 𝓐) :
-    StronglyAdapted h.filtration (respMart env A Y k) := (adapted_respMart h k).stronglyAdapted
+lemma IsAlgEnvSeq.stronglyAdapted_noiseSum (h : IsAlgEnvSeq A Y alg env P) (k : 𝓐) :
+    StronglyAdapted h.filtrationAction (noiseSum env A Y k) :=
+  (adapted_noiseSum h k).stronglyAdapted
 
-lemma IsAlgEnvSeq.stronglyAdapted_respMart_filtrationAction [BorelSpace 𝓨]
-    (h : IsAlgEnvSeq A Y alg env P) (k : 𝓐) :
-    StronglyAdapted (h.filtrationAction.shiftUp 1) (respMart env A Y k) := by
-  intro n
-  refine (h.stronglyAdapted_respMart k n).mono ?_
-  simp only [Filtration.shiftUp]
-  exact h.filtration_le_filtrationAction_succ n
+lemma IsAlgEnvSeq.isStronglyPredictable_meanSum (h : IsAlgEnvSeq A Y alg env P) (k : 𝓐) :
+    IsStronglyPredictable h.filtrationAction (meanSum env A Y k) := by
+  refine .of_measurable_add_one ?_ fun n ↦ ?_
+  · simp only [meanSum_zero]
+    fun_prop
+  · refine Finset.stronglyMeasurable_fun_sum _ fun m hm ↦ ?_
+    have hAm : Measurable[h.filtrationAction n] (A m) :=
+      h.adapted_action_filtrationAction.measurable_le (by grind)
+    refine StronglyMeasurable.indicator ?_ (hAm (measurableSet_singleton k))
+    exact (h.stronglyAdapted_means_filtrationAction m).mono (h.filtrationAction.mono (by grind))
 
-lemma condExp_respMart_increment_filtrationAction [CompleteSpace 𝓨] [BorelSpace 𝓨]
+lemma condExp_noiseSum_increment [CompleteSpace 𝓨]
     (h : IsAlgEnvSeq A Y alg env P) (k : 𝓐) (i : ℕ) (hint : Integrable (Y i) P) :
     P[{ω | A i ω = k}.indicator (fun ω ↦ Y i ω - env.means A Y (A i ω) i ω) | h.filtrationAction i]
       =ᵐ[P] 0 := by
@@ -114,7 +181,7 @@ lemma condExp_respMart_increment_filtrationAction [CompleteSpace 𝓨] [BorelSpa
   have hgint : Integrable g P := hint.sub (h.integrable_means_action hint)
   have hcint : Integrable (c • g) P := by
     rw [h_smul]
-    exact integrable_respMart_increment h hint k
+    exact integrable_noiseSum_increment h hint k
   have hcondg : P[g | h.filtrationAction i] =ᵐ[P] 0 := by
     refine (condExp_sub hint (h.integrable_means_action hint) _).trans ?_
     have h1 := h.condExp_feedback i hint
@@ -131,23 +198,22 @@ lemma condExp_respMart_increment_filtrationAction [CompleteSpace 𝓨] [BorelSpa
   · simp
   · simp [c, actionIndicator, hak]
 
-lemma martingale_respMart [CompleteSpace 𝓨] [BorelSpace 𝓨]
-    (h : IsAlgEnvSeq A Y alg env P)
-    (hint : ∀ n, Integrable (Y n) P) (k : 𝓐) :
-    Martingale (respMart env A Y k) (h.filtrationAction.shiftUp 1) P := by
-  have hInt : ∀ n, Integrable (respMart env A Y k n) P := integrable_respMart h hint k
-  refine martingale_nat (h.stronglyAdapted_respMart_filtrationAction k) hInt fun i ↦ ?_
-  rw [respMart_succ]
+lemma martingale_noiseSum [CompleteSpace 𝓨]
+    (h : IsAlgEnvSeq A Y alg env P) (hint : ∀ n, Integrable (Y n) P) (k : 𝓐) :
+    Martingale (noiseSum env A Y k) h.filtrationAction P := by
+  have hInt : ∀ n, Integrable (noiseSum env A Y k n) P := integrable_noiseSum h hint k
+  refine martingale_nat (h.stronglyAdapted_noiseSum k) hInt fun i ↦ ?_
+  rw [noiseSum_succ]
   symm
   have hadd := condExp_add (hInt i)
-    (integrable_respMart_increment h (hint (i + 1)) k) (h.filtrationAction.shiftUp 1 i)
-  have hself : P[respMart env A Y k i | h.filtrationAction.shiftUp 1 i] = respMart env A Y k i :=
-    condExp_of_stronglyMeasurable ((h.filtrationAction.shiftUp 1).le i)
-      (h.stronglyAdapted_respMart_filtrationAction k i) (hInt i)
-  have hincr := condExp_respMart_increment_filtrationAction h k (i + 1) (hint (i + 1))
+    (integrable_noiseSum_increment h (hint i) k) (h.filtrationAction i)
+  have hself : P[noiseSum env A Y k i | h.filtrationAction i] = noiseSum env A Y k i :=
+    condExp_of_stronglyMeasurable (h.filtrationAction.le i)
+      (h.stronglyAdapted_noiseSum k i) (hInt i)
+  have hincr := condExp_noiseSum_increment h k i (hint i)
   filter_upwards [hadd, hincr] with ω ha hin
   rw [ha, Pi.add_apply, congrFun hself ω]
-  simp only [Filtration.shiftUp, add_eq_left]
+  simp only [add_eq_left]
   rw [hin, Pi.zero_apply]
 
 end Martingale
