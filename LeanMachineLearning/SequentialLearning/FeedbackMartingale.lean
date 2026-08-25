@@ -85,7 +85,7 @@ lemma meanSum_succ_sub (k : 𝓐) (n : ℕ) (ω : Ω) :
 variable [MeasurableSingletonClass 𝓐] [SecondCountableTopology 𝓨]
 
 @[fun_prop]
-lemma integrable_noiseSum_increment [OpensMeasurableSpace 𝓨]
+lemma IsAlgEnvSeq.integrable_noiseSum_increment [OpensMeasurableSpace 𝓨]
     {m : ℕ} (h : IsAlgEnvSeq A Y alg env P) (hint : Integrable (Y m) P) (k : 𝓐) :
     Integrable (fun ω ↦ {ω | A m ω = k}.indicator
       (fun ω ↦ Y m ω - env.means A Y (A m ω) m ω) ω) P := by
@@ -93,45 +93,45 @@ lemma integrable_noiseSum_increment [OpensMeasurableSpace 𝓨]
     (h.measurable_action _ (measurableSet_singleton k))
 
 @[fun_prop]
-lemma integrable_meanSum_increment [OpensMeasurableSpace 𝓨]
+lemma IsAlgEnvSeq.integrable_meanSum_increment [OpensMeasurableSpace 𝓨]
     {m : ℕ} (h : IsAlgEnvSeq A Y alg env P) (hint : Integrable (Y m) P) (k : 𝓐) :
     Integrable (fun ω ↦ {ω | A m ω = k}.indicator (fun ω ↦ env.means A Y (A m ω) m ω) ω) P := by
   exact (h.integrable_means_action hint).indicator
     (h.measurable_action _ (measurableSet_singleton k))
 
 @[fun_prop]
-lemma integrable_noiseSum [OpensMeasurableSpace 𝓨]
+lemma IsAlgEnvSeq.integrable_noiseSum [OpensMeasurableSpace 𝓨]
     (h : IsAlgEnvSeq A Y alg env P) (hint : ∀ n, Integrable (Y n) P) (k : 𝓐) (n : ℕ) :
     Integrable (noiseSum env A Y k n) P :=
-  integrable_finsetSum _ fun m _ ↦ integrable_noiseSum_increment h (hint m) k
+  integrable_finsetSum _ fun m _ ↦ h.integrable_noiseSum_increment (hint m) k
 
 @[fun_prop]
-lemma integrable_meanSum [OpensMeasurableSpace 𝓨]
+lemma IsAlgEnvSeq.integrable_meanSum [OpensMeasurableSpace 𝓨]
     (h : IsAlgEnvSeq A Y alg env P) (hint : ∀ n, Integrable (Y n) P) (k : 𝓐) (n : ℕ) :
     Integrable (meanSum env A Y k n) P :=
-  integrable_finsetSum _ fun m _ ↦ integrable_meanSum_increment h (hint m) k
+  integrable_finsetSum _ fun m _ ↦ h.integrable_meanSum_increment (hint m) k
 
-lemma memLp_noiseSum_increment [BorelSpace 𝓨]
+lemma IsAlgEnvSeq.memLp_noiseSum_increment [BorelSpace 𝓨]
     {m : ℕ} (k : 𝓐) (h : IsAlgEnvSeq A Y alg env P) {p : ℝ≥0∞} (hp1 : 1 ≤ p) (hp_top : p ≠ ∞)
     (hY : MemLp (Y m) p P) :
     MemLp ({ω | A m ω = k}.indicator (fun ω ↦ Y m ω - env.means A Y (A m ω) m ω)) p P := by
   refine (hY.sub ?_).indicator (h.measurable_action _ (measurableSet_singleton k))
   exact h.memLp_means_action hp1 hp_top hY
 
-lemma memLp_meanSum_increment [BorelSpace 𝓨]
+lemma IsAlgEnvSeq.memLp_meanSum_increment [BorelSpace 𝓨]
     {m : ℕ} (k : 𝓐) (h : IsAlgEnvSeq A Y alg env P) {p : ℝ≥0∞} (hp1 : 1 ≤ p) (hp_top : p ≠ ∞)
     (hY : MemLp (Y m) p P) :
     MemLp ({ω | A m ω = k}.indicator (fun ω ↦ env.means A Y (A m ω) m ω)) p P := by
   exact (h.memLp_means_action hp1 hp_top hY).indicator
     (h.measurable_action _ (measurableSet_singleton k))
 
-lemma memLp_noiseSum [BorelSpace 𝓨]
+lemma IsAlgEnvSeq.memLp_noiseSum [BorelSpace 𝓨]
     (h : IsAlgEnvSeq A Y alg env P) {p : ℝ≥0∞} (hp1 : 1 ≤ p) (hp_top : p ≠ ∞)
     (hY : ∀ n, MemLp (Y n) p P) (k : 𝓐) (n : ℕ) :
     MemLp (noiseSum env A Y k n) p P :=
   memLp_finsetSum _ fun m _ ↦ memLp_noiseSum_increment k h hp1 hp_top (hY m)
 
-lemma memLp_meanSum [BorelSpace 𝓨]
+lemma IsAlgEnvSeq.memLp_meanSum [BorelSpace 𝓨]
     (h : IsAlgEnvSeq A Y alg env P) {p : ℝ≥0∞} (hp1 : 1 ≤ p) (hp_top : p ≠ ∞)
     (hY : ∀ n, MemLp (Y n) p P) (k : 𝓐) (n : ℕ) :
     MemLp (meanSum env A Y k n) p P :=
@@ -166,7 +166,7 @@ lemma IsAlgEnvSeq.isStronglyPredictable_meanSum (h : IsAlgEnvSeq A Y alg env P) 
     refine StronglyMeasurable.indicator ?_ (hAm (measurableSet_singleton k))
     exact (h.stronglyAdapted_means_filtrationAction m).mono (h.filtrationAction.mono (by grind))
 
-lemma condExp_noiseSum_increment [CompleteSpace 𝓨]
+lemma IsAlgEnvSeq.condExp_noiseSum_increment [CompleteSpace 𝓨]
     (h : IsAlgEnvSeq A Y alg env P) (k : 𝓐) (i : ℕ) (hint : Integrable (Y i) P) :
     P[{ω | A i ω = k}.indicator (fun ω ↦ Y i ω - env.means A Y (A i ω) i ω) | h.filtrationAction i]
       =ᵐ[P] 0 := by
@@ -198,10 +198,10 @@ lemma condExp_noiseSum_increment [CompleteSpace 𝓨]
   · simp
   · simp [c, actionIndicator, hak]
 
-lemma martingale_noiseSum [CompleteSpace 𝓨]
+lemma IsAlgEnvSeq.martingale_noiseSum [CompleteSpace 𝓨]
     (h : IsAlgEnvSeq A Y alg env P) (hint : ∀ n, Integrable (Y n) P) (k : 𝓐) :
     Martingale (noiseSum env A Y k) h.filtrationAction P := by
-  have hInt : ∀ n, Integrable (noiseSum env A Y k n) P := integrable_noiseSum h hint k
+  have hInt : ∀ n, Integrable (noiseSum env A Y k n) P := h.integrable_noiseSum (hint) k
   refine martingale_nat (h.stronglyAdapted_noiseSum k) hInt fun i ↦ ?_
   rw [noiseSum_succ]
   symm

@@ -50,10 +50,13 @@ variable {Ω 𝓐 𝓨 : Type*} {mΩ : MeasurableSpace Ω} {m𝓐 : MeasurableSp
   {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {P : Measure Ω} [IsFiniteMeasure P]
   {alg : Algorithm 𝓐 𝓨} {env : Environment 𝓐 𝓨}
 
+/-- The kernel that gives the measure of the feedback distribution as a function of the action
+chosen at time `n`. -/
 noncomputable def Environment.measure (env : Environment 𝓐 𝓨) (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨)
     (n : ℕ) (ω : Ω) : Kernel 𝓐 𝓨 :=
   if n = 0 then env.ν0 else (env.feedback (n - 1)).sectR (history A Y (n - 1) ω)
 
+/-- The means of the feedback distribution as a function of the action chosen at time `n`. -/
 noncomputable def Environment.means (env : Environment 𝓐 𝓨) (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨)
     (k : 𝓐) (n : ℕ) (ω : Ω) : 𝓨 :=
   (env.measure A Y n ω k)[id]
