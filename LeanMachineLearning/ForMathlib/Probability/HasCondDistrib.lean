@@ -129,6 +129,13 @@ lemma HasLaw.prod_of_hasCondDistrib {P : Measure β}
     HasLaw (fun ω ↦ (X ω, Y ω)) (P ⊗ₘ κ) μ :=
   ⟨by fun_prop, by rw [h2.map_eq, h1.map_eq]⟩
 
+lemma HasCondDistrib.hasLaw_comp [SFinite μ] [IsSFiniteKernel κ] (h : HasCondDistrib Y X κ μ) :
+    HasLaw Y (κ ∘ₘ (μ.map X)) μ := by
+  refine ⟨by fun_prop, ?_⟩
+  rw [← Measure.snd_compProd, ← h.map_eq, Measure.snd,
+    AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
+  rfl
+
 lemma HasCondDistrib.prod {Z : α → Ω'} {η : Kernel (β × Ω) Ω'}
     (h1 : HasCondDistrib Y X κ μ) (h2 : HasCondDistrib Z (fun ω ↦ (X ω, Y ω)) η μ) :
     HasCondDistrib (fun ω ↦ (Y ω, Z ω)) X (κ ⊗ₖ η) μ := by

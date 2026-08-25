@@ -250,6 +250,18 @@ lemma IsAlgEnvSeq.hasLaw_history_zero (h : IsAlgEnvSeq A Y alg env P) : HasLaw (
     have hY := h.measurable_feedback
     exact (Measure.map_map (by fun_prop) (by fun_prop)).symm
 
+lemma IsAlgEnvSeq.hasLaw_action_comp (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
+    HasLaw (A (n + 1)) (alg.policy n ∘ₘ (P.map (history A Y n))) P :=
+  HasCondDistrib.hasLaw_comp (h.hasCondDistrib_action n)
+
+lemma IsAlgEnvSeq.hasLaw_feedback_comp (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
+    HasLaw (Y (n + 1)) ((env.feedback n) ∘ₘ (P.map fun ω ↦ (history A Y n ω, A (n + 1) ω))) P :=
+  HasCondDistrib.hasLaw_comp (h.hasCondDistrib_feedback n)
+
+lemma IsAlgEnvSeq.hasLaw_feedback_zero_comp (h : IsAlgEnvSeq A Y alg env P) :
+    HasLaw (Y 0) (env.ν0 ∘ₘ (P.map (A 0))) P :=
+  HasCondDistrib.hasLaw_comp (h.hasCondDistrib_feedback_zero)
+
 section Filtration
 
 namespace IsAlgEnvSeq
