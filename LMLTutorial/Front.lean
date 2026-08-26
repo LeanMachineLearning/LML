@@ -12,14 +12,14 @@ public import LMLTutorial.Pages.MarkovKernels
 public import LMLTutorial.Pages.Martingales
 public import VersoManual
 
-@[expose] public section
-
 set_option linter.style.header false
 set_option linter.style.setOption false
 set_option linter.hashCommand false
 set_option linter.style.longLine false
 set_option pp.rawOnError true
 set_option verso.code.warnLineLength 100
+
+@[expose] public section
 
 open Verso.Genre Manual Verso.Genre.Manual.InlineLean Verso.Code.External
 
