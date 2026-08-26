@@ -95,15 +95,8 @@ lemma hasLaw_action_zero [IsProbabilityMeasure P] (h : IsBayesAlgEnvSeq Q κ alg
 
 /-- The first action is independent of the parameter `E`, and has law `alg.p0`. -/
 lemma hasCondDistrib_action_zero (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
-    HasCondDistrib (A 0) E (Kernel.const _ alg.p0) P := by
-  have h0 := h.hasCondDistrib_action 0
-  rw [history_zero] at h0
-  have h1 := h0.measurableEquiv_comp_right
-    (MeasurableEquiv.prodComm.trans (MeasurableEquiv.uniqueProd (Fin 0 → 𝓐 × 𝓨) 𝓔))
-  convert h1 using 1
-  · rfl
-  · ext x : 1
-    simp [Kernel.comap_apply, Kernel.prodMkLeft_apply, Algorithm.policy_zero]
+    HasCondDistrib (A 0) E (Kernel.const _ alg.p0) P :=
+  hasCondDistrib_prodMk_right_unique_iff.mp (h.hasCondDistrib_action 0)
 
 variable [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
 
@@ -214,10 +207,7 @@ lemma IsAlgEnvSeq.isBayesAlgEnvSeq
         simpa [Kernel.fst_compProd] using h.hasCondDistrib_feedback_zero.fst
       have hc' : HasCondDistrib (A 0) (fun ω ↦ (Y 0 ω).1) (Kernel.const _ alg.p0) P := by
         simpa [h.hasLaw_action_zero.map_eq] using hc.const_map_of_const
-      rw [history_zero]
-      convert hc'.prod_right (f := fun _ ↦ (default : Fin 0 → 𝓐 × 𝓨)) measurable_const using 1
-      ext p : 1
-      simp [Kernel.prodMkRight_apply, Kernel.prodMkLeft_apply, Algorithm.policy_zero]
+      exact hasCondDistrib_prodMk_right_unique_iff.mpr hc'
     | succ n =>
       let f : (Fin (n + 1) → 𝓐 × 𝓔 × 𝓨) → 𝓔 × (Fin (n + 1) → 𝓐 × 𝓨) :=
         fun h ↦ ((h 0).2.1, fun i ↦ ((h i).1, (h i).2.2))
@@ -230,11 +220,8 @@ lemma IsAlgEnvSeq.isBayesAlgEnvSeq
     | zero =>
       have hc : HasCondDistrib (Y 0) (A 0) ((Kernel.const _ Q) ⊗ₖ κ.swapLeft) P := by
         simpa using h.hasCondDistrib_feedback_zero
-      have hc' : HasCondDistrib (fun ω ↦ (Y 0 ω).2) (fun ω ↦ ((Y 0 ω).1, A 0 ω)) κ P :=
-        hc.of_compProd.measurableEquiv_comp_right MeasurableEquiv.prodComm
-      rw [history_zero]
-      exact hc'.measurableEquiv_comp_right
-        (MeasurableEquiv.uniqueProd (Fin 0 → 𝓐 × 𝓨) (𝓔 × 𝓐)).symm
+      exact hasCondDistrib_prodMk_left_unique_iff.mpr
+        (hc.of_compProd.measurableEquiv_comp_right MeasurableEquiv.prodComm)
     | succ n =>
       let f : (Fin (n + 1) → 𝓐 × 𝓔 × 𝓨) × 𝓐 → (Fin (n + 1) → 𝓐 × 𝓨) × 𝓔 × 𝓐 :=
         fun p ↦ ((fun i ↦ ((p.1 i).1, (p.1 i).2.2)), (p.1 0).2.1, p.2)

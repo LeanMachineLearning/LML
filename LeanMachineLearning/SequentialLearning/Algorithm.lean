@@ -321,10 +321,8 @@ lemma IsAlgEnvSeq.hasLaw_action_zero (h : IsAlgEnvSeq A Y alg env P) :
 omit [IsProbabilityMeasure P] in
 lemma IsAlgEnvSeqUntil.hasCondDistrib_feedback_zero (h : IsAlgEnvSeqUntil A Y alg env P N)
     (hN : 0 < N) :
-    HasCondDistrib (Y 0) (A 0) env.ν0 P := by
-  have h0 := h.hasCondDistrib_feedback 0 hN
-  simp only [history_zero] at h0
-  exact h0.measurableEquiv_comp_right (MeasurableEquiv.uniqueProd (Fin 0 → 𝓐 × 𝓨) 𝓐)
+    HasCondDistrib (Y 0) (A 0) env.ν0 P :=
+  hasCondDistrib_prodMk_left_unique_iff.mp (h.hasCondDistrib_feedback 0 hN)
 
 omit [IsProbabilityMeasure P] in
 lemma IsAlgEnvSeq.hasCondDistrib_feedback_zero (h : IsAlgEnvSeq A Y alg env P) :

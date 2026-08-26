@@ -5,6 +5,7 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
+public import LeanMachineLearning.ForMathlib.MeasureTheory.MeasurableSpace.Embedding
 public import LeanMachineLearning.ForMathlib.Probability.HasCondDistrib
 public import Mathlib.Probability.Kernel.IonescuTulcea.Traj
 public import Mathlib.Probability.Process.FiniteDimensionalLaws
@@ -21,12 +22,6 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω}
   {κ : (n : ℕ) → Kernel (Π i : Iic n, X i) (X (n + 1))} [∀ n, IsMarkovKernel (κ n)]
   {μ₀ : Measure (X 0)} [IsProbabilityMeasure μ₀]
 
-section MeasurableEquiv
-
-lemma coe_default_Iic_zero : ((default : Iic 0) : ℕ) = 0 := rfl
-
-end MeasurableEquiv
-
 namespace ProbabilityTheory.Kernel
 
 lemma traj_zero_map_eval_zero :
@@ -39,32 +34,6 @@ lemma traj_zero_map_eval_zero :
     fun_prop
   rw [← Kernel.traj_map_frestrictLe, ← Kernel.map_comp_right _ (by fun_prop) (by fun_prop)]
   rfl
-
-/-- Measurable equivalence between a product up to `n + 1` and the pair of the product up to `n` and
-the space at `n + 1`. -/
-def _root_.MeasurableEquiv.IicSuccProd (X : ℕ → Type*) [∀ n, MeasurableSpace (X n)] (n : ℕ) :
-    MeasurableEquiv (Π i : Iic (n + 1), X i) ((Π i : Iic n, X i) × X (n + 1)) :=
-  (MeasurableEquiv.IicProdIoc (Nat.le_succ n)).symm.trans
-    (MeasurableEquiv.prodCongr (MeasurableEquiv.refl _) (MeasurableEquiv.piSingleton n).symm)
-
-lemma symm_IicSuccProd (n : ℕ) :
-    (MeasurableEquiv.IicSuccProd X n).symm =
-      (MeasurableEquiv.prodCongr (MeasurableEquiv.refl _) (MeasurableEquiv.piSingleton n)).trans
-        (MeasurableEquiv.IicProdIoc (Nat.le_succ n)) := rfl
-
-@[simp]
-lemma MeasurableEquiv.IicSuccProd_apply (n : ℕ) (h : Π i : Iic (n + 1), X i) :
-    MeasurableEquiv.IicSuccProd X n h = (fun i : Iic n ↦ h ⟨i.1, by grind⟩, h ⟨n + 1, by simp⟩) :=
-  rfl
-
-lemma MeasurableEquiv.coe_prodCongr {α β γ δ : Type*}
-    {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
-    {mγ : MeasurableSpace γ} {mδ : MeasurableSpace δ}
-    (e₁ : MeasurableEquiv α β) (e₂ : MeasurableEquiv γ δ) :
-    (MeasurableEquiv.prodCongr e₁ e₂ : (α × γ) → (β × δ)) = Prod.map e₁ e₂ := rfl
-
-lemma MeasurableEquiv.coe_refl {α : Type*} {mα : MeasurableSpace α} :
-    (MeasurableEquiv.refl α : α → α) = id := rfl
 
 set_option backward.isDefEq.respectTransparency false in
 lemma hasLaw_Iic_of_forall_hasCondDistrib'
@@ -157,61 +126,9 @@ lemma hasLaw_trajMeasure [IsFiniteMeasure P]
     rw [(hasLaw_Iic_of_forall_hasCondDistrib h0 h_condDistrib n).map_eq,
       trajMeasure_map_frestrictLe]
 
-section Fin
-
-/-- Measurable equivalence between `Π i : Fin (n + 1), X i` and `Π i : Iic n, X i`. -/
-def _root_.MeasurableEquiv.finSuccPiIic (X : ℕ → Type*) [∀ n, MeasurableSpace (X n)] (n : ℕ) :
-    (Π i : Fin (n + 1), X i) ≃ᵐ (Π i : Iic n, X i) where
-  toFun h i := h ⟨i.1, Nat.lt_succ_of_le (mem_Iic.mp i.2)⟩
-  invFun h i := h ⟨i.1, mem_Iic.mpr (Nat.le_of_lt_succ i.2)⟩
-  left_inv _ := rfl
-  right_inv _ := rfl
-  measurable_toFun := measurable_pi_lambda _ fun _ ↦ measurable_pi_apply _
-  measurable_invFun := measurable_pi_lambda _ fun _ ↦ measurable_pi_apply _
-
-@[simp]
-lemma _root_.MeasurableEquiv.finSuccPiIic_apply (n : ℕ) (h : Π i : Fin (n + 1), X i) (i : Iic n) :
-    MeasurableEquiv.finSuccPiIic X n h i = h ⟨i.1, Nat.lt_succ_of_le (mem_Iic.mp i.2)⟩ := rfl
-
-@[simp]
-lemma _root_.MeasurableEquiv.finSuccPiIic_symm_apply (n : ℕ) (h : Π i : Iic n, X i)
-    (i : Fin (n + 1)) :
-    (MeasurableEquiv.finSuccPiIic X n).symm h i = h ⟨i.1, mem_Iic.mpr (Nat.le_of_lt_succ i.2)⟩ :=
-  rfl
-
-lemma _root_.MeasurableEquiv.finSuccPiIic_symm_comp_frestrictLe (n : ℕ) :
-    (MeasurableEquiv.finSuccPiIic X n).symm ∘ frestrictLe n = fun x (i : Fin (n + 1)) ↦ x i := rfl
-
-/-- Measurable equivalence between `Fin (n + 1) → X` and `(Fin n → X) × X`. -/
-def _root_.MeasurableEquiv.finSuccProd (X : Type*) [MeasurableSpace X] (n : ℕ) :
-    (Fin (n + 1) → X) ≃ᵐ (Fin n → X) × X :=
-  (MeasurableEquiv.piFinSuccAbove (fun _ ↦ X) (Fin.last n)).trans MeasurableEquiv.prodComm
-
-@[simp]
-lemma _root_.MeasurableEquiv.finSuccProd_apply {X : Type*} [MeasurableSpace X] (n : ℕ)
-    (h : Fin (n + 1) → X) :
-    MeasurableEquiv.finSuccProd X n h = (fun i ↦ h i.castSucc, h (Fin.last n)) := by
-  simp [MeasurableEquiv.finSuccProd]
-  rfl
-
-@[simp]
-lemma _root_.MeasurableEquiv.finSuccProd_symm_apply {X : Type*} [MeasurableSpace X] (n : ℕ)
-    (p : (Fin n → X) × X) :
-    (MeasurableEquiv.finSuccProd X n).symm p = Fin.snoc p.1 p.2 := by
-  simp [MeasurableEquiv.finSuccProd]
-  rfl
-
-end Fin
-
 section FinTraj
 
 variable {κ' : (n : ℕ) → Kernel (Π i : Fin n, X i) (X n)} [∀ n, IsMarkovKernel (κ' n)]
-
-lemma comap_comap_symm {α β γ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
-    {mγ : MeasurableSpace γ} (κ : Kernel α γ) (e : β ≃ᵐ α) :
-    (κ.comap e e.measurable).comap e.symm e.symm.measurable = κ := by
-  ext a : 1
-  simp [Kernel.comap_apply]
 
 /-- Kernels indexed by `Iic n` (as needed for `Kernel.traj`), obtained from kernels indexed by
 `Fin n`: the kernel `κ' (n + 1)` on `Π i : Fin (n + 1), X i` is seen as a kernel on
@@ -222,11 +139,6 @@ def iicOfFin (κ' : (n : ℕ) → Kernel (Π i : Fin n, X i) (X n)) (n : ℕ) :
   (κ' (n + 1)).comap (MeasurableEquiv.finSuccPiIic X n).symm (by fun_prop)
 
 instance (n : ℕ) : IsMarkovKernel (iicOfFin κ' n) := by unfold iicOfFin; infer_instance
-
-omit [∀ n, IsMarkovKernel (κ' n)] in
-lemma comap_iicOfFin (n : ℕ) :
-    (iicOfFin κ' n).comap (MeasurableEquiv.finSuccPiIic X n) (by fun_prop) = κ' (n + 1) :=
-  comap_comap_symm _ (MeasurableEquiv.finSuccPiIic X n).symm
 
 /-- Measure on trajectories `Π n, X n` built from kernels `κ' n : Kernel (Π i : Fin n, X i) (X n)`
 describing the law of the coordinate `n` given the `n` previous coordinates.
@@ -265,9 +177,7 @@ lemma hasCondDistrib_trajMeasureFin (n : ℕ) :
     have h : HasCondDistrib (fun x ↦ x (n + 1)) (frestrictLe n) (iicOfFin κ' n)
         (trajMeasureFin κ') :=
       ⟨by fun_prop, map_frestrictLe_trajMeasure_compProd_eq_map_trajMeasure.symm⟩
-    have h' := h.measurableEquiv_comp_right (MeasurableEquiv.finSuccPiIic X n).symm
-    rwa [MeasurableEquiv.symm_symm, comap_iicOfFin,
-      MeasurableEquiv.finSuccPiIic_symm_comp_frestrictLe] at h'
+    exact h.comp_right
 
 /-- Uniqueness of `trajMeasureFin`. -/
 lemma hasLaw_trajMeasureFin [IsProbabilityMeasure P]
