@@ -22,8 +22,12 @@ public import LeanMachineLearning.ForMathlib.Probability.Moments.SubGaussian
 public import LeanMachineLearning.ForMathlib.Probability.WithDensity
 public import LeanMachineLearning.ForMathlib.Topology.Instances.ENNReal.Lemmas
 public import LeanMachineLearning.Online.Bandit.Algorithms.ETC
+public import LeanMachineLearning.Online.Bandit.Algorithms.LinUCB
+public import LeanMachineLearning.Online.Bandit.Algorithms.LinUCB.Basic
+public import LeanMachineLearning.Online.Bandit.Algorithms.LinUCB.Matrix
 public import LeanMachineLearning.Online.Bandit.Algorithms.Regret.BayesRegretTS
 public import LeanMachineLearning.Online.Bandit.Algorithms.TS
+public import LeanMachineLearning.Online.Bandit.Algorithms.LinUCB
 public import LeanMachineLearning.Online.Bandit.Algorithms.UCB
 public import LeanMachineLearning.Online.Bandit.ArrayProbSpace
 public import LeanMachineLearning.Online.Bandit.BayesRegret
