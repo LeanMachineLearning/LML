@@ -3,12 +3,16 @@ Copyright (c) 2026 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
-import LMLTutorial.Pages.BasicProbability
-import LMLTutorial.Pages.DefiningAlgorithm
-import LMLTutorial.Pages.Installation
-import LMLTutorial.Pages.MarkovKernels
-import LMLTutorial.Pages.Martingales
-import VersoManual
+module
+
+public import LMLTutorial.Pages.BasicProbability
+public import LMLTutorial.Pages.DefiningAlgorithm
+public import LMLTutorial.Pages.Installation
+public import LMLTutorial.Pages.MarkovKernels
+public import LMLTutorial.Pages.Martingales
+public import VersoManual
+
+@[expose] public section
 
 set_option linter.style.header false
 set_option linter.style.setOption false

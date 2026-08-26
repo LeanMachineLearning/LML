@@ -25,17 +25,20 @@ measurable functions.
 
 * `IsDeterministicAlg alg`: a typeclass expressing that the algorithm `alg` is deterministic.
 * `IsDeterministicEnv env`: a typeclass expressing that the environment `env` is deterministic.
-* `actionZero alg`: the initial action of a deterministic algorithm `alg`.
-* `nextAction alg n`: the function that gives the next action of a deterministic algorithm `alg`
-  at step `n`, as a function of the history.
-* `feedbackFunZero env`: the function that gives the initial feedback of a deterministic
-  environment `env`.
+* `nextAction alg n`: the function that gives the action of a deterministic algorithm `alg`
+  at step `n`, as a function of the history before `n`.
+* `actionZero alg`: the initial action of a deterministic algorithm `alg`. This is
+  `nextAction alg 0` applied to the empty history.
 * `feedbackFun env n`: the function that gives the feedback of a deterministic environment `env`
   at step `n`, as a function of the history and the current action.
+* `feedbackFunZero env`: the function that gives the initial feedback of a deterministic
+  environment `env`. This is `feedbackFun env 0` applied to the empty history.
 
-* `detAlgorithm nextA h_next action0`: a deterministic algorithm that chooses its action
-  according to the measurable function `nextA` (with proof of measurability `h_next`),
-  with initial action `action0`.
+* `detAlgorithm nextA h_next`: a deterministic algorithm that chooses its action
+  according to the measurable function `nextA` (with proof of measurability `h_next`).
+  The initial action is `nextA 0 default`.
+* `detEnvironment f hf`: a deterministic environment that gives feedback according to the
+  measurable function `f` (with proof of measurability `hf`).
 
 -/
 
@@ -49,36 +52,41 @@ namespace Learning
 
 variable {𝓐 𝓨 : Type*} {m𝓐 : MeasurableSpace 𝓐} {m𝓨 : MeasurableSpace 𝓨}
 
-/-- An algorithm is deterministic if its initial action and subsequent actions are determined by
-measurable functions (and not possibly random kernels). -/
+/-- An algorithm is deterministic if its actions are determined by measurable functions of the
+history (and not possibly random kernels). -/
 class IsDeterministicAlg (alg : Algorithm 𝓐 𝓨) : Prop where
-  exists_action0 : ∃ action0, alg.p0 = Measure.dirac action0
-  exists_nextAction n : ∃ (nextAction : (Iic n → 𝓐 × 𝓨) → 𝓐) (h_meas : Measurable nextAction),
+  exists_nextAction n : ∃ (nextAction : (Fin n → 𝓐 × 𝓨) → 𝓐) (h_meas : Measurable nextAction),
     alg.policy n = Kernel.deterministic nextAction h_meas
+
+/-- The action of a deterministic algorithm at step `n`, as a function of the history before `n`. -/
+noncomputable
+def nextAction (alg : Algorithm 𝓐 𝓨) [h_det : IsDeterministicAlg alg] (n : ℕ) :
+    (Fin n → 𝓐 × 𝓨) → 𝓐 :=
+  (h_det.exists_nextAction n).choose
 
 /-- The initial action of a deterministic algorithm. -/
 noncomputable
-def actionZero (alg : Algorithm 𝓐 𝓨) [h_det : IsDeterministicAlg alg] : 𝓐 :=
-  h_det.exists_action0.choose
-
-/-- The next action of a deterministic algorithm after step `n`. -/
-noncomputable
-def nextAction (alg : Algorithm 𝓐 𝓨) [h_det : IsDeterministicAlg alg] (n : ℕ) :
-    (Iic n → 𝓐 × 𝓨) → 𝓐 :=
-  (h_det.exists_nextAction n).choose
+def actionZero (alg : Algorithm 𝓐 𝓨) [IsDeterministicAlg alg] : 𝓐 :=
+  nextAction alg 0 default
 
 @[fun_prop]
 lemma measurable_nextAction (alg : Algorithm 𝓐 𝓨) [IsDeterministicAlg alg] (n : ℕ) :
     Measurable (nextAction alg n) :=
   (IsDeterministicAlg.exists_nextAction n).choose_spec.choose
 
-lemma p0_eq_dirac (alg : Algorithm 𝓐 𝓨) [h_det : IsDeterministicAlg alg] :
-    alg.p0 = Measure.dirac (actionZero alg) :=
-  h_det.exists_action0.choose_spec
-
 lemma policy_eq_deterministic (alg : Algorithm 𝓐 𝓨) [h_det : IsDeterministicAlg alg] (n : ℕ) :
     alg.policy n = Kernel.deterministic (nextAction alg n) (measurable_nextAction alg n) :=
   (IsDeterministicAlg.exists_nextAction n).choose_spec.choose_spec
+
+lemma nextAction_zero (alg : Algorithm 𝓐 𝓨) [IsDeterministicAlg alg] (h : Fin 0 → 𝓐 × 𝓨) :
+    nextAction alg 0 h = actionZero alg := by
+  rw [Unique.eq_default h]
+  rfl
+
+lemma p0_eq_dirac (alg : Algorithm 𝓐 𝓨) [IsDeterministicAlg alg] :
+    alg.p0 = Measure.dirac (actionZero alg) := by
+  rw [Algorithm.p0_def, policy_eq_deterministic, Kernel.deterministic_apply]
+  rfl
 
 namespace IsDeterministicAlg
 
@@ -86,76 +94,58 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {alg : Algorithm 𝓐 𝓨} {env : Environment 𝓐 𝓨} {P : Measure Ω} [IsFiniteMeasure P]
   {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {n N : ℕ}
 
-lemma hasLaw_action_zero_of_IsAlgEnvSeqUntil [h_det : IsDeterministicAlg alg]
-    (h : IsAlgEnvSeqUntil A Y alg env P N) :
-    HasLaw (A 0) (Measure.dirac (actionZero alg)) P where
-  aemeasurable := have hA := h.measurable_action; by fun_prop
-  map_eq := (h.hasLaw_action_zero).map_eq.trans (p0_eq_dirac alg)
-
-lemma action_zero_of_IsAlgEnvSeqUntil [MeasurableEq 𝓐] [h_det : IsDeterministicAlg alg]
-    (h : IsAlgEnvSeqUntil A Y alg env P N) :
-    A 0 =ᵐ[P] fun _ ↦ actionZero alg := by
-  have h_eq : ∀ᵐ x ∂(P.map (A 0)), x = actionZero alg := by
-    simp [(hasLaw_action_zero_of_IsAlgEnvSeqUntil h).map_eq]
-  have hA := h.measurable_action
-  exact ae_of_ae_map (by fun_prop) h_eq
-
 lemma action_ae_eq_of_IsAlgEnvSeqUntil [MeasurableEq 𝓐]
     [h_det : IsDeterministicAlg alg] (h : IsAlgEnvSeqUntil A Y alg env P N) (hn : n < N) :
-    A (n + 1) =ᵐ[P] fun ω ↦ nextAction alg n (history A Y n ω) := by
+    A n =ᵐ[P] fun ω ↦ nextAction alg n (history A Y n ω) := by
   have h_eq := (h.hasCondDistrib_action n hn)
   rw [policy_eq_deterministic alg n] at h_eq
   exact ae_eq_of_hasCondDistrib_deterministic (measurable_nextAction _ _) (by fun_prop)
     (by fun_prop) h_eq
 
-lemma hasLaw_action_zero [h_det : IsDeterministicAlg alg] (h : IsAlgEnvSeq A Y alg env P) :
+lemma action_zero_of_IsAlgEnvSeqUntil [MeasurableEq 𝓐] [h_det : IsDeterministicAlg alg]
+    (h : IsAlgEnvSeqUntil A Y alg env P N) (hN : 0 < N) :
+    A 0 =ᵐ[P] fun _ ↦ actionZero alg := by
+  filter_upwards [action_ae_eq_of_IsAlgEnvSeqUntil h hN] with ω hω
+  rw [hω, nextAction_zero]
+
+lemma hasLaw_action_zero_of_IsAlgEnvSeqUntil [IsProbabilityMeasure P]
+    [h_det : IsDeterministicAlg alg] (h : IsAlgEnvSeqUntil A Y alg env P N) (hN : 0 < N) :
     HasLaw (A 0) (Measure.dirac (actionZero alg)) P where
   aemeasurable := have hA := h.measurable_action; by fun_prop
-  map_eq := (h.hasLaw_action_zero).map_eq.trans (p0_eq_dirac alg)
+  map_eq := (h.hasLaw_action_zero hN).map_eq.trans (p0_eq_dirac alg)
+
+lemma hasLaw_action_zero [IsProbabilityMeasure P] [h_det : IsDeterministicAlg alg]
+    (h : IsAlgEnvSeq A Y alg env P) :
+    HasLaw (A 0) (Measure.dirac (actionZero alg)) P :=
+  hasLaw_action_zero_of_IsAlgEnvSeqUntil (h.isAlgEnvSeqUntil 1) zero_lt_one
+
+lemma action_ae_eq [MeasurableEq 𝓐] [h_det : IsDeterministicAlg alg]
+    (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
+    A n =ᵐ[P] fun ω ↦ nextAction alg n (history A Y n ω) :=
+  action_ae_eq_of_IsAlgEnvSeqUntil (h.isAlgEnvSeqUntil (n + 1)) n.lt_succ_self
 
 lemma action_zero_ae_eq [MeasurableEq 𝓐] [h_det : IsDeterministicAlg alg]
     (h : IsAlgEnvSeq A Y alg env P) :
     A 0 =ᵐ[P] fun _ ↦ actionZero alg :=
-  action_zero_of_IsAlgEnvSeqUntil (h.isAlgEnvSeqUntil 0)
-
-lemma action_ae_eq [MeasurableEq 𝓐] [h_det : IsDeterministicAlg alg]
-    (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
-    A (n + 1) =ᵐ[P] fun ω ↦ nextAction alg n (history A Y n ω) :=
-  action_ae_eq_of_IsAlgEnvSeqUntil (h.isAlgEnvSeqUntil (n + 1)) (by simp)
+  action_zero_of_IsAlgEnvSeqUntil (h.isAlgEnvSeqUntil 1) zero_lt_one
 
 lemma action_ae_all_eq [MeasurableEq 𝓐] [h_det : IsDeterministicAlg alg]
     (h : IsAlgEnvSeq A Y alg env P) :
-    ∀ᵐ ω ∂P, A 0 ω = actionZero alg ∧ ∀ n, A (n + 1) ω = nextAction alg n (history A Y n ω) := by
-  rw [eventually_and, ae_all_iff]
-  exact ⟨action_zero_ae_eq h, action_ae_eq h⟩
+    ∀ᵐ ω ∂P, ∀ n, A n ω = nextAction alg n (history A Y n ω) :=
+  ae_all_iff.mpr (action_ae_eq h)
 
 end IsDeterministicAlg
 
-/-- An environment is deterministic if its initial feedbacks are determined by
-measurable functions (and not possibly random kernels). -/
+/-- An environment is deterministic if its feedbacks are determined by measurable functions of
+the history and the action (and not possibly random kernels). -/
 class IsDeterministicEnv (env : Environment 𝓐 𝓨) : Prop where
-  exists_f0 : ∃ (f0 : 𝓐 → 𝓨) (hf0 : Measurable f0), env.ν0 = Kernel.deterministic f0 hf0
-  exists_f : ∀ n, ∃ (f : ((Iic n → 𝓐 × 𝓨) × 𝓐) → 𝓨) (hf : Measurable f),
+  exists_f : ∀ n, ∃ (f : ((Fin n → 𝓐 × 𝓨) × 𝓐) → 𝓨) (hf : Measurable f),
     env.feedback n = Kernel.deterministic f hf
-
-/-- The initial feedback function of a deterministic environment. -/
-noncomputable
-def feedbackFunZero (env : Environment 𝓐 𝓨) [h_det : IsDeterministicEnv env] : 𝓐 → 𝓨 :=
-  h_det.exists_f0.choose
-
-@[fun_prop]
-lemma measurable_feedbackFunZero (env : Environment 𝓐 𝓨) [IsDeterministicEnv env] :
-    Measurable (feedbackFunZero env) :=
-  (IsDeterministicEnv.exists_f0).choose_spec.choose
-
-lemma ν0_eq_deterministic (env : Environment 𝓐 𝓨) [IsDeterministicEnv env] :
-    env.ν0 = Kernel.deterministic (feedbackFunZero env) (measurable_feedbackFunZero env) :=
-  (IsDeterministicEnv.exists_f0).choose_spec.choose_spec
 
 /-- The feedback function of a deterministic environment at step `n`. -/
 noncomputable
 def feedbackFun (env : Environment 𝓐 𝓨) [h_det : IsDeterministicEnv env] (n : ℕ) :
-    ((Iic n → 𝓐 × 𝓨) × 𝓐) → 𝓨 :=
+    ((Fin n → 𝓐 × 𝓨) × 𝓐) → 𝓨 :=
   (h_det.exists_f n).choose
 
 @[fun_prop]
@@ -167,13 +157,41 @@ lemma feedback_eq_deterministic (env : Environment 𝓐 𝓨) [IsDeterministicEn
     env.feedback n = Kernel.deterministic (feedbackFun env n) (measurable_feedbackFun env n) :=
   (IsDeterministicEnv.exists_f n).choose_spec.choose_spec
 
+/-- The initial feedback function of a deterministic environment. -/
+noncomputable
+def feedbackFunZero (env : Environment 𝓐 𝓨) [IsDeterministicEnv env] : 𝓐 → 𝓨 :=
+  fun a ↦ feedbackFun env 0 (default, a)
+
+@[fun_prop]
+lemma measurable_feedbackFunZero (env : Environment 𝓐 𝓨) [IsDeterministicEnv env] :
+    Measurable (feedbackFunZero env) :=
+  (measurable_feedbackFun env 0).comp (measurable_const.prodMk measurable_id)
+
+lemma feedbackFun_zero (env : Environment 𝓐 𝓨) [IsDeterministicEnv env] (h : Fin 0 → 𝓐 × 𝓨)
+    (a : 𝓐) :
+    feedbackFun env 0 (h, a) = feedbackFunZero env a := by
+  rw [Unique.eq_default h]
+  rfl
+
+lemma ν0_eq_deterministic (env : Environment 𝓐 𝓨) [IsDeterministicEnv env] :
+    env.ν0 = Kernel.deterministic (feedbackFunZero env) (measurable_feedbackFunZero env) := by
+  ext a : 1
+  rw [Environment.ν0_apply, feedback_eq_deterministic, Kernel.deterministic_apply,
+    Kernel.deterministic_apply]
+  rfl
+
 namespace IsDeterministicEnv
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {alg : Algorithm 𝓐 𝓨} {env : Environment 𝓐 𝓨} {P : Measure Ω} [IsFiniteMeasure P]
   {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
-  {f : (n : ℕ) → ((Iic n → 𝓐 × 𝓨) × 𝓐) → 𝓨} {hf : ∀ n, Measurable (f n)}
-  {f0 : 𝓐 → 𝓨} {hf0 : Measurable f0}
+
+lemma hasCondDistrib_feedback [h_det : IsDeterministicEnv env]
+    (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
+    HasCondDistrib (Y n) (fun ω ↦ (history A Y n ω, A n ω))
+      (Kernel.deterministic (feedbackFun env n) (measurable_feedbackFun env n)) P := by
+  rw [← feedback_eq_deterministic]
+  exact h.hasCondDistrib_feedback n
 
 lemma hasCondDistrib_feedback_zero [h_det : IsDeterministicEnv env]
     (h : IsAlgEnvSeq A Y alg env P) :
@@ -182,69 +200,67 @@ lemma hasCondDistrib_feedback_zero [h_det : IsDeterministicEnv env]
   rw [← ν0_eq_deterministic]
   exact h.hasCondDistrib_feedback_zero
 
-lemma hasCondDistrib_feedback [h_det : IsDeterministicEnv env]
+lemma feedback_ae_eq [MeasurableEq 𝓨] [h_det : IsDeterministicEnv env]
     (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
-    HasCondDistrib (Y (n + 1)) (fun ω ↦ (history A Y n ω, A (n + 1) ω))
-      (Kernel.deterministic (feedbackFun env n) (measurable_feedbackFun env n)) P := by
-  rw [← feedback_eq_deterministic]
-  exact h.hasCondDistrib_feedback n
+    Y n =ᵐ[P] fun ω ↦ feedbackFun env n (history A Y n ω, A n ω) := by
+  have hA := h.measurable_action
+  have hY := h.measurable_feedback
+  exact ae_eq_of_hasCondDistrib_deterministic (measurable_feedbackFun _ _) (by fun_prop)
+    (by fun_prop) (hasCondDistrib_feedback h n)
 
 end IsDeterministicEnv
 
-variable {nextA : (n : ℕ) → (Iic n → 𝓐 × 𝓨) → 𝓐} {h_next : ∀ n, Measurable (nextA n)}
-  {action0 : 𝓐} {env : Environment 𝓐 𝓨}
-  {f0 : 𝓐 → 𝓨} {hf0 : Measurable f0}
-  {f : (n : ℕ) → ((Iic n → 𝓐 × 𝓨) × 𝓐) → 𝓨} {hf : ∀ n, Measurable (f n)}
+variable {nextA : (n : ℕ) → (Fin n → 𝓐 × 𝓨) → 𝓐} {h_next : ∀ n, Measurable (nextA n)}
+  {env : Environment 𝓐 𝓨}
+  {f : (n : ℕ) → ((Fin n → 𝓐 × 𝓨) × 𝓐) → 𝓨} {hf : ∀ n, Measurable (f n)}
 
-/-- A deterministic algorithm, which chooses the action given by the function `nextAction`. -/
+/-- A deterministic algorithm, which chooses the action given by the function `nextA`.
+The initial action is `nextA 0 default`. -/
 @[simps]
 noncomputable
-def detAlgorithm (nextA : (n : ℕ) → (Iic n → 𝓐 × 𝓨) → 𝓐)
-    (h_next : ∀ n, Measurable (nextA n)) (action0 : 𝓐) :
+def detAlgorithm (nextA : (n : ℕ) → (Fin n → 𝓐 × 𝓨) → 𝓐)
+    (h_next : ∀ n, Measurable (nextA n)) :
     Algorithm 𝓐 𝓨 where
   policy n := Kernel.deterministic (nextA n) (h_next n)
-  p0 := Measure.dirac action0
 
-instance : IsDeterministicAlg (detAlgorithm nextA h_next action0) where
-  exists_action0 := ⟨action0, rfl⟩
+instance : IsDeterministicAlg (detAlgorithm nextA h_next) where
   exists_nextAction n := ⟨nextA n, h_next n, rfl⟩
 
 @[simp]
-lemma actionZero_detAlgorithm [MeasurableSpace.SeparatesPoints 𝓐] :
-    actionZero (detAlgorithm nextA h_next action0) = action0 := by
-  have h_eq := p0_eq_dirac (detAlgorithm nextA h_next action0)
-  simp only [detAlgorithm] at h_eq
-  rw [dirac_eq_dirac_iff] at h_eq
-  exact h_eq.symm
+lemma p0_detAlgorithm : (detAlgorithm nextA h_next).p0 = Measure.dirac (nextA 0 default) := by
+  rw [Algorithm.p0_def, detAlgorithm_policy, Kernel.deterministic_apply]
 
 @[simp]
 lemma nextAction_detAlgorithm [MeasurableSpace.SeparatesPoints 𝓐] (n : ℕ) :
-    nextAction (detAlgorithm nextA h_next action0) n = nextA n := by
-  have h_eq := policy_eq_deterministic (detAlgorithm nextA h_next action0) n
+    nextAction (detAlgorithm nextA h_next) n = nextA n := by
+  have h_eq := policy_eq_deterministic (detAlgorithm nextA h_next) n
   simpa [detAlgorithm] using h_eq.symm
+
+@[simp]
+lemma actionZero_detAlgorithm [MeasurableSpace.SeparatesPoints 𝓐] :
+    actionZero (detAlgorithm nextA h_next) = nextA 0 default := by
+  rw [actionZero, nextAction_detAlgorithm]
 
 /-- A deterministic environment, where the feedback is given by evaluating
 fixed measurable functions. -/
 noncomputable def detEnvironment
-    (f0 : 𝓐 → 𝓨) (hf0 : Measurable f0)
-    (f : (n : ℕ) → ((Iic n → 𝓐 × 𝓨) × 𝓐) → 𝓨) (hf : ∀ n, Measurable (f n)) :
+    (f : (n : ℕ) → ((Fin n → 𝓐 × 𝓨) × 𝓐) → 𝓨) (hf : ∀ n, Measurable (f n)) :
     Environment 𝓐 𝓨 where
   feedback n := (Kernel.deterministic (f n) (hf n))
-  ν0 := Kernel.deterministic f0 hf0
 
-instance : IsDeterministicEnv (detEnvironment f0 hf0 f hf) where
-  exists_f0 := ⟨f0, hf0, rfl⟩
+instance : IsDeterministicEnv (detEnvironment f hf) where
   exists_f n := ⟨f n, hf n, rfl⟩
 
 @[simp]
-lemma feedbackFunZero_detEnvironment [MeasurableSpace.SeparatesPoints 𝓨] :
-    feedbackFunZero (detEnvironment f0 hf0 f hf) = f0 := by
-  simpa [detEnvironment] using (ν0_eq_deterministic (detEnvironment f0 hf0 f hf)).symm
+lemma feedbackFun_detEnvironment [MeasurableSpace.SeparatesPoints 𝓨] (n : ℕ) :
+    feedbackFun (detEnvironment f hf) n = f n := by
+  simpa [detEnvironment] using (feedback_eq_deterministic (detEnvironment f hf) n).symm
 
 @[simp]
-lemma feedbackFun_detEnvironment [MeasurableSpace.SeparatesPoints 𝓨] (n : ℕ) :
-    feedbackFun (detEnvironment f0 hf0 f hf) n = f n := by
-  simpa [detEnvironment] using (feedback_eq_deterministic (detEnvironment f0 hf0 f hf) n).symm
+lemma feedbackFunZero_detEnvironment [MeasurableSpace.SeparatesPoints 𝓨] :
+    feedbackFunZero (detEnvironment f hf) = fun a ↦ f 0 (default, a) := by
+  unfold feedbackFunZero
+  rw [feedbackFun_detEnvironment]
 
 namespace IsAlgEnvSeq
 
@@ -253,24 +269,24 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {P : Measure Ω} [IsProbabilityMeasure P] {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 
 lemma hasLaw_action_zero_detAlgorithm [MeasurableEq 𝓐]
-    (h : IsAlgEnvSeq A Y (detAlgorithm nextA h_next action0) env P) :
-    HasLaw (A 0) (Measure.dirac action0) P := by
+    (h : IsAlgEnvSeq A Y (detAlgorithm nextA h_next) env P) :
+    HasLaw (A 0) (Measure.dirac (nextA 0 default)) P := by
   simpa using IsDeterministicAlg.hasLaw_action_zero h
 
-lemma action_zero_detAlgorithm [MeasurableEq 𝓐]
-    (h : IsAlgEnvSeq A Y (detAlgorithm nextA h_next action0) env P) :
-    A 0 =ᵐ[P] fun _ ↦ action0 :=
-  (IsDeterministicAlg.action_zero_ae_eq h).trans (by simp)
-
 lemma action_detAlgorithm_ae_eq [MeasurableEq 𝓐]
-    (h : IsAlgEnvSeq A Y (detAlgorithm nextA h_next action0) env P) (n : ℕ) :
-    A (n + 1) =ᵐ[P] fun ω ↦ nextA n (history A Y n ω) :=
+    (h : IsAlgEnvSeq A Y (detAlgorithm nextA h_next) env P) (n : ℕ) :
+    A n =ᵐ[P] fun ω ↦ nextA n (history A Y n ω) :=
   (IsDeterministicAlg.action_ae_eq h n).trans (by simp)
 
+lemma action_zero_detAlgorithm [MeasurableEq 𝓐]
+    (h : IsAlgEnvSeq A Y (detAlgorithm nextA h_next) env P) :
+    A 0 =ᵐ[P] fun _ ↦ nextA 0 default :=
+  (IsDeterministicAlg.action_zero_ae_eq h).trans (by simp)
+
 lemma action_detAlgorithm_ae_all_eq [MeasurableEq 𝓐]
-    (h : IsAlgEnvSeq A Y (detAlgorithm nextA h_next action0) env P) :
-    ∀ᵐ ω ∂P, A 0 ω = action0 ∧ ∀ n, A (n + 1) ω = nextA n (history A Y n ω) := by
-  filter_upwards [IsDeterministicAlg.action_ae_all_eq h] with ω hω using by simp [hω]
+    (h : IsAlgEnvSeq A Y (detAlgorithm nextA h_next) env P) :
+    ∀ᵐ ω ∂P, ∀ n, A n ω = nextA n (history A Y n ω) :=
+  ae_all_iff.mpr (action_detAlgorithm_ae_eq h)
 
 end IsAlgEnvSeq
 
@@ -281,19 +297,19 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {P : Measure Ω} [IsProbabilityMeasure P] {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {N n : ℕ}
 
 lemma hasLaw_action_zero_detAlgorithm [MeasurableEq 𝓐]
-    (h : IsAlgEnvSeqUntil A Y (detAlgorithm nextA h_next action0) env P N) :
-    HasLaw (A 0) (Measure.dirac action0) P := by
-  simpa using IsDeterministicAlg.hasLaw_action_zero_of_IsAlgEnvSeqUntil h
-
-lemma action_zero_detAlgorithm [MeasurableEq 𝓐]
-    (h : IsAlgEnvSeqUntil A Y (detAlgorithm nextA h_next action0) env P N) :
-    A 0 =ᵐ[P] fun _ ↦ action0 :=
-  (IsDeterministicAlg.action_zero_of_IsAlgEnvSeqUntil h).trans (by simp)
+    (h : IsAlgEnvSeqUntil A Y (detAlgorithm nextA h_next) env P N) (hN : 0 < N) :
+    HasLaw (A 0) (Measure.dirac (nextA 0 default)) P := by
+  simpa using IsDeterministicAlg.hasLaw_action_zero_of_IsAlgEnvSeqUntil h hN
 
 lemma action_detAlgorithm_ae_eq [MeasurableEq 𝓐]
-    (h : IsAlgEnvSeqUntil A Y (detAlgorithm nextA h_next action0) env P N) (hn : n < N) :
-    A (n + 1) =ᵐ[P] fun ω ↦ nextA n (history A Y n ω) :=
+    (h : IsAlgEnvSeqUntil A Y (detAlgorithm nextA h_next) env P N) (hn : n < N) :
+    A n =ᵐ[P] fun ω ↦ nextA n (history A Y n ω) :=
   (IsDeterministicAlg.action_ae_eq_of_IsAlgEnvSeqUntil h hn).trans (by simp)
+
+lemma action_zero_detAlgorithm [MeasurableEq 𝓐]
+    (h : IsAlgEnvSeqUntil A Y (detAlgorithm nextA h_next) env P N) (hN : 0 < N) :
+    A 0 =ᵐ[P] fun _ ↦ nextA 0 default :=
+  (IsDeterministicAlg.action_zero_of_IsAlgEnvSeqUntil h hN).trans (by simp)
 
 end IsAlgEnvSeqUntil
 

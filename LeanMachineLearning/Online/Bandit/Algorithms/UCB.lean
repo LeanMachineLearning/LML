@@ -28,15 +28,15 @@ section Algorithm
 
 /-- The exploration bonus of the UCB algorithm, which corresponds to the width of
 a confidence interval. -/
-noncomputable def ucbWidth' (c : ℝ) (n : ℕ) (h : Iic n → Fin K × ℝ) (a : Fin K) : ℝ :=
-  √(2 * c * log (n + 2) / pullCount' n h a)
+noncomputable def ucbWidth' (c : ℝ) (n : ℕ) (h : Fin n → Fin K × ℝ) (a : Fin K) : ℝ :=
+  √(2 * c * log (n + 1) / pullCount' n h a)
 
 open Classical in
-/-- Arm pulled by the UCB algorithm at time `n + 1`. -/
+/-- Arm pulled by the UCB algorithm at time `n`, as a function of the history before `n`. -/
 noncomputable
-def UCB.nextArm (hK : 0 < K) (c : ℝ) (n : ℕ) (h : Iic n → Fin K × ℝ) : Fin K :=
+def UCB.nextArm (hK : 0 < K) (c : ℝ) (n : ℕ) (h : Fin n → Fin K × ℝ) : Fin K :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  if n < K - 1 then RoundRobin.nextAction hK n else
+  if n < K then RoundRobin.nextAction hK n else
   argmax (fun a ↦ empMean' n h a + ucbWidth' c n h a)
 
 @[fun_prop]
@@ -49,7 +49,7 @@ lemma UCB.measurable_nextArm (hK : 0 < K) (c : ℝ) (n : ℕ) : Measurable (next
 /-- The UCB algorithm. -/
 noncomputable
 def ucbAlgorithm (hK : 0 < K) (c : ℝ) : Algorithm (Fin K) ℝ :=
-  detAlgorithm (UCB.nextArm hK c) (by fun_prop) ⟨0, hK⟩
+  detAlgorithm (UCB.nextArm hK c) (by fun_prop)
 end Algorithm
 
 namespace UCB
@@ -60,14 +60,12 @@ variable {hK : 0 < K} {c : ℝ} {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν]
   {A : ℕ → Ω → Fin K} {R : ℕ → Ω → ℝ}
   {σ2 : ℝ≥0} {n : ℕ} {ω : Ω}
 
-/-- Until round `K - 1`, the UCB algorithm behaves like the Round-Robin algorithm. -/
+/-- Before round `K`, the UCB algorithm behaves like the Round-Robin algorithm. -/
 lemma isAlgEnvSeqUntil_roundRobinAlgorithm
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
-    IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P (K - 1) where
+    IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P K where
   measurable_action := h.measurable_action
   measurable_feedback := h.measurable_feedback
-  hasLaw_action_zero := h.hasLaw_action_zero
-  hasCondDistrib_feedback_zero := h.hasCondDistrib_feedback_zero
   hasCondDistrib_action n hn := by
     convert h.hasCondDistrib_action n using 1
     simp only [roundRobinAlgorithm, detAlgorithm_policy, ucbAlgorithm]
@@ -88,53 +86,43 @@ lemma measurable_ucbWidth (hA : ∀ n, Measurable (A n)) (c : ℝ) (a : Fin K) :
   unfold ucbWidth
   fun_prop
 
-lemma ucbWidth_eq_ucbWidth' (c : ℝ) (a : Fin K) (n : ℕ) (ω : Ω) (hn : n ≠ 0) :
-    ucbWidth A c a n ω = ucbWidth' c (n - 1) (history A R (n - 1) ω) a := by
-  simp only [ucbWidth, pullCount_eq_pullCount' (A := A) (R' := R) hn, Nat.cast_nonneg, sqrt_div',
-    ucbWidth']
-  congr 4
-  norm_cast
-  grind
+lemma ucbWidth_eq_ucbWidth' (c : ℝ) (a : Fin K) (n : ℕ) (ω : Ω) :
+    ucbWidth A c a n ω = ucbWidth' c n (history A R n ω) a := by
+  rw [ucbWidth, ucbWidth', pullCount_eq_pullCount' (A := A) (R' := R)]
+  rfl
 
 lemma arm_zero (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
     A 0 =ᵐ[P] fun _ ↦ ⟨0, hK⟩ :=
-  RoundRobin.action_zero ((isAlgEnvSeqUntil_roundRobinAlgorithm h).mono zero_le)
+  RoundRobin.action_zero ((isAlgEnvSeqUntil_roundRobinAlgorithm h).mono hK)
 
 lemma arm_ae_eq_ucbNextArm (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (n : ℕ) :
-    A (n + 1) =ᵐ[P] fun ω ↦ nextArm hK c n (history A R n ω) := by
+    A n =ᵐ[P] fun ω ↦ nextArm hK c n (history A R n ω) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   exact h.action_detAlgorithm_ae_eq n
 
 lemma arm_ae_all_eq (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
-    ∀ᵐ h ∂P, A 0 h = ⟨0, hK⟩ ∧ ∀ n, A (n + 1) h = nextArm hK c n (history A R n h) := by
-  rw [eventually_and, ae_all_iff]
-  exact ⟨arm_zero h, arm_ae_eq_ucbNextArm h⟩
+    ∀ᵐ h ∂P, ∀ n, A n h = nextArm hK c n (history A R n h) :=
+  ae_all_iff.mpr (arm_ae_eq_ucbNextArm h)
 
 lemma ucbIndex_le_ucbIndex_arm
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (a : Fin K) (hn : K ≤ n) :
     ∀ᵐ h ∂P, empMean A R a n h + ucbWidth A c a n h ≤
       empMean A R (A n h) n h + ucbWidth A c (A n h) n h := by
-  filter_upwards [arm_ae_eq_ucbNextArm h (n - 1)] with h h_arm
-  have : n - 1 + 1 = n := by grind
-  have h_not_lt : ¬ n - 1 < K - 1 := by grind
-  simp only [this, nextArm, h_not_lt, ↓reduceIte] at h_arm
+  filter_upwards [arm_ae_eq_ucbNextArm h n] with h h_arm
+  have h_not_lt : ¬ n < K := by grind
+  simp only [nextArm, h_not_lt, ↓reduceIte] at h_arm
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  simp_rw [h_arm, empMean_eq_empMean' (by grind : n ≠ 0),
-    ucbWidth_eq_ucbWidth' (A := A) (R := R) _ _ _ _ (by grind : n ≠ 0)]
-  exact isMaxOn_argmax (fun a ↦ empMean' (n - 1) (history A R (n - 1) h) a
-    + ucbWidth' c (n - 1) (history A R (n - 1) h) a) _
+  simp_rw [h_arm, empMean_eq_empMean', ucbWidth_eq_ucbWidth' (A := A) (R := R)]
+  exact isMaxOn_argmax (fun a ↦ empMean' n (history A R n h) a
+    + ucbWidth' c n (history A R n h) a) _
 
 lemma forall_arm_eq_mod_of_lt (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
     ∀ᵐ h ∂P, ∀ n < K, A n h = ⟨n % K, Nat.mod_lt _ hK⟩ := by
   simp_rw [ae_all_iff]
   intro n hn
-  induction n with
-  | zero => exact arm_zero h
-  | succ n _ =>
-    filter_upwards [arm_ae_eq_ucbNextArm h n] with h h_eq
-    rw [h_eq, nextArm, ite_eq_left]
-    · rfl
-    · grind
+  filter_upwards [arm_ae_eq_ucbNextArm h n] with h h_eq
+  rw [h_eq]
+  simp only [nextArm, hn, ↓reduceIte, RoundRobin.nextAction]
 
 lemma forall_ucbIndex_le_ucbIndex_arm
     (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (a : Fin K) :

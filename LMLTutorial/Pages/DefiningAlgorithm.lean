@@ -3,8 +3,10 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
-import VersoManual
-import LeanMachineLearning
+module
+
+public import VersoManual
+public import LeanMachineLearning
 
 set_option linter.style.header false
 set_option linter.style.setOption false
@@ -14,6 +16,8 @@ set_option pp.rawOnError true
 set_option verso.code.warnLineLength 100
 
 set_option verso.docstring.allowMissing true
+
+@[expose] public section
 
 open Verso.Genre Manual Verso.Genre.Manual.InlineLean Verso.Code.External
   Learning
@@ -37,33 +41,34 @@ The `Algorithm` structure is defined as follows:
 
 This structure refers to two types, the type of actions `𝓐` and the type of feedback `𝓨`.
 Both are measurable spaces, since we consider stochastic algorithms and environments.
-The interaction will start with the algorithm playing a first action, which is in general random with distribution `p0`.
-The field `hp0` registers that `p0` is a probability measure (and it is in square brackets to tell Lean to infer it automatically whenever possible).
-After time `n`, there is a history of actions and feedbacks `Iic n → 𝓐 × 𝓨` (`n+1` pairs action and feedback).
-So after time 0 (the processes are 0-indexed) the history contains the action at time 0 and the feedback that followed.
-The `policy` field contain for each time `n` a kernel from that history to the action space.
-That is, it maps every possible history to a random next action (and that map is measurable).
-The `h_policy` field records that the measure describing the next action is a probability measure.
+Before time `n`, there is a history of actions and feedbacks `Fin n → 𝓐 × 𝓨` (the `n` pairs of action and feedback at times `0, ..., n - 1`; the processes are 0-indexed).
+The `policy` field contains for each time `n` a kernel from that history to the action space.
+That is, it maps every possible history to a random action at time `n` (and that map is measurable).
+The `h_policy` field records that the measure describing the action is a probability measure (and it is in square brackets to tell Lean to infer it automatically whenever possible).
+At time `0` the history is empty: `Fin 0 → 𝓐 × 𝓨` has a unique element, and the distribution of the first action is `policy 0` applied to that element.
+That distribution is called `Algorithm.p0`.
 
-If the algorithms actions are not random, we can use the `detAlgorithm` definition to build an algorithm from the data of a measurable function for the next action and a choice for the first action.
+If the algorithms actions are not random, we can use the `detAlgorithm` definition to build an algorithm from the data of a measurable function for the action at each time, as a function of the history before that time.
+The first action is the value of that function at time `0` on the empty history.
 
 {docstring detAlgorithm}
 
-We can see here that we did not need to prove that the kernels are `IsMarkovKernel` and that the distribution of the first action is a probability measure.
+We can see here that we did not need to prove that the kernels are `IsMarkovKernel`.
 Lean knows that deterministic kernels are Markov.
 
-The `Environment` structure is the mirror of the `Algorithm` structure, with a kernel for the feedback instead of the actions and a kernel for the first feedback instead of the first action.
+The `Environment` structure is the mirror of the `Algorithm` structure, with a kernel for the feedback instead of the actions.
 
 {docstring Environment}
 
-`ν0` gives the distribution of the first feedback given the first action, and `feedback` gives the distribution of the next feedback given the history and the next action.
+`feedback n` gives the distribution of the feedback at time `n` given the history before `n` and the action at time `n`.
+The distribution of the first feedback given the first action is `feedback 0` applied to the empty history; it is called `Environment.ν0`.
 
 In many applications the feedback depends only on the last action and not on the prior history.
 We provide an `obliviousEnv` definition that builds an environment for those cases.
 
 {docstring obliviousEnv}
 
-`(ν (n + 1)).prodMkLeft _` is the kernel `ν (n + 1)` seen as a `Kernel ((Iic n → 𝓐 × 𝓨) × 𝓐) 𝓨` by ignoring the history.
+`(ν n).prodMkLeft _` is the kernel `ν n` seen as a `Kernel ((Fin n → 𝓐 × 𝓨) × 𝓐) 𝓨` by ignoring the history.
 
 If furthermore the feedback kernel does not change with time, we can use the `stationaryEnv` definition to build the environment.
 
@@ -100,8 +105,8 @@ The environment is thus simply `stationaryEnv ν` for some kernel `ν : Kernel (
 
 ## Algorithm
 
-The UCB algorithm chooses at time `n + 1` the action that maximizes the sum of the empirical mean reward and an exploration bonus.
-It starts by choosing each action once and then chooses $`\arg\max_a (\hat{\mu}_{n,a} + \sqrt{\frac{2c \log (n + 2)}{N_{n,a}}})`, in which $`\hat{\mu}_{n,a}` is the empirical mean reward of action `a` at time `n` (`empMean'` in the code), $`N_{n,a}` is the number of times action `a` has been chosen up to time `n` (`pullCount'` in the code), and `c` is a parameter of the algorithm.
+The UCB algorithm chooses at time `n` the action that maximizes the sum of the empirical mean reward and an exploration bonus.
+It starts by choosing each action once and then chooses $`\arg\max_a (\hat{\mu}_{n,a} + \sqrt{\frac{2c \log (n + 1)}{N_{n,a}}})`, in which $`\hat{\mu}_{n,a}` is the empirical mean reward of action `a` before time `n` (`empMean'` in the code), $`N_{n,a}` is the number of times action `a` has been chosen before time `n` (`pullCount'` in the code), and `c` is a parameter of the algorithm.
 
 To define the algorithm, we first define the exploration bonus and the next action function, and then we use `detAlgorithm` to build the algorithm.
 We also need to prove that the next action function is measurable, which is done by the `measurable_nextArm` lemma.
@@ -117,7 +122,7 @@ Note that we are careful to use a measurable version of the argmax function, `ar
 
 The last line builds the algorithm using `detAlgorithm` and the function `UCB.nextArm`.
 Its measurability is proved by the `fun_prop` tactic, which proves measurability of functions by using lemmas tagged with `@[fun_prop]`.
-The last argument `⟨0, hK⟩` is the first action of the algorithm, which is 0 as an element of `Fin K`.
+The first action of the algorithm is `UCB.nextArm hK c 0` applied to the empty history, which is 0 as an element of `Fin K`.
 
 ## A theorem about UCB
 
@@ -144,7 +149,7 @@ The theorem gives an upper bound on the expected regret of UCB at time `n`.
 
 # Building vs analyzing algorithms
 
-When building an algorithm, we describe it with functions from the history `(Iic n → 𝓐 × R)` to the action space `𝓐`.
+When building an algorithm, we describe it with functions from the history `(Fin n → 𝓐 × R)` to the action space `𝓐`.
 Thus, to construct UCB, we used the following empirical mean function.
 
 {docstring empMean'}

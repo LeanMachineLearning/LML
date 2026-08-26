@@ -153,6 +153,51 @@ lemma ae_eq_of_hasCondDistrib_deterministic [MeasurableEq Ω] [SFinite μ] {f : 
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
   rfl
 
+section Const
+
+/-- The measurable equivalence `α × β ≃ᵐ β` when `α` has a unique element. -/
+def _root_.MeasurableEquiv.uniqueProd (α β : Type*) [MeasurableSpace α] [MeasurableSpace β]
+    [Unique α] :
+    α × β ≃ᵐ β where
+  toFun := Prod.snd
+  invFun b := (default, b)
+  left_inv _ := Prod.ext (Unique.eq_default _).symm rfl
+  right_inv _ := rfl
+  measurable_toFun := measurable_snd
+  measurable_invFun := measurable_const.prodMk measurable_id
+
+@[simp]
+lemma _root_.MeasurableEquiv.uniqueProd_apply {α β : Type*} [MeasurableSpace α]
+    [MeasurableSpace β] [Unique α] (p : α × β) :
+    MeasurableEquiv.uniqueProd α β p = p.2 := rfl
+
+@[simp]
+lemma _root_.MeasurableEquiv.uniqueProd_symm_apply {α β : Type*} [MeasurableSpace α]
+    [MeasurableSpace β] [Unique α] (b : β) :
+    (MeasurableEquiv.uniqueProd α β).symm b = (default, b) := rfl
+
+lemma _root_.MeasureTheory.Measure.dirac_compProd {κ : Kernel β Ω} [IsSFiniteKernel κ] (b : β) :
+    Measure.dirac b ⊗ₘ κ = (κ b).map (Prod.mk b) := by
+  ext s hs
+  rw [Measure.compProd_apply hs, lintegral_dirac' _ (Kernel.measurable_kernel_prodMk_left hs),
+    Measure.map_apply measurable_prodMk_left hs]
+
+/-- Conditioning on a constant is the same as having law `κ b`. -/
+lemma hasCondDistrib_const_iff [IsProbabilityMeasure μ] [IsSFiniteKernel κ] {b : β} :
+    HasCondDistrib Y (fun _ ↦ b) κ μ ↔ HasLaw Y (κ b) μ := by
+  refine ⟨fun h ↦ ⟨h.aemeasurable_snd, ?_⟩, fun h ↦ ⟨aemeasurable_const.prodMk h.aemeasurable, ?_⟩⟩
+  · rw [← Measure.snd_map_prodMk₀ (X := fun _ ↦ b) (Y := Y) aemeasurable_const, h.map_eq,
+      Measure.map_const, measure_univ, one_smul, Measure.dirac_compProd, Measure.snd,
+      Measure.map_map measurable_snd measurable_prodMk_left]
+    exact Measure.map_id
+  · rw [Measure.map_const, measure_univ, one_smul, Measure.dirac_compProd, ← h.map_eq,
+      AEMeasurable.map_map_of_aemeasurable measurable_prodMk_left.aemeasurable h.aemeasurable]
+    rfl
+
+alias ⟨HasCondDistrib.hasLaw_of_const', HasLaw.hasCondDistrib_const⟩ := hasCondDistrib_const_iff
+
+end Const
+
 variable [StandardBorelSpace Ω] [Nonempty Ω] [StandardBorelSpace Ω'] [Nonempty Ω']
 
 lemma HasCondDistrib.condDistrib_eq [IsFiniteMeasure μ] [IsFiniteKernel κ]
@@ -187,5 +232,6 @@ lemma HasCondDistrib.hasCondDistrib_sectR [IsFiniteMeasure μ] [StandardBorelSpa
     Measure.ae_ae_of_ae_compProd h_eq] with z hc ha
   rw [Kernel.map_apply _ hf] at ha
   filter_upwards [hc, ha] with b hcb hab using hcb.trans hab
+
 
 end ProbabilityTheory

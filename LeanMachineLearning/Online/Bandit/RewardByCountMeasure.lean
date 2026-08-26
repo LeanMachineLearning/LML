@@ -92,16 +92,10 @@ lemma condIndepFun_reward_stepsUntil_action' [StandardBorelSpace Ω]
   -- on `action n`.
   have hA := h.measurable_action
   have hR := h.measurable_feedback
-  by_cases hn : n = 0
-  · have h_indep : R 0 ⟂ᵢ[A 0, hA 0; P] A 0 :=
-      condIndepFun_self_right (by fun_prop) (by fun_prop)
-    simp only [hn]
-    refine h_indep.of_measurable_right (hX := hA 0) ?_
-    exact measurable_comap_indicator_stepsUntil_eq_zero a m
-  · have h_indep : R n ⟂ᵢ[A n, hA n; P] fun ω ↦ (history A R (n - 1) ω, A n ω) :=
-      IsAlgEnvSeq.condIndepFun_feedback_history_action_action' h n (by grind)
-    refine h_indep.of_measurable_right (hX := hA n) ?_
-    exact measurable_comap_indicator_stepsUntil_eq h a m n
+  have h_indep : R n ⟂ᵢ[A n, hA n; P] fun ω ↦ (history A R n ω, A n ω) :=
+    IsAlgEnvSeq.condIndepFun_feedback_history_action_action h n
+  refine h_indep.of_measurable_right (hX := hA n) ?_
+  exact measurable_comap_indicator_stepsUntil_eq R a m n
 
 lemma condIndepFun_reward_stepsUntil_action [StandardBorelSpace Ω] [Countable 𝓐]
     (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)

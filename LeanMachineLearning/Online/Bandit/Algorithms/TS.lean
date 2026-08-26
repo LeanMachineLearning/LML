@@ -47,24 +47,13 @@ under the posterior over environments given the history so far.
 The posterior under a uniform algorithm is used to avoid a circular definition. -/
 noncomputable
 def TS.policy (hK : 0 < K) (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × Fin K) ℝ)
-    [IsMarkovKernel κ] (n : ℕ) : Kernel (Iic n → (Fin K) × ℝ) (Fin K) :=
+    [IsMarkovKernel κ] (n : ℕ) : Kernel (Fin n → (Fin K) × ℝ) (Fin K) :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   (IT.bayesTrajMeasurePosterior Q κ uniformAlgorithm n).map (bestAction κ id)
 
 instance {hK : 0 < K} {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × Fin K) ℝ}
     [IsMarkovKernel κ] {n : ℕ} : IsMarkovKernel (TS.policy hK Q κ n) :=
   Kernel.IsMarkovKernel.map _ (by fun_prop)
-
-/-- The initial action is sampled according to its probability of being optimal under the prior over
-environments. -/
-noncomputable
-def TS.initialPolicy (hK : 0 < K) (Q : Measure 𝓔) (κ : Kernel (𝓔 × Fin K) ℝ) : Measure (Fin K) :=
-  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  Q.map (bestAction κ id)
-
-instance {hK : 0 < K} {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × Fin K) ℝ} :
-    IsProbabilityMeasure (TS.initialPolicy hK Q κ) :=
-  Measure.isProbabilityMeasure_map (by fun_prop)
 
 /-- The Thompson sampling algorithm with actions in `Fin K`, where `Q : Measure 𝓔` is a prior
   distribution over parameters, and `κ : Kernel (𝓔 × Fin K) ℝ` is a Markov kernel that defines the
@@ -77,7 +66,6 @@ noncomputable
 def tsAlgorithm (hK : 0 < K) (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × Fin K) ℝ)
     [IsMarkovKernel κ] : Algorithm (Fin K) ℝ where
   policy := TS.policy hK Q κ
-  p0 := TS.initialPolicy hK Q κ
 
 end Algorithm
 
@@ -88,15 +76,24 @@ variable {E : Ω → 𝓔} {A : ℕ → Ω → Fin K} {R : ℕ → Ω → ℝ}
 variable {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × Fin K) ℝ} [IsMarkovKernel κ]
 variable {P : Measure Ω} [IsProbabilityMeasure P]
 
+/-- The first action of Thompson sampling is sampled according to its probability of being optimal
+under the prior over environments. -/
+lemma TS.p0_tsAlgorithm (hK : 0 < K) :
+    (tsAlgorithm hK Q κ).p0 = Q.map (bestAction κ id) := by
+  rw [Algorithm.p0_def]
+  change TS.policy hK Q κ 0 default = _
+  rw [TS.policy, Kernel.map_apply _ (by fun_prop), IT.bayesTrajMeasurePosterior_zero,
+    Kernel.const_apply]
+
 /-- If Thompson sampling has the correct prior over environments, then the conditional distribution
 of the next action given the history so far is equal to the conditional distribution of the best
 action given the history so far. -/
 lemma TS.hasCondDistrib_action (hK : 0 < K) (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm hK Q κ) E A R P)
     (n : ℕ) :
-    HasCondDistrib (A (n + 1)) (history A R n)
+    HasCondDistrib (A n) (history A R n)
       (condDistrib (bestAction κ E) (history A R n) P) P where
   aemeasurable := ((measurable_history h.measurable_action h.measurable_feedback n).prodMk
-      (h.measurable_action (n + 1))).aemeasurable
+      (h.measurable_action n)).aemeasurable
   map_eq := by
     have hm : Measurable (bestAction κ id) := by fun_prop
     rw [(h.hasCondDistrib_action' n).map_eq]
