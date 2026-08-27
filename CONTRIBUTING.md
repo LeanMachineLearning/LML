@@ -43,10 +43,11 @@ The two libraries live in the same Lake package and the rules are asymmetric:
 
 This is enforced by two automated checks:
 
-- `LeanMachineLearning` files import `LMLExtra` files privately, with a plain `import LMLExtra.Foo` (never `public import` or `import all`).
-  The module system then rejects `LMLExtra` constants in public signatures and exposed bodies.
+- `LeanMachineLearning` files import `LMLExtra` files privately, with a plain `import LMLExtra.Foo` (never `public import`, `meta import` or `import all`), and only from files using the module system.
+  The module system then rejects `LMLExtra` constants in public signatures and exposed bodies, and no `LMLExtra` metaprogram runs while elaborating `LeanMachineLearning`.
   `scripts/check_extra_imports.sh` checks this discipline.
-- The `extraData` environment linter (`LeanMachineLearning/Tactic/Linter/ExtraData.lean`, run by `lake lint`) flags any declaration outside `LMLExtra` whose type, or whose value outside of proof subterms, mentions a non-proof constant of `LMLExtra`.
+- The `extraData` environment linter (`LeanMachineLearning/Tactic/Linter/ExtraData.lean`, run by `lake lint` and available as `#lint only extraData`) flags any declaration outside `LMLExtra` whose type, or whose value outside of proof subterms, mentions a non-proof constant of `LMLExtra`.
+  CI runs the same check through `lake env lean --run scripts/check_extra_data.lean`, which ignores `@[nolint extraData]`: there is no exception to this rule.
 
 ## Code quality and LLM policy
 

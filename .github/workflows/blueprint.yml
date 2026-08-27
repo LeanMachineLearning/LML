@@ -111,11 +111,15 @@ jobs:
           lint: true
           mk_all-check: true
 
-      # `LeanMachineLearning` may use theorems of `LMLExtra` but not its data. The linter that
-      # enforces it runs as part of `lake lint` above (`LeanMachineLearning/Tactic/Linter/ExtraData.lean`);
-      # this checks the import discipline that the linter relies on.
+      # `LeanMachineLearning` may use theorems of `LMLExtra` but not its data
+      # (`LeanMachineLearning/Tactic/Linter/ExtraData.lean`). The first step checks the import
+      # discipline the module system relies on; the second is the authoritative check of the rule:
+      # the same test as the `extraData` linter of `lake lint` above, but ignoring `@[nolint]`.
       - name: Check that LeanMachineLearning imports LMLExtra only privately
         run: scripts/check_extra_imports.sh
+
+      - name: Check that LeanMachineLearning does not depend on LMLExtra data
+        run: lake env lean --run scripts/check_extra_data.lean
 
       # Not a default target, so not built by `lake build` above (and not linted).
       - name: Build tests
