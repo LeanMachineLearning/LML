@@ -47,6 +47,7 @@ public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
 public import LeanMachineLearning.SequentialLearning.Means
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
 public import LeanMachineLearning.SequentialLearning.SumRewards
+public import LeanMachineLearning.SequentialLearning.SumRewardsBounds
 public import LeanMachineLearning.Tactic.EqLift
 public import LeanMachineLearning.Tactic.EqLift.ForMathlib.Kernel
 public import LeanMachineLearning.Tactic.EqLift.ForMathlib.MeasurableEquiv
@@ -71,3 +72,4 @@ public import LeanMachineLearning.Tactic.KernelHom.Tactic.KernelDiagram
 public import LeanMachineLearning.Tactic.KernelHom.Tactic.KernelHom
 public import LeanMachineLearning.Tactic.KernelHom.Tactic.Reassoc
 public import LeanMachineLearning.Tactic.KernelHom.Tactic.Utils
+public import LeanMachineLearning.Tactic.Linter.ExtraData

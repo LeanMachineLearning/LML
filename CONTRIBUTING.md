@@ -31,6 +31,23 @@ For results about definitions from Mathlib, we place them in the same namespace 
 
 The `Tutorial` folder is reserved for material used in the tutorial, and should not be used for general contributions.
 
+## The `LMLExtra` library
+
+`LMLExtra` is a companion library with a lighter review process, meant to host results about the definitions of `LeanMachineLearning` (including results contributed by AI agents with limited human review).
+The two libraries live in the same Lake package and the rules are asymmetric:
+
+- `LMLExtra` may use everything in `LeanMachineLearning`.
+- `LeanMachineLearning` may use the *theorems* of `LMLExtra`, inside proofs only.
+  It must not depend on any *data* defined in `LMLExtra`: no definition, instance, structure or `Prop`-valued predicate of `LMLExtra` may appear in a statement or in a definition of `LeanMachineLearning`.
+  If a definition of `LMLExtra` becomes needed in `LeanMachineLearning`, it must be moved there and reviewed.
+
+This is enforced by two automated checks:
+
+- `LeanMachineLearning` files import `LMLExtra` files privately, with a plain `import LMLExtra.Foo` (never `public import` or `import all`).
+  The module system then rejects `LMLExtra` constants in public signatures and exposed bodies.
+  `scripts/check_extra_imports.sh` checks this discipline.
+- The `extraData` environment linter (`LeanMachineLearning/Tactic/Linter/ExtraData.lean`, run by `lake lint`) flags any declaration outside `LMLExtra` whose type, or whose value outside of proof subterms, mentions a non-proof constant of `LMLExtra`.
+
 ## Code quality and LLM policy
 
 The strength of the library lies in carefully designed and reviewed definitions.

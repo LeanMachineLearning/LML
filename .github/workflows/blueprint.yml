@@ -41,11 +41,14 @@ env:
   # published URL, and existing links to it would break.
   REFEREE_SITE_URL: https://leanmachinelearning.org/LML/exposition
 
-  # The library that is exposed on the site, and the one excluded from every phase that imports the
-  # project. Named once here because `collect`, `extract`, `highlight` and the hash export all have
-  # to agree — a mismatch between the hashed set and the collected set makes `provenance` hard-fail.
+  # The library that is exposed on the site, and the ones excluded from every phase that imports
+  # the project. Named once here because `collect`, `extract`, `highlight` and the hash export all
+  # have to agree — a mismatch between the hashed set and the collected set makes `provenance`
+  # hard-fail.
   REFEREE_ROOT: LeanMachineLearning
-  REFEREE_EXCLUDE_LIB: LMLTutorial
+  # Space-separated. `LMLExtra` is the companion library with lighter review (see `lakefile.toml`)
+  # and `LMLTest` holds tests; neither is part of the exposed library.
+  REFEREE_EXCLUDE_LIBS: LMLTutorial LMLExtra LMLTest
 
   # Generated data, deliberately *outside* the working tree. `provenance` records whether the tree
   # was clean when it folded, via `git status --porcelain`, which counts untracked files — so
@@ -107,6 +110,16 @@ jobs:
           build-args: "--wfail"
           lint: true
           mk_all-check: true
+
+      # `LeanMachineLearning` may use theorems of `LMLExtra` but not its data. The linter that
+      # enforces it runs as part of `lake lint` above (`LeanMachineLearning/Tactic/Linter/ExtraData.lean`);
+      # this checks the import discipline that the linter relies on.
+      - name: Check that LeanMachineLearning imports LMLExtra only privately
+        run: scripts/check_extra_imports.sh
+
+      # Not a default target, so not built by `lake build` above (and not linted).
+      - name: Build tests
+        run: lake build LMLTest --wfail
 
       - name: Download referee binary
         if: github.event_name == 'push'
@@ -170,9 +183,10 @@ jobs:
         if: github.event_name == 'push'
         run: |
           set -euo pipefail
+          exclude=(); for lib in $REFEREE_EXCLUDE_LIBS; do exclude+=(--exclude-lib "$lib"); done
           lake env "$REFEREE_BIN" collect \
             --root "$REFEREE_ROOT" \
-            --exclude-lib "$REFEREE_EXCLUDE_LIB" \
+            "${exclude[@]}" \
             --hashes "$REFEREE_HASHES" \
             --data "$REFEREE_DATA"
 
@@ -318,8 +332,9 @@ jobs:
           # deliberately skipped — it re-elaborates every extracted file and costs more than the
           # rest of this job combined; without it the standalone files are still written and linked,
           # just not rendered inline.
+          exclude=(); for lib in $REFEREE_EXCLUDE_LIBS; do exclude+=(--exclude-lib "$lib"); done
           lake env "$REFEREE_BIN" extract \
-            --data "$REFEREE_DATA" --exclude-lib "$REFEREE_EXCLUDE_LIB" --output ./referee-site
+            --data "$REFEREE_DATA" "${exclude[@]}" --output ./referee-site
           lake env "$REFEREE_BIN" highlight \
             --data "$REFEREE_DATA" --output ./referee-site
           # `--trust` is an editorial claim, not a derived fact: it says whoever publishes this site
