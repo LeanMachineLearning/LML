@@ -130,6 +130,17 @@ lemma HasLaw.prod_of_hasCondDistrib {P : Measure β}
     HasLaw (fun ω ↦ (X ω, Y ω)) (P ⊗ₘ κ) μ :=
   ⟨by fun_prop, by rw [h2.map_eq, h1.map_eq]⟩
 
+/-- `HasCondDistrib` only depends on the almost everywhere equivalence classes of the two random
+variables. -/
+lemma HasCondDistrib.congr {X' : α → β} {Y' : α → Ω} (h : HasCondDistrib Y X κ μ)
+    (hX : X' =ᵐ[μ] X) (hY : Y' =ᵐ[μ] Y) :
+    HasCondDistrib Y' X' κ μ := by
+  have h_pair : (fun a ↦ (X' a, Y' a)) =ᵐ[μ] fun a ↦ (X a, Y a) := by
+    filter_upwards [hX, hY] with a h1 h2
+    rw [h1, h2]
+  exact ⟨h.aemeasurable.congr h_pair.symm, by rw [Measure.map_congr h_pair,
+    Measure.map_congr hX, h.map_eq]⟩
+
 lemma HasCondDistrib.hasLaw_comp [SFinite μ] [IsSFiniteKernel κ] (h : HasCondDistrib Y X κ μ) :
     HasLaw Y (κ ∘ₘ (μ.map X)) μ := by
   refine ⟨by fun_prop, ?_⟩
@@ -144,6 +155,17 @@ lemma HasCondDistrib.prod {Z : α → Ω'} {η : Kernel (β × Ω) Ω'}
   rw [← Measure.compProd_assoc', ← h1.map_eq, ← h2.map_eq,
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
   rfl
+
+/-- A random variable that is almost surely a measurable function of `X` has the corresponding
+deterministic conditional distribution given `X`. -/
+lemma hasCondDistrib_deterministic [SFinite μ] {f : β → Ω} (hf : Measurable f)
+    (hX : AEMeasurable X μ) (hY : Y =ᵐ[μ] f ∘ X) :
+    HasCondDistrib Y X (Kernel.deterministic f hf) μ := by
+  have h : HasCondDistrib (f ∘ X) X (Kernel.deterministic f hf) μ := by
+    refine ⟨hX.prodMk (hf.comp_aemeasurable hX), ?_⟩
+    rw [Measure.compProd_deterministic, AEMeasurable.map_map_of_aemeasurable (by fun_prop) hX]
+    rfl
+  exact HasCondDistrib.congr h .rfl hY
 
 lemma ae_eq_of_hasCondDistrib_deterministic [MeasurableEq Ω] [SFinite μ] {f : β → Ω}
     (hf : Measurable f) (hX : AEMeasurable X μ)

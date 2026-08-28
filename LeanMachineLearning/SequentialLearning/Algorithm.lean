@@ -38,8 +38,6 @@ applied to the empty history (the unique element of `Hist 𝓞 𝓐 𝓨 0`).
   probability space `(Ω, P)`.
 * `IsAlgEnvSeqUntil O A Y alg env P N`: `O`, `A` and `Y` form an algorithm-environment sequence for
   the times `n < N`.
-* `prodLeft alg`: an `Algorithm 𝓞 𝓐 (𝓧 × 𝓨)` obtained from an algorithm `alg : Algorithm 𝓞 𝓐 𝓨` by
-  ignoring the `𝓧` component of each feedback.
 
 -/
 
@@ -158,20 +156,6 @@ lemma Algorithm.policy_zero (alg : Algorithm 𝓞 𝓐 𝓨) (h : Hist 𝓞 𝓐
   rw [Unique.eq_default h]
   rfl
 
-/-- An algorithm with feedback in `𝓧 × 𝓨` obtained from an algorithm with feedback in `𝓨`
-by ignoring the `𝓧` component of each feedback. -/
-@[simps]
-def Algorithm.prodLeft (𝓧 : Type*) [MeasurableSpace 𝓧] (alg : Algorithm 𝓞 𝓐 𝓨) :
-    Algorithm 𝓞 𝓐 (𝓧 × 𝓨) where
-  policy n := (alg.policy n).comap
-    (fun p ↦ (fun i ↦ ((p.1 i).obs, (p.1 i).action, (p.1 i).feedback.2), p.2)) (by fun_prop)
-
-@[simp]
-lemma Algorithm.prodLeft_p0 (𝓧 : Type*) [MeasurableSpace 𝓧] (alg : Algorithm 𝓞 𝓐 𝓨) :
-    (alg.prodLeft 𝓧).p0 = alg.p0 := by
-  ext o : 1
-  rw [p0_apply, prodLeft_policy, Kernel.comap_apply, policy_zero, p0_apply]
-
 /-- Distribution of the first feedback given the first observation and action: the feedback kernel
 at time `0` applied to the empty history. -/
 noncomputable def Environment.ν0 (env : Environment 𝓞 𝓐 𝓨) : Kernel (𝓞 × 𝓐) 𝓨 :=
@@ -261,6 +245,16 @@ lemma measurable_history (hO : ∀ n, Measurable (O n)) (hA : ∀ n, Measurable 
     Measurable (history O A Y n) := by
   unfold history
   fun_prop
+
+lemma history_congr {O' : ℕ → Ω → 𝓞} {A' : ℕ → Ω → 𝓐} {Y' : ℕ → Ω → 𝓨} {P : Measure Ω}
+    (hO : ∀ n, O' n =ᵐ[P] O n) (hA : ∀ n, A' n =ᵐ[P] A n) (hY : ∀ n, Y' n =ᵐ[P] Y n) (n : ℕ) :
+    history O' A' Y' n =ᵐ[P] history O A Y n := by
+  have h : ∀ᵐ ω ∂P, ∀ i : Fin n, (O' i ω = O i ω ∧ A' i ω = A i ω) ∧ Y' i ω = Y i ω := by
+    rw [ae_all_iff]
+    exact fun i ↦ ((hO i).and (hA i)).and (hY i)
+  filter_upwards [h] with ω hω
+  funext i
+  rw [history_apply, history_apply, (hω i).1.1, (hω i).1.2, (hω i).2]
 
 lemma eval_comp_history (n : ℕ) :
     (fun x ↦ x (Fin.last n)) ∘ (history O A Y (n + 1)) = step O A Y n := rfl
@@ -355,6 +349,26 @@ lemma IsAlgEnvSeq.isAlgEnvSeqUntil (h : IsAlgEnvSeq O A Y alg env P) (N : ℕ) :
   hasCondDistrib_obs n _ := h.hasCondDistrib_obs n
   hasCondDistrib_action n _ := h.hasCondDistrib_action n
   hasCondDistrib_feedback n _ := h.hasCondDistrib_feedback n
+
+/-- `IsAlgEnvSeq` only depends on the almost everywhere equivalence classes of the processes. -/
+lemma IsAlgEnvSeq.congr {O' : ℕ → Ω → 𝓞} {A' : ℕ → Ω → 𝓐} {Y' : ℕ → Ω → 𝓨}
+    (h : IsAlgEnvSeq O A Y alg env P)
+    (hO' : ∀ n, Measurable (O' n)) (hA' : ∀ n, Measurable (A' n)) (hY' : ∀ n, Measurable (Y' n))
+    (hO : ∀ n, O' n =ᵐ[P] O n) (hA : ∀ n, A' n =ᵐ[P] A n) (hY : ∀ n, Y' n =ᵐ[P] Y n) :
+    IsAlgEnvSeq O' A' Y' alg env P where
+  measurable_obs := hO'
+  measurable_action := hA'
+  measurable_feedback := hY'
+  hasCondDistrib_obs n :=
+    HasCondDistrib.congr (h.hasCondDistrib_obs n) (history_congr hO hA hY n) (hO n)
+  hasCondDistrib_action n := by
+    refine HasCondDistrib.congr (h.hasCondDistrib_action n) ?_ (hA n)
+    filter_upwards [history_congr hO hA hY n, hO n] with ω h1 h2
+    rw [h1, h2]
+  hasCondDistrib_feedback n := by
+    refine HasCondDistrib.congr (h.hasCondDistrib_feedback n) ?_ (hY n)
+    filter_upwards [history_congr hO hA hY n, hO n, hA n] with ω h1 h2 h3
+    rw [h1, h2, h3]
 
 lemma isAlgEnvSeq_iff_forall_isAlgEnvSeqUntil :
     IsAlgEnvSeq O A Y alg env P ↔ ∀ N, IsAlgEnvSeqUntil O A Y alg env P N where

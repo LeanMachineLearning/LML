@@ -43,7 +43,7 @@ namespace IsBayesAlgEnvSeq
 variable {𝓐 𝓨 : Type*} [MeasurableSpace 𝓐] [MeasurableSpace 𝓨]
 variable {𝓔 : Type*} [MeasurableSpace 𝓔]
 variable [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
-variable {Q : Measure 𝓔}
+variable {Q : Measure 𝓔} [IsProbabilityMeasure Q]
 variable {κ : Kernel (𝓔 × 𝓐) 𝓨} [IsMarkovKernel κ]
 
 variable {Ω : Type*} [MeasurableSpace Ω]
@@ -87,7 +87,6 @@ lemma hasLaw_history_withDensity (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
           ← h₀.hasLaw_env.map_eq, condDistrib_comp_map hE₀.aemeasurable (by fun_prop)]
 
 variable [StandardBorelSpace 𝓔] [Nonempty 𝓔]
-variable [IsProbabilityMeasure Q]
 
 lemma hasCondDistrib_env_history (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
     (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ Y₀ P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) :

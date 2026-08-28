@@ -200,7 +200,7 @@ variable [Nonempty (Fin K)]
 variable [MeasurableSpace Ω]
 variable {𝓔 : Type*} [MeasurableSpace 𝓔]
 variable {E : Ω → 𝓔}
-variable {Q : Measure 𝓔} {κ : Kernel (𝓔 × Fin K) ℝ} [IsMarkovKernel κ]
+variable {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × Fin K) ℝ} [IsMarkovKernel κ]
 variable {P : Measure Ω} [IsProbabilityMeasure P]
 
 lemma integral_sum_range_actionMean_bestAction_sub_ucb_bestAction_le

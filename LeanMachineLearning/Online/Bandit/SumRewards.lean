@@ -675,7 +675,7 @@ namespace Learning.IsBayesAlgEnvSeq
 
 variable {𝓔 Ω : Type*} [MeasurableSpace 𝓔] [MeasurableSpace Ω]
 variable {K : ℕ} [Nonempty (Fin K)]
-variable {Q : Measure 𝓔} {κ : Kernel (𝓔 × Fin K) ℝ} [IsMarkovKernel κ]
+variable {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × Fin K) ℝ} [IsMarkovKernel κ]
 variable {alg : Algorithm Unit (Fin K) ℝ}
 variable {E : Ω → 𝓔} {A : ℕ → Ω → (Fin K)} {R : ℕ → Ω → ℝ}
 variable {P : Measure Ω} [IsProbabilityMeasure P]
