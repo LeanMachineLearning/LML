@@ -32,13 +32,15 @@ open scoped Algorithm
 
 namespace Learning
 
-variable {𝓐 𝓨 : Type*} {m𝓐 : MeasurableSpace 𝓐} {m𝓨 : MeasurableSpace 𝓨}
+variable {𝓞 𝓐 𝓨 : Type*} {m𝓞 : MeasurableSpace 𝓞} {m𝓐 : MeasurableSpace 𝓐}
+  {m𝓨 : MeasurableSpace 𝓨}
 
 /-- The Uniform algorithm: actions are chosen uniformly at random. -/
 noncomputable
-def uniformAlgorithm [Finite 𝓐] [Nonempty 𝓐] : Algorithm 𝓐 𝓨 := randomSampling (uniformOn Set.univ)
+def uniformAlgorithm [Finite 𝓐] [Nonempty 𝓐] : Algorithm 𝓞 𝓐 𝓨 :=
+  randomSampling (uniformOn Set.univ)
 
-lemma absolutelyContinuous_uniformAlgorithm [Finite 𝓐] [Nonempty 𝓐] {alg : Algorithm 𝓐 𝓨} :
+lemma absolutelyContinuous_uniformAlgorithm [Finite 𝓐] [Nonempty 𝓐] {alg : Algorithm 𝓞 𝓐 𝓨} :
     alg ≪ₐ uniformAlgorithm where
   policy n h := Measure.absolutelyContinuous_of_measure_singleton_ne_zero
     (by simp [uniformAlgorithm, uniformOn, ← pos_iff_ne_zero, cond_pos_of_inter_ne_zero])

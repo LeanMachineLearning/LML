@@ -28,13 +28,13 @@ section Algorithm
 
 /-- The exploration bonus of the UCB algorithm, which corresponds to the width of
 a confidence interval. -/
-noncomputable def ucbWidth' (c : ℝ) (n : ℕ) (h : Fin n → Fin K × ℝ) (a : Fin K) : ℝ :=
+noncomputable def ucbWidth' (c : ℝ) (n : ℕ) (h : Hist Unit (Fin K) ℝ n) (a : Fin K) : ℝ :=
   √(2 * c * log (n + 1) / pullCount' n h a)
 
 open Classical in
 /-- Arm pulled by the UCB algorithm at time `n`, as a function of the history before `n`. -/
 noncomputable
-def UCB.nextArm (hK : 0 < K) (c : ℝ) (n : ℕ) (h : Fin n → Fin K × ℝ) : Fin K :=
+def UCB.nextArm (hK : 0 < K) (c : ℝ) (n : ℕ) (h : Hist Unit (Fin K) ℝ n) : Fin K :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   if n < K then RoundRobin.nextAction hK n else
   argmax (fun a ↦ empMean' n h a + ucbWidth' c n h a)
@@ -48,8 +48,8 @@ lemma UCB.measurable_nextArm (hK : 0 < K) (c : ℝ) (n : ℕ) : Measurable (next
 
 /-- The UCB algorithm. -/
 noncomputable
-def ucbAlgorithm (hK : 0 < K) (c : ℝ) : Algorithm (Fin K) ℝ :=
-  detAlgorithm (UCB.nextArm hK c) (by fun_prop)
+def ucbAlgorithm (hK : 0 < K) (c : ℝ) : Algorithm Unit (Fin K) ℝ :=
+  detAlgorithm (fun n p ↦ UCB.nextArm hK c n p.1) (by fun_prop)
 end Algorithm
 
 namespace UCB
@@ -57,15 +57,17 @@ namespace UCB
 variable {hK : 0 < K} {c : ℝ} {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν]
   {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {P : Measure Ω} [IsProbabilityMeasure P]
-  {A : ℕ → Ω → Fin K} {R : ℕ → Ω → ℝ}
+  {O : ℕ → Ω → Unit} {A : ℕ → Ω → Fin K} {R : ℕ → Ω → ℝ}
   {σ2 : ℝ≥0} {n : ℕ} {ω : Ω}
 
 /-- Before round `K`, the UCB algorithm behaves like the Round-Robin algorithm. -/
 lemma isAlgEnvSeqUntil_roundRobinAlgorithm
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
-    IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P K where
+    (h : IsAlgEnvSeq O A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
+    IsAlgEnvSeqUntil O A R (roundRobinAlgorithm hK) (stationaryEnv ν) P K where
+  measurable_obs := h.measurable_obs
   measurable_action := h.measurable_action
   measurable_feedback := h.measurable_feedback
+  hasCondDistrib_obs n _ := h.hasCondDistrib_obs n
   hasCondDistrib_action n hn := by
     convert h.hasCondDistrib_action n using 1
     simp only [roundRobinAlgorithm, detAlgorithm_policy, ucbAlgorithm]
@@ -87,36 +89,35 @@ lemma measurable_ucbWidth (hA : ∀ n, Measurable (A n)) (c : ℝ) (a : Fin K) :
   fun_prop
 
 lemma ucbWidth_eq_ucbWidth' (c : ℝ) (a : Fin K) (n : ℕ) (ω : Ω) :
-    ucbWidth A c a n ω = ucbWidth' c n (history A R n ω) a := by
-  rw [ucbWidth, ucbWidth', pullCount_eq_pullCount' (A := A) (R' := R)]
-  rfl
+    ucbWidth A c a n ω = ucbWidth' c n (history O A R n ω) a := by
+  rw [ucbWidth, ucbWidth', pullCount_eq_pullCount' (O := O) (A := A) (R' := R)]
 
-lemma arm_zero (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
+lemma arm_zero (h : IsAlgEnvSeq O A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
     A 0 =ᵐ[P] fun _ ↦ ⟨0, hK⟩ :=
   RoundRobin.action_zero ((isAlgEnvSeqUntil_roundRobinAlgorithm h).mono hK)
 
-lemma arm_ae_eq_ucbNextArm (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (n : ℕ) :
-    A n =ᵐ[P] fun ω ↦ nextArm hK c n (history A R n ω) := by
+lemma arm_ae_eq_ucbNextArm (h : IsAlgEnvSeq O A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (n : ℕ) :
+    A n =ᵐ[P] fun ω ↦ nextArm hK c n (history O A R n ω) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   exact h.action_detAlgorithm_ae_eq n
 
-lemma arm_ae_all_eq (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
-    ∀ᵐ h ∂P, ∀ n, A n h = nextArm hK c n (history A R n h) :=
+lemma arm_ae_all_eq (h : IsAlgEnvSeq O A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
+    ∀ᵐ h ∂P, ∀ n, A n h = nextArm hK c n (history O A R n h) :=
   ae_all_iff.mpr (arm_ae_eq_ucbNextArm h)
 
 lemma ucbIndex_le_ucbIndex_arm
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (a : Fin K) (hn : K ≤ n) :
+    (h : IsAlgEnvSeq O A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (a : Fin K) (hn : K ≤ n) :
     ∀ᵐ h ∂P, empMean A R a n h + ucbWidth A c a n h ≤
       empMean A R (A n h) n h + ucbWidth A c (A n h) n h := by
   filter_upwards [arm_ae_eq_ucbNextArm h n] with h h_arm
   have h_not_lt : ¬ n < K := by grind
   simp only [nextArm, h_not_lt, ↓reduceIte] at h_arm
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
-  simp_rw [h_arm, empMean_eq_empMean', ucbWidth_eq_ucbWidth' (A := A) (R := R)]
-  exact isMaxOn_argmax (fun a ↦ empMean' n (history A R n h) a
-    + ucbWidth' c n (history A R n h) a) _
+  simp_rw [h_arm, empMean_eq_empMean' (O := O), ucbWidth_eq_ucbWidth' (O := O) (A := A) (R := R)]
+  exact isMaxOn_argmax (fun a ↦ empMean' n (history O A R n h) a
+    + ucbWidth' c n (history O A R n h) a) _
 
-lemma forall_arm_eq_mod_of_lt (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
+lemma forall_arm_eq_mod_of_lt (h : IsAlgEnvSeq O A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
     ∀ᵐ h ∂P, ∀ n < K, A n h = ⟨n % K, Nat.mod_lt _ hK⟩ := by
   simp_rw [ae_all_iff]
   intro n hn
@@ -125,7 +126,7 @@ lemma forall_arm_eq_mod_of_lt (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationa
   simp only [nextArm, hn, ↓reduceIte, RoundRobin.nextAction]
 
 lemma forall_ucbIndex_le_ucbIndex_arm
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (a : Fin K) :
+    (h : IsAlgEnvSeq O A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (a : Fin K) :
     ∀ᵐ h ∂P, ∀ n, K ≤ n →
       empMean A R a n h + ucbWidth A c a n h ≤
         empMean A R (A n h) n h + ucbWidth A c (A n h) n h := by
@@ -133,7 +134,7 @@ lemma forall_ucbIndex_le_ucbIndex_arm
   exact fun _ ↦ ucbIndex_le_ucbIndex_arm h a
 
 lemma forall_arm_prop
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
+    (h : IsAlgEnvSeq O A R (ucbAlgorithm hK c) (stationaryEnv ν) P) :
     ∀ᵐ h ∂P,
       (∀ n < K, A n h = ⟨n % K, Nat.mod_lt _ hK⟩) ∧
       (∀ n, K ≤ n → ∀ a, empMean A R a n h + ucbWidth A c a n h ≤
@@ -148,12 +149,12 @@ lemma forall_arm_prop
     exact h_ae n hn
 
 lemma time_gt_of_pullCount_gt_one
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (a : Fin K) :
+    (h : IsAlgEnvSeq O A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (a : Fin K) :
     ∀ᵐ ω ∂P, ∀ n, 1 < pullCount A a n ω → K < n :=
   RoundRobin.time_gt_of_pullCount_gt_one (isAlgEnvSeqUntil_roundRobinAlgorithm h) a
 
 lemma pullCount_pos_of_pullCount_gt_one
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (a : Fin K) :
+    (h : IsAlgEnvSeq O A R (ucbAlgorithm hK c) (stationaryEnv ν) P) (a : Fin K) :
     ∀ᵐ ω ∂P, ∀ n, 1 < pullCount A a n ω → ∀ b : Fin K, 0 < pullCount A b n ω :=
   RoundRobin.pullCount_pos_of_pullCount_gt_one (isAlgEnvSeqUntil_roundRobinAlgorithm h) a
 
@@ -196,8 +197,8 @@ lemma pullCount_arm_le [Nonempty (Fin K)] (hc : 0 ≤ c)
     positivity
 
 -- todo: this is not about UCB but about any algorithm with subgaussian rewards. Move it?
-lemma prob_ucbIndex_le [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
-    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+lemma prob_ucbIndex_le [Nonempty (Fin K)] {alg : Algorithm Unit (Fin K) ℝ}
+    (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (hσ2 : σ2 ≠ 0) (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
     P {h | 0 < pullCount A a n h ∧ empMean A R a n h + ucbWidth A (c * σ2) a n h ≤ (ν a)[id]} ≤
@@ -239,8 +240,8 @@ lemma prob_ucbIndex_le [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
       ENNReal.div_eq_inv_mul, ENNReal.mul_inv (by simp) (by simp), inv_inv]
 
 -- todo: this is not about UCB but about any algorithm with subgaussian rewards. Move it?
-lemma prob_ucbIndex_ge [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
-    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+lemma prob_ucbIndex_ge [Nonempty (Fin K)] {alg : Algorithm Unit (Fin K) ℝ}
+    (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (hσ2 : σ2 ≠ 0) (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
     P {h | 0 < pullCount A a n h ∧
@@ -281,8 +282,8 @@ lemma prob_ucbIndex_ge [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
     rw [ENNReal.rpow_sub _ _ (by simp) (by finiteness), ENNReal.rpow_one, div_eq_mul_inv,
       ENNReal.div_eq_inv_mul, ENNReal.mul_inv (by simp) (by simp), inv_inv]
 
-lemma probReal_ucbIndex_le [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
-    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+lemma probReal_ucbIndex_le [Nonempty (Fin K)] {alg : Algorithm Unit (Fin K) ℝ}
+    (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (hσ2 : σ2 ≠ 0) (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
     P.real {h | 0 < pullCount A a n h ∧ empMean A R a n h + ucbWidth A (c * σ2) a n h ≤ (ν a)[id]} ≤
@@ -294,8 +295,8 @@ lemma probReal_ucbIndex_le [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
   rw [← ENNReal.toReal_rpow]
   norm_cast
 
-lemma probReal_ucbIndex_ge [Nonempty (Fin K)] {alg : Algorithm (Fin K) ℝ}
-    (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+lemma probReal_ucbIndex_ge [Nonempty (Fin K)] {alg : Algorithm Unit (Fin K) ℝ}
+    (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (hσ2 : σ2 ≠ 0) (hc : 0 ≤ c) (a : Fin K) (n : ℕ) :
     P.real {h | 0 < pullCount A a n h ∧
@@ -351,7 +352,7 @@ lemma pullCount_le_add_three [Nonempty (Fin K)] (a : Fin K) (n C : ℕ) (ω : Ω
       rw [Finset.sum_add_distrib, Finset.sum_add_distrib]
 
 lemma pullCount_le_add_three_ae [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK c) (stationaryEnv ν) P)
+    (h : IsAlgEnvSeq O A R (ucbAlgorithm hK c) (stationaryEnv ν) P)
     (a : Fin K) (n C : ℕ) (hC : C ≠ 0) :
     ∀ᵐ ω ∂P,
     pullCount A a n ω ≤ C + 1 +
@@ -373,7 +374,7 @@ lemma pullCount_le_add_three_ae [Nonempty (Fin K)]
   · exact fun h_gt ↦ hω _ (lt_of_le_of_lt (by grind) h_gt) _
 
 lemma some_sum_eq_zero [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
+    (h : IsAlgEnvSeq O A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
     (hc : 0 ≤ c) (a : Fin K) (h_gap : 0 < gap ν a) (n C : ℕ)
     (hC : C ≠ 0) (hC' : 8 * c * σ2 * log (n + 1) / gap ν a ^ 2 ≤ C) :
     ∀ᵐ ω ∂P,
@@ -406,7 +407,7 @@ lemma some_sum_eq_zero [Nonempty (Fin K)]
     gcongr
 
 lemma pullCount_ae_le_add_two [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
+    (h : IsAlgEnvSeq O A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
     (hc : 0 ≤ c) (a : Fin K) (h_gap : 0 < gap ν a)
     (n C : ℕ) (hC : C ≠ 0) (hC' : 8 * c * σ2 * log (n + 1) / gap ν a ^ 2 ≤ C) :
     ∀ᵐ ω ∂P,
@@ -435,7 +436,7 @@ lemma constSum_lt_top (c : ℝ) (n : ℕ) : constSum c n < ∞ := by
 
 /-- Bound on the expectation of the number of pulls of each arm by the UCB algorithm. -/
 lemma expectation_pullCount_le'
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
+    (h : IsAlgEnvSeq O A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (hσ2 : σ2 ≠ 0) (hc : 0 < c) (a : Fin K) (h_gap : 0 < gap ν a) (n : ℕ) :
     ∫⁻ ω, pullCount A a n ω ∂P ≤
@@ -524,7 +525,7 @@ lemma expectation_pullCount_le'
 
 /-- Bound on the expectation of the number of pulls of each arm by the UCB algorithm. -/
 lemma expectation_pullCount_le
-    (h : IsAlgEnvSeq A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
+    (h : IsAlgEnvSeq O A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (hσ2 : σ2 ≠ 0) (hc : 0 < c) (a : Fin K) (h_gap : 0 < gap ν a) (n : ℕ) :
     P[fun ω ↦ (pullCount A a n ω : ℝ)] ≤
@@ -554,7 +555,7 @@ lemma expectation_pullCount_le
   ring
 
 /-- Regret bound for the UCB algorithm. -/
-theorem regret_le (h : IsAlgEnvSeq A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
+theorem regret_le (h : IsAlgEnvSeq O A R (ucbAlgorithm hK (c * σ2)) (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (hσ2 : σ2 ≠ 0) (hc : 0 < c) (n : ℕ) :
     P[regret ν A n] ≤

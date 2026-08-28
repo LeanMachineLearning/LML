@@ -93,19 +93,19 @@ lemma integrable_uncurry_ucb_comp [MeasurableSpace Ω] (hA : ∀ t, Measurable (
 
 /-- Clipped upper confidence bound (history-based version). -/
 noncomputable
-def ucb' (n : ℕ) (h : Fin n → Fin K × ℝ) (l u σ2 δ : ℝ) (a : Fin K) : ℝ :=
+def ucb' (n : ℕ) (h : Hist Unit (Fin K) ℝ n) (l u σ2 δ : ℝ) (a : Fin K) : ℝ :=
   if pullCount' n h a = 0 then u
   else max l (min u (empMean' n h a + √(2 * σ2 * Real.log (1 / δ) / (pullCount' n h a))))
 
 @[fun_prop]
 lemma measurable_uncurry_ucb' {n : ℕ} :
-    Measurable (fun p : (Fin n → Fin K × ℝ) × Fin K ↦ ucb' n p.1 l u σ2 δ p.2) :=
+    Measurable (fun p : Hist Unit (Fin K) ℝ n × Fin K ↦ ucb' n p.1 l u σ2 δ p.2) :=
   Measurable.ite (by measurability) (by fun_prop) (by fun_prop)
 
-lemma ucb_eq_ucb' {a : Fin K} {n : ℕ} {ω : Ω} :
-    ucb A R l u σ2 δ a n ω = ucb' n (history A R n ω) l u σ2 δ a := by
-  have hp : pullCount A a n ω = pullCount' n (history A R n ω) a := pullCount_eq_pullCount'
-  have he : empMean A R a n ω = empMean' n (history A R n ω) a := empMean_eq_empMean'
+lemma ucb_eq_ucb' {O : ℕ → Ω → Unit} {a : Fin K} {n : ℕ} {ω : Ω} :
+    ucb A R l u σ2 δ a n ω = ucb' n (history O A R n ω) l u σ2 δ a := by
+  have hp : pullCount A a n ω = pullCount' n (history O A R n ω) a := pullCount_eq_pullCount'
+  have he : empMean A R a n ω = empMean' n (history O A R n ω) a := empMean_eq_empMean'
   rw [ucb, ucb', hp, he]
 
 /-- Helper for `sum_ucb_sub_mean_le`. -/
@@ -203,8 +203,8 @@ variable {E : Ω → 𝓔}
 variable {Q : Measure 𝓔} {κ : Kernel (𝓔 × Fin K) ℝ} [IsMarkovKernel κ]
 variable {P : Measure Ω} [IsProbabilityMeasure P]
 
-lemma integral_sum_range_actionMean_bestAction_sub_ucb_bestAction_le {alg : Algorithm (Fin K) ℝ}
-    (h : IsBayesAlgEnvSeq Q κ alg E A R P)
+lemma integral_sum_range_actionMean_bestAction_sub_ucb_bestAction_le
+    {alg : Algorithm Unit (Fin K) ℝ} (h : IsBayesAlgEnvSeq Q κ alg E A R P)
     (hlu : l ≤ u) (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u)) (hσ2 : 0 < σ2)
     (hs : ∀ e a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) ⟨σ2, hσ2.le⟩ (κ (e, a)))
     (hδ : 0 < δ) (n : ℕ) :
@@ -251,7 +251,7 @@ lemma integral_sum_range_actionMean_bestAction_sub_ucb_bestAction_le {alg : Algo
     _ = _ := by
       ring
 
-lemma integral_sum_range_ucb_action_sub_actionMean_action_le {alg : Algorithm (Fin K) ℝ}
+lemma integral_sum_range_ucb_action_sub_actionMean_action_le {alg : Algorithm Unit (Fin K) ℝ}
     (h : IsBayesAlgEnvSeq Q κ alg E A R P)
     (hlu : l ≤ u) (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u)) (hσ2 : 0 < σ2)
     (hs : ∀ e a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) ⟨σ2, hσ2.le⟩ (κ (e, a)))
@@ -321,18 +321,18 @@ lemma integral_ucb_action_eq_integral_ucb_bestAction (hK : 0 < K)
   have := h.measurable_action
   have := h.measurable_param
   have := h.measurable_feedback
-  let uc (ha : (Fin n → Fin K × ℝ) × Fin K) := ucb' n ha.1 l u σ2 δ ha.2
+  let uc (ha : Hist Unit (Fin K) ℝ n × Fin K) := ucb' n ha.1 l u σ2 δ ha.2
   calc
-    _  = P[fun ω ↦ uc (history A R n ω, A n ω)] := by
-        simp_rw [uc, ucb_eq_ucb']
-    _ = ∫ ha, uc ha ∂P.map (fun ω ↦ (history A R n ω, A n ω)) := by
+    _  = P[fun ω ↦ uc (history (noObs Ω) A R n ω, A n ω)] := by
+        simp_rw [uc, ucb_eq_ucb' (O := noObs Ω)]
+    _ = ∫ ha, uc ha ∂P.map (fun ω ↦ (history (noObs Ω) A R n ω, A n ω)) := by
         rw [← integral_map (by fun_prop) (by fun_prop)]
-    _ = ∫ ha, uc ha ∂P.map (fun ω ↦ (history A R n ω, bestAction κ E ω)) := by
+    _ = ∫ ha, uc ha ∂P.map (fun ω ↦ (history (noObs Ω) A R n ω, bestAction κ E ω)) := by
         rw [← compProd_map_condDistrib (by fun_prop), ← compProd_map_condDistrib (by fun_prop),
             Measure.compProd_congr (hasCondDistrib_action hK h n).condDistrib_eq]
     _ = P[fun ω ↦ ucb A R l u σ2 δ (bestAction κ E ω) n ω] := by
         rw [integral_map (by fun_prop) (by fun_prop)]
-        simp_rw [uc, ucb_eq_ucb']
+        simp_rw [uc, ucb_eq_ucb' (O := noObs Ω)]
 
 lemma integral_regret_eq_add (hK : 0 < K) (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm hK Q κ) E A R P)
     (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u)) (n : ℕ) :

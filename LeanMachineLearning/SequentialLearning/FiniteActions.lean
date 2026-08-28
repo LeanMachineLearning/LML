@@ -28,11 +28,12 @@ open MeasureTheory Finset Learning
 
 namespace Learning
 
-variable {𝓐 R Ω : Type*} {m𝓐 : MeasurableSpace 𝓐} {mR : MeasurableSpace R} {mΩ : MeasurableSpace Ω}
+variable {𝓞 𝓐 R Ω : Type*} {m𝓞 : MeasurableSpace 𝓞} {m𝓐 : MeasurableSpace 𝓐}
+  {mR : MeasurableSpace R} {mΩ : MeasurableSpace Ω}
   [DecidableEq 𝓐]
-  {alg : Algorithm 𝓐 R} {env : Environment 𝓐 R}
+  {alg : Algorithm 𝓞 𝓐 R} {env : Environment 𝓞 𝓐 R}
   {P : Measure Ω} [IsProbabilityMeasure P]
-  {A : ℕ → Ω → 𝓐} {R' : ℕ → Ω → R}
+  {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {R' : ℕ → Ω → R}
   {a : 𝓐} {m n t : ℕ} {ω : Ω}
 
 section PullCount
@@ -45,7 +46,7 @@ def pullCount (A : ℕ → Ω → 𝓐) (a : 𝓐) (t : ℕ) (ω : Ω) : ℕ :=
 /-- Number of pulls of arm `a` in the history before time `n`.
 This is the number of entries in `h` in which the arm is `a`. -/
 noncomputable
-def pullCount' (n : ℕ) (h : Fin n → 𝓐 × R) (a : 𝓐) := #{s | (h s).1 = a}
+def pullCount' (n : ℕ) (h : Hist 𝓞 𝓐 R n) (a : 𝓐) := #{s | (h s).action = a}
 
 @[simp]
 lemma pullCount_zero (a : 𝓐) : pullCount A a 0 = 0 := by ext; simp [pullCount]
@@ -84,23 +85,23 @@ lemma pullCount_add_one :
 lemma pullCount_eq_sum (a : 𝓐) (t : ℕ) (ω : Ω) :
     pullCount A a t ω = ∑ s ∈ range t, if A s ω = a then 1 else 0 := by simp [pullCount]
 
-lemma pullCount'_eq_sum (n : ℕ) (h : Fin n → 𝓐 × R) (a : 𝓐) :
-    pullCount' n h a = ∑ s : Fin n, if (h s).1 = a then 1 else 0 := by simp [pullCount']
+lemma pullCount'_eq_sum (n : ℕ) (h : Hist 𝓞 𝓐 R n) (a : 𝓐) :
+    pullCount' n h a = ∑ s : Fin n, if (h s).action = a then 1 else 0 := by simp [pullCount']
 
 lemma pullCount_eq_pullCount' {n : ℕ} {ω : Ω} :
-    pullCount A a n ω = pullCount' n (fun i ↦ (A i ω, R' i ω)) a := by
+    pullCount A a n ω = pullCount' n (history O A R' n ω) a := by
   rw [pullCount_eq_sum, pullCount'_eq_sum]
   exact (Fin.sum_univ_eq_sum_range (fun i ↦ if A i ω = a then 1 else 0) n).symm
 
 /-- `pullCount A a n` is a function of the history before time `n`. -/
 lemma pullCount_eq_comp_history (a : 𝓐) (n : ℕ) :
-    pullCount A a n = (fun h : Fin n → 𝓐 × R ↦ pullCount' n h a) ∘ history A R' n := by
+    pullCount A a n = (fun h : Hist 𝓞 𝓐 R n ↦ pullCount' n h a) ∘ history O A R' n := by
   ext ω
   exact pullCount_eq_pullCount'
 
 lemma pullCount'_mono {n m : ℕ} (hnm : n ≤ m) :
-    pullCount' n (fun i ↦ (A i ω, R' i ω)) a ≤ pullCount' m (fun i ↦ (A i ω, R' i ω)) a := by
-  rw [← pullCount_eq_pullCount', ← pullCount_eq_pullCount']
+    pullCount' n (history O A R' n ω) a ≤ pullCount' m (history O A R' m ω) a := by
+  rw [← pullCount_eq_pullCount' (O := O), ← pullCount_eq_pullCount' (O := O)]
   exact pullCount_mono a hnm _
 
 lemma pullCount_le (a : 𝓐) (t : ℕ) (ω : Ω) : pullCount A a t ω ≤ t :=
@@ -201,38 +202,39 @@ lemma measurable_uncurry_pullCount_comp [Countable 𝓐] [MeasurableSingletonCla
 
 @[fun_prop]
 lemma measurable_pullCount' [MeasurableSingletonClass 𝓐] (n : ℕ) (a : 𝓐) :
-    Measurable (fun h : Fin n → 𝓐 × R ↦ pullCount' n h a) := by
+    Measurable (fun h : Hist 𝓞 𝓐 R n ↦ pullCount' n h a) := by
   simp_rw [pullCount'_eq_sum]
-  have h_meas s : Measurable (fun (h : Fin n → 𝓐 × R) ↦ if (h s).1 = a then 1 else 0) := by
+  have h_meas s : Measurable (fun (h : Hist 𝓞 𝓐 R n) ↦ if (h s).action = a then 1 else 0) := by
     refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
     exact (measurableSet_singleton _).preimage (by fun_prop)
   fun_prop
 
 @[fun_prop]
 lemma measurable_uncurry_pullCount' [MeasurableEq 𝓐] (n : ℕ) :
-    Measurable (fun p : (Fin n → 𝓐 × R) × 𝓐 ↦ pullCount' n p.1 p.2) := by
+    Measurable (fun p : Hist 𝓞 𝓐 R n × 𝓐 ↦ pullCount' n p.1 p.2) := by
   simp_rw [pullCount'_eq_sum]
-  have h_meas s : Measurable (fun h : (Fin n → 𝓐 × R) × 𝓐 ↦ if (h.1 s).1 = h.2 then 1 else 0) := by
+  have h_meas s : Measurable
+      (fun h : Hist 𝓞 𝓐 R n × 𝓐 ↦ if (h.1 s).action = h.2 then 1 else 0) := by
     refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
     exact measurableSet_eq_fun (by fun_prop) (by fun_prop)
   fun_prop
 
 lemma adapted_pullCount_add_one [MeasurableSingletonClass 𝓐]
-    (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
+    (h : IsAlgEnvSeq O A R' alg env P) (a : 𝓐) :
     Adapted h.filtration (fun n ↦ pullCount A a (n + 1)) := by
   intro n
   change Measurable[h.filtration n] (pullCount A a (n + 1))
-  rw [measurable_iff_comap_le, h.filtration_eq_comap, pullCount_eq_comp_history (R' := R'),
+  rw [measurable_iff_comap_le, h.filtration_eq_comap, pullCount_eq_comp_history (O := O) (R' := R'),
     ← measurable_iff_comap_le]
   exact measurable_comp_comap _ (measurable_pullCount' (n + 1) a)
 
 lemma stronglyAdapted_pullCount_add_one [MeasurableSingletonClass 𝓐]
-    (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
+    (h : IsAlgEnvSeq O A R' alg env P) (a : 𝓐) :
     StronglyAdapted h.filtration (fun n ↦ pullCount A a (n + 1)) :=
   (adapted_pullCount_add_one h a).stronglyAdapted
 
 lemma isStronglyPredictable_pullCount [MeasurableSingletonClass 𝓐]
-    (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) :
+    (h : IsAlgEnvSeq O A R' alg env P) (a : 𝓐) :
     IsStronglyPredictable h.filtration (pullCount A a) := by
   rw [IsStronglyPredictable.iff_measurable_add_one]
   refine ⟨?_, stronglyAdapted_pullCount_add_one h a⟩
@@ -505,7 +507,7 @@ lemma stepsUntil_eq_congr {ω' : Ω} (h_eq : ∀ i ≤ n, A i ω = A i ω') :
 section Measurability
 
 lemma isStoppingTime_stepsUntil [MeasurableSingletonClass 𝓐]
-    (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) (hm : m ≠ 0) :
+    (h : IsAlgEnvSeq O A R' alg env P) (a : 𝓐) (hm : m ≠ 0) :
     IsStoppingTime h.filtration (stepsUntil A a m) := by
   rw [stepsUntil_eq_leastGE _ hm]
   refine StronglyAdapted.isStoppingTime_leastGE _ fun n ↦ ?_
@@ -554,9 +556,9 @@ lemma measurable_stepsUntil' [MeasurableSingletonClass 𝓐]
   (measurable_stepsUntil hA a m).comp measurable_fst
 
 lemma measurable_comap_indicator_stepsUntil_eq [MeasurableSingletonClass 𝓐]
-    (R' : ℕ → Ω → R) (a : 𝓐) (m n : ℕ) :
+    (O : ℕ → Ω → 𝓞) (R' : ℕ → Ω → R) (a : 𝓐) (m n : ℕ) :
     Measurable[MeasurableSpace.comap
-        (fun ω : Ω ↦ (history A R' n ω, A n ω)) inferInstance]
+        (fun ω : Ω ↦ ((history O A R' n ω, O n ω), A n ω)) inferInstance]
       ({ω | stepsUntil A a m ω = ↑n}.indicator fun _ ↦ 1) := by
   by_cases hm : m = 0
   · simp only [hm]
@@ -582,38 +584,42 @@ lemma measurable_comap_indicator_stepsUntil_eq [MeasurableSingletonClass 𝓐]
   refine ((measurableSet_singleton _).preimage ?_).inter ((measurableSet_singleton _).preimage ?_)
   · rw [measurable_iff_comap_le, Prod.instMeasurableSpace, MeasurableSpace.comap_prodMk]
     exact le_sup_of_le_right le_rfl
-  · rw [measurable_iff_comap_le, Prod.instMeasurableSpace, MeasurableSpace.comap_prodMk]
-    refine le_sup_of_le_left ?_
-    rw [← measurable_iff_comap_le, pullCount_eq_comp_history (R' := R')]
-    exact measurable_comp_comap _ (measurable_pullCount' n a)
+  · have h_comp : pullCount A a n
+        = (fun p : (Hist 𝓞 𝓐 R n × 𝓞) × 𝓐 ↦ pullCount' n p.1.1 a) ∘
+          (fun ω ↦ ((history O A R' n ω, O n ω), A n ω)) := by
+      rw [pullCount_eq_comp_history (O := O) (R' := R')]
+      rfl
+    rw [h_comp]
+    exact measurable_comp_comap _ (by fun_prop)
 
 lemma measurable_indicator_stepsUntil_eq [MeasurableSingletonClass 𝓐]
-    (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) (m n : ℕ) :
+    (h : IsAlgEnvSeq O A R' alg env P) (a : 𝓐) (m n : ℕ) :
     Measurable ({ω : Ω | stepsUntil A a m ω = ↑n}.indicator fun _ ↦ 1) := by
-  refine (measurable_comap_indicator_stepsUntil_eq (mR := mR) R' a m n).mono ?_ le_rfl
+  refine (measurable_comap_indicator_stepsUntil_eq (m𝓞 := m𝓞) (mR := mR) O R' a m n).mono ?_ le_rfl
   refine Measurable.comap_le ?_
+  have hO := h.measurable_obs
   have hA := h.measurable_action
   have hR' := h.measurable_feedback
   fun_prop
 
 lemma measurableSet_stepsUntil_eq [MeasurableSingletonClass 𝓐]
-    (R' : ℕ → Ω → R) (a : 𝓐) (m n : ℕ) :
-    MeasurableSet[MeasurableSpace.comap (fun ω : Ω ↦ (history A R' n ω, A n ω))
-        inferInstance]
+    (O : ℕ → Ω → 𝓞) (R' : ℕ → Ω → R) (a : 𝓐) (m n : ℕ) :
+    MeasurableSet[MeasurableSpace.comap
+        (fun ω : Ω ↦ ((history O A R' n ω, O n ω), A n ω)) inferInstance]
       {ω : Ω | stepsUntil A a m ω = ↑n} := by
   let mProd := MeasurableSpace.comap
-    (fun ω : Ω ↦ (history A R' n ω, A n ω)) inferInstance
+    (fun ω : Ω ↦ ((history O A R' n ω, O n ω), A n ω)) inferInstance
   suffices Measurable[mProd] ({ω | stepsUntil A a m ω = ↑n}.indicator fun x ↦ 1) by
     rwa [measurable_indicator_const_iff] at this
-  exact measurable_comap_indicator_stepsUntil_eq R' a m n
+  exact measurable_comap_indicator_stepsUntil_eq O R' a m n
 
 /-- `stepsUntil a m` is a stopping time with respect to the filtration `filtrationAction`. -/
 lemma isStoppingTime_stepsUntil_filtrationAction [MeasurableSingletonClass 𝓐]
-    (h : IsAlgEnvSeq A R' alg env P) (a : 𝓐) (m : ℕ) :
+    (h : IsAlgEnvSeq O A R' alg env P) (a : 𝓐) (m : ℕ) :
     IsStoppingTime h.filtrationAction (stepsUntil A a m) := by
   refine isStoppingTime_of_measurableSet_eq fun n ↦ ?_
   rw [h.filtrationAction_eq_comap n]
-  exact measurableSet_stepsUntil_eq R' a m n
+  exact measurableSet_stepsUntil_eq O R' a m n
 
 end Measurability
 
@@ -728,11 +734,11 @@ lemma sum_comp_pullCount [Fintype 𝓐] [AddCommMonoid R] (f : ℕ → R) (t : �
     · simp [sum_range_succ]
     · simp
 
-lemma sum_pullCount' [Fintype 𝓐] (n : ℕ) (h : Fin n → 𝓐 × ℝ) : ∑ a, pullCount' n h a = n := by
+lemma sum_pullCount' [Fintype 𝓐] (n : ℕ) (h : Hist 𝓞 𝓐 ℝ n) : ∑ a, pullCount' n h a = n := by
   simp_rw [pullCount'_eq_sum]
   rw [Finset.sum_comm]
-  have hcol (s : Fin n) : ∑ a, (if (h s).1 = a then (1 : ℕ) else 0) = 1 := by
-    simp [Finset.sum_ite_eq univ (h s).1 (fun _ ↦ (1 : ℕ))]
+  have hcol (s : Fin n) : ∑ a, (if (h s).action = a then (1 : ℕ) else 0) = 1 := by
+    simp [Finset.sum_ite_eq univ (h s).action (fun _ ↦ (1 : ℕ))]
   simp [hcol]
 
 end Learning
