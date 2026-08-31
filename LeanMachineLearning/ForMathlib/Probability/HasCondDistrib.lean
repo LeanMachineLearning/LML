@@ -7,6 +7,7 @@ module
 
 public import LeanMachineLearning.ForMathlib.MeasureTheory.MeasurableSpace.Embedding
 public import LeanMachineLearning.ForMathlib.Probability.Independence.CondDistrib
+public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.MeasureCompProd
 public import Mathlib.Probability.HasCondDistrib
 
 /-!
@@ -166,6 +167,46 @@ lemma hasCondDistrib_deterministic [SFinite μ] {f : β → Ω} (hf : Measurable
     rw [Measure.compProd_deterministic, AEMeasurable.map_map_of_aemeasurable (by fun_prop) hX]
     rfl
   exact HasCondDistrib.congr h .rfl hY
+
+/-- If the conditional distribution of `V` given `(W, Y)` does not depend on `Y` — that is, `V` and
+`Y` are conditionally independent given `W` — then conditioning `Y` on `(W, V)` is the same as
+conditioning it on `W`: observing `V` brings no information about `Y` beyond `W`. -/
+lemma HasCondDistrib.prodMk_right_of_comap_fst {δ : Type*} [MeasurableSpace δ]
+    {W : α → β} {V : α → δ} {η : Kernel β δ}
+    [SFinite μ] [IsMarkovKernel κ] [IsMarkovKernel η]
+    (h1 : HasCondDistrib Y W κ μ)
+    (h2 : HasCondDistrib V (fun a ↦ (W a, Y a)) (η.prodMkRight Ω) μ) :
+    HasCondDistrib Y (fun a ↦ (W a, V a)) (κ.prodMkRight δ) μ := by
+  have hW : AEMeasurable W μ := h1.aemeasurable_fst
+  have hY : AEMeasurable Y μ := h1.aemeasurable_snd
+  have hV : AEMeasurable V μ := h2.aemeasurable_snd
+  have hjoint : μ.map (fun a ↦ ((W a, Y a), V a)) = (μ.map W ⊗ₘ κ) ⊗ₘ η.prodMkRight Ω := by
+    rw [h2.map_eq, h1.map_eq]
+  have hswap : ((μ.map W ⊗ₘ κ) ⊗ₘ η.prodMkRight Ω).map (fun p ↦ ((p.1.1, p.2), p.1.2))
+      = (μ.map W ⊗ₘ η) ⊗ₘ κ.prodMkRight δ :=
+    Measure.compProd_comap_fst_comm _ _ _
+  have hWV : μ.map (fun a ↦ (W a, V a)) = μ.map W ⊗ₘ η := by
+    have h_eq : (fun a ↦ (W a, V a))
+        = Prod.fst ∘ ((fun p : (β × Ω) × δ ↦ ((p.1.1, p.2), p.1.2))
+          ∘ (fun a ↦ ((W a, Y a), V a))) := rfl
+    rw [h_eq, ← AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop),
+      ← AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop), hjoint, hswap]
+    exact Measure.fst_compProd _ _
+  refine ⟨(hW.prodMk hV).prodMk hY, ?_⟩
+  have h_eq : (fun a ↦ ((W a, V a), Y a))
+      = (fun p : (β × Ω) × δ ↦ ((p.1.1, p.2), p.1.2)) ∘ (fun a ↦ ((W a, Y a), V a)) := rfl
+  rw [h_eq, ← AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop), hjoint, hswap,
+    hWV]
+
+/-- Recording a measurable function of the conditioning variable and of the random variable. -/
+lemma HasCondDistrib.map_prodMk {γ : Type*} {mγ : MeasurableSpace γ} {F : β × Ω → γ}
+    [SFinite μ] [IsSFiniteKernel κ] (h : HasCondDistrib Y X κ μ) (hF : Measurable F) :
+    HasCondDistrib (fun a ↦ F (X a, Y a)) X ((Kernel.id ×ₖ κ).map F) μ := by
+  refine ⟨h.aemeasurable_fst.prodMk (hF.comp_aemeasurable h.aemeasurable), ?_⟩
+  have h_eq : (fun a ↦ (X a, F (X a, Y a)))
+      = (fun p : β × Ω ↦ (p.1, F p)) ∘ (fun a ↦ (X a, Y a)) := rfl
+  rw [h_eq, ← AEMeasurable.map_map_of_aemeasurable (by fun_prop) h.aemeasurable, h.map_eq,
+    Measure.compProd_map_prodMk _ _ hF]
 
 lemma ae_eq_of_hasCondDistrib_deterministic [MeasurableEq Ω] [SFinite μ] {f : β → Ω}
     (hf : Measurable f) (hX : AEMeasurable X μ)

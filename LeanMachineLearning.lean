@@ -47,6 +47,7 @@ public import LeanMachineLearning.SequentialLearning.EvaluationEnv
 public import LeanMachineLearning.SequentialLearning.FeedbackMartingale
 public import LeanMachineLearning.SequentialLearning.FiniteActions
 public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
+public import LeanMachineLearning.SequentialLearning.Projection
 public import LeanMachineLearning.SequentialLearning.Means
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
 public import LeanMachineLearning.SequentialLearning.SumRewards
