@@ -5,6 +5,7 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Function.FactorsThrough
 public import LeanMachineLearning.ForMathlib.Probability.Independence.CondIndepFun
 public import LeanMachineLearning.ForMathlib.Probability.Independence.IndepFun
 public import LeanMachineLearning.ForMathlib.Probability.Independence.IndepInfinitePi
@@ -445,6 +446,20 @@ section MeasurabilityAdvanced
 lemma measurable_hist_comap [Countable 𝓐] (alg : Algorithm 𝓐 R) (n : ℕ) :
     Measurable[MeasurableSpace.comap (fun ω ↦ (fun (i : Iic n) ↦ ω.1 i, ω.2)) inferInstance]
       (hist alg · n) := by
+  -- refine measurable_of_todo' (f := (fun p ↦ (fun i : ℕ ↦ p.1 ⟨min i n, by grind⟩, p.2))) ?_ ?_ ?_ ?_
+  --   (mα := inferInstance)
+  -- · intro ω; ext i <;> grind
+  -- · intro ω ω'
+  --   simp only [Prod.mk.injEq, and_imp]
+  --   intro h1 h2
+  --   rw [funext_iff] at h1
+  --   exact hist_congr alg n (fun i hi ↦ h1 ⟨i, by grind⟩) (fun i _ _↦ by rw [h2])
+  -- · refine Measurable.prodMk ?_ (by fun_prop)
+  --   rw [measurable_pi_iff]
+  --   intro i
+  --   change Measurable ((fun p ↦ p ⟨min i n, by simp⟩) ∘ (fun x : (Iic n → I) × (ℕ → 𝓐 → R) ↦ x.1))
+  --   fun_prop
+  -- · fun_prop
   have h_eq : (hist alg · n) =
       ((hist alg · n) ∘ (fun p ↦ (fun i : ℕ ↦ p.1 ⟨min i n, by grind⟩, p.2))) ∘
         (fun ω ↦ (fun (i : Iic n) ↦ ω.1 i, ω.2)) := by
@@ -456,7 +471,7 @@ lemma measurable_hist_comap [Countable 𝓐] (alg : Algorithm 𝓐 R) (n : ℕ) 
   rw [measurable_pi_iff]
   intro i
   change Measurable ((fun p ↦ p ⟨min i n, by simp⟩) ∘ (fun x : (Iic n → I) × (ℕ → 𝓐 → R) ↦ x.1))
-  exact Measurable.comp (by fun_prop) measurable_fst
+  fun_prop
 
 variable [Nonempty R]
 
