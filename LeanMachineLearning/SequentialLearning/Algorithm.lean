@@ -99,6 +99,7 @@ abbrev Hist (𝓞 𝓐 𝓨 : Type*) (n : ℕ) := Fin n → Round 𝓞 𝓐 𝓨
 /-- A stochastic, sequential algorithm.
 At each round, it sees an observation in `𝓞`, then takes an action in `𝓐`, and finally receives
 feedback in `𝓨`. The action is a random function of the past rounds and the current observation. -/
+@[ext]
 structure Algorithm (𝓞 𝓐 𝓨 : Type*) [MeasurableSpace 𝓞] [MeasurableSpace 𝓐] [MeasurableSpace 𝓨]
     where
   /-- Law of the action of round `n` given the past rounds and the current observation. -/
@@ -112,6 +113,7 @@ instance (alg : Algorithm 𝓞 𝓐 𝓨) (n : ℕ) : IsMarkovKernel (alg.policy
 /-- A stochastic environment.
 At each round, an observation is drawn prior to the algorithm taking an action. Then the environment
 provides feedback based on the observation and the action. -/
+@[ext]
 structure Environment (𝓞 𝓐 𝓨 : Type*) [MeasurableSpace 𝓞] [MeasurableSpace 𝓐] [MeasurableSpace 𝓨]
     where
   /-- Law of the observation of round `n` given the past rounds. -/

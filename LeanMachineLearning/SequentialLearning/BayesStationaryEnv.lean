@@ -6,6 +6,7 @@ Authors: Paulo Rauber, Rémy Degenne
 module
 
 public import LeanMachineLearning.SequentialLearning.Announce
+public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
 
 /-!
