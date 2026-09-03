@@ -26,6 +26,11 @@ end MeasurableSpace
 
 namespace ProbabilityTheory
 
+lemma hasLaw_eval_infinitePi {ι : Type*} {X : ι → Type*} {mX : ∀ i, MeasurableSpace (X i)}
+    (μ : (i : ι) → Measure (X i)) [∀ i, IsProbabilityMeasure (μ i)] (i : ι) :
+    HasLaw (Function.eval i) (μ i) (infinitePi μ) :=
+  (measurePreserving_eval_infinitePi μ i).hasLaw
+
 variable {ι κ : Type*} {𝓧 : ι → κ → Type*} [m𝓧 : ∀ i j, MeasurableSpace (𝓧 i j)]
     {μ : (i : ι) → (j : κ) → Measure (𝓧 i j)} [∀ i j, IsProbabilityMeasure (μ i j)]
 
