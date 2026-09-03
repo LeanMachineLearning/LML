@@ -1,5 +1,5 @@
 name = "LeanMachineLearning"
-defaultTargets = ["LeanMachineLearning"]
+defaultTargets = ["LeanMachineLearning", "LMLExtra"]
 lintDriver = "batteries/runLinter"
 
 [leanOptions]
@@ -21,6 +21,16 @@ rev = "cf65d43b4f5e1a79482e8c488d121853b9d7ca05"
 
 [[lean_lib]]
 name = "LeanMachineLearning"
+
+# Companion library with lighter review: may use everything in `LeanMachineLearning`.
+# `LeanMachineLearning` may use its theorems (in proofs) but never its data; this is enforced by
+# the `extraData` environment linter and by `scripts/check_extra_imports.sh`.
+[[lean_lib]]
+name = "LMLExtra"
+
+# Tests. Not a default target: built explicitly in CI and not linted.
+[[lean_lib]]
+name = "LMLTest"
 
 [[lean_lib]]
 name = "LMLTutorial"
