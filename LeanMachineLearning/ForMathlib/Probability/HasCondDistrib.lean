@@ -112,6 +112,21 @@ lemma HasCondDistrib.indepFun_of_const [IsProbabilityMeasure μ] {Q : Measure Ω
   rw [indepFun_iff_map_prod_eq_prod_map_map h.aemeasurable_fst h.aemeasurable_snd, h.map_eq,
     h.hasLaw_of_const.map_eq, Measure.compProd_const]
 
+lemma IndepFun.hasCondDistrib_const [IsFiniteMeasure μ] {Q : Measure Ω} [SFinite Q]
+    (h : IndepFun X Y μ) (hX : AEMeasurable X μ) (hY : HasLaw Y Q μ) :
+    HasCondDistrib Y X (Kernel.const β Q) μ where
+  aemeasurable := hX.prodMk hY.aemeasurable
+  map_eq := by
+    rw [(indepFun_iff_map_prod_eq_prod_map_map hX hY.aemeasurable).1 h, hY.map_eq,
+      Measure.compProd_const]
+
+lemma hasCondDistrib_self [SFinite μ] (hX : AEMeasurable X μ) :
+    HasCondDistrib X X (@Kernel.id β mβ) μ where
+  aemeasurable := hX.prodMk hX
+  map_eq := by
+    rw [Measure.compProd_id, AEMeasurable.map_map_of_aemeasurable (by fun_prop) hX]
+    rfl
+
 lemma HasCondDistrib.const_map_of_const [IsProbabilityMeasure μ] {Q : Measure Ω} [SFinite Q]
     (h : HasCondDistrib Y X (Kernel.const β Q) μ) :
     HasCondDistrib X Y (Kernel.const Ω (μ.map X)) μ where

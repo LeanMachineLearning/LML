@@ -50,6 +50,15 @@ lemma indepFun_cond_of_indepFun {α β γ : Type*} {mα : MeasurableSpace α} {m
   rw [← mul_assoc (μ (Y ⁻¹' s)), ENNReal.mul_inv_cancel h_zero.2 h_zero.1, one_mul]
   congr
 
+lemma indepFun_cond_comp {α β γ δ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
+    {mγ : MeasurableSpace γ} {mδ : MeasurableSpace δ} [MeasurableSingletonClass δ] {μ : Measure α}
+    {X : α → β} {Y : α → γ} (hXY : X ⟂ᵢ[μ] Y) (hY : Measurable Y)
+    {Z : γ → δ} (hZ : Measurable Z) (z : δ) :
+    X ⟂ᵢ[μ[|(Z ∘ Y) ⁻¹' {z}]] Y := by
+  have h_preim : (Z ∘ Y) ⁻¹' {z} = Y ⁻¹' (Z ⁻¹' {z}) := by grind
+  simp_rw [h_preim]
+  exact indepFun_cond_of_indepFun hXY hY (hZ (measurableSet_singleton z))
+
 lemma iIndepFun_nat_iff_forall_indepFun [IsProbabilityMeasure μ] {X : ℕ → Ω → E}
     (hX : ∀ n, AEMeasurable (X n) μ) :
     iIndepFun X μ ↔ ∀ n, X (n + 1) ⟂ᵢ[μ] fun ω (i : Iic n) ↦ X i ω := by
@@ -132,5 +141,90 @@ lemma identDistrib_map_left_iff {X : Ω → E} {Y : Ω' → E} {f : Ω → Ω'}
     IdentDistrib Y X (ν.map f) μ ↔ IdentDistrib (Y ∘ f) X ν μ := by
   rw [identDistrib_comm Y, identDistrib_comm _ X]
   exact identDistrib_map_right_iff hf hX hY
+
+end ProbabilityTheory
+
+namespace ProbabilityTheory
+
+section Prod
+
+variable {α β γ δ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
+  {mγ : MeasurableSpace γ} {mδ : MeasurableSpace δ}
+
+lemma hasLaw_fst_prod (μ : Measure α) (ν : Measure β) [IsProbabilityMeasure ν] :
+    HasLaw Prod.fst μ (μ.prod ν) where
+  map_eq := Measure.fst_prod
+
+lemma hasLaw_snd_prod (μ : Measure α) [IsProbabilityMeasure μ] (ν : Measure β) [SFinite ν] :
+    HasLaw Prod.snd ν (μ.prod ν) where
+  map_eq := Measure.snd_prod
+
+/-- If `X` and `T` are independent under `ν`, then under `μ.prod ν` the function `X ∘ Prod.snd`
+is independent of `(Prod.fst, T ∘ Prod.snd)`. -/
+lemma IndepFun.snd_prod {μ : Measure α} [IsProbabilityMeasure μ] {ν : Measure β} [SFinite ν]
+    {X : β → γ} {T : β → δ} (h : IndepFun X T ν) (hX : Measurable X) (hT : Measurable T) :
+    IndepFun (fun p : α × β ↦ X p.2) (fun p ↦ (p.1, T p.2)) (μ.prod ν) := by
+  rw [indepFun_iff_measure_inter_preimage_eq_mul]
+  intro s t hs ht
+  rw [indepFun_iff_measure_inter_preimage_eq_mul] at h
+  have hXs : MeasurableSet ((fun p : α × β ↦ X p.2) ⁻¹' s) := hs.preimage (by fun_prop)
+  have hYt : MeasurableSet ((fun p : α × β ↦ (p.1, T p.2)) ⁻¹' t) := ht.preimage (by fun_prop)
+  rw [Measure.prod_apply (hXs.inter hYt), Measure.prod_apply hXs, Measure.prod_apply hYt]
+  have h_eq : ∀ x, ν (Prod.mk x ⁻¹' ((fun p : α × β ↦ X p.2) ⁻¹' s ∩ (fun p ↦ (p.1, T p.2)) ⁻¹' t))
+      = ν (X ⁻¹' s) * (ν.map T) (Prod.mk x ⁻¹' t) := fun x ↦ by
+    rw [Measure.map_apply hT (ht.preimage measurable_prodMk_left)]
+    exact h s _ hs (ht.preimage measurable_prodMk_left)
+  have h_eq' : ∀ x, ν (Prod.mk x ⁻¹' ((fun p : α × β ↦ (p.1, T p.2)) ⁻¹' t))
+      = (ν.map T) (Prod.mk x ⁻¹' t) := fun x ↦ by
+    rw [Measure.map_apply hT (ht.preimage measurable_prodMk_left)]
+    rfl
+  have h_eq'' : ∀ x, ν (Prod.mk x ⁻¹' ((fun p : α × β ↦ X p.2) ⁻¹' s)) = ν (X ⁻¹' s) :=
+    fun _ ↦ rfl
+  simp_rw [h_eq, h_eq', h_eq'']
+  rw [lintegral_const_mul _ (measurable_measure_prodMk_left ht), lintegral_const, measure_univ,
+    mul_one]
+
+/-- If `X` and `T` are independent under `μ`, then under `μ.prod ν` the function `X ∘ Prod.fst`
+is independent of `(T ∘ Prod.fst, Prod.snd)`. -/
+lemma IndepFun.fst_prod {μ : Measure α} [SFinite μ] {ν : Measure β} [IsProbabilityMeasure ν]
+    {X : α → γ} {T : α → δ} (h : IndepFun X T μ) (hX : Measurable X) (hT : Measurable T) :
+    IndepFun (fun p : α × β ↦ X p.1) (fun p ↦ (T p.1, p.2)) (μ.prod ν) := by
+  rw [indepFun_iff_measure_inter_preimage_eq_mul]
+  intro s t hs ht
+  rw [indepFun_iff_measure_inter_preimage_eq_mul] at h
+  have hXs : MeasurableSet ((fun p : α × β ↦ X p.1) ⁻¹' s) := hs.preimage (by fun_prop)
+  have hYt : MeasurableSet ((fun p : α × β ↦ (T p.1, p.2)) ⁻¹' t) := ht.preimage (by fun_prop)
+  rw [Measure.prod_apply_symm (hXs.inter hYt), Measure.prod_apply_symm hXs,
+    Measure.prod_apply_symm hYt]
+  have h_eq : ∀ y, μ ((fun x ↦ (x, y)) ⁻¹'
+      ((fun p : α × β ↦ X p.1) ⁻¹' s ∩ (fun p ↦ (T p.1, p.2)) ⁻¹' t))
+      = μ (X ⁻¹' s) * (μ.map T) ((fun x ↦ (x, y)) ⁻¹' t) := fun y ↦ by
+    rw [Measure.map_apply hT (ht.preimage measurable_prodMk_right)]
+    exact h s _ hs (ht.preimage measurable_prodMk_right)
+  have h_eq' : ∀ y, μ ((fun x ↦ (x, y)) ⁻¹' ((fun p : α × β ↦ (T p.1, p.2)) ⁻¹' t))
+      = (μ.map T) ((fun x ↦ (x, y)) ⁻¹' t) := fun y ↦ by
+    rw [Measure.map_apply hT (ht.preimage measurable_prodMk_right)]
+    rfl
+  have h_eq'' : ∀ y, μ ((fun x ↦ (x, y)) ⁻¹' ((fun p : α × β ↦ X p.1) ⁻¹' s)) = μ (X ⁻¹' s) :=
+    fun _ ↦ rfl
+  simp_rw [h_eq, h_eq', h_eq'']
+  rw [lintegral_const_mul _ (measurable_measure_prodMk_right ht), lintegral_const, measure_univ,
+    mul_one]
+
+end Prod
+
+/-- A coordinate of an independent family is independent of any function that is measurable
+with respect to the other coordinates. -/
+lemma iIndepFun.indepFun_of_measurable_iSup_comap {ι Ω β : Type*} {𝓧 : ι → Type*}
+    [∀ i, MeasurableSpace (𝓧 i)] {mΩ : MeasurableSpace Ω} {mβ : MeasurableSpace β}
+    {μ : Measure Ω} {X : ∀ i, Ω → 𝓧 i} (hX : iIndepFun X μ) (hXm : ∀ i, Measurable (X i))
+    {S : Set ι} {i : ι} (hi : i ∉ S) {Y : Ω → β}
+    (hY : Measurable[⨆ j ∈ S, MeasurableSpace.comap (X j) inferInstance] Y) :
+    IndepFun (X i) Y μ := by
+  rw [IndepFun_iff_Indep]
+  refine indep_of_indep_of_le_right ?_ hY.comap_le
+  have h := indep_iSup_of_disjoint (fun j ↦ (hXm j).comap_le) hX.iIndep (S := {i}) (T := S)
+    (Set.disjoint_singleton_left.2 hi)
+  simpa using h
 
 end ProbabilityTheory
