@@ -1,6 +1,8 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measurable
+public import LeanMachineLearning.ForMathlib.MeasureTheory.MeasurableSpace.Embedding
+public import LeanMachineLearning.ForMathlib.MeasureTheory.MeasurableSpace.Option
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measure.AbsolutelyContinuous
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Order.Lattice
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Order.MeasurableArg
@@ -18,6 +20,7 @@ public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.MapC
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.MeasureCompProd
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.IonescuTulcea.Traj
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.KernelSub
+public import LeanMachineLearning.ForMathlib.Probability.Kernel.MeasurableSpace
 public import LeanMachineLearning.ForMathlib.Probability.Moments.SubGaussian
 public import LeanMachineLearning.ForMathlib.Probability.WithDensity
 public import LeanMachineLearning.ForMathlib.Topology.Instances.ENNReal.Lemmas
@@ -30,6 +33,7 @@ public import LeanMachineLearning.Online.Bandit.BayesRegret
 public import LeanMachineLearning.Online.Bandit.Regret
 public import LeanMachineLearning.Online.Bandit.RewardByCountMeasure
 public import LeanMachineLearning.Online.Bandit.SumRewards
+public import LeanMachineLearning.ReinforcementLearning.MDP.Basic
 public import LeanMachineLearning.SequentialLearning.ActionIndicator
 public import LeanMachineLearning.SequentialLearning.Algorithm
 public import LeanMachineLearning.SequentialLearning.AlgorithmDensity
@@ -38,7 +42,9 @@ public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling.B
 public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling.Tendsto
 public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
 public import LeanMachineLearning.SequentialLearning.Algorithms.Uniform
+public import LeanMachineLearning.SequentialLearning.Announce
 public import LeanMachineLearning.SequentialLearning.BayesStationaryEnv
+public import LeanMachineLearning.SequentialLearning.Comap
 public import LeanMachineLearning.SequentialLearning.Deterministic
 public import LeanMachineLearning.SequentialLearning.EvaluationEnv
 public import LeanMachineLearning.SequentialLearning.FeedbackMartingale
