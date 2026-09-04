@@ -6,7 +6,9 @@ public import LeanMachineLearning.ForMathlib.MeasureTheory.Order.Lattice
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Order.MeasurableArg
 public import LeanMachineLearning.ForMathlib.MeasureTheory.OuterMeasure.Basic
 public import LeanMachineLearning.ForMathlib.Order.Interval.Finset
+public import LeanMachineLearning.ForMathlib.Probability.ConditionalProbability
 public import LeanMachineLearning.ForMathlib.Probability.HasCondDistrib
+public import LeanMachineLearning.ForMathlib.Probability.HasLaw
 public import LeanMachineLearning.ForMathlib.Probability.Independence.CondDistrib
 public import LeanMachineLearning.ForMathlib.Probability.Independence.CondIndepFun
 public import LeanMachineLearning.ForMathlib.Probability.Independence.IndepFun
