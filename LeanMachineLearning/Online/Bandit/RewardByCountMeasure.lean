@@ -5,6 +5,7 @@ Authors: Rémy Degenne
 -/
 module
 
+public import LeanMachineLearning.ForMathlib.Probability.ConditionalProbability
 public import LeanMachineLearning.ForMathlib.Probability.HasLaw
 public import LeanMachineLearning.Online.Bandit.ArrayProbSpace
 
@@ -247,50 +248,18 @@ array, whose law is the product measure. Finally `rewardByCountUntil A R t` conv
 `rewardByCount` entrywise as `t → ∞`, which gives the law of the latter. -/
 
 
-omit [DecidableEq 𝓐] in
-lemma iIndepFun_eval_add_one_prod [Countable 𝓐] (μ : Measure Ω) [IsProbabilityMeasure μ] :
-    iIndepFun (fun (p : 𝓐 × ℕ) (ω : Ω × (ℕ → 𝓐 → ℝ)) ↦ ω.2 (p.2 + 1) p.1)
-      (μ.prod (streamMeasure ν)) := by
-  have h := (iIndepFun_eval_streamMeasure ν).precomp (g := fun p : 𝓐 × ℕ ↦ (p.2 + 1, p.1))
-    fun p q hpq ↦ Prod.ext (Prod.mk.inj hpq).2 (by have := (Prod.mk.inj hpq).1; omega)
-  rw [← Measure.snd_prod (μ := μ) (ν := streamMeasure ν), Measure.snd] at h
-  exact (iIndepFun_map_iff measurable_snd.aemeasurable fun p : 𝓐 × ℕ ↦
-    (by fun_prop : Measurable fun ω : ℕ → 𝓐 → ℝ ↦ ω (p.2 + 1) p.1).aemeasurable).1 h
-
 /-- The law of the array `rewardByCountUntil A R 0`, which is a sub-array of the auxiliary array,
 is the product measure `⨂ (a, m), ν a`. -/
-lemma hasLaw_rewardByCountUntil_zero [Countable 𝓐] (μ : Measure Ω) [IsProbabilityMeasure μ] :
+lemma hasLaw_rewardByCountUntil_zero (μ : Measure Ω) [IsProbabilityMeasure μ] :
     HasLaw (rewardByCountUntil A R 0) (Measure.infinitePi fun p : 𝓐 × ℕ ↦ ν p.1)
       (μ.prod (streamMeasure ν)) :=
-  (iIndepFun_eval_add_one_prod (ν := ν) μ).hasLaw_infinitePi
-    (fun p ↦ hasLaw_snd_apply_prod_streamMeasure μ ν _ _)
+  have h_indep : iIndepFun (fun (p : 𝓐 × ℕ) (ω : Ω × (ℕ → 𝓐 → ℝ)) ↦ ω.2 (p.2 + 1) p.1)
+      (μ.prod (streamMeasure ν)) :=
+    (iIndepFun_snd_apply_prod_streamMeasure μ ν).precomp (g := fun p : 𝓐 × ℕ ↦ (p.2 + 1, p.1))
+      fun p q hpq ↦ Prod.ext (Prod.mk.inj hpq).2 (by have := (Prod.mk.inj hpq).1; omega)
+  h_indep.hasLaw_infinitePi (fun p ↦ hasLaw_snd_apply_prod_streamMeasure μ ν _ _)
     (by fun_prop : Measurable fun (ω : Ω × (ℕ → 𝓐 → ℝ)) (p : 𝓐 × ℕ) ↦
       ω.2 (p.2 + 1) p.1).aemeasurable
-
-/-- The entry `(m, a)` of the auxiliary array is independent of the pair formed by the first
-coordinate and the auxiliary array in which this entry is erased. -/
-lemma indepFun_eval_prod_erase (μ : Measure Ω) [IsProbabilityMeasure μ] (m : ℕ) (a : 𝓐) :
-    (fun ω : Ω × (ℕ → 𝓐 → ℝ) ↦ ω.2 m a) ⟂ᵢ[μ.prod (streamMeasure ν)]
-      (fun ω ↦ (ω.1, fun i b ↦ if i = m ∧ b = a then 0 else ω.2 i b)) := by
-  let T : (ℕ → 𝓐 → ℝ) → (ℕ → 𝓐 → ℝ) := fun z i b ↦ if i = m ∧ b = a then 0 else z i b
-  have hT : Measurable[⨆ p ∈ {p : ℕ × 𝓐 | p ≠ (m, a)},
-      MeasurableSpace.comap (fun z : ℕ → 𝓐 → ℝ ↦ z p.1 p.2) inferInstance] T := by
-    rw [measurable_iff_comap_le, MeasurableSpace.comap_pi]
-    refine iSup_le fun i ↦ ?_
-    rw [MeasurableSpace.comap_pi]
-    refine iSup_le fun b ↦ ?_
-    by_cases hib : i = m ∧ b = a
-    · obtain ⟨rfl, rfl⟩ := hib
-      simp only [T, and_self, ↓reduceIte, MeasurableSpace.comap_const]
-      exact bot_le
-    · simp only [T, hib, ↓reduceIte]
-      refine le_iSup₂_of_le (i, b) ?_ le_rfl
-      simpa only [Set.mem_ofPred_eq, ne_eq, Prod.mk.injEq] using hib
-  have hTm : Measurable T :=
-    hT.mono (iSup₂_le fun p _ ↦ Measurable.comap_le (by fun_prop)) le_rfl
-  have h := (iIndepFun_eval_streamMeasure ν).indepFun_of_measurable_iSup_comap
-    (fun _ ↦ by fun_prop) (i := (m, a)) (by simp) hT
-  exact h.snd_prod (μ := μ) (by fun_prop) hTm
 
 variable [MeasurableSingletonClass 𝓐]
 
@@ -300,7 +269,8 @@ lemma indepFun_update_rewardByCountUntil_eval [Countable 𝓐] (hA : ∀ n, Meas
     (hR : ∀ n, Measurable (R n)) (μ : Measure Ω) [IsProbabilityMeasure μ] (t : ℕ) (b : 𝓐) (k : ℕ) :
     (fun ω ↦ Function.update (rewardByCountUntil A R t ω) (b, k) 0)
       ⟂ᵢ[μ.prod (streamMeasure ν)] (fun ω ↦ ω.2 (k + 1) b) := by
-  refine ((indepFun_eval_prod_erase (ν := ν) μ (k + 1) b).of_measurable_right ?_).symm
+  refine ((indepFun_snd_apply_prod_streamMeasure_update μ ν (k + 1) b 0).of_measurable_right
+    ?_).symm
   have h_eq : (fun ω : Ω × (ℕ → 𝓐 → ℝ) ↦ Function.update (rewardByCountUntil A R t ω) (b, k) 0)
       = (fun ω ↦ Function.update (rewardByCountUntil A R t ω) (b, k) 0)
         ∘ (fun ω ↦ (ω.1, fun i c ↦ if i = k + 1 ∧ c = b then 0 else ω.2 i c)) := by
@@ -324,27 +294,17 @@ lemma indepFun_history_reward_cond (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P
     (n : ℕ) (b : 𝓐) (k : ℕ) :
     (fun x ↦ (history A R n x, A (n + 1) x))
       ⟂ᵢ[P[|{x | A (n + 1) x = b ∧ pullCount A b (n + 1) x = k}]] R (n + 1) := by
-  have hA := h.measurable_action
-  have hR := h.measurable_feedback
   rw [setOf_action_eq_and_pullCount_eq_eq_preimage (R' := R)]
-  have h_cond := h.hasCondDistrib_feedback n
-  rw [feedback_stationaryEnv] at h_cond
-  refine h_cond.indepFun_cond (by fun_prop) (hR _) (measurableSet_snd_eq_and_pullCount'_eq n b k)
-    (η := ν b) fun u hu ↦ ?_
-  rw [Kernel.prodMkLeft_apply, hu.1]
+  exact h.indepFun_history_action_feedback_cond_stationaryEnv n
+    (measurableSet_snd_eq_and_pullCount'_eq n b k) fun u hu ↦ hu.1
 
 lemma indepFun_action_zero_reward_zero_cond (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     (b : 𝓐) (k : ℕ) :
     A 0 ⟂ᵢ[P[|{x | A 0 x = b ∧ pullCount A b 0 x = k}]] R 0 := by
-  have hA := h.measurable_action
-  have hR := h.measurable_feedback
   rcases eq_or_ne k 0 with rfl | hk
   · have h_eq : {x | A 0 x = b ∧ pullCount A b 0 x = 0} = A 0 ⁻¹' {b} := by ext; simp
     rw [h_eq]
-    have h_cond := h.hasCondDistrib_feedback_zero
-    rw [ν0_stationaryEnv] at h_cond
-    exact h_cond.indepFun_cond (hA 0) (hR 0) (measurableSet_singleton b) (η := ν b)
-      fun a ha ↦ by rw [Set.mem_singleton_iff.1 ha]
+    exact indepFun_cond_preimage_singleton_left (h.measurable_action 0) b _
   · have h_eq : {x | A 0 x = b ∧ pullCount A b 0 x = k} = ∅ := by ext; simp [hk.symm]
     rw [h_eq]
     simp
@@ -354,27 +314,19 @@ times before, the reward at time `t` has law `ν b`. -/
 lemma hasLaw_reward_cond (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (t : ℕ) (b : 𝓐) (k : ℕ)
     (hP : P {x | A t x = b ∧ pullCount A b t x = k} ≠ 0) :
     HasLaw (R t) (ν b) (P[|{x | A t x = b ∧ pullCount A b t x = k}]) := by
-  have hA := h.measurable_action
-  have hR := h.measurable_feedback
   cases t with
   | zero =>
     rcases eq_or_ne k 0 with rfl | hk
     · have h_eq : {x | A 0 x = b ∧ pullCount A b 0 x = 0} = A 0 ⁻¹' {b} := by ext; simp
       rw [h_eq] at hP ⊢
-      have h_cond := h.hasCondDistrib_feedback_zero
-      rw [ν0_stationaryEnv] at h_cond
-      exact h_cond.hasLaw_cond (hA 0) (hR 0) (measurableSet_singleton b) (η := ν b)
-        (fun a ha ↦ by rw [Set.mem_singleton_iff.1 ha]) hP
+      exact h.hasLaw_feedback_zero_cond_stationaryEnv hP
     · refine absurd ?_ hP
       have h_eq : {x | A 0 x = b ∧ pullCount A b 0 x = k} = ∅ := by ext; simp [hk.symm]
       rw [h_eq, measure_empty]
   | succ n =>
     rw [setOf_action_eq_and_pullCount_eq_eq_preimage (R' := R)] at hP ⊢
-    have h_cond := h.hasCondDistrib_feedback n
-    rw [feedback_stationaryEnv] at h_cond
-    refine h_cond.hasLaw_cond (by fun_prop) (hR _) (measurableSet_snd_eq_and_pullCount'_eq n b k)
-      (η := ν b) (fun u hu ↦ ?_) hP
-    rw [Kernel.prodMkLeft_apply, hu.1]
+    exact h.hasLaw_feedback_cond_stationaryEnv n (measurableSet_snd_eq_and_pullCount'_eq n b k)
+      (fun u hu ↦ hu.1) hP
 
 lemma hasLaw_reward_cond_prod (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (t : ℕ) (b : 𝓐)
     (k : ℕ) (hP : P {x | A t x = b ∧ pullCount A b t x = k} ≠ 0) :
@@ -521,7 +473,7 @@ lemma hasLaw_rewardByCountUntil (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (
 
 /-- The array of rewards by count `(a, m) ↦ rewardByCount A R a (m + 1)` has law
 `⨂ (a, m), ν a`: its entries are independent, and the entry `(a, m)` has law `ν a`. -/
-lemma hasLaw_rewardByCount_pi (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) :
+lemma hasLaw_rewardByCount_infinitePi (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) :
     HasLaw (fun ω (p : 𝓐 × ℕ) ↦ rewardByCount A R p.1 (p.2 + 1) ω)
       (Measure.infinitePi fun p : 𝓐 × ℕ ↦ ν p.1) 𝔓 :=
   -- `rewardByCountUntil A R t` has that law for all `t` and converges entrywise to the array
@@ -535,7 +487,7 @@ lemma hasLaw_rewardByCount_pi (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) :
 lemma hasLaw_rewardByCount_add_one (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     (a : 𝓐) (m : ℕ) :
     HasLaw (rewardByCount A R a (m + 1)) (ν a) 𝔓 :=
-  (hasLaw_eval_infinitePi (fun p : 𝓐 × ℕ ↦ ν p.1) (a, m)).comp (hasLaw_rewardByCount_pi h)
+  (hasLaw_eval_infinitePi (fun p : 𝓐 × ℕ ↦ ν p.1) (a, m)).comp (hasLaw_rewardByCount_infinitePi h)
 
 /-- The rewards by count `rewardByCount A R a (m + 1)` are independent over all actions `a` and
 all counts `m`. -/
@@ -544,7 +496,7 @@ lemma iIndepFun_rewardByCount_add_one (h : IsAlgEnvSeq A R alg (stationaryEnv ν
   (iIndepFun_iff_hasLaw_Pi_infinitePi
     (X := fun (p : 𝓐 × ℕ) ω ↦ rewardByCount A R p.1 (p.2 + 1) ω) (μ := fun p : 𝓐 × ℕ ↦ ν p.1)
     (fun p ↦ hasLaw_rewardByCount_add_one h p.1 p.2)
-    (hasLaw_rewardByCount_pi h).aemeasurable).2 (hasLaw_rewardByCount_pi h)
+    (hasLaw_rewardByCount_infinitePi h).aemeasurable).2 (hasLaw_rewardByCount_infinitePi h)
 
 /-- The rewards by count `rewardByCount A R a m` for `m ≠ 0` are independent over all actions `a`
 and all counts `m`. -/

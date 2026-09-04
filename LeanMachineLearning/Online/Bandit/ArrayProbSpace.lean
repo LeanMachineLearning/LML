@@ -114,6 +114,57 @@ lemma indepFun_eval_streamMeasure' (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] {
     IndepFun (fun ω n ↦ ω n a) (fun ω n ↦ ω n b) (streamMeasure ν) :=
   indepFun_proj_infinitePi_infinitePi h
 
+/-- Under a product measure `μ.prod (streamMeasure ν)`, the entries of the reward array are
+independent. -/
+lemma iIndepFun_snd_apply_prod_streamMeasure {Ω : Type*} {mΩ : MeasurableSpace Ω} (μ : Measure Ω)
+    [IsProbabilityMeasure μ] (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] :
+    iIndepFun (fun (p : ℕ × 𝓐) (ω : Ω × (ℕ → 𝓐 → 𝓡)) ↦ ω.2 p.1 p.2)
+      (μ.prod (streamMeasure ν)) := by
+  have h_snd : (μ.prod (streamMeasure ν)).map Prod.snd = streamMeasure ν := Measure.snd_prod
+  rw [iIndepFun_iff_map_fun_eq_infinitePi_map (fun _ ↦ by fun_prop)]
+  calc (μ.prod (streamMeasure ν)).map (fun ω (i : ℕ × 𝓐) ↦ ω.2 i.1 i.2)
+  _ = ((μ.prod (streamMeasure ν)).map Prod.snd).map (fun z (i : ℕ × 𝓐) ↦ z i.1 i.2) := by
+    rw [Measure.map_map (by fun_prop) measurable_snd]
+    rfl
+  _ = Measure.infinitePi fun i : ℕ × 𝓐 ↦ (streamMeasure ν).map (fun z ↦ z i.1 i.2) := by
+    rw [h_snd]
+    exact (iIndepFun_iff_map_fun_eq_infinitePi_map (fun _ ↦ by fun_prop)).1
+      (iIndepFun_eval_streamMeasure ν)
+  _ = Measure.infinitePi fun i : ℕ × 𝓐 ↦
+      (μ.prod (streamMeasure ν)).map (fun ω ↦ ω.2 i.1 i.2) := by
+    refine congrArg _ (funext fun i ↦ ?_)
+    conv_lhs => rw [← h_snd]
+    rw [Measure.map_map (by fun_prop) measurable_snd]
+    rfl
+
+/-- Under a product measure `μ.prod (streamMeasure ν)`, the entry `(m, a)` of the reward array is
+independent of the pair formed by the first coordinate and the reward array in which the entry
+`(m, a)` is replaced by a constant `x`. -/
+lemma indepFun_snd_apply_prod_streamMeasure_update [DecidableEq 𝓐] {Ω : Type*}
+    {mΩ : MeasurableSpace Ω} (μ : Measure Ω) [IsProbabilityMeasure μ] (ν : Kernel 𝓐 𝓡)
+    [IsMarkovKernel ν] (m : ℕ) (a : 𝓐) (x : 𝓡) :
+    (fun ω : Ω × (ℕ → 𝓐 → 𝓡) ↦ ω.2 m a) ⟂ᵢ[μ.prod (streamMeasure ν)]
+      (fun ω ↦ (ω.1, fun i b ↦ if i = m ∧ b = a then x else ω.2 i b)) := by
+  let T : (ℕ → 𝓐 → 𝓡) → (ℕ → 𝓐 → 𝓡) := fun z i b ↦ if i = m ∧ b = a then x else z i b
+  have hT : Measurable[⨆ p ∈ {p : ℕ × 𝓐 | p ≠ (m, a)},
+      MeasurableSpace.comap (fun z : ℕ → 𝓐 → 𝓡 ↦ z p.1 p.2) inferInstance] T := by
+    rw [measurable_iff_comap_le, MeasurableSpace.comap_pi]
+    refine iSup_le fun i ↦ ?_
+    rw [MeasurableSpace.comap_pi]
+    refine iSup_le fun b ↦ ?_
+    by_cases hib : i = m ∧ b = a
+    · obtain ⟨rfl, rfl⟩ := hib
+      simp only [T, and_self, ↓reduceIte, MeasurableSpace.comap_const]
+      exact bot_le
+    · simp only [T, hib, ↓reduceIte]
+      refine le_iSup₂_of_le (i, b) ?_ le_rfl
+      simpa only [Set.mem_ofPred_eq, ne_eq, Prod.mk.injEq] using hib
+  have hTm : Measurable T :=
+    hT.mono (iSup₂_le fun p _ ↦ Measurable.comap_le (by fun_prop)) le_rfl
+  have h := (iIndepFun_eval_streamMeasure ν).indepFun_of_measurable_iSup_comap
+    (fun _ ↦ by fun_prop) (i := (m, a)) (by simp) hT
+  exact h.snd_prod (μ := μ) (by fun_prop) hTm
+
 end StreamMeasure
 
 namespace ArrayModel
