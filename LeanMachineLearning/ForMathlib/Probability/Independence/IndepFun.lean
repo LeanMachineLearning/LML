@@ -159,6 +159,14 @@ lemma hasLaw_snd_prod (μ : Measure α) [IsProbabilityMeasure μ] (ν : Measure 
     HasLaw Prod.snd ν (μ.prod ν) where
   map_eq := Measure.snd_prod
 
+/-- Conditioning a product measure on an event of the first coordinate amounts to conditioning
+the first measure. -/
+lemma cond_prod_univ {μ : Measure α} [SFinite μ] {ν : Measure β} [IsProbabilityMeasure ν]
+    (s : Set α) :
+    (μ.prod ν)[|s ×ˢ Set.univ] = (μ[|s]).prod ν := by
+  simp only [cond, Measure.prod_prod, measure_univ, mul_one, Measure.prod_smul_left,
+    ← Measure.prod_restrict, Measure.restrict_univ]
+
 /-- If `X` and `T` are independent under `ν`, then under `μ.prod ν` the function `X ∘ Prod.snd`
 is independent of `(Prod.fst, T ∘ Prod.snd)`. -/
 lemma IndepFun.snd_prod {μ : Measure α} [IsProbabilityMeasure μ] {ν : Measure β} [SFinite ν]

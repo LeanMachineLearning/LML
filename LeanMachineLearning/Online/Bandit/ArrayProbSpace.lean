@@ -66,6 +66,13 @@ lemma hasLaw_eval_eval_streamMeasure (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν]
     HasLaw (fun h : ℕ → 𝓐 → 𝓡 ↦ h n a) (ν a) (streamMeasure ν) :=
   (hasLaw_eval_infinitePi ν a).comp (hasLaw_eval_streamMeasure ν n)
 
+/-- Under a product measure `μ.prod (streamMeasure ν)`, the entry `(n, a)` of the reward array has
+law `ν a`. -/
+lemma hasLaw_snd_apply_prod_streamMeasure {Ω : Type*} {mΩ : MeasurableSpace Ω} (μ : Measure Ω)
+    [IsProbabilityMeasure μ] (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] (n : ℕ) (a : 𝓐) :
+    HasLaw (fun ω : Ω × (ℕ → 𝓐 → 𝓡) ↦ ω.2 n a) (ν a) (μ.prod (streamMeasure ν)) :=
+  (hasLaw_eval_eval_streamMeasure ν n a).comp (hasLaw_snd_prod μ _)
+
 lemma identDistrib_eval_eval_id_streamMeasure (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] (n : ℕ) (a : 𝓐) :
     IdentDistrib (fun h : ℕ → 𝓐 → 𝓡 ↦ h n a) id (streamMeasure ν) (ν a) where
   aemeasurable_fst := Measurable.aemeasurable (by fun_prop)
@@ -133,7 +140,7 @@ lemma hasLaw_fst_apply_arrayMeasure (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] 
 
 lemma hasLaw_snd_apply_arrayMeasure (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] (n : ℕ) (a : 𝓐) :
     HasLaw (fun ω : probSpace 𝓐 𝓡 ↦ ω.2 n a) (ν a) (arrayMeasure ν) :=
-  (hasLaw_eval_eval_streamMeasure ν n a).comp (hasLaw_snd_prod _ _)
+  hasLaw_snd_apply_prod_streamMeasure _ ν n a
 
 lemma map_snd_apply_arrayMeasure {ν : Kernel 𝓐 𝓡} [IsMarkovKernel ν] (n : ℕ) (a : 𝓐) :
     (arrayMeasure ν).map (fun ω ↦ ω.2 n a) = ν a :=
