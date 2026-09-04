@@ -760,7 +760,11 @@ lemma measurable_rewardByCount [MeasurableSingletonClass 𝓐]
 
 /-- Array of rewards by count, truncated at time `t`: the entry `(a, m)` is the reward received at
 the `(m + 1)`-th pull of action `a` if that pull happened before time `t`, and the entry
-`(m + 1, a)` of the auxiliary array `ω.2` otherwise. It is defined recursively: at time `t`, the
+`(m + 1, a)` of the auxiliary array `ω.2` otherwise.
+
+This is an auxiliary definition used to prove results about the distribution of `rewardByCount`.
+
+It is defined recursively: at time `t`, the
 entry `(A t, pullCount A (A t) t)` is replaced by the reward `R' t`.
 See `rewardByCountUntil_apply_of_lt_pullCount` and `rewardByCountUntil_apply_of_pullCount_le`. -/
 noncomputable
