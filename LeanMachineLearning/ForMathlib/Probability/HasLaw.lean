@@ -104,15 +104,15 @@ filter `L`. If for every `ω` and `i`, `Y n ω i` is eventually equal to `Y' ω 
 also has law `μ`. -/
 lemma hasLaw_of_forall_eventually_eq [IsFiniteMeasure P] {κ : Type*} {L : Filter κ} [L.NeBot]
     [L.IsCountablyGenerated] {μ : Measure (Π i, 𝓧 i)} {Y : κ → Ω → Π i, 𝓧 i} {Y' : Ω → Π i, 𝓧 i}
-    (hY : ∀ n, Measurable (Y n)) (hY' : Measurable Y')
+    (hY : ∀ n, Measurable (Y n)) (hY' : AEMeasurable Y' P)
     (h_law : ∀ n, HasLaw (Y n) μ P) (h_lim : ∀ ω i, ∀ᶠ n in L, Y n ω i = Y' ω i) :
     HasLaw Y' μ P where
-  aemeasurable := hY'.aemeasurable
+  aemeasurable := hY'
   map_eq := by
     refine ext_of_generate_finite (measurableCylinders _) generateFrom_measurableCylinders.symm
       isPiSystem_measurableCylinders (fun s hs ↦ ?_) ?_
     · obtain ⟨I, S, hS, rfl⟩ := (mem_measurableCylinders s).1 hs
-      rw [Measure.map_apply hY' (hS.cylinder _)]
+      rw [Measure.map_apply_of_aemeasurable hY' (hS.cylinder _)]
       have h_tendsto : Tendsto (fun n ↦ P (Y n ⁻¹' cylinder I S)) L
           (𝓝 (P (Y' ⁻¹' cylinder I S))) := by
         refine tendsto_measure_of_tendsto_indicator_of_isFiniteMeasure L P
@@ -131,7 +131,8 @@ lemma hasLaw_of_forall_eventually_eq [IsFiniteMeasure P] {κ : Type*} {L : Filte
         exact tendsto_const_nhds
       exact tendsto_nhds_unique h_tendsto h_const
     · obtain ⟨n⟩ := L.nonempty_of_neBot
-      rw [Measure.map_apply hY' MeasurableSet.univ, Set.preimage_univ, ← (h_law n).map_eq,
+      rw [Measure.map_apply_of_aemeasurable hY' MeasurableSet.univ, Set.preimage_univ,
+        ← (h_law n).map_eq,
         Measure.map_apply (hY n) MeasurableSet.univ, Set.preimage_univ]
 
 end Pi

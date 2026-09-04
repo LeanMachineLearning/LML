@@ -112,9 +112,7 @@ lemma hasLaw_feedback_cond [IsObliviousEnv env] (h : IsAlgEnvSeq A Y alg env P) 
     (hP : P ((fun ω ↦ (history A Y n ω, A (n + 1) ω)) ⁻¹' s) ≠ 0) :
     HasLaw (Y (n + 1)) (feedbackCondAction env (n + 1) b)
       P[|(fun ω ↦ (history A Y n ω, A (n + 1) ω)) ⁻¹' s] := by
-  have hA := h.measurable_action
-  have hY := h.measurable_feedback
-  refine (hasCondDistrib_feedback_history_action h n).hasLaw_cond (by fun_prop) (hY _) hs
+  refine (hasCondDistrib_feedback_history_action h n).hasLaw_cond (h.measurable_feedback _) hs
     (fun u hu ↦ ?_) hP
   rw [Kernel.prodMkLeft_apply, hsb u hu]
 
@@ -128,7 +126,7 @@ lemma indepFun_history_action_feedback_cond [IsObliviousEnv env]
       ⟂ᵢ[P[|(fun ω ↦ (history A Y n ω, A (n + 1) ω)) ⁻¹' s]] Y (n + 1) := by
   have hA := h.measurable_action
   have hY := h.measurable_feedback
-  refine (hasCondDistrib_feedback_history_action h n).indepFun_cond (by fun_prop) (hY _) hs
+  refine (hasCondDistrib_feedback_history_action h n).indepFun_cond (by fun_prop) hs
     (η := feedbackCondAction env (n + 1) b) fun u hu ↦ ?_
   rw [Kernel.prodMkLeft_apply, hsb u hu]
 

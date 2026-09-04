@@ -266,7 +266,7 @@ lemma IsAlgEnvSeq.hasLaw_feedback_zero_comp (h : IsAlgEnvSeq A Y alg env P) :
 lemma IsAlgEnvSeq.hasLaw_feedback_zero_cond [MeasurableSingletonClass 𝓐]
     (h : IsAlgEnvSeq A Y alg env P) {b : 𝓐} (hP : P (A 0 ⁻¹' {b}) ≠ 0) :
     HasLaw (Y 0) (env.ν0 b) P[|A 0 ⁻¹' {b}] :=
-  h.hasCondDistrib_feedback_zero.hasLaw_cond (h.measurable_action 0) (h.measurable_feedback 0)
+  h.hasCondDistrib_feedback_zero.hasLaw_cond (h.measurable_feedback 0)
     (measurableSet_singleton b) (fun a ha ↦ by rw [Set.mem_singleton_iff.1 ha]) hP
 
 section Filtration

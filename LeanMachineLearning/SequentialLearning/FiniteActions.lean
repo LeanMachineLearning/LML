@@ -846,7 +846,7 @@ lemma eventually_rewardByCountUntil_eq (ω : Ω × (ℕ → 𝓐 → R)) (p : �
 /-- Measurability of `rewardByCountUntil A R' t` with respect to a σ-algebra `m` for which the
 actions and rewards before time `t` and the auxiliary array are measurable. -/
 lemma measurable_rewardByCountUntil_of {m : MeasurableSpace (Ω × (ℕ → 𝓐 → R))}
-    [Countable 𝓐] [MeasurableSingletonClass 𝓐] (t : ℕ)
+    [MeasurableEq 𝓐] (t : ℕ)
     (hA : ∀ i < t, Measurable[m] (fun ω : Ω × (ℕ → 𝓐 → R) ↦ A i ω.1))
     (hR : ∀ i < t, Measurable[m] (fun ω : Ω × (ℕ → 𝓐 → R) ↦ R' i ω.1))
     (hZ : Measurable[m] (Prod.snd : Ω × (ℕ → 𝓐 → R) → ℕ → 𝓐 → R)) :
@@ -867,11 +867,16 @@ lemma measurable_rewardByCountUntil_of {m : MeasurableSpace (Ω × (ℕ → 𝓐
       exact measurableSet_eq_fun (hA s ((Finset.mem_range.1 hs).trans ht)) (hA t ht)
     refine measurable_pi_iff.2 fun p ↦ ?_
     simp_rw [rewardByCountUntil_add_one, Function.update_apply]
-    exact Measurable.ite (measurableSet_eq_fun measurable_const hg) (hR t ht)
-      ((measurable_pi_apply p).comp ih)
+    refine Measurable.ite ?_ (hR t ht) ((measurable_pi_apply p).comp ih)
+    have h_set : {ω : Ω × (ℕ → 𝓐 → R) | p = (A t ω.1, pullCount A (A t ω.1) t ω.1)}
+        = (fun ω : Ω × (ℕ → 𝓐 → R) ↦ (A t ω.1, pullCount A (A t ω.1) t ω.1)) ⁻¹' {p} := by
+      ext ω
+      simp [eq_comm]
+    rw [h_set]
+    exact hg (measurableSet_singleton p)
 
 @[fun_prop]
-lemma measurable_rewardByCountUntil [Countable 𝓐] [MeasurableSingletonClass 𝓐]
+lemma measurable_rewardByCountUntil [MeasurableEq 𝓐]
     (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (t : ℕ) :
     Measurable (rewardByCountUntil A R' t) :=
   measurable_rewardByCountUntil_of t (fun i _ ↦ (hA i).comp measurable_fst)

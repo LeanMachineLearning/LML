@@ -331,10 +331,8 @@ lemma hasLaw_reward_cond (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (t : ℕ
 lemma hasLaw_reward_cond_prod (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (t : ℕ) (b : 𝓐)
     (k : ℕ) (hP : P {x | A t x = b ∧ pullCount A b t x = k} ≠ 0) :
     HasLaw (fun ω ↦ R t ω.1) (ν b)
-      ((P[|{x | A t x = b ∧ pullCount A b t x = k}]).prod (streamMeasure ν)) := by
-  have : IsProbabilityMeasure (P[|{x | A t x = b ∧ pullCount A b t x = k}]) :=
-    cond_isProbabilityMeasure hP
-  exact (hasLaw_reward_cond h t b k hP).comp (hasLaw_fst_prod _ _)
+      ((P[|{x | A t x = b ∧ pullCount A b t x = k}]).prod (streamMeasure ν)) :=
+  (hasLaw_reward_cond h t b k hP).comp (hasLaw_fst_prod _ _)
 
 variable [Countable 𝓐]
 
@@ -475,12 +473,13 @@ lemma hasLaw_rewardByCountUntil (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (
 `⨂ (a, m), ν a`: its entries are independent, and the entry `(a, m)` has law `ν a`. -/
 lemma hasLaw_rewardByCount_infinitePi (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) :
     HasLaw (fun ω (p : 𝓐 × ℕ) ↦ rewardByCount A R p.1 (p.2 + 1) ω)
-      (Measure.infinitePi fun p : 𝓐 × ℕ ↦ ν p.1) 𝔓 :=
+      (Measure.infinitePi fun p : 𝓐 × ℕ ↦ ν p.1) 𝔓 := by
+  have hY : Measurable fun ω (p : 𝓐 × ℕ) ↦ rewardByCount A R p.1 (p.2 + 1) ω :=
+    measurable_pi_lambda _ fun p ↦
+      measurable_rewardByCount h.measurable_action h.measurable_feedback p.1 (p.2 + 1)
   -- `rewardByCountUntil A R t` has that law for all `t` and converges entrywise to the array
-  hasLaw_of_forall_eventually_eq (L := Filter.atTop)
-    (measurable_rewardByCountUntil h.measurable_action h.measurable_feedback)
-    (measurable_pi_lambda _ fun p ↦
-      measurable_rewardByCount h.measurable_action h.measurable_feedback p.1 (p.2 + 1))
+  exact hasLaw_of_forall_eventually_eq (L := Filter.atTop)
+    (measurable_rewardByCountUntil h.measurable_action h.measurable_feedback) hY.aemeasurable
     (hasLaw_rewardByCountUntil h) eventually_rewardByCountUntil_eq
 
 /-- The reward received at the `(m + 1)`-th pull of action `a` has law `ν a`. -/
