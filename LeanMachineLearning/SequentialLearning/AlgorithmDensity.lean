@@ -53,22 +53,29 @@ namespace Algorithm
 /-- For every time and history, the distribution over actions according to `alg` is absolutely
 continuous with respect to the distribution over actions according to `alg₀`. -/
 structure AbsolutelyContinuous (alg alg₀ : Algorithm 𝓐 𝓨) : Prop where
-  p0 : alg.p0 ≪ alg₀.p0
   policy n h : alg.policy n h ≪ alg₀.policy n h
 
 @[inherit_doc AbsolutelyContinuous]
 scoped notation:50 alg " ≪ₐ " alg₀ => AbsolutelyContinuous alg alg₀
 
+lemma AbsolutelyContinuous.p0 {alg alg₀ : Algorithm 𝓐 𝓨} (h : alg ≪ₐ alg₀) : alg.p0 ≪ alg₀.p0 :=
+  h.policy 0 default
+
 /-- If the algorithm `alg` is absolutely continuous with respect to the algorithm `alg₀` and they
-are both interacting with the same environment, then the law of the history at time `n` under `alg`
-is the law of the history at time `n` under `alg₀` with density `alg.density alg₀ n`. -/
+are both interacting with the same environment, then the law of the history before time `n` under
+`alg` is the law of the history before time `n` under `alg₀` with density `alg.density alg₀ n`. -/
 noncomputable
 def density [MeasurableSpace.CountablyGenerated 𝓐] (alg alg₀ : Algorithm 𝓐 𝓨) :
-    (n : ℕ) → (Iic n → 𝓐 × 𝓨) → ℝ≥0∞
-  | 0, h => (alg.p0.rnDeriv alg₀.p0 (h ⟨0, by simp⟩).1)
+    (n : ℕ) → (Fin n → 𝓐 × 𝓨) → ℝ≥0∞
+  | 0, _ => 1
   | n + 1, h =>
-    let p := MeasurableEquiv.IicSuccProd (fun _ ↦ 𝓐 × 𝓨) n h
+    let p := MeasurableEquiv.finSuccProd (𝓐 × 𝓨) n h
     alg.density alg₀ n p.1 * (alg.policy n).rnDeriv (alg₀.policy n) p.1 p.2.1
+
+@[simp]
+lemma density_zero [MeasurableSpace.CountablyGenerated 𝓐] (alg alg₀ : Algorithm 𝓐 𝓨)
+    (h : Fin 0 → 𝓐 × 𝓨) :
+    alg.density alg₀ 0 h = 1 := rfl
 
 @[fun_prop]
 lemma measurable_density [MeasurableSpace.CountablyGenerated 𝓐] (alg alg₀ : Algorithm 𝓐 𝓨) (n : ℕ) :
@@ -86,7 +93,7 @@ namespace IsAlgEnvSeq
 variable {Ω : Type*} [MeasurableSpace Ω]
 variable {alg : Algorithm 𝓐 𝓨} {env : Environment 𝓐 𝓨}
 variable {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
-variable {P : Measure Ω} [IsFiniteMeasure P]
+variable {P : Measure Ω} [IsProbabilityMeasure P]
 
 variable {Ω₀ : Type*} [MeasurableSpace Ω₀]
 variable {alg₀ : Algorithm 𝓐 𝓨}
@@ -98,16 +105,13 @@ lemma absolutelyContinuous_map_history (h : IsAlgEnvSeq A Y alg env P)
     P.map (history A Y n) ≪ P₀.map (history A₀ Y₀ n) := by
   induction n with
   | zero =>
-    rw [h.hasLaw_history_zero.map_eq, h₀.hasLaw_history_zero.map_eq]
-    apply Measure.AbsolutelyContinuous.map _ (by fun_prop)
-    rw [h.hasLaw_step_zero.map_eq, h₀.hasLaw_step_zero.map_eq]
-    exact Measure.AbsolutelyContinuous.compProd_left hc.p0 _
+    rw [(hasLaw_history_zero A Y).map_eq, (hasLaw_history_zero A₀ Y₀).map_eq]
   | succ n ih =>
     simp_rw [history_succ]
     rw [← Measure.map_map (by fun_prop), ← Measure.map_map (by fun_prop)]
     rotate_left
-    · exact (h₀.measurable_history n).prodMk (h₀.measurable_step (n + 1))
-    · exact (h.measurable_history n).prodMk (h.measurable_step (n + 1))
+    · exact (h₀.measurable_history n).prodMk (h₀.measurable_step n)
+    · exact (h.measurable_history n).prodMk (h.measurable_step n)
     apply Measure.AbsolutelyContinuous.map _ (by fun_prop)
     rw [(h.hasCondDistrib_step n).map_eq, (h₀.hasCondDistrib_step n).map_eq]
     apply Measure.AbsolutelyContinuous.compProd ih
@@ -122,11 +126,8 @@ lemma hasLaw_history_withDensity (h : IsAlgEnvSeq A Y alg env P)
   map_eq := by
     induction n with
     | zero =>
-      rw [h.hasLaw_history_zero.map_eq, h₀.hasLaw_history_zero.map_eq, h.hasLaw_step_zero.map_eq,
-        h₀.hasLaw_step_zero.map_eq]
-      rw [← Measure.withDensity_rnDeriv_eq _ _ hc.p0,
-        Measure.compProd_withDensity_left (by fun_prop)]
-      exact map_equiv_withDensity (by fun_prop)
+      rw [(hasLaw_history_zero A Y).map_eq, (hasLaw_history_zero A₀ Y₀).map_eq,
+        show alg.density alg₀ 0 = 1 from rfl, withDensity_one]
     | succ n ih =>
       let ρ h' (ar : 𝓐 × 𝓨) := Kernel.rnDeriv (alg.policy n) (alg₀.policy n) h' ar.1
       have hs : stepKernel alg env n = (stepKernel alg₀ env n).withDensity ρ := by
@@ -138,8 +139,8 @@ lemma hasLaw_history_withDensity (h : IsAlgEnvSeq A Y alg env P)
       simp_rw [history_succ]
       rw [← Measure.map_map (by fun_prop), ← Measure.map_map (by fun_prop)]
       rotate_left
-      · exact (h₀.measurable_history n).prodMk (h₀.measurable_step (n + 1))
-      · exact (h.measurable_history n).prodMk (h.measurable_step (n + 1))
+      · exact (h₀.measurable_history n).prodMk (h₀.measurable_step n)
+      · exact (h.measurable_history n).prodMk (h.measurable_step n)
       rw [(h.hasCondDistrib_step n).map_eq, (h₀.hasCondDistrib_step n).map_eq, ih, hs,
         Measure.compProd_withDensity_withDensity (by fun_prop) (by fun_prop)]
       exact map_equiv_withDensity (by fun_prop)

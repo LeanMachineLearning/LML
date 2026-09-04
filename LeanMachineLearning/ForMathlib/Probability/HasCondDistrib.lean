@@ -5,6 +5,7 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
+public import LeanMachineLearning.ForMathlib.MeasureTheory.MeasurableSpace.Embedding
 public import LeanMachineLearning.ForMathlib.Probability.Independence.CondDistrib
 public import Mathlib.Probability.HasCondDistrib
 
@@ -168,6 +169,95 @@ lemma ae_eq_of_hasCondDistrib_deterministic [MeasurableEq Ω] [SFinite μ] {f : 
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
   rfl
 
+section Const
+
+section CompRight
+
+variable [SFinite μ]
+
+/-- Converse of `HasCondDistrib.comp_right` for a measurable embedding. -/
+lemma HasCondDistrib.of_measurableEmbedding_comp_right {f : β → γ} (hf : MeasurableEmbedding f)
+    {κ : Kernel γ Ω} [IsSFiniteKernel κ] (h : HasCondDistrib Y (f ∘ X) κ μ) :
+    HasCondDistrib Y X (κ.comap f hf.measurable) μ := by
+  have hX : AEMeasurable X μ := hf.aemeasurable_comp_iff.mp h.aemeasurable_fst
+  have hY : AEMeasurable Y μ := h.aemeasurable_snd
+  have hfm : Measurable (Prod.map f (id : Ω → Ω)) := hf.measurable.prodMap measurable_id
+  refine ⟨hX.prodMk hY, (hf.prodMap MeasurableEmbedding.id).map_injective ?_⟩
+  rw [AEMeasurable.map_map_of_aemeasurable hfm.aemeasurable (by fun_prop)]
+  calc μ.map (Prod.map f id ∘ fun ω ↦ (X ω, Y ω))
+  _ = μ.map (f ∘ X) ⊗ₘ κ := h.map_eq
+  _ = (μ.map X).map f ⊗ₘ κ := by
+    rw [AEMeasurable.map_map_of_aemeasurable hf.measurable.aemeasurable hX]
+  _ = (μ.map X ⊗ₘ κ.comap f hf.measurable).map (Prod.map f id) := by
+    symm
+    ext s hs
+    rw [Measure.map_apply hfm hs, Measure.compProd_apply (hs.preimage hfm),
+      Measure.compProd_apply hs,
+      lintegral_map (Kernel.measurable_kernel_prodMk_left hs) hf.measurable]
+    rfl
+
+/-- `HasCondDistrib.comp_right` is an equivalence for measurable embeddings. -/
+lemma hasCondDistrib_measurableEmbedding_comp_right_iff {f : β → γ} (hf : MeasurableEmbedding f)
+    {κ : Kernel γ Ω} [IsSFiniteKernel κ] :
+    HasCondDistrib Y (f ∘ X) κ μ ↔ HasCondDistrib Y X (κ.comap f hf.measurable) μ :=
+  ⟨fun h ↦ h.of_measurableEmbedding_comp_right hf, fun h ↦ h.comp_right⟩
+
+/-- `HasCondDistrib.comp_right` is an equivalence for measurable equivalences. -/
+lemma hasCondDistrib_measurableEquiv_comp_right_iff (e : β ≃ᵐ γ) {κ : Kernel γ Ω}
+    [IsSFiniteKernel κ] :
+    HasCondDistrib Y (e ∘ X) κ μ ↔ HasCondDistrib Y X (κ.comap e e.measurable) μ :=
+  hasCondDistrib_measurableEmbedding_comp_right_iff e.measurableEmbedding
+
+end CompRight
+
+section UniqueComponent
+
+variable {δ : Type*} {mδ : MeasurableSpace δ} [Unique δ] [SFinite μ]
+
+/-- Conditioning on a pair whose first component takes values in a type with a unique element
+is the same as conditioning on the second component. -/
+lemma hasCondDistrib_prodMk_left_unique_iff {U : α → δ} {η : Kernel (δ × β) Ω}
+    [IsSFiniteKernel η] :
+    HasCondDistrib Y (fun ω ↦ (U ω, X ω)) η μ ↔ HasCondDistrib Y X (η.sectR default) μ := by
+  have hU : U = fun _ ↦ default := funext fun _ ↦ Unique.eq_default _
+  subst hU
+  exact hasCondDistrib_measurableEmbedding_comp_right_iff (measurableEmbedding_prodMk_left default)
+
+/-- Conditioning on a pair whose second component takes values in a type with a unique element
+is the same as conditioning on the first component. -/
+lemma hasCondDistrib_prodMk_right_unique_iff {U : α → δ} {η : Kernel (β × δ) Ω}
+    [IsSFiniteKernel η] :
+    HasCondDistrib Y (fun ω ↦ (X ω, U ω)) η μ ↔ HasCondDistrib Y X (η.sectL default) μ := by
+  have hU : U = fun _ ↦ default := funext fun _ ↦ Unique.eq_default _
+  subst hU
+  exact hasCondDistrib_measurableEmbedding_comp_right_iff
+    (measurableEmbedding_prod_mk_right default)
+
+end UniqueComponent
+
+
+lemma _root_.MeasureTheory.Measure.dirac_compProd {κ : Kernel β Ω} [IsSFiniteKernel κ] (b : β) :
+    Measure.dirac b ⊗ₘ κ = (κ b).map (Prod.mk b) := by
+  ext s hs
+  rw [Measure.compProd_apply hs, lintegral_dirac' _ (Kernel.measurable_kernel_prodMk_left hs),
+    Measure.map_apply measurable_prodMk_left hs]
+
+/-- Conditioning on a constant is the same as having law `κ b`. -/
+lemma hasCondDistrib_const_iff [IsProbabilityMeasure μ] [IsSFiniteKernel κ] {b : β} :
+    HasCondDistrib Y (fun _ ↦ b) κ μ ↔ HasLaw Y (κ b) μ := by
+  refine ⟨fun h ↦ ⟨h.aemeasurable_snd, ?_⟩, fun h ↦ ⟨aemeasurable_const.prodMk h.aemeasurable, ?_⟩⟩
+  · rw [← Measure.snd_map_prodMk₀ (X := fun _ ↦ b) (Y := Y) aemeasurable_const, h.map_eq,
+      Measure.map_const, measure_univ, one_smul, Measure.dirac_compProd, Measure.snd,
+      Measure.map_map measurable_snd measurable_prodMk_left]
+    exact Measure.map_id
+  · rw [Measure.map_const, measure_univ, one_smul, Measure.dirac_compProd, ← h.map_eq,
+      AEMeasurable.map_map_of_aemeasurable measurable_prodMk_left.aemeasurable h.aemeasurable]
+    rfl
+
+alias ⟨HasCondDistrib.hasLaw_of_const', HasLaw.hasCondDistrib_const⟩ := hasCondDistrib_const_iff
+
+end Const
+
 variable [StandardBorelSpace Ω] [Nonempty Ω] [StandardBorelSpace Ω'] [Nonempty Ω']
 
 lemma HasCondDistrib.condDistrib_eq [IsFiniteMeasure μ] [IsFiniteKernel κ]
@@ -202,5 +292,6 @@ lemma HasCondDistrib.hasCondDistrib_sectR [IsFiniteMeasure μ] [StandardBorelSpa
     Measure.ae_ae_of_ae_compProd h_eq] with z hc ha
   rw [Kernel.map_apply _ hf] at ha
   filter_upwards [hc, ha] with b hcb hab using hcb.trans hab
+
 
 end ProbabilityTheory

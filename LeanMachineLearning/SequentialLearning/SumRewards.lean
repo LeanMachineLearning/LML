@@ -27,9 +27,9 @@ variable {𝓐 𝓨 Ω : Type*} {m𝓐 : MeasurableSpace 𝓐} {m𝓨 : Measurab
 noncomputable def sumRewards (A : ℕ → Ω → 𝓐) (R : ℕ → Ω → 𝓨) (a : 𝓐) (t : ℕ) (ω : Ω) : 𝓨 :=
   ∑ s ∈ range t, if A s ω = a then (R s) ω else 0
 
-/-- Sum of rewards of arm `a` up to (and including) time `n`. -/
+/-- Sum of rewards of arm `a` in the history before time `n`. -/
 noncomputable
-def sumRewards' (n : ℕ) (h : Iic n → 𝓐 × 𝓨) (a : 𝓐) :=
+def sumRewards' (n : ℕ) (h : Fin n → 𝓐 × 𝓨) (a : 𝓐) :=
   ∑ s, if (h s).1 = a then (h s).2 else 0
 
 /-- Empirical mean reward obtained when pulling action `a` up to time `t` (exclusive). -/
@@ -37,9 +37,9 @@ noncomputable
 def empMean (A : ℕ → Ω → 𝓐) (R : ℕ → Ω → ℝ) (a : 𝓐) (t : ℕ) (ω : Ω) : ℝ :=
   sumRewards A R a t ω / pullCount A a t ω
 
-/-- Empirical mean of arm `a` at time `n`. -/
+/-- Empirical mean of arm `a` in the history before time `n`. -/
 noncomputable
-def empMean' (n : ℕ) (h : Iic n → 𝓐 × ℝ) (a : 𝓐) :=
+def empMean' (n : ℕ) (h : Fin n → 𝓐 × ℝ) (a : 𝓐) :=
   sumRewards' n h a / pullCount' n h a
 
 @[simp]
@@ -85,29 +85,26 @@ lemma sum_rewardByCount_eq_sumRewards {R : ℕ → Ω → 𝓨} (a : 𝓐) (t : 
     · unfold sumRewards
       rwa [pullCount_eq_pullCount_of_action_ne hta, sum_range_succ, ite_eq_right hta, add_zero]
 
-lemma sumRewards_add_one_eq_sumRewards' {R : ℕ → Ω → 𝓨} {n : ℕ} {ω : Ω} :
-    sumRewards A R a (n + 1) ω = sumRewards' n (fun i ↦ (A i ω, R i ω)) a := by
-  unfold sumRewards sumRewards'
-  rw [Finset.sum_coe_sort (f := fun s ↦ if A s ω = a then R s ω else 0) (Iic n)]
-  congr with m
-  simp only [mem_range, mem_Iic]
-  grind
+lemma sumRewards_eq_sumRewards' {R : ℕ → Ω → 𝓨} {n : ℕ} {ω : Ω} :
+    sumRewards A R a n ω = sumRewards' n (fun i ↦ (A i ω, R i ω)) a :=
+  (Fin.sum_univ_eq_sum_range (fun i ↦ if A i ω = a then R i ω else 0) n).symm
 
-lemma sumRewards_eq_sumRewards' {R : ℕ → Ω → 𝓨} {n : ℕ} {ω : Ω} (hn : n ≠ 0) :
-    sumRewards A R a n ω = sumRewards' (n - 1) (fun i ↦ (A i ω, R i ω)) a := by
-  cases n with
-  | zero => exact absurd rfl hn
-  | succ n => simp [sumRewards_add_one_eq_sumRewards']
+/-- `sumRewards A R a n` is a function of the history before time `n`. -/
+lemma sumRewards_eq_comp_history {R : ℕ → Ω → 𝓨} (a : 𝓐) (n : ℕ) :
+    sumRewards A R a n = (fun h : Fin n → 𝓐 × 𝓨 ↦ sumRewards' n h a) ∘ history A R n := by
+  ext ω
+  exact sumRewards_eq_sumRewards'
 
-lemma empMean_add_one_eq_empMean' {R : ℕ → Ω → ℝ} {n : ℕ} {ω : Ω} :
-    empMean A R a (n + 1) ω = empMean' n (fun i ↦ (A i ω, R i ω)) a := by
+lemma empMean_eq_empMean' {R : ℕ → Ω → ℝ} {n : ℕ} {ω : Ω} :
+    empMean A R a n ω = empMean' n (fun i ↦ (A i ω, R i ω)) a := by
   unfold empMean empMean'
-  rw [sumRewards_add_one_eq_sumRewards', pullCount_add_one_eq_pullCount']
+  rw [sumRewards_eq_sumRewards', pullCount_eq_pullCount']
 
-lemma empMean_eq_empMean' {R : ℕ → Ω → ℝ} {n : ℕ} {ω : Ω} (hn : n ≠ 0) :
-    empMean A R a n ω = empMean' (n - 1) (fun i ↦ (A i ω, R i ω)) a := by
-  unfold empMean empMean'
-  rw [sumRewards_eq_sumRewards' hn, pullCount_eq_pullCount' hn]
+/-- `empMean A R a n` is a function of the history before time `n`. -/
+lemma empMean_eq_comp_history {R : ℕ → Ω → ℝ} (a : 𝓐) (n : ℕ) :
+    empMean A R a n = (fun h : Fin n → 𝓐 × ℝ ↦ empMean' n h a) ∘ history A R n := by
+  ext ω
+  exact empMean_eq_empMean'
 
 lemma sumRewards_sub_pullCount_smul_eq_sum {R : ℕ → Ω → 𝓨} (c : 𝓐 → 𝓨) :
     sumRewards A R a (n + 1) ω - pullCount A a (n + 1) ω • c a =
@@ -163,22 +160,20 @@ lemma measurable_uncurry_empMean_comp [Countable 𝓐] [MeasurableSingletonClass
 lemma measurable_sumRewards' [MeasurableSingletonClass 𝓐] [MeasurableAdd₂ 𝓨] (n : ℕ) (a : 𝓐) :
     Measurable (sumRewards' (𝓨 := 𝓨) n · a) := by
   simp_rw [sumRewards']
-  have h_meas s : Measurable (fun (h : Iic n → 𝓐 × ℝ) ↦ if (h s).1 = a then (h s).2 else 0) := by
+  have h_meas s : Measurable (fun (h : Fin n → 𝓐 × 𝓨) ↦ if (h s).1 = a then (h s).2 else 0) := by
     refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
     exact (measurableSet_singleton _).preimage (by fun_prop)
-  refine Finset.measurable_fun_sum _ fun s hs ↦ ?_
-  exact Measurable.ite (by measurability) (by fun_prop) (by fun_prop)
+  fun_prop
 
 @[fun_prop]
 lemma measurable_uncurry_sumRewards' [MeasurableEq 𝓐] [MeasurableAdd₂ 𝓨] (n : ℕ) :
-    Measurable (fun p : (Iic n → 𝓐 × 𝓨) × 𝓐 ↦ sumRewards' n p.1 p.2) := by
+    Measurable (fun p : (Fin n → 𝓐 × 𝓨) × 𝓐 ↦ sumRewards' n p.1 p.2) := by
   simp_rw [sumRewards']
-  have h_meas s : Measurable (fun p : (Iic n → 𝓐 × ℝ) × 𝓐 ↦
+  have h_meas s : Measurable (fun p : (Fin n → 𝓐 × 𝓨) × 𝓐 ↦
       if (p.1 s).1 = p.2 then (p.1 s).2 else 0) := by
     refine Measurable.ite ?_ (by fun_prop) (by fun_prop)
     exact measurableSet_eq_fun (by fun_prop) (by fun_prop)
-  refine Finset.measurable_fun_sum _ fun s hs ↦ ?_
-  exact Measurable.ite (by measurability) (by fun_prop) (by fun_prop)
+  fun_prop
 
 @[fun_prop]
 lemma measurable_empMean' [MeasurableSingletonClass 𝓐] (n : ℕ) (a : 𝓐) :
@@ -186,7 +181,7 @@ lemma measurable_empMean' [MeasurableSingletonClass 𝓐] (n : ℕ) (a : 𝓐) :
 
 @[fun_prop]
 lemma measurable_uncurry_empMean' [MeasurableEq 𝓐] (n : ℕ) :
-    Measurable (fun p : (Iic n → 𝓐 × ℝ) × 𝓐 ↦ empMean' n p.1 p.2) := by unfold empMean'; fun_prop
+    Measurable (fun p : (Fin n → 𝓐 × ℝ) × 𝓐 ↦ empMean' n p.1 p.2) := by unfold empMean'; fun_prop
 
 variable [MeasurableSingletonClass 𝓐]
 
