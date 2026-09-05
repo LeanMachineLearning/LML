@@ -128,50 +128,8 @@ def IsBayesAlgEnvSeq (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (�
 namespace IsBayesAlgEnvSeq
 
 variable {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × 𝓐) 𝓨} [IsMarkovKernel κ]
-variable {alg : Algorithm Unit 𝓐 𝓨}
-variable {E : Ω → 𝓔} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
-variable {P : Measure Ω} [IsProbabilityMeasure P]
-
-/-- Constructor for `IsBayesAlgEnvSeq` from the law of the parameter and the conditional
-distributions of the actions and of the feedbacks given the parameter and the observable history.
-Together with `IsBayesAlgEnvSeq.hasLaw_env`, `IsBayesAlgEnvSeq.hasCondDistrib_action` and
-`IsBayesAlgEnvSeq.hasCondDistrib_feedback`, this shows that being an `IsAlgEnvSeq` for the
-announcing environment is equivalent to those conditions. -/
-lemma mk (hasLaw_env : HasLaw E Q P)
-    (hasCondDistrib_action : ∀ n,
-      HasCondDistrib (A n) (fun ω ↦ (E ω, (history (noObs Ω) A Y n ω, noObs Ω n ω)))
-        ((alg.policy n).prodMkLeft _) P)
-    (hasCondDistrib_feedback : ∀ n,
-      HasCondDistrib (Y n) (fun ω ↦ ((history (noObs Ω) A Y n ω, noObs Ω n ω), (E ω, A n ω)))
-        (κ.prodMkLeft _) P)
-    (measurable_param : Measurable E := by fun_prop)
-    (measurable_action : ∀ n, Measurable (A n) := by fun_prop)
-    (measurable_feedback : ∀ n, Measurable (Y n) := by fun_prop) :
-    IsBayesAlgEnvSeq Q κ alg E A Y P := by
-  refine IsAlgEnvSeq.mk (fun _ ↦ measurable_param) measurable_action measurable_feedback ?_ ?_ ?_
-  · intro n
-    cases n with
-    | zero =>
-      rw [history_zero, obs_bayesStationaryEnv_zero]
-      exact hasLaw_env.hasCondDistrib_const
-    | succ n =>
-      rw [obs_bayesStationaryEnv_succ]
-      exact hasCondDistrib_comp_self (f := fun h : Hist 𝓔 𝓐 𝓨 (n + 1) ↦ (h 0).obs) _
-        (measurable_history (fun _ ↦ measurable_param) measurable_action measurable_feedback
-          (n + 1)).aemeasurable
-  · intro n
-    exact HasCondDistrib.comp_right
-      (f := fun q : 𝓔 × (Hist Unit 𝓐 𝓨 n × Unit) ↦ (announceHist q.1 q.2.1, q.1))
-      (hf := by fun_prop)
-      (Z := fun ω ↦ (E ω, (history (noObs Ω) A Y n ω, noObs Ω n ω)))
-      (hasCondDistrib_action n)
-  · intro n
-    exact HasCondDistrib.comp_right
-      (f := fun q : (Hist Unit 𝓐 𝓨 n × Unit) × (𝓔 × 𝓐) ↦
-        ((announceHist q.2.1 q.1.1, q.2.1), q.2.2))
-      (hf := by fun_prop)
-      (Z := fun ω ↦ ((history (noObs Ω) A Y n ω, noObs Ω n ω), (E ω, A n ω)))
-      (hasCondDistrib_feedback n)
+  {alg : Algorithm Unit 𝓐 𝓨} {P : Measure Ω} [IsProbabilityMeasure P]
+  {E : Ω → 𝓔} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 
 /-- A Bayesian algorithm-environment sequence is an algorithm-environment sequence for the
 announcing environment `bayesStationaryEnv Q κ`. -/
