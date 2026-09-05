@@ -40,7 +40,6 @@ public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling.B
 public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling.Tendsto
 public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
 public import LeanMachineLearning.SequentialLearning.Algorithms.Uniform
-public import LeanMachineLearning.SequentialLearning.Announce
 public import LeanMachineLearning.SequentialLearning.BayesStationaryEnv
 public import LeanMachineLearning.SequentialLearning.Comap
 public import LeanMachineLearning.SequentialLearning.Deterministic

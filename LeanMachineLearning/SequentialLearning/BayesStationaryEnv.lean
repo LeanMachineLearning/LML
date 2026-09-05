@@ -5,7 +5,7 @@ Authors: Paulo Rauber, Rémy Degenne
 -/
 module
 
-public import LeanMachineLearning.SequentialLearning.Announce
+public import LeanMachineLearning.SequentialLearning.Comap
 public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
 
@@ -14,14 +14,9 @@ public import LeanMachineLearning.SequentialLearning.StationaryEnv
 
 A Bayesian stationary environment is an environment that draws a parameter `e : 𝓔` from a prior
 `Q` before the first round and then behaves like the stationary environment
-`stationaryEnv (κ.sectR e)`. Following the "announced variables" mechanism of
-`LeanMachineLearning/SequentialLearning/Announce.lean`, the parameter is not hidden: it is part of
-the environment's move, and the algorithm is the one that ignores it. Concretely,
-`bayesStationaryEnv Q κ : Environment 𝓔 𝓐 𝓨` announces `e` as the observation of every round and
-runs against `alg.comapObs (fun _ ↦ ())`, for an `alg : Algorithm Unit 𝓐 𝓨`.
-
-The predicate `IsBayesAlgEnvSeq` is not a new notion of run: it is `IsAlgEnvSeq` for that pair,
-for the observation process that announces the parameter `E` at every round.
+`stationaryEnv (κ.sectR e)`. Concretely, `bayesStationaryEnv Q κ : Environment 𝓔 𝓐 𝓨` announces
+an observation `e` at every round and runs against `alg.comapObs (fun _ ↦ ())`, for
+an `alg : Algorithm Unit 𝓐 𝓨`, an algorithm that does not use the observation.
 
 ## Main definitions
 
