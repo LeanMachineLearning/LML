@@ -237,9 +237,6 @@ lemma hasCondDistrib_action_zero (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
     HasCondDistrib (A 0) E (Kernel.const _ (alg.p0 ())) P :=
   hasCondDistrib_prodMk_right_unique_iff.mp (h.hasCondDistrib_action 0)
 
-variable [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
-
-omit [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨] in
 /-- The posterior over the parameter given the empty history is the prior. -/
 lemma condDistrib_param_history_zero [StandardBorelSpace 𝓔] [Nonempty 𝓔]
     (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
@@ -252,6 +249,8 @@ lemma condDistrib_param_history_zero [StandardBorelSpace 𝓔] [Nonempty 𝓔]
   rw [Measure.map_const, measure_univ, one_smul, Filter.EventuallyEq,
     ae_dirac_iff Subsingleton.measurableSet] at h_ae
   exact h_ae
+
+variable [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
 
 lemma hasCondDistrib_IT_obs (_h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
     ∀ᵐ e ∂Q, HasCondDistrib (IT.obs n) (IT.hist n) (Kernel.const _ (Measure.dirac ()))
