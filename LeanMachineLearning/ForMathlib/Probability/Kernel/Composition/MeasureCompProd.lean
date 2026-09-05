@@ -5,7 +5,6 @@ Authors: Paulo Rauber
 -/
 module
 
-public import Mathlib.Probability.Kernel.Composition.MeasureComp
 public import Mathlib.Probability.Kernel.Composition.MeasureCompProd
 
 /-! # Lemmas about measure composition-product
