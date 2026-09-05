@@ -128,7 +128,7 @@ depends only on the last action, but in a possibly time-dependent manner. -/
 @[simps]
 noncomputable
 def obliviousEnv (ν : ℕ → Kernel 𝓐 𝓨) [∀ n, IsMarkovKernel (ν n)] : Environment Unit 𝓐 𝓨 where
-  obs n := unitObs 𝓐 𝓨 n
+  obs _ := Kernel.const _ (Measure.dirac ())
   feedback n := (ν n).prodMkLeft _
 
 lemma feedback_obliviousEnv (ν : ℕ → Kernel 𝓐 𝓨) [∀ n, IsMarkovKernel (ν n)] (n : ℕ) :
@@ -173,7 +173,7 @@ def stationaryEnv (ν : Kernel 𝓐 𝓨) [IsMarkovKernel ν] : Environment Unit
 
 @[simp]
 lemma obs_stationaryEnv (ν : Kernel 𝓐 𝓨) [IsMarkovKernel ν] (n : ℕ) :
-    (stationaryEnv ν).obs n = unitObs 𝓐 𝓨 n := rfl
+    (stationaryEnv ν).obs n = Kernel.const _ (Measure.dirac ()) := rfl
 
 @[simp]
 lemma feedback_stationaryEnv (ν : Kernel 𝓐 𝓨) [IsMarkovKernel ν] (n : ℕ) :

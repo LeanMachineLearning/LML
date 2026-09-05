@@ -254,7 +254,7 @@ lemma condDistrib_param_history_zero [StandardBorelSpace 𝓔] [Nonempty 𝓔]
   exact h_ae
 
 lemma hasCondDistrib_IT_obs (_h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
-    ∀ᵐ e ∂Q, HasCondDistrib (IT.obs n) (IT.hist n) (unitObs 𝓐 𝓨 n)
+    ∀ᵐ e ∂Q, HasCondDistrib (IT.obs n) (IT.hist n) (Kernel.const _ (Measure.dirac ()))
       (condDistrib (trajectory (noObs Ω) A Y) E P e) :=
   ae_of_all _ fun _ ↦ hasCondDistrib_unit (IT.measurable_hist n).aemeasurable _ _
 

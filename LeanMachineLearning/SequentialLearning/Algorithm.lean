@@ -737,12 +737,6 @@ lemma hasCondDistrib_unit {α : Type*} {mα : MeasurableSpace α} {P : Measure �
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) hX]
   rfl
 
-/-- Any function with values in `Unit` is measurable. -/
-lemma measurable_unit {α : Type*} {mα : MeasurableSpace α} (f : α → Unit) : Measurable f := by
-  have hf : f = fun _ ↦ () := funext fun _ ↦ rfl
-  rw [hf]
-  exact measurable_const
-
 /-- The observation process of an algorithm-environment sequence without observations. -/
 def noObs (Ω : Type*) : ℕ → Ω → Unit := fun _ _ ↦ ()
 
@@ -750,19 +744,6 @@ def noObs (Ω : Type*) : ℕ → Ω → Unit := fun _ _ ↦ ()
 
 @[fun_prop]
 lemma measurable_noObs (n : ℕ) : Measurable (noObs Ω n) := measurable_const
-
-/-- The observation kernels of an environment without observations. -/
-noncomputable def unitObs (𝓐 𝓨 : Type*) [MeasurableSpace 𝓐] [MeasurableSpace 𝓨] (n : ℕ) :
-    Kernel (Hist Unit 𝓐 𝓨 n) Unit :=
-  Kernel.const _ (Measure.dirac ())
-deriving IsMarkovKernel
-
-lemma unitObs_def (n : ℕ) :
-    unitObs 𝓐 𝓨 n = Kernel.const _ (Measure.dirac ()) := rfl
-
-@[simp]
-lemma unitObs_apply (n : ℕ) (h : Hist Unit 𝓐 𝓨 n) :
-    unitObs 𝓐 𝓨 n h = Measure.dirac () := rfl
 
 end NoObservation
 
