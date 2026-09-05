@@ -120,6 +120,30 @@ lemma compProd_withDensity_left {κ : Kernel α β} {η : Kernel (α × β) γ} 
     _ = ((κ ⊗ₖ η).withDensity (fun a bc ↦ f a bc.1)) a := by
         rw [← compProd_apply_eq_compProd_sectR, Kernel.withDensity_apply _ (by fun_prop)]
 
+lemma sectR_withDensity {η : Kernel (α × β) γ} {g : α × β → γ → ℝ≥0∞} [IsSFiniteKernel η]
+    (hg : Measurable (Function.uncurry g)) (a : α) :
+    (η.withDensity g).sectR a = (η.sectR a).withDensity (fun b ↦ g (a, b)) := by
+  ext b s hs
+  rw [Kernel.sectR_apply, Kernel.withDensity_apply' _ hg,
+    Kernel.withDensity_apply' _ (by fun_prop), Kernel.sectR_apply]
+
+lemma compProd_withDensity_right {κ : Kernel α β} {η : Kernel (α × β) γ} {g : α × β → γ → ℝ≥0∞}
+    [IsSFiniteKernel κ] [IsSFiniteKernel η] [IsSFiniteKernel (η.withDensity g)]
+    (hg : Measurable (Function.uncurry g)) :
+    κ ⊗ₖ (η.withDensity g) = (κ ⊗ₖ η).withDensity (fun a bc ↦ g (a, bc.1) bc.2) := by
+  ext a : 1
+  have h_sf : IsSFiniteKernel ((η.sectR a).withDensity (fun b ↦ g (a, b))) := by
+    rw [← sectR_withDensity hg]
+    infer_instance
+  calc (κ ⊗ₖ (η.withDensity g)) a
+      = (κ a) ⊗ₘ ((η.withDensity g).sectR a) := compProd_apply_eq_compProd_sectR ..
+    _ = (κ a) ⊗ₘ ((η.sectR a).withDensity (fun b ↦ g (a, b))) := by rw [sectR_withDensity hg]
+    _ = ((κ a) ⊗ₘ (η.sectR a)).withDensity (fun p ↦ g (a, p.1) p.2) := by
+        refine Measure.compProd_withDensity ?_
+        fun_prop
+    _ = ((κ ⊗ₖ η).withDensity (fun a bc ↦ g (a, bc.1) bc.2)) a := by
+        rw [← compProd_apply_eq_compProd_sectR, Kernel.withDensity_apply _ (by fun_prop)]
+
 lemma withDensity_rnDeriv_eq' {κ η : Kernel α β} [MeasurableSpace.CountableOrCountablyGenerated α β]
     [IsFiniteKernel κ] [IsFiniteKernel η] (h : ∀ a, κ a ≪ η a) :
     η.withDensity (κ.rnDeriv η) = κ :=

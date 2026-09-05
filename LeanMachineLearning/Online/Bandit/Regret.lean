@@ -28,9 +28,10 @@ open scoped ENNReal NNReal
 
 namespace Bandits
 
-variable {𝓐 Ω : Type*} [DecidableEq 𝓐] {m𝓐 : MeasurableSpace 𝓐} {mΩ : MeasurableSpace Ω}
+variable {𝓞 𝓐 Ω : Type*} [DecidableEq 𝓐] {m𝓞 : MeasurableSpace 𝓞} {m𝓐 : MeasurableSpace 𝓐}
+  {mΩ : MeasurableSpace Ω}
   {ν : Kernel 𝓐 ℝ}
-  {A : ℕ → Ω → 𝓐} {R : ℕ → Ω → ℝ}
+  {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {R : ℕ → Ω → ℝ}
   {ω : Ω} {m n t : ℕ} {a : 𝓐}
 
 /-- Gap of an action `a`: difference between the highest mean of the actions and the mean of `a`. -/
@@ -91,8 +92,8 @@ lemma integral_regret_eq_sum_gap_mul_integral_pullCount
 with positive gap. -/
 lemma integral_regret_le_of_forall_integral_pullCount_le
     [StandardBorelSpace 𝓐] [Fintype 𝓐] {P : Measure Ω} [IsProbabilityMeasure P]
-    {alg : Algorithm 𝓐 ℝ} {env : Environment 𝓐 ℝ} {B : 𝓐 → ℝ}
-    (h : IsAlgEnvSeq A R alg env P)
+    {alg : Algorithm 𝓞 𝓐 ℝ} {env : Environment 𝓞 𝓐 ℝ} {B : 𝓐 → ℝ}
+    (h : IsAlgEnvSeq O A R alg env P)
     (h_le : ∀ a, gap ν a ≠ 0 → ∫ ω, (pullCount A a n ω : ℝ) ∂P ≤ B a) :
     P[regret ν A n] ≤ ∑ a, gap ν a * B a := by
   have hA := h.measurable_action
