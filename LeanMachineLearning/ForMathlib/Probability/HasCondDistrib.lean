@@ -319,5 +319,4 @@ lemma HasCondDistrib.hasCondDistrib_sectR [IsFiniteMeasure μ] [StandardBorelSpa
   rw [Kernel.map_apply _ hf] at ha
   filter_upwards [hc, ha] with b hcb hab using hcb.trans hab
 
-
 end ProbabilityTheory
