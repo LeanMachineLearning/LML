@@ -12,8 +12,8 @@ public import LeanMachineLearning.SequentialLearning.Algorithm
 
 ## Main definitions
 
-* `Round.map fo fa fy`, `Hist.map fo fa fy`, `Traj.map fo fa fy`: round-wise transport of a round,
-  a history and a trajectory along maps of the observation, the action and the feedback, with the
+* `Round.map fo fa fy`, `Hist.map fo fa fy`: round-wise transport of a round and a history
+  along maps of the observation, the action and the feedback, with the
   special cases `mapObs`, `mapAction` and `mapFeedback` that transport a single component.
 * `Algorithm.comap alg F hF`: the algorithm that transforms the pair (past rounds, current
   observation) by the measurable map `F n` at round `n` before applying the policy of `alg`.
@@ -325,11 +325,7 @@ end Comap
 section Congr
 
 /-- Relabelling of the observations, the actions and the feedbacks of an algorithm along measurable
-equivalences.
-
-This is the covariant transport that a player does admit: the algorithm reads its own past actions,
-so post-composing its policy with a map of the actions only defines an algorithm on the target
-types when that map can be inverted on the history. -/
+equivalences. -/
 noncomputable def Algorithm.congr (alg : Algorithm 𝓞 𝓐 𝓨) (e𝓞 : 𝓞 ≃ᵐ 𝓞') (e𝓐 : 𝓐 ≃ᵐ 𝓐')
     (e𝓨 : 𝓨 ≃ᵐ 𝓨') : Algorithm 𝓞' 𝓐' 𝓨' where
   policy n := ((alg.policy n).map e𝓐).comap
@@ -378,9 +374,10 @@ lemma Algorithm.congr_symm (alg : Algorithm 𝓞 𝓐 𝓨) (e𝓞 : 𝓞 ≃ᵐ
     MeasurableEquiv.self_trans_symm, congr_refl]
 
 /-- Relabelling of the observations, the actions and the feedbacks of an environment along
-measurable equivalences. See `Algorithm.congr`. -/
+measurable equivalences. See also `Algorithm.congr`. -/
 noncomputable def Environment.congr (env : Environment 𝓞 𝓐 𝓨) (e𝓞 : 𝓞 ≃ᵐ 𝓞') (e𝓐 : 𝓐 ≃ᵐ 𝓐')
-    (e𝓨 : 𝓨 ≃ᵐ 𝓨') : Environment 𝓞' 𝓐' 𝓨' where
+    (e𝓨 : 𝓨 ≃ᵐ 𝓨') :
+    Environment 𝓞' 𝓐' 𝓨' where
   obs n := ((env.obs n).map e𝓞).comap (Hist.map e𝓞.symm e𝓐.symm e𝓨.symm) (by fun_prop)
   feedback n := ((env.feedback n).map e𝓨).comap
     (fun p ↦ ((Hist.map e𝓞.symm e𝓐.symm e𝓨.symm p.1.1, e𝓞.symm p.1.2), e𝓐.symm p.2)) (by fun_prop)
