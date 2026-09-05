@@ -171,16 +171,12 @@ lemma HasCondDistrib.prod {Z : α → Ω'} {η : Kernel (β × Ω) Ω'}
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
   rfl
 
-/-- A random variable that is almost surely a measurable function of `X` has the corresponding
-deterministic conditional distribution given `X`. -/
-lemma hasCondDistrib_deterministic [SFinite μ] {f : β → Ω} (hf : Measurable f)
-    (hX : AEMeasurable X μ) (hY : Y =ᵐ[μ] f ∘ X) :
-    HasCondDistrib Y X (Kernel.deterministic f hf) μ := by
-  have h : HasCondDistrib (f ∘ X) X (Kernel.deterministic f hf) μ := by
-    refine ⟨hX.prodMk (hf.comp_aemeasurable hX), ?_⟩
-    rw [Measure.compProd_deterministic, AEMeasurable.map_map_of_aemeasurable (by fun_prop) hX]
-    rfl
-  exact HasCondDistrib.congr h .rfl hY
+lemma hasCondDistrib_comp_self [SFinite μ] {f : β → Ω} (hf : Measurable f)
+    (hX : AEMeasurable X μ) :
+    HasCondDistrib (f ∘ X) X (Kernel.deterministic f hf) μ := by
+  refine ⟨hX.prodMk (hf.comp_aemeasurable hX), ?_⟩
+  rw [Measure.compProd_deterministic, AEMeasurable.map_map_of_aemeasurable (by fun_prop) hX]
+  rfl
 
 lemma ae_eq_of_hasCondDistrib_deterministic [MeasurableEq Ω] [SFinite μ] {f : β → Ω}
     (hf : Measurable f) (hX : AEMeasurable X μ)
@@ -190,6 +186,14 @@ lemma ae_eq_of_hasCondDistrib_deterministic [MeasurableEq Ω] [SFinite μ] {f : 
   rw [h.map_eq, Measure.compProd_deterministic,
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
   rfl
+
+lemma hasCondDistrib_deterministic_iff [MeasurableEq Ω] [SFinite μ] {f : β → Ω}
+    (hf : Measurable f) (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) :
+    HasCondDistrib Y X (Kernel.deterministic f hf) μ ↔ Y =ᵐ[μ] f ∘ X := by
+  refine ⟨ae_eq_of_hasCondDistrib_deterministic hf hX hY, fun h ↦ ?_⟩
+  refine HasCondDistrib.congr ?_ ?_ h (X := X)
+  · exact hasCondDistrib_comp_self hf hX
+  · rfl
 
 section Const
 

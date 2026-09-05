@@ -156,9 +156,9 @@ lemma mk (hasLaw_env : HasLaw E Q P)
       exact hasLaw_env.hasCondDistrib_const
     | succ n =>
       rw [obs_bayesStationaryEnv_succ]
-      exact hasCondDistrib_deterministic _
+      exact hasCondDistrib_comp_self (f := fun h : Hist 𝓔 𝓐 𝓨 (n + 1) ↦ (h 0).obs) _
         (measurable_history (fun _ ↦ measurable_param) measurable_action measurable_feedback
-          (n + 1)).aemeasurable (ae_of_all _ fun _ ↦ rfl)
+          (n + 1)).aemeasurable
   · intro n
     exact HasCondDistrib.comp_right
       (f := fun q : 𝓔 × (Hist Unit 𝓐 𝓨 n × Unit) ↦ (announceHist q.1 q.2.1, q.1))
