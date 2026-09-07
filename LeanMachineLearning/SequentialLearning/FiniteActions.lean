@@ -246,6 +246,28 @@ lemma isStronglyPredictable_pullCount [MeasurableSingletonClass 𝓐]
   simp only [pullCount_zero]
   fun_prop
 
+lemma measurableSet_action_eq_and_pullCount_eq [MeasurableSingletonClass 𝓐]
+    (hA : ∀ n, Measurable (A n)) (t : ℕ) (b : 𝓐) (k : ℕ) :
+    MeasurableSet {x | A t x = b ∧ pullCount A b t x = k} :=
+  ((measurableSet_singleton _).preimage (hA t)).inter
+    ((measurableSet_singleton _).preimage (measurable_pullCount hA b t))
+
+lemma measurableSet_snd_eq_and_pullCount'_eq [MeasurableSingletonClass 𝓐]
+    (n : ℕ) (b : 𝓐) (k : ℕ) :
+    MeasurableSet {u : (Iic n → 𝓐 × R) × 𝓐 | u.2 = b ∧ pullCount' n u.1 b = k} :=
+  ((measurableSet_singleton _).preimage measurable_snd).inter
+    ((measurableSet_singleton _).preimage ((measurable_pullCount' n b).comp measurable_fst))
+
+/-- The event that the action at time `n + 1` is `b` and that `b` was pulled `k` times before is
+a preimage by `(history A R' n, A (n + 1))`. -/
+lemma setOf_action_eq_and_pullCount_eq_eq_preimage (n : ℕ) (b : 𝓐) (k : ℕ) :
+    {x | A (n + 1) x = b ∧ pullCount A b (n + 1) x = k}
+      = (fun x ↦ (history A R' n x, A (n + 1) x)) ⁻¹' {u | u.2 = b ∧ pullCount' n u.1 b = k} := by
+  ext x
+  simp only [Set.mem_ofPred_eq, Set.mem_preimage]
+  rw [pullCount_add_one_eq_pullCount' (R' := R')]
+  rfl
+
 lemma integrable_pullCount [MeasurableSingletonClass 𝓐]
     (hA : ∀ n, Measurable (A n)) (a : 𝓐) (n : ℕ) :
     Integrable (fun ω ↦ (pullCount A a n ω : ℝ)) P := by
@@ -735,6 +757,130 @@ lemma measurable_rewardByCount [MeasurableSingletonClass 𝓐]
     refine measurable_from_prod_countable_right fun n ↦ ?_
     simp only
     fun_prop
+
+/-- Array of rewards by count, truncated at time `t`: the entry `(a, m)` is the reward received at
+the `(m + 1)`-th pull of action `a` if that pull happened before time `t`, and the entry
+`(m + 1, a)` of the auxiliary array `ω.2` otherwise.
+
+This is an auxiliary definition used to prove results about the distribution of `rewardByCount`.
+
+It is defined recursively: at time `t`, the
+entry `(A t, pullCount A (A t) t)` is replaced by the reward `R' t`.
+See `rewardByCountUntil_apply_of_lt_pullCount` and `rewardByCountUntil_apply_of_pullCount_le`. -/
+noncomputable
+def rewardByCountUntil (A : ℕ → Ω → 𝓐) (R' : ℕ → Ω → R) : ℕ → Ω × (ℕ → 𝓐 → R) → 𝓐 × ℕ → R
+  | 0, ω => fun p ↦ ω.2 (p.2 + 1) p.1
+  | t + 1, ω => Function.update (rewardByCountUntil A R' t ω)
+      (A t ω.1, pullCount A (A t ω.1) t ω.1) (R' t ω.1)
+
+@[simp]
+lemma rewardByCountUntil_zero (ω : Ω × (ℕ → 𝓐 → R)) :
+    rewardByCountUntil A R' 0 ω = fun p ↦ ω.2 (p.2 + 1) p.1 := rfl
+
+lemma rewardByCountUntil_add_one (t : ℕ) (ω : Ω × (ℕ → 𝓐 → R)) :
+    rewardByCountUntil A R' (t + 1) ω = Function.update (rewardByCountUntil A R' t ω)
+      (A t ω.1, pullCount A (A t ω.1) t ω.1) (R' t ω.1) := rfl
+
+/-- If action `a` was pulled at most `m` times before time `t`, then the entry `(a, m)` of
+`rewardByCountUntil A R' t ω` is the entry `(m + 1, a)` of the auxiliary array. -/
+lemma rewardByCountUntil_apply_of_pullCount_le (h : pullCount A a t ω.1 ≤ m) :
+    rewardByCountUntil A R' t ω (a, m) = ω.2 (m + 1) a := by
+  induction t with
+  | zero => rfl
+  | succ t ih =>
+    rw [rewardByCountUntil_add_one, Function.update_of_ne,
+      ih ((pullCount_mono a (Nat.le_succ t) _).trans h)]
+    intro hp
+    obtain ⟨rfl, hm⟩ := Prod.mk.inj hp
+    rw [pullCount_action_eq_pullCount_add_one] at h
+    omega
+
+/-- If action `a` was pulled more than `m` times before time `t`, then the entry `(a, m)` of
+`rewardByCountUntil A R' t ω` is the reward received at the `(m + 1)`-th pull of `a`. -/
+lemma rewardByCountUntil_apply_of_lt_pullCount (h : m < pullCount A a t ω.1) :
+    rewardByCountUntil A R' t ω (a, m) = rewardByCount A R' a (m + 1) ω := by
+  induction t with
+  | zero => simp at h
+  | succ t ih =>
+    rw [rewardByCountUntil_add_one]
+    by_cases hp : (a, m) = (A t ω.1, pullCount A (A t ω.1) t ω.1)
+    · obtain ⟨rfl, rfl⟩ := Prod.mk.inj hp
+      rw [Function.update_self, rewardByCount_pullCount_add_one_eq_reward]
+    · rw [Function.update_of_ne hp]
+      refine ih ?_
+      rw [pullCount_add_one] at h
+      split_ifs at h with hA
+      · rw [hA] at hp
+        have hm : m ≠ pullCount A a t ω.1 := fun hm ↦ hp (by rw [hm])
+        omega
+      · simpa using h
+
+/-- `rewardByCountUntil A R' t (x, z) p` depends on `z` only through `z (p.2 + 1) p.1`. -/
+lemma rewardByCountUntil_congr {x : Ω} {z z' : ℕ → 𝓐 → R} (t : ℕ) (p : 𝓐 × ℕ)
+    (hz : z (p.2 + 1) p.1 = z' (p.2 + 1) p.1) :
+    rewardByCountUntil A R' t (x, z) p = rewardByCountUntil A R' t (x, z') p := by
+  induction t with
+  | zero => exact hz
+  | succ t ih =>
+    simp only [rewardByCountUntil_add_one, Function.update_apply]
+    split_ifs
+    · rfl
+    · exact ih
+
+/-- For each entry, `rewardByCountUntil A R' t ω` coincides with `rewardByCount` for `t` large
+enough. -/
+lemma eventually_rewardByCountUntil_eq (ω : Ω × (ℕ → 𝓐 → R)) (p : 𝓐 × ℕ) :
+    ∀ᶠ t in Filter.atTop,
+      rewardByCountUntil A R' t ω p = rewardByCount A R' p.1 (p.2 + 1) ω := by
+  obtain ⟨a, m⟩ := p
+  by_cases h : ∃ t, m < pullCount A a t ω.1
+  · obtain ⟨t, ht⟩ := h
+    filter_upwards [Filter.eventually_ge_atTop t] with s hs
+    exact rewardByCountUntil_apply_of_lt_pullCount (ht.trans_le (pullCount_mono a hs ω.1))
+  · push Not at h
+    refine Filter.Eventually.of_forall fun t ↦ ?_
+    rw [rewardByCountUntil_apply_of_pullCount_le (h t), rewardByCount_of_stepsUntil_eq_top]
+    rw [stepsUntil_eq_top_iff]
+    exact fun s ↦ ((h (s + 1)).trans_lt (Nat.lt_succ_self m)).ne
+
+/-- Measurability of `rewardByCountUntil A R' t` with respect to a σ-algebra `m` for which the
+actions and rewards before time `t` and the auxiliary array are measurable. -/
+lemma measurable_rewardByCountUntil_of {m : MeasurableSpace (Ω × (ℕ → 𝓐 → R))}
+    [MeasurableEq 𝓐] (t : ℕ)
+    (hA : ∀ i < t, Measurable[m] (fun ω : Ω × (ℕ → 𝓐 → R) ↦ A i ω.1))
+    (hR : ∀ i < t, Measurable[m] (fun ω : Ω × (ℕ → 𝓐 → R) ↦ R' i ω.1))
+    (hZ : Measurable[m] (Prod.snd : Ω × (ℕ → 𝓐 → R) → ℕ → 𝓐 → R)) :
+    Measurable[m] (rewardByCountUntil A R' t) := by
+  induction t with
+  | zero =>
+    have : rewardByCountUntil A R' 0 = (fun z (p : 𝓐 × ℕ) ↦ z (p.2 + 1) p.1) ∘ Prod.snd := rfl
+    rw [this]
+    exact Measurable.comp (by fun_prop) hZ
+  | succ t ih =>
+    have ht : t < t + 1 := Nat.lt_succ_self t
+    have ih := ih (fun i hi ↦ hA i (hi.trans ht)) (fun i hi ↦ hR i (hi.trans ht))
+    have hg : Measurable[m] (fun ω : Ω × (ℕ → 𝓐 → R) ↦
+        (A t ω.1, pullCount A (A t ω.1) t ω.1)) := by
+      refine Measurable.prodMk (hA t ht) ?_
+      simp_rw [pullCount_eq_sum]
+      refine Finset.measurable_sum _ fun s hs ↦ Measurable.ite ?_ measurable_const measurable_const
+      exact measurableSet_eq_fun (hA s ((Finset.mem_range.1 hs).trans ht)) (hA t ht)
+    refine measurable_pi_iff.2 fun p ↦ ?_
+    simp_rw [rewardByCountUntil_add_one, Function.update_apply]
+    refine Measurable.ite ?_ (hR t ht) ((measurable_pi_apply p).comp ih)
+    have h_set : {ω : Ω × (ℕ → 𝓐 → R) | p = (A t ω.1, pullCount A (A t ω.1) t ω.1)}
+        = (fun ω : Ω × (ℕ → 𝓐 → R) ↦ (A t ω.1, pullCount A (A t ω.1) t ω.1)) ⁻¹' {p} := by
+      ext ω
+      simp [eq_comm]
+    rw [h_set]
+    exact hg (measurableSet_singleton p)
+
+@[fun_prop]
+lemma measurable_rewardByCountUntil [MeasurableEq 𝓐]
+    (hA : ∀ n, Measurable (A n)) (hR' : ∀ n, Measurable (R' n)) (t : ℕ) :
+    Measurable (rewardByCountUntil A R' t) :=
+  measurable_rewardByCountUntil_of t (fun i _ ↦ (hA i).comp measurable_fst)
+    (fun i _ ↦ (hR' i).comp measurable_fst) measurable_snd
 
 end RewardByCount
 

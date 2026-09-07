@@ -104,6 +104,32 @@ lemma hasCondDistrib_feedback [IsObliviousEnv env] (h : IsAlgEnvSeq A Y alg env 
       Measure.snd_map_prodMk (by fun_prop), Measure.map_map (by fun_prop) (by fun_prop)]
     congr
 
+/-- Conditionally on an event determined by the history up to time `n` and the action at time
+`n + 1`, on which that action is equal to `b`, the feedback at time `n + 1` has law
+`feedbackCondAction env (n + 1) b`. -/
+lemma hasLaw_feedback_cond [IsObliviousEnv env] (h : IsAlgEnvSeq A Y alg env P) (n : ℕ)
+    {s : Set ((Iic n → 𝓐 × 𝓨) × 𝓐)} (hs : MeasurableSet s) {b : 𝓐} (hsb : ∀ u ∈ s, u.2 = b)
+    (hP : P ((fun ω ↦ (history A Y n ω, A (n + 1) ω)) ⁻¹' s) ≠ 0) :
+    HasLaw (Y (n + 1)) (feedbackCondAction env (n + 1) b)
+      P[|(fun ω ↦ (history A Y n ω, A (n + 1) ω)) ⁻¹' s] := by
+  refine (hasCondDistrib_feedback_history_action h n).hasLaw_cond (h.measurable_feedback _) hs
+    (fun u hu ↦ ?_) hP
+  rw [Kernel.prodMkLeft_apply, hsb u hu]
+
+/-- Conditionally on an event determined by the history up to time `n` and the action at time
+`n + 1`, on which that action is constant, the feedback at time `n + 1` is independent of the
+history up to time `n` and of the action at time `n + 1`. -/
+lemma indepFun_history_action_feedback_cond [IsObliviousEnv env]
+    (h : IsAlgEnvSeq A Y alg env P) (n : ℕ)
+    {s : Set ((Iic n → 𝓐 × 𝓨) × 𝓐)} (hs : MeasurableSet s) {b : 𝓐} (hsb : ∀ u ∈ s, u.2 = b) :
+    (fun ω ↦ (history A Y n ω, A (n + 1) ω))
+      ⟂ᵢ[P[|(fun ω ↦ (history A Y n ω, A (n + 1) ω)) ⁻¹' s]] Y (n + 1) := by
+  have hA := h.measurable_action
+  have hY := h.measurable_feedback
+  refine (hasCondDistrib_feedback_history_action h n).indepFun_cond (by fun_prop) hs
+    (η := feedbackCondAction env (n + 1) b) fun u hu ↦ ?_
+  rw [Kernel.prodMkLeft_apply, hsb u hu]
+
 variable [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
 
 /-- The feedback at time `n + 1` is conditionally independent of the history up to time `n`
@@ -219,6 +245,30 @@ lemma condDistrib_feedback_stationaryEnv [StandardBorelSpace 𝓨] [Nonempty �
     (h : IsAlgEnvSeq A Y alg (stationaryEnv ν) P) (n : ℕ) :
     condDistrib (Y n) (A n) P =ᵐ[P.map (A n)] ν :=
   (hasCondDistrib_feedback_stationaryEnv h n).condDistrib_eq
+
+/-- Conditionally on the event `A 0 = b`, the first feedback has law `ν b`. -/
+lemma hasLaw_feedback_zero_cond_stationaryEnv [MeasurableSingletonClass 𝓐]
+    (h : IsAlgEnvSeq A Y alg (stationaryEnv ν) P) {b : 𝓐} (hP : P (A 0 ⁻¹' {b}) ≠ 0) :
+    HasLaw (Y 0) (ν b) P[|A 0 ⁻¹' {b}] := by
+  simpa using h.hasLaw_feedback_zero_cond hP
+
+/-- Conditionally on an event determined by the history up to time `n` and the action at time
+`n + 1`, on which that action is equal to `b`, the feedback at time `n + 1` has law `ν b`. -/
+lemma hasLaw_feedback_cond_stationaryEnv (h : IsAlgEnvSeq A Y alg (stationaryEnv ν) P) (n : ℕ)
+    {s : Set ((Iic n → 𝓐 × 𝓨) × 𝓐)} (hs : MeasurableSet s) {b : 𝓐} (hsb : ∀ u ∈ s, u.2 = b)
+    (hP : P ((fun ω ↦ (history A Y n ω, A (n + 1) ω)) ⁻¹' s) ≠ 0) :
+    HasLaw (Y (n + 1)) (ν b) P[|(fun ω ↦ (history A Y n ω, A (n + 1) ω)) ⁻¹' s] := by
+  simpa using IsObliviousEnv.hasLaw_feedback_cond h n hs hsb hP
+
+/-- Conditionally on an event determined by the history up to time `n` and the action at time
+`n + 1`, on which that action is constant, the feedback at time `n + 1` is independent of the
+history up to time `n` and of the action at time `n + 1`. -/
+lemma indepFun_history_action_feedback_cond_stationaryEnv
+    (h : IsAlgEnvSeq A Y alg (stationaryEnv ν) P) (n : ℕ)
+    {s : Set ((Iic n → 𝓐 × 𝓨) × 𝓐)} (hs : MeasurableSet s) {b : 𝓐} (hsb : ∀ u ∈ s, u.2 = b) :
+    (fun ω ↦ (history A Y n ω, A (n + 1) ω))
+      ⟂ᵢ[P[|(fun ω ↦ (history A Y n ω, A (n + 1) ω)) ⁻¹' s]] Y (n + 1) :=
+  IsObliviousEnv.indepFun_history_action_feedback_cond h n hs hsb
 
 /-- The feedback at time `n + 1` is conditionally independent of the history up to time `n`
 given the action at time `n + 1`. -/
