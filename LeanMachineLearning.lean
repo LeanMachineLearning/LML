@@ -1,5 +1,6 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
+public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.ChainRule
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measurable
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measure.AbsolutelyContinuous
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Order.Lattice
@@ -14,6 +15,7 @@ public import LeanMachineLearning.ForMathlib.Probability.Independence.IndepInfin
 public import LeanMachineLearning.ForMathlib.Probability.Integrable
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Basic
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.IntegralCompProd
+public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.Lemmas
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.MapComap
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.MeasureCompProd
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.IonescuTulcea.Traj
