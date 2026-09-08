@@ -3,10 +3,12 @@ Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rémy Degenne
 -/
-import VersoManual
-import Mathlib.Probability.Distributions.Gaussian.Real
-import Mathlib.Probability.Independence.Basic
-import Mathlib.Probability.Moments.Basic
+module
+
+public import VersoManual
+public import Mathlib.Probability.Distributions.Gaussian.Real
+public import Mathlib.Probability.Independence.Basic
+public import Mathlib.Probability.Moments.Basic
 
 set_option linter.style.header false
 set_option linter.style.setOption false
@@ -14,6 +16,8 @@ set_option linter.hashCommand false
 set_option linter.style.longLine false
 set_option pp.rawOnError true
 set_option verso.code.warnLineLength 100
+
+@[expose] public section
 
 open Verso.Genre Manual Verso.Genre.Manual.InlineLean Verso.Code.External
 

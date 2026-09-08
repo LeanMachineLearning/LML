@@ -44,7 +44,6 @@ measure at each iteration. -/
 @[simps]
 noncomputable def randomSampling (μ : Measure 𝓐) [IsProbabilityMeasure μ] : Algorithm 𝓐 𝓨 where
   policy _ := Kernel.const _ μ
-  p0 := μ
 
 namespace randomSampling
 
@@ -52,13 +51,8 @@ variable {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {env : Environment 
 
 /-- Each action follows the distribution μ. -/
 lemma hasLaw_action (h : IsAlgEnvSeq A Y (randomSampling μ) env P) (n : ℕ) :
-    HasLaw (A n) μ P := by
-  by_cases hn : n = 0
-  · rw [hn]
-    exact h.hasLaw_action_zero
-  · push Not at hn
-    obtain ⟨k, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hn
-    exact (h.hasCondDistrib_action k).hasLaw_of_const
+    HasLaw (A n) μ P :=
+  (h.hasCondDistrib_action n).hasLaw_of_const
 
 /-- Actions are mutually independent. -/
 lemma iIndep_action (h : IsAlgEnvSeq A Y (randomSampling μ) env P) :
@@ -66,13 +60,14 @@ lemma iIndep_action (h : IsAlgEnvSeq A Y (randomSampling μ) env P) :
   have hA := h.measurable_action
   rw [iIndepFun_nat_iff_forall_indepFun (by fun_prop)]
   intro n
-  have map_eq := (h.hasCondDistrib_action n).map_eq
+  have map_eq := (h.hasCondDistrib_action (n + 1)).map_eq
   simp only [randomSampling_policy, Measure.compProd_const] at map_eq
   have law_eq : P.map (A (n + 1)) = μ := (hasLaw_action h (n + 1)).map_eq
   rw [← law_eq, ← indepFun_iff_map_prod_eq_prod_map_map] at map_eq
-  · change A (n + 1) ⟂ᵢ[P] (fun (f : Iic n → 𝓐 × 𝓨) ↦ (fun i ↦ (f i).1))∘ (history A Y n)
+  · change A (n + 1) ⟂ᵢ[P] (fun (f : Fin (n + 1) → 𝓐 × 𝓨) (i : Iic n) ↦
+      (f ⟨i.1, Nat.lt_succ_of_le (mem_Iic.mp i.2)⟩).1) ∘ (history A Y (n + 1))
     refine map_eq.symm.comp measurable_id (by fun_prop)
-  · exact (h.measurable_history n).aemeasurable
+  · exact (h.measurable_history (n + 1)).aemeasurable
   · exact (h.measurable_action (n + 1)).aemeasurable
 
 end randomSampling

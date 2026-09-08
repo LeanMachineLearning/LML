@@ -24,7 +24,7 @@ and properties are also given in this file.
   bound `l : ℝ`, reward upper bound `u : ℝ`, sub-Gaussian variance proxy `σ2 : ℝ`, confidence
   parameter `δ : ℝ`, action `a : Fin K`, and time `n : ℕ`.
 * `ucb' n h l u σ2 δ a`: clipped upper confidence bound for action `a : Fin K` at time `n : ℕ` given
-  the history `h : Iic n → Fin K × ℝ` (rather than the entire sequences of actions and rewards).
+  the history `h : Fin n → Fin K × ℝ` (rather than the entire sequences of actions and rewards).
 
 ## Main results
 
@@ -93,21 +93,19 @@ lemma integrable_uncurry_ucb_comp [MeasurableSpace Ω] (hA : ∀ t, Measurable (
 
 /-- Clipped upper confidence bound (history-based version). -/
 noncomputable
-def ucb' (n : ℕ) (h : Iic n → Fin K × ℝ) (l u σ2 δ : ℝ) (a : Fin K) : ℝ :=
+def ucb' (n : ℕ) (h : Fin n → Fin K × ℝ) (l u σ2 δ : ℝ) (a : Fin K) : ℝ :=
   if pullCount' n h a = 0 then u
   else max l (min u (empMean' n h a + √(2 * σ2 * Real.log (1 / δ) / (pullCount' n h a))))
 
 @[fun_prop]
 lemma measurable_uncurry_ucb' {n : ℕ} :
-    Measurable (fun p : (Iic n → Fin K × ℝ) × Fin K ↦ ucb' n p.1 l u σ2 δ p.2) :=
+    Measurable (fun p : (Fin n → Fin K × ℝ) × Fin K ↦ ucb' n p.1 l u σ2 δ p.2) :=
   Measurable.ite (by measurability) (by fun_prop) (by fun_prop)
 
-lemma ucb_succ_eq_ucb' {a : Fin K} {n : ℕ} {ω : Ω} :
-    ucb A R l u σ2 δ a (n + 1) ω = ucb' n (history A R n ω) l u σ2 δ a := by
-  have hp : pullCount A a (n + 1) ω = pullCount' n (history A R n ω) a :=
-    pullCount_add_one_eq_pullCount'
-  have he : empMean A R a (n + 1) ω = empMean' n (history A R n ω) a :=
-    empMean_add_one_eq_empMean'
+lemma ucb_eq_ucb' {a : Fin K} {n : ℕ} {ω : Ω} :
+    ucb A R l u σ2 δ a n ω = ucb' n (history A R n ω) l u σ2 δ a := by
+  have hp : pullCount A a n ω = pullCount' n (history A R n ω) a := pullCount_eq_pullCount'
+  have he : empMean A R a n ω = empMean' n (history A R n ω) a := empMean_eq_empMean'
   rw [ucb, ucb', hp, he]
 
 /-- Helper for `sum_ucb_sub_mean_le`. -/
@@ -323,21 +321,18 @@ lemma integral_ucb_action_eq_integral_ucb_bestAction (hK : 0 < K)
   have := h.measurable_action
   have := h.measurable_param
   have := h.measurable_feedback
-  by_cases hn : n = 0
-  · simp [hn]
-  obtain ⟨n, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hn
-  let uc (ha : (Iic n → Fin K × ℝ) × Fin K) := ucb' n ha.1 l u σ2 δ ha.2
+  let uc (ha : (Fin n → Fin K × ℝ) × Fin K) := ucb' n ha.1 l u σ2 δ ha.2
   calc
-    _  = P[fun ω ↦ uc (history A R n ω, A (n + 1) ω)] := by
-        simp_rw [uc, ucb_succ_eq_ucb']
-    _ = ∫ ha, uc ha ∂P.map (fun ω ↦ (history A R n ω, A (n + 1) ω)) := by
+    _  = P[fun ω ↦ uc (history A R n ω, A n ω)] := by
+        simp_rw [uc, ucb_eq_ucb']
+    _ = ∫ ha, uc ha ∂P.map (fun ω ↦ (history A R n ω, A n ω)) := by
         rw [← integral_map (by fun_prop) (by fun_prop)]
     _ = ∫ ha, uc ha ∂P.map (fun ω ↦ (history A R n ω, bestAction κ E ω)) := by
         rw [← compProd_map_condDistrib (by fun_prop), ← compProd_map_condDistrib (by fun_prop),
             Measure.compProd_congr (hasCondDistrib_action hK h n).condDistrib_eq]
-    _ = P[fun ω ↦ ucb A R l u σ2 δ (bestAction κ E ω) (n + 1) ω] := by
+    _ = P[fun ω ↦ ucb A R l u σ2 δ (bestAction κ E ω) n ω] := by
         rw [integral_map (by fun_prop) (by fun_prop)]
-        simp_rw [uc, ucb_succ_eq_ucb']
+        simp_rw [uc, ucb_eq_ucb']
 
 lemma integral_regret_eq_add (hK : 0 < K) (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm hK Q κ) E A R P)
     (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u)) (n : ℕ) :
