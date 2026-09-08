@@ -250,33 +250,28 @@ lemma isAlgEnvSeq_iff_forall_isAlgEnvSeqUntil :
     hasCondDistrib_action n := (h (n + 1)).hasCondDistrib_action n n.lt_succ_self
     hasCondDistrib_feedback n := (h (n + 1)).hasCondDistrib_feedback n n.lt_succ_self }
 
-@[fun_prop]
 lemma IsAlgEnvSeq.measurable_step (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
     Measurable (step A Y n) := by
   have hA := h.measurable_action
   have hY := h.measurable_feedback
   fun_prop
 
-@[fun_prop]
 lemma IsAlgEnvSeq.measurable_history (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
     Measurable (history A Y n) := by
   have hA := h.measurable_action
   have hY := h.measurable_feedback
   fun_prop
 
-@[fun_prop]
 lemma IsAlgEnvSeq.measurable_trajectory (h : IsAlgEnvSeq A Y alg env P) :
     Measurable (trajectory A Y) :=
   Learning.measurable_trajectory h.measurable_action h.measurable_feedback
 
-@[fun_prop]
 lemma IsAlgEnvSeqUntil.measurable_step (h : IsAlgEnvSeqUntil A Y alg env P N) (n : ℕ) :
     Measurable (step A Y n) := by
   have hA := h.measurable_action
   have hY := h.measurable_feedback
   fun_prop
 
-@[fun_prop]
 lemma IsAlgEnvSeqUntil.measurable_history (h : IsAlgEnvSeqUntil A Y alg env P N) (n : ℕ) :
     Measurable (history A Y n) := by
   have hA := h.measurable_action
@@ -443,7 +438,6 @@ lemma filtrationAction_zero_eq_comap (h : IsAlgEnvSeq A Y alg env P) :
   · rw [← measurable_iff_comap_le]
     exact measurable_snd.comp (measurable_iff_comap_le.mpr le_rfl)
 
-@[fun_prop]
 lemma measurable_history_filtrationAction (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
     Measurable[h.filtrationAction n] (history A Y n) :=
   measurable_fst.comp (measurable_iff_comap_le.mpr le_rfl)
