@@ -383,7 +383,6 @@ lemma isAlgEnvSeq_iff_forall_isAlgEnvSeqUntil :
     hasCondDistrib_action n := (h (n + 1)).hasCondDistrib_action n n.lt_succ_self
     hasCondDistrib_feedback n := (h (n + 1)).hasCondDistrib_feedback n n.lt_succ_self }
 
-@[fun_prop]
 lemma IsAlgEnvSeq.measurable_step (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     Measurable (step O A Y n) := by
   have hO := h.measurable_obs
@@ -391,7 +390,6 @@ lemma IsAlgEnvSeq.measurable_step (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
   have hY := h.measurable_feedback
   fun_prop
 
-@[fun_prop]
 lemma IsAlgEnvSeq.measurable_history (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     Measurable (history O A Y n) := by
   have hO := h.measurable_obs
@@ -399,12 +397,10 @@ lemma IsAlgEnvSeq.measurable_history (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ)
   have hY := h.measurable_feedback
   fun_prop
 
-@[fun_prop]
 lemma IsAlgEnvSeq.measurable_trajectory (h : IsAlgEnvSeq O A Y alg env P) :
     Measurable (trajectory O A Y) :=
   Learning.measurable_trajectory h.measurable_obs h.measurable_action h.measurable_feedback
 
-@[fun_prop]
 lemma IsAlgEnvSeqUntil.measurable_step (h : IsAlgEnvSeqUntil O A Y alg env P N) (n : ℕ) :
     Measurable (step O A Y n) := by
   have hO := h.measurable_obs
@@ -412,7 +408,6 @@ lemma IsAlgEnvSeqUntil.measurable_step (h : IsAlgEnvSeqUntil O A Y alg env P N) 
   have hY := h.measurable_feedback
   fun_prop
 
-@[fun_prop]
 lemma IsAlgEnvSeqUntil.measurable_history (h : IsAlgEnvSeqUntil O A Y alg env P N) (n : ℕ) :
     Measurable (history O A Y n) := by
   have hO := h.measurable_obs
@@ -511,6 +506,13 @@ lemma IsAlgEnvSeq.hasLaw_feedback_comp (h : IsAlgEnvSeq O A Y alg env P) (n : �
 lemma IsAlgEnvSeq.hasLaw_step_comp (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     HasLaw (step O A Y n) (stepKernel alg env n ∘ₘ (P.map (history O A Y n))) P :=
   HasCondDistrib.hasLaw_comp (h.hasCondDistrib_step n)
+
+/-- Conditionally on the event `A 0 = b`, the first feedback has law `env.ν0 b`. -/
+lemma IsAlgEnvSeq.hasLaw_feedback_zero_cond [MeasurableSingletonClass 𝓐]
+    (h : IsAlgEnvSeq A Y alg env P) {b : 𝓐} (hP : P (A 0 ⁻¹' {b}) ≠ 0) :
+    HasLaw (Y 0) (env.ν0 b) P[|A 0 ⁻¹' {b}] :=
+  h.hasCondDistrib_feedback_zero.hasLaw_cond (h.measurable_feedback 0)
+    (measurableSet_singleton b) (fun a ha ↦ by rw [Set.mem_singleton_iff.1 ha]) hP
 
 section Filtration
 
@@ -640,7 +642,6 @@ lemma filtrationAction_zero_eq_comap (h : IsAlgEnvSeq O A Y alg env P) :
       (measurable_iff_comap_le.mpr le_rfl)).prodMk
       (measurable_snd.comp (measurable_iff_comap_le.mpr le_rfl))
 
-@[fun_prop]
 lemma measurable_history_filtrationObs (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     Measurable[h.filtrationObs n] (history O A Y n) :=
   measurable_fst.comp (measurable_iff_comap_le.mpr le_rfl)

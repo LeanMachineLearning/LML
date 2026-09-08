@@ -12,6 +12,8 @@ public import Mathlib.Probability.Kernel.Composition.MapComap
 
 @[expose] public section
 
+open MeasureTheory
+
 namespace ProbabilityTheory.Kernel
 
 variable {α β γ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ}
@@ -43,5 +45,9 @@ lemma prodMkRight_deterministic {f : α → β} (hf : Measurable f) :
       Kernel.deterministic (fun p ↦ f p.1) (by fun_prop) := by
   ext
   simp [Kernel.deterministic_apply]
+
+@[simp]
+lemma comap_const (ν : Measure β) {f : α → γ} (hf : Measurable f) :
+    (Kernel.const γ ν).comap f hf = Kernel.const α ν := by ext; simp [Kernel.comap_apply]
 
 end ProbabilityTheory.Kernel

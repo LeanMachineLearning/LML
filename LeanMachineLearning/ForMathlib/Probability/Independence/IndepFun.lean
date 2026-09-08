@@ -59,6 +59,24 @@ lemma indepFun_cond_comp {α β γ δ : Type*} {mα : MeasurableSpace α} {mβ :
   simp_rw [h_preim]
   exact indepFun_cond_of_indepFun hXY hY (hZ (measurableSet_singleton z))
 
+/-- Under `μ` conditioned on the event `X = b`, the random variable `X` is almost surely constant,
+hence independent of any other random variable. -/
+lemma indepFun_cond_preimage_singleton_left {α β γ : Type*} {mα : MeasurableSpace α}
+    {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ} [MeasurableSingletonClass β] {μ : Measure α}
+    {X : α → β} (hX : Measurable X) (b : β) (Y : α → γ) :
+    X ⟂ᵢ[μ[|X ⁻¹' {b}]] Y :=
+  (indepFun_const_left b Y).congr
+    (ae_cond_of_forall_mem (hX (measurableSet_singleton b)) fun x hx ↦ (hx : X x = b).symm)
+    Filter.EventuallyEq.rfl
+
+/-- Under `μ` conditioned on the event `X = b`, the random variable `X` is almost surely constant,
+hence independent of any other random variable. -/
+lemma indepFun_cond_preimage_singleton_right {α β γ : Type*} {mα : MeasurableSpace α}
+    {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ} [MeasurableSingletonClass β] {μ : Measure α}
+    {X : α → β} (hX : Measurable X) (b : β) (Y : α → γ) :
+    Y ⟂ᵢ[μ[|X ⁻¹' {b}]] X :=
+  (indepFun_cond_preimage_singleton_left hX b Y).symm
+
 lemma iIndepFun_nat_iff_forall_indepFun [IsProbabilityMeasure μ] {X : ℕ → Ω → E}
     (hX : ∀ n, AEMeasurable (X n) μ) :
     iIndepFun X μ ↔ ∀ n, X (n + 1) ⟂ᵢ[μ] fun ω (i : Iic n) ↦ X i ω := by
