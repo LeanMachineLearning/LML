@@ -354,6 +354,13 @@ lemma IsAlgEnvSeq.hasLaw_step_comp (h : IsAlgEnvSeq A Y alg env P) (n : ℕ) :
     HasLaw (step A Y n) (stepKernel alg env n ∘ₘ (P.map (history A Y n))) P :=
   HasCondDistrib.hasLaw_comp (h.hasCondDistrib_step n)
 
+/-- Conditionally on the event `A 0 = b`, the first feedback has law `env.ν0 b`. -/
+lemma IsAlgEnvSeq.hasLaw_feedback_zero_cond [MeasurableSingletonClass 𝓐]
+    (h : IsAlgEnvSeq A Y alg env P) {b : 𝓐} (hP : P (A 0 ⁻¹' {b}) ≠ 0) :
+    HasLaw (Y 0) (env.ν0 b) P[|A 0 ⁻¹' {b}] :=
+  h.hasCondDistrib_feedback_zero.hasLaw_cond (h.measurable_feedback 0)
+    (measurableSet_singleton b) (fun a ha ↦ by rw [Set.mem_singleton_iff.1 ha]) hP
+
 section Filtration
 
 namespace IsAlgEnvSeq
