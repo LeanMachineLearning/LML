@@ -54,7 +54,7 @@ variable {Ω 𝓐 𝓨 : Type*} {mΩ : MeasurableSpace Ω} {m𝓐 : MeasurableSp
 chosen at time `n`. -/
 noncomputable def Environment.measure (env : Environment 𝓐 𝓨) (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨)
     (n : ℕ) (ω : Ω) : Kernel 𝓐 𝓨 :=
-  if n = 0 then env.ν0 else (env.feedback (n - 1)).sectR (history A Y (n - 1) ω)
+  (env.feedback n).sectR (history A Y n ω)
 
 /-- The means of the feedback distribution as a function of the action chosen at time `n`. -/
 noncomputable def Environment.means (env : Environment 𝓐 𝓨) (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨)
@@ -64,17 +64,14 @@ noncomputable def Environment.means (env : Environment 𝓐 𝓨) (A : ℕ → �
 @[simp]
 lemma means_zero (env : Environment 𝓐 𝓨) (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨)
     (k : 𝓐) (ω : Ω) :
-    env.means A Y k 0 ω = (env.ν0 k)[id] := by simp [Environment.means, Environment.measure]
+    env.means A Y k 0 ω = (env.ν0 k)[id] := by
+  simp [Environment.means, Environment.measure, Environment.feedback_zero]
 
 @[simp]
 lemma means_of_isObliviousEnv [IsObliviousEnv env] (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨)
     (k : 𝓐) (n : ℕ) (ω : Ω) :
     env.means A Y k n ω = (feedbackCondAction env n k)[id] := by
-  simp only [Environment.means, Environment.measure, ν0_eq_feedbackCondAction, id_eq,
-    feedback_eq_feedbackCondAction]
-  split_ifs with hn
-  · simp [hn]
-  · simp [Nat.sub_add_cancel (by grind : 1 ≤ n)]
+  simp [Environment.means, Environment.measure, feedback_eq_feedbackCondAction]
 
 lemma means_obliviousEnv (ν : ℕ → Kernel 𝓐 𝓨) [∀ n, IsMarkovKernel (ν n)]
     (k : 𝓐) (n : ℕ) (ω : Ω) :
@@ -89,10 +86,9 @@ lemma IsAlgEnvSeq.stronglyMeasurable_means [SecondCountableTopology 𝓨] [Opens
     StronglyMeasurable (env.means A Y k n) := by
   unfold Environment.means
   have h_eq ω : env.measure A Y n ω k =
-      (if n = 0 then env.ν0 ∘ₖ (Kernel.deterministic (fun _ ↦ k) (by fun_prop))
-        else (env.feedback (n - 1)) ∘ₖ (Kernel.deterministic (fun ω ↦ (history A Y (n - 1) ω, k))
-          ((h.measurable_history (n - 1)).prodMk (by fun_prop)))) ω := by
-    split_ifs with hn <;> simp [hn, Environment.measure, Kernel.comp_deterministic_eq_comap]
+      (env.feedback n ∘ₖ Kernel.deterministic (fun ω ↦ (history A Y n ω, k))
+        ((h.measurable_history n).prodMk (by fun_prop))) ω := by
+    simp [Environment.measure, Kernel.comp_deterministic_eq_comap]
   simp_rw [h_eq]
   fun_prop
 
@@ -106,15 +102,11 @@ lemma IsAlgEnvSeq.adapted_means_filtrationAction [SecondCountableTopology 𝓨] 
     (h : IsAlgEnvSeq A Y alg env P) :
     Adapted h.filtrationAction (fun n ω ↦ env.means A Y (A n ω) n ω) := by
   intro n
-  cases n with
-  | zero => exact measurable_comp_comap _ stronglyMeasurable_id.integral_kernel.measurable
-  | succ n =>
-    simp only [Environment.means, Environment.measure, Nat.add_eq_zero_iff, one_ne_zero, and_false,
-      ↓reduceIte, Nat.add_one_sub_one, Kernel.sectR_apply, id_eq]
-    change Measurable[h.filtrationAction (n + 1)]
-      ((fun ω ↦ ∫ x, x ∂(env.feedback n ω)) ∘ (fun ω ↦ (history A Y n ω, A (n + 1) ω)))
-    rw [IsAlgEnvSeq.filtrationAction_eq_comap _ _ (by grind)]
-    exact measurable_comp_comap _ stronglyMeasurable_id.integral_kernel.measurable
+  simp only [Environment.means, Environment.measure, Kernel.sectR_apply, id_eq]
+  change Measurable[h.filtrationAction n]
+    ((fun ω ↦ ∫ x, x ∂(env.feedback n ω)) ∘ (fun ω ↦ (history A Y n ω, A n ω)))
+  rw [IsAlgEnvSeq.filtrationAction_eq_comap]
+  exact measurable_comp_comap _ stronglyMeasurable_id.integral_kernel.measurable
 
 lemma IsAlgEnvSeq.stronglyAdapted_means_filtrationAction [SecondCountableTopology 𝓨] [BorelSpace 𝓨]
     (h : IsAlgEnvSeq A Y alg env P) :
@@ -127,35 +119,22 @@ lemma IsAlgEnvSeq.adapted_means [SecondCountableTopology 𝓨] [BorelSpace 𝓨]
   fun n ↦ (h.adapted_means_filtrationAction n).mono (h.filtrationAction_le_filtration n) le_rfl
 
 omit [NormedSpace ℝ 𝓨] in
-lemma IsAlgEnvSeq.condExp_feedback_zero_comp {𝓩 : Type*} [NormedAddCommGroup 𝓩] [NormedSpace ℝ 𝓩]
-    [CompleteSpace 𝓩] [StandardBorelSpace 𝓨]
-    (h : IsAlgEnvSeq A Y alg env P)
-    {g : 𝓨 → 𝓩} (hg : StronglyMeasurable g) (hint : Integrable (fun ω ↦ g (Y 0 ω)) P) :
-    P[fun ω ↦ g (Y 0 ω) | h.filtrationAction 0] =ᵐ[P] fun ω ↦ (env.ν0 (A 0 ω))[g] := by
-  have hX : Measurable (fun ω ↦ (history A Y 0 ω, A 0 ω)) :=
-    (h.measurable_history 0).prodMk (h.measurable_action 0)
-  rw [h.filtrationAction_zero_eq_comap]
-  exact h.hasCondDistrib_feedback_zero.condExp_comp_eq (h.measurable_action 0) hg hint
-
-omit [NormedSpace ℝ 𝓨] in
 lemma IsAlgEnvSeq.condExp_feedback_comp {𝓩 : Type*} [NormedAddCommGroup 𝓩] [NormedSpace ℝ 𝓩]
     [CompleteSpace 𝓩] [StandardBorelSpace 𝓨]
     (h : IsAlgEnvSeq A Y alg env P) (n : ℕ)
-    {g : 𝓨 → 𝓩} (hg : StronglyMeasurable g) (hint : Integrable (fun ω ↦ g (Y (n + 1) ω)) P) :
-    P[fun ω ↦ g (Y (n + 1) ω) | h.filtrationAction (n + 1)] =ᵐ[P]
-      fun ω ↦ (env.feedback n (history A Y n ω, A (n + 1) ω))[g] := by
-  have hX : Measurable (fun ω ↦ (history A Y n ω, A (n + 1) ω)) :=
-    (h.measurable_history n).prodMk (h.measurable_action (n + 1))
-  rw [h.filtrationAction_eq_comap (n + 1) (by simp)]
+    {g : 𝓨 → 𝓩} (hg : StronglyMeasurable g) (hint : Integrable (fun ω ↦ g (Y n ω)) P) :
+    P[fun ω ↦ g (Y n ω) | h.filtrationAction n] =ᵐ[P]
+      fun ω ↦ (env.feedback n (history A Y n ω, A n ω))[g] := by
+  have hX : Measurable (fun ω ↦ (history A Y n ω, A n ω)) :=
+    (h.measurable_history n).prodMk (h.measurable_action n)
+  rw [h.filtrationAction_eq_comap n]
   exact (h.hasCondDistrib_feedback n).condExp_comp_eq hX hg hint
 
 lemma IsAlgEnvSeq.condExp_feedback [BorelSpace 𝓨] [SecondCountableTopology 𝓨] [CompleteSpace 𝓨]
     (h : IsAlgEnvSeq A Y alg env P) (n : ℕ)
     (hint : Integrable (Y n) P) :
-    P[Y n | h.filtrationAction n] =ᵐ[P] fun ω ↦ env.means A Y (A n ω) n ω := by
-  cases n with
-  | zero => exact condExp_feedback_zero_comp h stronglyMeasurable_id hint
-  | succ n => exact condExp_feedback_comp h n stronglyMeasurable_id hint
+    P[Y n | h.filtrationAction n] =ᵐ[P] fun ω ↦ env.means A Y (A n ω) n ω :=
+  condExp_feedback_comp h n stronglyMeasurable_id hint
 
 lemma IsAlgEnvSeq.memLp_means_action [SecondCountableTopology 𝓨] [BorelSpace 𝓨]
     (h : IsAlgEnvSeq A Y alg env P) {n : ℕ} {p : ℝ≥0∞} (hp1 : 1 ≤ p) (hp_top : p ≠ ∞)
@@ -167,53 +146,28 @@ lemma IsAlgEnvSeq.memLp_means_action [SecondCountableTopology 𝓨] [BorelSpace 
   have hint' : MemLp id p (P.map (Y n)) := by
     rwa [memLp_map_measure_iff (by fun_prop) (h.measurable_feedback _).aemeasurable]
   unfold Environment.means Environment.measure
-  cases n with
-  | zero =>
-    simp only [↓reduceIte, id_eq]
-    rw [h.hasLaw_feedback_zero_comp.map_eq, Measure.memLp_comp_iff hp0 hp_top (by fun_prop)]
-      at hint'
-    have hint'' := hint'.2.comp_aemeasurable (by fun_prop)
-    have h_eq ω : env.ν0 (A 0 ω) = (env.ν0 ∘ₖ Kernel.deterministic (A 0) (by fun_prop)) ω := by
-      simp [Kernel.comp_deterministic_eq_comap]
-    rw [← integrable_norm_rpow_iff _ hp0 hp_top]
-    swap
-    · refine StronglyMeasurable.aestronglyMeasurable ?_
-      simp_rw [h_eq]
-      exact StronglyMeasurable.integral_kernel (by fun_prop)
-    simp only [id_eq] at hint''
-    refine Integrable.mono' hint'' ?_ ?_
-    · refine ((AEMeasurable.norm ?_).pow_const _).aestronglyMeasurable
-      refine (StronglyMeasurable.measurable ?_).aemeasurable
-      simp_rw [h_eq]
-      exact StronglyMeasurable.integral_kernel (by fun_prop)
-    · simp only [Real.norm_eq_abs, Function.comp_apply]
-      filter_upwards [ae_of_ae_map (hA 0).aemeasurable hint'.1] with ω hω
-      rw [abs_of_nonneg (by positivity)]
-      exact norm_integral_rpow_le_integral_norm_rpow hp1 hp_top hω
-  | succ n =>
-    simp only [Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceIte, Nat.add_one_sub_one, id_eq]
-    rw [(h.hasLaw_feedback_comp n).map_eq, Measure.memLp_comp_iff hp0 hp_top (by fun_prop)] at hint'
-    have hint'' := hint'.2.comp_aemeasurable (by fun_prop)
-    have h_eq ω : (env.feedback n) (history A Y n ω, A (n + 1) ω) =
-        (env.feedback n ∘ₖ
-          Kernel.deterministic (fun ω ↦ (history A Y n ω, A (n + 1) ω)) (by fun_prop)) ω := by
-      simp [Kernel.comp_deterministic_eq_comap]
-    rw [← integrable_norm_rpow_iff _ hp0 hp_top]
-    swap
-    · refine StronglyMeasurable.aestronglyMeasurable ?_
-      simp_rw [Kernel.sectR_apply, h_eq]
-      exact StronglyMeasurable.integral_kernel (by fun_prop)
-    simp only [id_eq] at hint''
-    refine Integrable.mono' hint'' ?_ ?_
-    · refine ((AEMeasurable.norm ?_).pow_const _).aestronglyMeasurable
-      refine (StronglyMeasurable.measurable ?_).aemeasurable
-      simp_rw [Kernel.sectR_apply, h_eq]
-      exact StronglyMeasurable.integral_kernel (by fun_prop)
-    · simp only [Real.norm_eq_abs, Function.comp_apply, Kernel.sectR_apply]
-      filter_upwards [ae_of_ae_map ((h_hist n).prodMk (hA (n + 1))).aemeasurable hint'.1]
-        with ω hω
-      rw [abs_of_nonneg (by positivity)]
-      exact norm_integral_rpow_le_integral_norm_rpow hp1 hp_top hω
+  simp only [id_eq]
+  rw [(h.hasLaw_feedback_comp n).map_eq, Measure.memLp_comp_iff hp0 hp_top (by fun_prop)] at hint'
+  have hint'' := hint'.2.comp_aemeasurable (by fun_prop)
+  have h_eq ω : (env.feedback n) (history A Y n ω, A n ω) =
+      (env.feedback n ∘ₖ
+        Kernel.deterministic (fun ω ↦ (history A Y n ω, A n ω)) (by fun_prop)) ω := by
+    simp [Kernel.comp_deterministic_eq_comap]
+  rw [← integrable_norm_rpow_iff _ hp0 hp_top]
+  swap
+  · refine StronglyMeasurable.aestronglyMeasurable ?_
+    simp_rw [Kernel.sectR_apply, h_eq]
+    exact StronglyMeasurable.integral_kernel (by fun_prop)
+  simp only [id_eq] at hint''
+  refine Integrable.mono' hint'' ?_ ?_
+  · refine ((AEMeasurable.norm ?_).pow_const _).aestronglyMeasurable
+    refine (StronglyMeasurable.measurable ?_).aemeasurable
+    simp_rw [Kernel.sectR_apply, h_eq]
+    exact StronglyMeasurable.integral_kernel (by fun_prop)
+  · simp only [Real.norm_eq_abs, Function.comp_apply, Kernel.sectR_apply]
+    filter_upwards [ae_of_ae_map ((h_hist n).prodMk (hA n)).aemeasurable hint'.1] with ω hω
+    rw [abs_of_nonneg (by positivity)]
+    exact norm_integral_rpow_le_integral_norm_rpow hp1 hp_top hω
 
 lemma IsAlgEnvSeq.integrable_means_action [SecondCountableTopology 𝓨] [OpensMeasurableSpace 𝓨]
     (h : IsAlgEnvSeq A Y alg env P) {n : ℕ} (hint : Integrable (Y n) P) :
@@ -223,35 +177,19 @@ lemma IsAlgEnvSeq.integrable_means_action [SecondCountableTopology 𝓨] [OpensM
   have hint' : Integrable id (P.map (Y n)) := by
     rwa [integrable_map_measure (by fun_prop) (h.measurable_feedback _).aemeasurable]
   unfold Environment.means Environment.measure
-  cases n with
-  | zero =>
-    simp only [↓reduceIte, id_eq]
-    rw [h.hasLaw_feedback_zero_comp.map_eq, Measure.integrable_comp_iff (by fun_prop)] at hint'
-    have hint'' := hint'.2.comp_aemeasurable (by fun_prop)
-    simp only [id_eq] at hint''
-    refine Integrable.mono' hint'' ?_ ?_
-    · refine StronglyMeasurable.aestronglyMeasurable ?_
-      have h_eq ω : env.ν0 (A 0 ω) =
-          (env.ν0 ∘ₖ Kernel.deterministic (A 0) (by fun_prop)) ω := by
-        simp [Kernel.comp_deterministic_eq_comap]
-      simp_rw [h_eq]
-      exact StronglyMeasurable.integral_kernel (by fun_prop)
-    · simp only [Function.comp_apply]
-      filter_upwards with ω using norm_integral_le_integral_norm _
-  | succ n =>
-    simp only [Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceIte, Nat.add_one_sub_one, id_eq]
-    rw [(h.hasLaw_feedback_comp n).map_eq, Measure.integrable_comp_iff (by fun_prop)] at hint'
-    have hint'' := hint'.2.comp_aemeasurable (by fun_prop)
-    simp only [id_eq] at hint''
-    refine Integrable.mono' hint'' ?_ ?_
-    · refine StronglyMeasurable.aestronglyMeasurable ?_
-      have h_eq ω : (env.feedback n) (history A Y n ω, A (n + 1) ω) =
-          (env.feedback n ∘ₖ
-            Kernel.deterministic (fun ω ↦ (history A Y n ω, A (n + 1) ω)) (by fun_prop)) ω := by
-        simp [Kernel.comp_deterministic_eq_comap]
-      simp_rw [Kernel.sectR_apply, h_eq]
-      exact StronglyMeasurable.integral_kernel (by fun_prop)
-    · simp only [Function.comp_apply]
-      filter_upwards with ω using norm_integral_le_integral_norm _
+  simp only [id_eq]
+  rw [(h.hasLaw_feedback_comp n).map_eq, Measure.integrable_comp_iff (by fun_prop)] at hint'
+  have hint'' := hint'.2.comp_aemeasurable (by fun_prop)
+  simp only [id_eq] at hint''
+  refine Integrable.mono' hint'' ?_ ?_
+  · refine StronglyMeasurable.aestronglyMeasurable ?_
+    have h_eq ω : (env.feedback n) (history A Y n ω, A n ω) =
+        (env.feedback n ∘ₖ
+          Kernel.deterministic (fun ω ↦ (history A Y n ω, A n ω)) (by fun_prop)) ω := by
+      simp [Kernel.comp_deterministic_eq_comap]
+    simp_rw [Kernel.sectR_apply, h_eq]
+    exact StronglyMeasurable.integral_kernel (by fun_prop)
+  · simp only [Function.comp_apply]
+    filter_upwards with ω using norm_integral_le_integral_norm _
 
 end Learning

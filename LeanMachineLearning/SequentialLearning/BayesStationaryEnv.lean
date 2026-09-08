@@ -23,9 +23,10 @@ This file defines the structure `IsBayesAlgEnvSeq` and provides its basic proper
   `κ : Kernel (𝓔 × 𝓐) 𝓨`, and algorithm `alg : Algorithm 𝓐 𝓨`, provides a probability measure
   `P : Measure (ℕ → 𝓐 × 𝓔 × 𝓨)` on a space that carries `E`, `A`, and `Y` such that
   `IsBayesAlgEnvSeq Q κ alg E A Y P`.
-* `bayesTrajMeasurePosterior Q κ alg n`: a `Kernel (Iic n → 𝓐 × 𝓨) 𝓔` that represents the posterior
-  over `E` given the history up to time `n` under the prior `Q` and the algorithm `alg`, assuming
-  that the kernel `κ` specifies how `E` gives rise to the underlying (stationary) environment.
+* `bayesTrajMeasurePosterior Q κ alg n`: a `Kernel (Fin n → 𝓐 × 𝓨) 𝓔` that represents the
+  posterior over `E` given the history before time `n` (the `n` first action-feedback pairs) under
+  the prior `Q` and the algorithm `alg`, assuming that the kernel `κ` specifies how `E` gives rise
+  to the underlying (stationary) environment.
   See also `LeanMachineLearning/SequentialLearning/AlgorithmDensityBayes.lean`.
 
 ## Main results
@@ -63,14 +64,14 @@ structure IsBayesAlgEnvSeq
   measurable_action n : Measurable (A n) := by fun_prop
   measurable_feedback n : Measurable (Y n) := by fun_prop
   hasLaw_env : HasLaw E Q P
-  hasCondDistrib_action_zero : HasCondDistrib (A 0) E (Kernel.const _ alg.p0) P
-  hasCondDistrib_feedback_zero : HasCondDistrib (Y 0) (fun ω ↦ (E ω, A 0 ω)) κ P
+  /-- The action at time `n` has the correct conditional distribution given the parameter and the
+  history: it depends only on the history. -/
   hasCondDistrib_action n :
-    HasCondDistrib (A (n + 1)) (fun ω ↦ (E ω, history A Y n ω))
-      ((alg.policy n).prodMkLeft _) P
+    HasCondDistrib (A n) (fun ω ↦ (E ω, history A Y n ω)) ((alg.policy n).prodMkLeft _) P
+  /-- The feedback at time `n` has the correct conditional distribution given the history, the
+  parameter and the action at time `n`: it depends only on the parameter and the action. -/
   hasCondDistrib_feedback n :
-    HasCondDistrib (Y (n + 1)) (fun ω ↦ (history A Y n ω, E ω, A (n + 1) ω))
-      (κ.prodMkLeft _) P
+    HasCondDistrib (Y n) (fun ω ↦ (history A Y n ω, E ω, A n ω)) (κ.prodMkLeft _) P
 
 namespace IsBayesAlgEnvSeq
 
@@ -78,59 +79,61 @@ variable {Q : Measure 𝓔} {κ : Kernel (𝓔 × 𝓐) 𝓨} {alg : Algorithm �
 variable {E : Ω → 𝓔} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 variable {P : Measure Ω} [IsFiniteMeasure P]
 
-lemma hasLaw_action_zero [IsProbabilityMeasure P] (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
-    HasLaw (A 0) alg.p0 P := h.hasCondDistrib_action_zero.hasLaw_of_const
-
 lemma hasCondDistrib_action' (h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
-    HasCondDistrib (A (n + 1)) (history A Y n) (alg.policy n) P :=
+    HasCondDistrib (A n) (history A Y n) (alg.policy n) P :=
   (h.hasCondDistrib_action n).comp_right
 
 lemma hasCondDistrib_feedback' [IsFiniteKernel κ] (h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
-    HasCondDistrib (Y (n + 1)) (fun ω ↦ (E ω, A (n + 1) ω)) κ P :=
+    HasCondDistrib (Y n) (fun ω ↦ (E ω, A n ω)) κ P :=
   (h.hasCondDistrib_feedback n).comp_right
+
+lemma hasLaw_action_zero [IsProbabilityMeasure P] (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
+    HasLaw (A 0) alg.p0 P := by
+  have h0 := h.hasCondDistrib_action' 0
+  rw [history_zero] at h0
+  exact h0.hasLaw_of_const'
+
+/-- The first action is independent of the parameter `E`, and has law `alg.p0`. -/
+lemma hasCondDistrib_action_zero (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
+    HasCondDistrib (A 0) E (Kernel.const _ alg.p0) P :=
+  hasCondDistrib_prodMk_right_unique_iff.mp (h.hasCondDistrib_action 0)
 
 variable [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
 
-lemma hasLaw_IT_action_zero (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
-    ∀ᵐ e ∂Q, HasLaw (IT.action 0) alg.p0 (condDistrib (trajectory A Y) E P e) := by
-  rw [← h.hasLaw_env.map_eq]
-  filter_upwards [condDistrib_comp E
-      ((measurable_trajectory h.measurable_action h.measurable_feedback).aemeasurable)
-      (IT.measurable_action (𝓐 := 𝓐) (𝓨 := 𝓨) 0),
-    h.hasCondDistrib_action_zero.condDistrib_eq] with _ hc hcd
-  exact ⟨(IT.measurable_action 0).aemeasurable, by
-    rw [← Kernel.map_apply _ (IT.measurable_action 0), ← hc,
-      show IT.action 0 ∘ trajectory A Y = A 0 from rfl, hcd, Kernel.const_apply]⟩
-
-lemma hasCondDistrib_IT_feedback_zero [IsFiniteKernel κ] (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
-    ∀ᵐ e ∂Q, HasCondDistrib (IT.feedback 0) (IT.action 0) (κ.sectR e)
-      (condDistrib (trajectory A Y) E P e) := by
-  rw [← h.hasLaw_env.map_eq]
-  exact h.hasCondDistrib_feedback_zero.hasCondDistrib_sectR
-    (IT.measurable_action 0) (IT.measurable_feedback 0)
-    (measurable_trajectory h.measurable_action h.measurable_feedback).aemeasurable
+omit [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨] in
+/-- The posterior over the parameter given the empty history is the prior. -/
+lemma condDistrib_param_history_zero [StandardBorelSpace 𝓔] [Nonempty 𝓔] [IsProbabilityMeasure P]
+    [IsFiniteMeasure Q] (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
+    condDistrib E (history A Y 0) P = Kernel.const _ Q := by
+  ext x : 1
+  rw [Unique.eq_default x, history_zero]
+  have hc : HasCondDistrib E (fun _ : Ω ↦ (default : Fin 0 → 𝓐 × 𝓨)) (Kernel.const _ Q) P :=
+    h.hasLaw_env.hasCondDistrib_const
+  have h_ae := hc.condDistrib_eq
+  rw [Measure.map_const, measure_univ, one_smul, Filter.EventuallyEq,
+    ae_dirac_iff Subsingleton.measurableSet] at h_ae
+  exact h_ae
 
 lemma hasCondDistrib_IT_action (h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
-    ∀ᵐ e ∂Q, HasCondDistrib (IT.action (n + 1)) (IT.hist n) (alg.policy n)
+    ∀ᵐ e ∂Q, HasCondDistrib (IT.action n) (IT.hist n) (alg.policy n)
       (condDistrib (trajectory A Y) E P e) := by
   rw [← h.hasLaw_env.map_eq]
   filter_upwards [(h.hasCondDistrib_action n).hasCondDistrib_sectR
-    (IT.measurable_hist n) (IT.measurable_action (n + 1))
+    (IT.measurable_hist n) (IT.measurable_action n)
     (measurable_trajectory h.measurable_action h.measurable_feedback).aemeasurable] with _ he
   rwa [Kernel.sectR_prodMkLeft] at he
 
 lemma hasCondDistrib_IT_feedback [IsFiniteKernel κ] (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
     (n : ℕ) :
-    ∀ᵐ e ∂Q, HasCondDistrib (IT.feedback (n + 1)) (fun τ ↦ (IT.hist n τ, IT.action (n + 1) τ))
+    ∀ᵐ e ∂Q, HasCondDistrib (IT.feedback n) (fun τ ↦ (IT.hist n τ, IT.action n τ))
       ((κ.sectR e).prodMkLeft _) (condDistrib (trajectory A Y) E P e) := by
   rw [← h.hasLaw_env.map_eq]
-  have hc : HasCondDistrib (Y (n + 1))
-      (fun ω ↦ (E ω, history A Y n ω, A (n + 1) ω))
+  have hc : HasCondDistrib (Y n) (fun ω ↦ (E ω, history A Y n ω, A n ω))
       (κ.comap (fun (e, _, a) ↦ (e, a)) (by fun_prop)) P :=
     (h.hasCondDistrib_feedback n).measurableEquiv_comp_right (MeasurableEquiv.prodAssoc.symm.trans
       ((MeasurableEquiv.prodCongr .prodComm (.refl _)).trans .prodAssoc))
-  exact hc.hasCondDistrib_sectR ((IT.measurable_hist n).prodMk
-    (IT.measurable_action (n + 1))) (IT.measurable_feedback (n + 1))
+  exact hc.hasCondDistrib_sectR ((IT.measurable_hist n).prodMk (IT.measurable_action n))
+    (IT.measurable_feedback n)
     (measurable_trajectory h.measurable_action h.measurable_feedback).aemeasurable
 
 lemma hasLaw_IT_hist (h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
@@ -146,27 +149,43 @@ lemma hasLaw_IT_hist (h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
 lemma ae_IsAlgEnvSeq [IsMarkovKernel κ] (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
     ∀ᵐ e ∂Q, IsAlgEnvSeq IT.action IT.feedback alg (stationaryEnv (κ.sectR e))
       (condDistrib (trajectory A Y) E P e) := by
-  filter_upwards [hasLaw_IT_action_zero h, hasCondDistrib_IT_feedback_zero h,
-    ae_all_iff.2 (hasCondDistrib_IT_action h), ae_all_iff.2 (hasCondDistrib_IT_feedback h)]
-    with _ ha0 hr0 hA hR
-  exact ⟨IT.measurable_action, IT.measurable_feedback, ha0, hr0, hA, hR⟩
+  filter_upwards [ae_all_iff.2 (hasCondDistrib_IT_action h),
+    ae_all_iff.2 (hasCondDistrib_IT_feedback h)] with _ hA hR
+  exact ⟨IT.measurable_action, IT.measurable_feedback, hA, hR⟩
 
 end IsBayesAlgEnvSeq
 
 section IsAlgEnvSeq
 
 /-- An environment with observations in `𝓔 × 𝓨`. The first element `e` of an observation is
-sampled from `Q` once and remains constant. The second element of an observation is sampled from
-`κ (e, a)`, where `a` is the corresponding action. -/
+sampled from `Q` at time `0` and then remains constant: at time `n + 1` it is read from the first
+observation in the history. The second element of an observation is sampled from `κ (e, a)`, where
+`a` is the corresponding action. -/
 noncomputable
 def bayesStationaryEnv (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × 𝓐) 𝓨)
     [IsMarkovKernel κ] : Environment 𝓐 (𝓔 × 𝓨) where
-  feedback n :=
-    let g : (Iic n → 𝓐 × 𝓔 × 𝓨) × 𝓐 → 𝓔 × 𝓐 := fun (h, a) => ((h ⟨0, by simp⟩).2.1, a)
-    (Kernel.deterministic (Prod.fst ∘ g) (by fun_prop)) ×ₖ (κ.comap g (by fun_prop))
-  ν0 := (Kernel.const _ Q) ⊗ₖ κ.swapLeft
+  feedback
+    | 0 => ((Kernel.const _ Q) ⊗ₖ κ.swapLeft).prodMkLeft _
+    | n + 1 =>
+      let g : (Fin (n + 1) → 𝓐 × 𝓔 × 𝓨) × 𝓐 → 𝓔 × 𝓐 := fun (h, a) ↦ ((h 0).2.1, a)
+      (Kernel.deterministic (Prod.fst ∘ g) (by fun_prop)) ×ₖ (κ.comap g (by fun_prop))
+  h_feedback n := by cases n <;> infer_instance
 
 variable {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × 𝓐) 𝓨} [IsMarkovKernel κ]
+
+lemma bayesStationaryEnv_feedback_zero :
+    (bayesStationaryEnv Q κ).feedback 0 = ((Kernel.const _ Q) ⊗ₖ κ.swapLeft).prodMkLeft _ := rfl
+
+lemma bayesStationaryEnv_feedback_succ (n : ℕ) :
+    (bayesStationaryEnv Q κ).feedback (n + 1) =
+      (Kernel.deterministic (Prod.fst ∘ (fun (p : (Fin (n + 1) → 𝓐 × 𝓔 × 𝓨) × 𝓐) ↦
+        ((p.1 0).2.1, p.2))) (by fun_prop)) ×ₖ
+        (κ.comap (fun p ↦ ((p.1 0).2.1, p.2)) (by fun_prop)) := rfl
+
+@[simp]
+lemma ν0_bayesStationaryEnv : (bayesStationaryEnv Q κ).ν0 = (Kernel.const _ Q) ⊗ₖ κ.swapLeft := by
+  rw [Environment.ν0_def, bayesStationaryEnv_feedback_zero, Kernel.sectR_prodMkLeft]
+
 variable {alg : Algorithm 𝓐 𝓨} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓔 × 𝓨}
 variable {P : Measure Ω} [IsProbabilityMeasure P]
 
@@ -178,29 +197,40 @@ lemma IsAlgEnvSeq.isBayesAlgEnvSeq
   measurable_feedback n := (h.measurable_feedback n).snd
   hasLaw_env := by
     apply HasCondDistrib.hasLaw_of_const
-    simpa [bayesStationaryEnv] using h.hasCondDistrib_feedback_zero.fst
-  hasCondDistrib_action_zero := by
-    have hc : HasCondDistrib (fun ω ↦ (Y 0 ω).1) (A 0) (Kernel.const _ Q) P := by
-      simpa [bayesStationaryEnv] using h.hasCondDistrib_feedback_zero.fst
-    simpa [h.hasLaw_action_zero.map_eq, Algorithm.prodLeft] using hc.const_map_of_const
-  hasCondDistrib_feedback_zero :=
-    h.hasCondDistrib_feedback_zero.of_compProd.measurableEquiv_comp_right MeasurableEquiv.prodComm
+    simpa [Kernel.fst_compProd] using h.hasCondDistrib_feedback_zero.fst
   hasCondDistrib_action n := by
-    let f : (Iic n → 𝓐 × 𝓔 × 𝓨) → 𝓔 × (Iic n → 𝓐 × 𝓨) :=
-      fun h ↦ ((h ⟨0, by simp⟩).2.1, fun i ↦ ((h i).1, (h i).2.2))
-    have hc : HasCondDistrib (A (n + 1)) (history A Y n)
-        (((alg.policy n).comap Prod.snd (by fun_prop)).comap f (by fun_prop)) P :=
-      h.hasCondDistrib_action n
-    exact hc.comp_right (f := f)
+    cases n with
+    | zero =>
+      -- At time `0` the history is empty: `E` is the parameter component of `Y 0`, which is
+      -- independent of `A 0`.
+      have hc : HasCondDistrib (fun ω ↦ (Y 0 ω).1) (A 0) (Kernel.const _ Q) P := by
+        simpa [Kernel.fst_compProd] using h.hasCondDistrib_feedback_zero.fst
+      have hc' : HasCondDistrib (A 0) (fun ω ↦ (Y 0 ω).1) (Kernel.const _ alg.p0) P := by
+        simpa [h.hasLaw_action_zero.map_eq] using hc.const_map_of_const
+      exact hasCondDistrib_prodMk_right_unique_iff.mpr hc'
+    | succ n =>
+      let f : (Fin (n + 1) → 𝓐 × 𝓔 × 𝓨) → 𝓔 × (Fin (n + 1) → 𝓐 × 𝓨) :=
+        fun h ↦ ((h 0).2.1, fun i ↦ ((h i).1, (h i).2.2))
+      have hc : HasCondDistrib (A (n + 1)) (history A Y (n + 1))
+          (((alg.policy (n + 1)).comap Prod.snd (by fun_prop)).comap f (by fun_prop)) P :=
+        h.hasCondDistrib_action (n + 1)
+      exact hc.comp_right (f := f)
   hasCondDistrib_feedback n := by
-    let f : (Iic n → 𝓐 × 𝓔 × 𝓨) × 𝓐 → (Iic n → 𝓐 × 𝓨) × 𝓔 × 𝓐 :=
-      fun p ↦ ((fun i ↦ ((p.1 i).1, (p.1 i).2.2)), (p.1 ⟨0, by simp⟩).2.1, p.2)
-    have hc : HasCondDistrib (fun ω ↦ (Y (n + 1) ω).2)
-        (fun ω ↦ (history A Y n ω, A (n + 1) ω))
-        ((Kernel.prodMkLeft ((Iic n) → 𝓐 × 𝓨) κ).comap f (by fun_prop)) P := by
-      simpa [bayesStationaryEnv, Kernel.prodMkLeft, ← Kernel.comap_comp_right, Function.comp_def]
-        using (h.hasCondDistrib_feedback n).snd
-    exact hc.comp_right
+    cases n with
+    | zero =>
+      have hc : HasCondDistrib (Y 0) (A 0) ((Kernel.const _ Q) ⊗ₖ κ.swapLeft) P := by
+        simpa using h.hasCondDistrib_feedback_zero
+      exact hasCondDistrib_prodMk_left_unique_iff.mpr
+        (hc.of_compProd.measurableEquiv_comp_right MeasurableEquiv.prodComm)
+    | succ n =>
+      let f : (Fin (n + 1) → 𝓐 × 𝓔 × 𝓨) × 𝓐 → (Fin (n + 1) → 𝓐 × 𝓨) × 𝓔 × 𝓐 :=
+        fun p ↦ ((fun i ↦ ((p.1 i).1, (p.1 i).2.2)), (p.1 0).2.1, p.2)
+      have hc : HasCondDistrib (fun ω ↦ (Y (n + 1) ω).2)
+          (fun ω ↦ (history A Y (n + 1) ω, A (n + 1) ω))
+          ((Kernel.prodMkLeft (Fin (n + 1) → 𝓐 × 𝓨) κ).comap f (by fun_prop)) P := by
+        simpa [bayesStationaryEnv_feedback_succ, Kernel.prodMkLeft, ← Kernel.comap_comp_right,
+          Function.comp_def] using (h.hasCondDistrib_feedback (n + 1)).snd
+      exact hc.comp_right
 
 end IsAlgEnvSeq
 
@@ -220,14 +250,21 @@ lemma isBayesAlgEnvSeq_bayesTrajMeasure
     IsBayesAlgEnvSeq Q κ alg (fun ω ↦ (ω 0).2.1) action (fun n ω ↦ (ω n).2.2)
        (bayesTrajMeasure Q κ alg) := (isAlgEnvSeq_trajMeasure _ _).isBayesAlgEnvSeq
 
-/-- A kernel that represents the posterior over `E` given the history up to time `n`. -/
+/-- A kernel that represents the posterior over `E` given the history before time `n`. -/
 noncomputable
 def bayesTrajMeasurePosterior [StandardBorelSpace 𝓔] [Nonempty 𝓔]
     (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × 𝓐) 𝓨) [IsMarkovKernel κ]
-    (alg : Algorithm 𝓐 𝓨) (n : ℕ) : Kernel (Iic n → 𝓐 × 𝓨) 𝓔 :=
+    (alg : Algorithm 𝓐 𝓨) (n : ℕ) : Kernel (Fin n → 𝓐 × 𝓨) 𝓔 :=
   condDistrib (fun ω ↦ (ω 0).2.1) (history action (fun n ω ↦ (ω n).2.2) n)
     (bayesTrajMeasure Q κ alg)
 deriving IsMarkovKernel
+
+/-- The posterior given the empty history is the prior. -/
+lemma bayesTrajMeasurePosterior_zero [StandardBorelSpace 𝓔] [Nonempty 𝓔]
+    (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × 𝓐) 𝓨) [IsMarkovKernel κ]
+    (alg : Algorithm 𝓐 𝓨) :
+    bayesTrajMeasurePosterior Q κ alg 0 = Kernel.const _ Q :=
+  (isBayesAlgEnvSeq_bayesTrajMeasure Q κ alg).condDistrib_param_history_zero
 
 end IT
 

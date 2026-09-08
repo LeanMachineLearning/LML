@@ -40,8 +40,6 @@ def uniformAlgorithm [Finite 𝓐] [Nonempty 𝓐] : Algorithm 𝓐 𝓨 := rand
 
 lemma absolutelyContinuous_uniformAlgorithm [Finite 𝓐] [Nonempty 𝓐] {alg : Algorithm 𝓐 𝓨} :
     alg ≪ₐ uniformAlgorithm where
-  p0 := Measure.absolutelyContinuous_of_measure_singleton_ne_zero
-    (by simp [uniformAlgorithm, uniformOn, ← pos_iff_ne_zero, cond_pos_of_inter_ne_zero])
   policy n h := Measure.absolutelyContinuous_of_measure_singleton_ne_zero
     (by simp [uniformAlgorithm, uniformOn, ← pos_iff_ne_zero, cond_pos_of_inter_ne_zero])
 

@@ -50,11 +50,10 @@ noncomputable def onlineEvalEnv (g : ℕ → 𝓐 → 𝓨) (hg : ∀ n, Measura
   obliviousEnv (fun n ↦ Kernel.deterministic (g n) (hg n))
 
 instance : IsObliviousEnv (onlineEvalEnv g hg) :=
-  ⟨⟨fun n ↦ Kernel.deterministic (g n) (hg n), fun _ ↦ inferInstance, rfl, fun _ ↦ rfl⟩⟩
+  ⟨⟨fun n ↦ Kernel.deterministic (g n) (hg n), fun _ ↦ inferInstance, fun _ ↦ rfl⟩⟩
 
 instance : IsDeterministicEnv (onlineEvalEnv g hg) where
-  exists_f0 := ⟨g 0, hg 0, rfl⟩
-  exists_f n := ⟨fun p ↦ g (n + 1) p.2, by fun_prop, rfl⟩
+  exists_f n := ⟨fun p ↦ g n p.2, by fun_prop, rfl⟩
 
 @[simp]
 lemma feedbackCondAction_onlineEvalEnv (n : ℕ) :
@@ -62,18 +61,17 @@ lemma feedbackCondAction_onlineEvalEnv (n : ℕ) :
   simp [onlineEvalEnv]
 
 @[simp]
-lemma feedbackFunZero_onlineEvalEnv [MeasurableSpace.SeparatesPoints 𝓨] :
-    feedbackFunZero (onlineEvalEnv g hg) = g 0 := by
-  have h_eq := ν0_eq_deterministic (onlineEvalEnv g hg)
-  simpa only [onlineEvalEnv, ν0_obliviousEnv, Kernel.prodMkLeft_deterministic,
-    Kernel.deterministic_inj] using h_eq.symm
-
-@[simp]
 lemma feedbackFun_onlineEvalEnv [MeasurableSpace.SeparatesPoints 𝓨] (n : ℕ) :
-    feedbackFun (onlineEvalEnv g hg) n = fun p ↦ g (n + 1) p.2 := by
+    feedbackFun (onlineEvalEnv g hg) n = fun p ↦ g n p.2 := by
   have h_eq := feedback_eq_deterministic (onlineEvalEnv g hg) n
   simpa only [onlineEvalEnv, feedback_obliviousEnv, Kernel.prodMkLeft_deterministic,
     Kernel.deterministic_inj] using h_eq.symm
+
+@[simp]
+lemma feedbackFunZero_onlineEvalEnv [MeasurableSpace.SeparatesPoints 𝓨] :
+    feedbackFunZero (onlineEvalEnv g hg) = g 0 := by
+  unfold feedbackFunZero
+  rw [feedbackFun_onlineEvalEnv]
 
 section OnlineEvalEnv
 
