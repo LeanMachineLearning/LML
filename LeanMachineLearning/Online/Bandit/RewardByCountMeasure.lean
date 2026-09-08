@@ -281,46 +281,25 @@ lemma indepFun_update_rewardByCountUntil_eval [Countable 𝓐] (hA : ∀ n, Meas
   exact measurable_comp_comap _
     (measurable_update_left.comp (measurable_rewardByCountUntil hA hR t))
 
-/-- Conditionally on the event that the action at time `n + 1` is `b` and that `b` was pulled `k`
-times before, the reward at time `n + 1` is independent of the history up to time `n` and of the
-action at time `n + 1`. -/
+/-- Conditionally on the event that the action at time `n` is `b` and that `b` was pulled `k`
+times before, the reward at time `n` is independent of the history before time `n` and of the
+action at time `n`. -/
 lemma indepFun_history_reward_cond (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
     (n : ℕ) (b : 𝓐) (k : ℕ) :
-    (fun x ↦ (history A R n x, A (n + 1) x))
-      ⟂ᵢ[P[|{x | A (n + 1) x = b ∧ pullCount A b (n + 1) x = k}]] R (n + 1) := by
+    (fun x ↦ (history A R n x, A n x))
+      ⟂ᵢ[P[|{x | A n x = b ∧ pullCount A b n x = k}]] R n := by
   rw [setOf_action_eq_and_pullCount_eq_eq_preimage (R' := R)]
   exact h.indepFun_history_action_feedback_cond_stationaryEnv n
     (measurableSet_snd_eq_and_pullCount'_eq n b k) fun u hu ↦ hu.1
-
-lemma indepFun_action_zero_reward_zero_cond (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
-    (b : 𝓐) (k : ℕ) :
-    A 0 ⟂ᵢ[P[|{x | A 0 x = b ∧ pullCount A b 0 x = k}]] R 0 := by
-  rcases eq_or_ne k 0 with rfl | hk
-  · have h_eq : {x | A 0 x = b ∧ pullCount A b 0 x = 0} = A 0 ⁻¹' {b} := by ext; simp
-    rw [h_eq]
-    exact indepFun_cond_preimage_singleton_left (h.measurable_action 0) b _
-  · have h_eq : {x | A 0 x = b ∧ pullCount A b 0 x = k} = ∅ := by ext; simp [hk.symm]
-    rw [h_eq]
-    simp
 
 /-- Conditionally on the event that the action at time `t` is `b` and that `b` was pulled `k`
 times before, the reward at time `t` has law `ν b`. -/
 lemma hasLaw_reward_cond (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (t : ℕ) (b : 𝓐) (k : ℕ)
     (hP : P {x | A t x = b ∧ pullCount A b t x = k} ≠ 0) :
     HasLaw (R t) (ν b) (P[|{x | A t x = b ∧ pullCount A b t x = k}]) := by
-  cases t with
-  | zero =>
-    rcases eq_or_ne k 0 with rfl | hk
-    · have h_eq : {x | A 0 x = b ∧ pullCount A b 0 x = 0} = A 0 ⁻¹' {b} := by ext; simp
-      rw [h_eq] at hP ⊢
-      exact h.hasLaw_feedback_zero_cond_stationaryEnv hP
-    · refine absurd ?_ hP
-      have h_eq : {x | A 0 x = b ∧ pullCount A b 0 x = k} = ∅ := by ext; simp [hk.symm]
-      rw [h_eq, measure_empty]
-  | succ n =>
-    rw [setOf_action_eq_and_pullCount_eq_eq_preimage (R' := R)] at hP ⊢
-    exact h.hasLaw_feedback_cond_stationaryEnv n (measurableSet_snd_eq_and_pullCount'_eq n b k)
-      (fun u hu ↦ hu.1) hP
+  rw [setOf_action_eq_and_pullCount_eq_eq_preimage (R' := R)] at hP ⊢
+  exact h.hasLaw_feedback_cond_stationaryEnv t (measurableSet_snd_eq_and_pullCount'_eq t b k)
+    (fun u hu ↦ hu.1) hP
 
 lemma hasLaw_reward_cond_prod (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (t : ℕ) (b : 𝓐)
     (k : ℕ) (hP : P {x | A t x = b ∧ pullCount A b t x = k} ≠ 0) :
@@ -345,32 +324,20 @@ lemma indepFun_update_rewardByCountUntil_reward (h : IsAlgEnvSeq A R alg (statio
     exact indepFun_zero_measure _ _
   have : IsProbabilityMeasure (P[|{x | A t x = b ∧ pullCount A b t x = k}]) :=
     cond_isProbabilityMeasure hP
-  cases t with
-  | zero =>
-    have h_indep := (indepFun_action_zero_reward_zero_cond h b k).symm.fst_prod
-      (ν := streamMeasure ν) (hR 0) (hA 0)
-    refine (h_indep.of_measurable_right ?_).symm
-    refine Measurable.comp measurable_update_left ?_
-    refine measurable_rewardByCountUntil_of 0 (fun i hi ↦ absurd hi (Nat.not_lt_zero i))
-      (fun i hi ↦ absurd hi (Nat.not_lt_zero i)) ?_
-    exact measurable_comp_comap (fun ω : Ω × (ℕ → 𝓐 → ℝ) ↦ (A 0 ω.1, ω.2)) measurable_snd
-  | succ n =>
-    have h_indep := (indepFun_history_reward_cond h n b k).symm.fst_prod
-      (ν := streamMeasure ν) (hR _) (by fun_prop)
-    refine (h_indep.of_measurable_right ?_).symm
-    refine Measurable.comp measurable_update_left ?_
-    refine measurable_rewardByCountUntil_of (n + 1) (fun i hi ↦ ?_) (fun i hi ↦ ?_) ?_
-    · exact measurable_comp_comap
-        (fun ω : Ω × (ℕ → 𝓐 → ℝ) ↦ ((history A R n ω.1, A (n + 1) ω.1), ω.2))
-        (g := fun v : ((Iic n → 𝓐 × ℝ) × 𝓐) × (ℕ → 𝓐 → ℝ) ↦
-          (v.1.1 ⟨i, mem_Iic.2 (Nat.lt_succ_iff.1 hi)⟩).1) (by fun_prop)
-    · exact measurable_comp_comap
-        (fun ω : Ω × (ℕ → 𝓐 → ℝ) ↦ ((history A R n ω.1, A (n + 1) ω.1), ω.2))
-        (g := fun v : ((Iic n → 𝓐 × ℝ) × 𝓐) × (ℕ → 𝓐 → ℝ) ↦
-          (v.1.1 ⟨i, mem_Iic.2 (Nat.lt_succ_iff.1 hi)⟩).2) (by fun_prop)
-    · exact measurable_comp_comap
-        (fun ω : Ω × (ℕ → 𝓐 → ℝ) ↦ ((history A R n ω.1, A (n + 1) ω.1), ω.2))
-        (g := fun v : ((Iic n → 𝓐 × ℝ) × 𝓐) × (ℕ → 𝓐 → ℝ) ↦ v.2) measurable_snd
+  have h_indep := (indepFun_history_reward_cond h t b k).symm.fst_prod
+    (ν := streamMeasure ν) (hR t) (by fun_prop)
+  refine (h_indep.of_measurable_right ?_).symm
+  refine Measurable.comp measurable_update_left ?_
+  refine measurable_rewardByCountUntil_of t (fun i hi ↦ ?_) (fun i hi ↦ ?_) ?_
+  · exact measurable_comp_comap
+      (fun ω : Ω × (ℕ → 𝓐 → ℝ) ↦ ((history A R t ω.1, A t ω.1), ω.2))
+      (g := fun v : ((Fin t → 𝓐 × ℝ) × 𝓐) × (ℕ → 𝓐 → ℝ) ↦ (v.1.1 ⟨i, hi⟩).1) (by fun_prop)
+  · exact measurable_comp_comap
+      (fun ω : Ω × (ℕ → 𝓐 → ℝ) ↦ ((history A R t ω.1, A t ω.1), ω.2))
+      (g := fun v : ((Fin t → 𝓐 × ℝ) × 𝓐) × (ℕ → 𝓐 → ℝ) ↦ (v.1.1 ⟨i, hi⟩).2) (by fun_prop)
+  · exact measurable_comp_comap
+      (fun ω : Ω × (ℕ → 𝓐 → ℝ) ↦ ((history A R t ω.1, A t ω.1), ω.2))
+      (g := fun v : ((Fin t → 𝓐 × ℝ) × 𝓐) × (ℕ → 𝓐 → ℝ) ↦ v.2) measurable_snd
 
 /-- Conditionally on the event that the action at time `t` is `b` and that `b` was pulled `k`
 times before, the arrays `rewardByCountUntil A R (t + 1)` and `rewardByCountUntil A R t` have the
