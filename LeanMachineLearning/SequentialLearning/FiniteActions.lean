@@ -249,19 +249,20 @@ lemma measurableSet_action_eq_and_pullCount_eq [MeasurableSingletonClass 𝓐]
 
 lemma measurableSet_snd_eq_and_pullCount'_eq [MeasurableSingletonClass 𝓐]
     (n : ℕ) (b : 𝓐) (k : ℕ) :
-    MeasurableSet {u : (Fin n → 𝓐 × R) × 𝓐 | u.2 = b ∧ pullCount' n u.1 b = k} :=
+    MeasurableSet {u : (Hist 𝓞 𝓐 R n × 𝓞) × 𝓐 | u.2 = b ∧ pullCount' n u.1.1 b = k} :=
   ((measurableSet_singleton _).preimage measurable_snd).inter
-    ((measurableSet_singleton _).preimage ((measurable_pullCount' n b).comp measurable_fst))
+    ((measurableSet_singleton _).preimage
+      ((measurable_pullCount' n b).comp (measurable_fst.comp measurable_fst)))
 
 /-- The event that the action at time `n` is `b` and that `b` was pulled `k` times before is
-a preimage by `(history A R' n, A n)`. -/
+a preimage by `((history O A R' n, O n), A n)`. -/
 lemma setOf_action_eq_and_pullCount_eq_eq_preimage (n : ℕ) (b : 𝓐) (k : ℕ) :
     {x | A n x = b ∧ pullCount A b n x = k}
-      = (fun x ↦ (history A R' n x, A n x)) ⁻¹' {u | u.2 = b ∧ pullCount' n u.1 b = k} := by
+      = (fun x ↦ ((history O A R' n x, O n x), A n x))
+        ⁻¹' {u | u.2 = b ∧ pullCount' n u.1.1 b = k} := by
   ext x
   simp only [Set.mem_ofPred_eq, Set.mem_preimage]
-  rw [pullCount_eq_pullCount' (R' := R')]
-  rfl
+  rw [pullCount_eq_pullCount' (O := O) (R' := R')]
 
 lemma integrable_pullCount [MeasurableSingletonClass 𝓐]
     (hA : ∀ n, Measurable (A n)) (a : 𝓐) (n : ℕ) :

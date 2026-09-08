@@ -285,24 +285,24 @@ lemma indepFun_update_rewardByCountUntil_eval [Countable 𝓐] (hA : ∀ n, Meas
 /-- Conditionally on the event that the action at time `n` is `b` and that `b` was pulled `k`
 times before, the reward at time `n` is independent of the history before time `n` and of the
 action at time `n`. -/
-lemma indepFun_history_reward_cond (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+lemma indepFun_history_reward_cond (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
     (n : ℕ) (b : 𝓐) (k : ℕ) :
-    (fun x ↦ (history A R n x, A n x))
+    (fun x ↦ ((history O A R n x, O n x), A n x))
       ⟂ᵢ[P[|{x | A n x = b ∧ pullCount A b n x = k}]] R n := by
-  rw [setOf_action_eq_and_pullCount_eq_eq_preimage (R' := R)]
+  rw [setOf_action_eq_and_pullCount_eq_eq_preimage (O := O) (R' := R)]
   exact h.indepFun_history_action_feedback_cond_stationaryEnv n
     (measurableSet_snd_eq_and_pullCount'_eq n b k) fun u hu ↦ hu.1
 
 /-- Conditionally on the event that the action at time `t` is `b` and that `b` was pulled `k`
 times before, the reward at time `t` has law `ν b`. -/
-lemma hasLaw_reward_cond (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (t : ℕ) (b : 𝓐) (k : ℕ)
+lemma hasLaw_reward_cond (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P) (t : ℕ) (b : 𝓐) (k : ℕ)
     (hP : P {x | A t x = b ∧ pullCount A b t x = k} ≠ 0) :
     HasLaw (R t) (ν b) (P[|{x | A t x = b ∧ pullCount A b t x = k}]) := by
-  rw [setOf_action_eq_and_pullCount_eq_eq_preimage (R' := R)] at hP ⊢
+  rw [setOf_action_eq_and_pullCount_eq_eq_preimage (O := O) (R' := R)] at hP ⊢
   exact h.hasLaw_feedback_cond_stationaryEnv t (measurableSet_snd_eq_and_pullCount'_eq t b k)
     (fun u hu ↦ hu.1) hP
 
-lemma hasLaw_reward_cond_prod (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (t : ℕ) (b : 𝓐)
+lemma hasLaw_reward_cond_prod (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P) (t : ℕ) (b : 𝓐)
     (k : ℕ) (hP : P {x | A t x = b ∧ pullCount A b t x = k} ≠ 0) :
     HasLaw (fun ω ↦ R t ω.1) (ν b)
       ((P[|{x | A t x = b ∧ pullCount A b t x = k}]).prod (streamMeasure ν)) :=
@@ -313,7 +313,7 @@ variable [Countable 𝓐]
 /-- Conditionally on the event that the action at time `t` is `b` and that `b` was pulled `k`
 times before, the array `rewardByCountUntil A R t` with the entry `(b, k)` erased is independent of
 the reward at time `t`. -/
-lemma indepFun_update_rewardByCountUntil_reward (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+lemma indepFun_update_rewardByCountUntil_reward (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
     (t : ℕ) (b : 𝓐) (k : ℕ) :
     (fun ω ↦ Function.update (rewardByCountUntil A R t ω) (b, k) 0)
       ⟂ᵢ[(P[|{x | A t x = b ∧ pullCount A b t x = k}]).prod (streamMeasure ν)]
@@ -331,20 +331,22 @@ lemma indepFun_update_rewardByCountUntil_reward (h : IsAlgEnvSeq A R alg (statio
   refine Measurable.comp measurable_update_left ?_
   refine measurable_rewardByCountUntil_of t (fun i hi ↦ ?_) (fun i hi ↦ ?_) ?_
   · exact measurable_comp_comap
-      (fun ω : Ω × (ℕ → 𝓐 → ℝ) ↦ ((history A R t ω.1, A t ω.1), ω.2))
-      (g := fun v : ((Fin t → 𝓐 × ℝ) × 𝓐) × (ℕ → 𝓐 → ℝ) ↦ (v.1.1 ⟨i, hi⟩).1) (by fun_prop)
+      (fun ω : Ω × (ℕ → 𝓐 → ℝ) ↦ (((history O A R t ω.1, O t ω.1), A t ω.1), ω.2))
+      (g := fun v : ((Hist Unit 𝓐 ℝ t × Unit) × 𝓐) × (ℕ → 𝓐 → ℝ) ↦ (v.1.1.1 ⟨i, hi⟩).action)
+      (by fun_prop)
   · exact measurable_comp_comap
-      (fun ω : Ω × (ℕ → 𝓐 → ℝ) ↦ ((history A R t ω.1, A t ω.1), ω.2))
-      (g := fun v : ((Fin t → 𝓐 × ℝ) × 𝓐) × (ℕ → 𝓐 → ℝ) ↦ (v.1.1 ⟨i, hi⟩).2) (by fun_prop)
+      (fun ω : Ω × (ℕ → 𝓐 → ℝ) ↦ (((history O A R t ω.1, O t ω.1), A t ω.1), ω.2))
+      (g := fun v : ((Hist Unit 𝓐 ℝ t × Unit) × 𝓐) × (ℕ → 𝓐 → ℝ) ↦ (v.1.1.1 ⟨i, hi⟩).feedback)
+      (by fun_prop)
   · exact measurable_comp_comap
-      (fun ω : Ω × (ℕ → 𝓐 → ℝ) ↦ ((history A R t ω.1, A t ω.1), ω.2))
-      (g := fun v : ((Fin t → 𝓐 × ℝ) × 𝓐) × (ℕ → 𝓐 → ℝ) ↦ v.2) measurable_snd
+      (fun ω : Ω × (ℕ → 𝓐 → ℝ) ↦ (((history O A R t ω.1, O t ω.1), A t ω.1), ω.2))
+      (g := fun v : ((Hist Unit 𝓐 ℝ t × Unit) × 𝓐) × (ℕ → 𝓐 → ℝ) ↦ v.2) measurable_snd
 
 /-- Conditionally on the event that the action at time `t` is `b` and that `b` was pulled `k`
 times before, the arrays `rewardByCountUntil A R (t + 1)` and `rewardByCountUntil A R t` have the
 same law: they differ only in the entry `(b, k)`, which is `R t` in the first and an auxiliary
 reward in the second, and both are independent of the rest of the array with law `ν b`. -/
-lemma identDistrib_rewardByCountUntil_add_one_cond (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+lemma identDistrib_rewardByCountUntil_add_one_cond (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
     (t : ℕ) (b : 𝓐) (k : ℕ) :
     IdentDistrib (rewardByCountUntil A R (t + 1)) (rewardByCountUntil A R t)
       ((P[|{x | A t x = b ∧ pullCount A b t x = k}]).prod (streamMeasure ν))
@@ -400,7 +402,7 @@ lemma identDistrib_rewardByCountUntil_add_one_cond (h : IsAlgEnvSeq A R alg (sta
     (IdentDistrib.of_ae_eq (measurable_rewardByCountUntil hA hR _).aemeasurable h2).symm
 
 /-- The law of `rewardByCountUntil A R t` under `𝔓` does not depend on `t`. -/
-lemma identDistrib_rewardByCountUntil_add_one (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+lemma identDistrib_rewardByCountUntil_add_one (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
     (t : ℕ) :
     IdentDistrib (rewardByCountUntil A R (t + 1)) (rewardByCountUntil A R t) 𝔓 𝔓 := by
   have hA := h.measurable_action
@@ -425,7 +427,7 @@ lemma identDistrib_rewardByCountUntil_add_one (h : IsAlgEnvSeq A R alg (stationa
   exact identDistrib_rewardByCountUntil_add_one_cond h t p.1 p.2
 
 /-- The law of `rewardByCountUntil A R t` under `𝔓` is `⨂ (a, m), ν a`, for all `t`. -/
-lemma hasLaw_rewardByCountUntil (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (t : ℕ) :
+lemma hasLaw_rewardByCountUntil (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P) (t : ℕ) :
     HasLaw (rewardByCountUntil A R t) (Measure.infinitePi fun p : 𝓐 × ℕ ↦ ν p.1) 𝔓 := by
   induction t with
   | zero => exact hasLaw_rewardByCountUntil_zero P
@@ -433,7 +435,7 @@ lemma hasLaw_rewardByCountUntil (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) (
 
 /-- The array of rewards by count `(a, m) ↦ rewardByCount A R a (m + 1)` has law
 `⨂ (a, m), ν a`: its entries are independent, and the entry `(a, m)` has law `ν a`. -/
-lemma hasLaw_rewardByCount_infinitePi (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) :
+lemma hasLaw_rewardByCount_infinitePi (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P) :
     HasLaw (fun ω (p : 𝓐 × ℕ) ↦ rewardByCount A R p.1 (p.2 + 1) ω)
       (Measure.infinitePi fun p : 𝓐 × ℕ ↦ ν p.1) 𝔓 := by
   have hY : Measurable fun ω (p : 𝓐 × ℕ) ↦ rewardByCount A R p.1 (p.2 + 1) ω :=
@@ -445,14 +447,14 @@ lemma hasLaw_rewardByCount_infinitePi (h : IsAlgEnvSeq A R alg (stationaryEnv ν
     (hasLaw_rewardByCountUntil h) eventually_rewardByCountUntil_eq
 
 /-- The reward received at the `(m + 1)`-th pull of action `a` has law `ν a`. -/
-lemma hasLaw_rewardByCount_add_one (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+lemma hasLaw_rewardByCount_add_one (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
     (a : 𝓐) (m : ℕ) :
     HasLaw (rewardByCount A R a (m + 1)) (ν a) 𝔓 :=
   (hasLaw_eval_infinitePi (fun p : 𝓐 × ℕ ↦ ν p.1) (a, m)).comp (hasLaw_rewardByCount_infinitePi h)
 
 /-- The rewards by count `rewardByCount A R a (m + 1)` are independent over all actions `a` and
 all counts `m`. -/
-lemma iIndepFun_rewardByCount_add_one (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) :
+lemma iIndepFun_rewardByCount_add_one (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P) :
     iIndepFun (fun (p : 𝓐 × ℕ) ω ↦ rewardByCount A R p.1 (p.2 + 1) ω) 𝔓 :=
   (iIndepFun_iff_hasLaw_Pi_infinitePi
     (X := fun (p : 𝓐 × ℕ) ω ↦ rewardByCount A R p.1 (p.2 + 1) ω) (μ := fun p : 𝓐 × ℕ ↦ ν p.1)
@@ -461,7 +463,7 @@ lemma iIndepFun_rewardByCount_add_one (h : IsAlgEnvSeq A R alg (stationaryEnv ν
 
 /-- The rewards by count `rewardByCount A R a m` for `m ≠ 0` are independent over all actions `a`
 and all counts `m`. -/
-lemma iIndepFun_rewardByCount (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) :
+lemma iIndepFun_rewardByCount (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P) :
     iIndepFun (fun (p : {p : 𝓐 × ℕ // p.2 ≠ 0}) ω ↦ rewardByCount A R p.1.1 p.1.2 ω) 𝔓 := by
   have h_eq : (fun (p : {p : 𝓐 × ℕ // p.2 ≠ 0}) ω ↦ rewardByCount A R p.1.1 p.1.2 ω)
       = fun p ω ↦ rewardByCount A R p.1.1 (p.1.2 - 1 + 1) ω := by
@@ -475,14 +477,14 @@ lemma iIndepFun_rewardByCount (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P) :
 
 /-- For each action `a`, the rewards by count `(rewardByCount A R a (m + 1))_m` are independent
 (and by `hasLaw_rewardByCount_add_one` identically distributed with law `ν a`). -/
-lemma iIndepFun_rewardByCount_add_one_action (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+lemma iIndepFun_rewardByCount_add_one_action (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
     (a : 𝓐) :
     iIndepFun (fun m ω ↦ rewardByCount A R a (m + 1) ω) 𝔓 :=
   (iIndepFun_rewardByCount_add_one h).precomp (g := fun m ↦ (a, m))
     fun _ _ hmn ↦ (Prod.mk.inj hmn).2
 
 /-- Two distinct rewards by count are independent. -/
-lemma indepFun_rewardByCount (h : IsAlgEnvSeq A R alg (stationaryEnv ν) P)
+lemma indepFun_rewardByCount (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
     {a b : 𝓐} {m n : ℕ} (hm : m ≠ 0) (hn : n ≠ 0) (hne : (a, m) ≠ (b, n)) :
     rewardByCount A R a m ⟂ᵢ[𝔓] rewardByCount A R b n :=
   (iIndepFun_rewardByCount h).indepFun (i := ⟨(a, m), hm⟩) (j := ⟨(b, n), hn⟩)

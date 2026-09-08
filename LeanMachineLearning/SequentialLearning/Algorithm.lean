@@ -507,12 +507,13 @@ lemma IsAlgEnvSeq.hasLaw_step_comp (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     HasLaw (step O A Y n) (stepKernel alg env n ∘ₘ (P.map (history O A Y n))) P :=
   HasCondDistrib.hasLaw_comp (h.hasCondDistrib_step n)
 
-/-- Conditionally on the event `A 0 = b`, the first feedback has law `env.ν0 b`. -/
-lemma IsAlgEnvSeq.hasLaw_feedback_zero_cond [MeasurableSingletonClass 𝓐]
-    (h : IsAlgEnvSeq A Y alg env P) {b : 𝓐} (hP : P (A 0 ⁻¹' {b}) ≠ 0) :
-    HasLaw (Y 0) (env.ν0 b) P[|A 0 ⁻¹' {b}] :=
+/-- Conditionally on the event `(O 0, A 0) = p`, the first feedback has law `env.ν0 p`. -/
+lemma IsAlgEnvSeq.hasLaw_feedback_zero_cond [MeasurableSingletonClass 𝓞]
+    [MeasurableSingletonClass 𝓐] (h : IsAlgEnvSeq O A Y alg env P) {p : 𝓞 × 𝓐}
+    (hP : P ((fun ω ↦ (O 0 ω, A 0 ω)) ⁻¹' {p}) ≠ 0) :
+    HasLaw (Y 0) (env.ν0 p) P[|(fun ω ↦ (O 0 ω, A 0 ω)) ⁻¹' {p}] :=
   h.hasCondDistrib_feedback_zero.hasLaw_cond (h.measurable_feedback 0)
-    (measurableSet_singleton b) (fun a ha ↦ by rw [Set.mem_singleton_iff.1 ha]) hP
+    (measurableSet_singleton p) (fun a ha ↦ by rw [Set.mem_singleton_iff.1 ha]) hP
 
 section Filtration
 

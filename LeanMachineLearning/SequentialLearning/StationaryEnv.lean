@@ -96,11 +96,11 @@ lemma hasCondDistrib_feedback [IsObliviousEnv env] (h : IsAlgEnvSeq O A Y alg en
 /-- Conditionally on an event determined by the history before time `n` and the action at time
 `n`, on which that action is equal to `b`, the feedback at time `n` has law
 `feedbackCondAction env n b`. -/
-lemma hasLaw_feedback_cond [IsObliviousEnv env] (h : IsAlgEnvSeq A Y alg env P) (n : ℕ)
-    {s : Set ((Fin n → 𝓐 × 𝓨) × 𝓐)} (hs : MeasurableSet s) {b : 𝓐} (hsb : ∀ u ∈ s, u.2 = b)
-    (hP : P ((fun ω ↦ (history A Y n ω, A n ω)) ⁻¹' s) ≠ 0) :
+lemma hasLaw_feedback_cond [IsObliviousEnv env] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ)
+    {s : Set ((Hist 𝓞 𝓐 𝓨 n × 𝓞) × 𝓐)} (hs : MeasurableSet s) {b : 𝓐} (hsb : ∀ u ∈ s, u.2 = b)
+    (hP : P ((fun ω ↦ ((history O A Y n ω, O n ω), A n ω)) ⁻¹' s) ≠ 0) :
     HasLaw (Y n) (feedbackCondAction env n b)
-      P[|(fun ω ↦ (history A Y n ω, A n ω)) ⁻¹' s] := by
+      P[|(fun ω ↦ ((history O A Y n ω, O n ω), A n ω)) ⁻¹' s] := by
   refine (hasCondDistrib_feedback_history_action h n).hasLaw_cond (h.measurable_feedback _) hs
     (fun u hu ↦ ?_) hP
   rw [Kernel.prodMkLeft_apply, hsb u hu]
@@ -109,10 +109,11 @@ lemma hasLaw_feedback_cond [IsObliviousEnv env] (h : IsAlgEnvSeq A Y alg env P) 
 `n`, on which that action is constant, the feedback at time `n` is independent of the
 history before time `n` and of the action at time `n`. -/
 lemma indepFun_history_action_feedback_cond [IsObliviousEnv env]
-    (h : IsAlgEnvSeq A Y alg env P) (n : ℕ)
-    {s : Set ((Fin n → 𝓐 × 𝓨) × 𝓐)} (hs : MeasurableSet s) {b : 𝓐} (hsb : ∀ u ∈ s, u.2 = b) :
-    (fun ω ↦ (history A Y n ω, A n ω))
-      ⟂ᵢ[P[|(fun ω ↦ (history A Y n ω, A n ω)) ⁻¹' s]] Y n := by
+    (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ)
+    {s : Set ((Hist 𝓞 𝓐 𝓨 n × 𝓞) × 𝓐)} (hs : MeasurableSet s) {b : 𝓐} (hsb : ∀ u ∈ s, u.2 = b) :
+    (fun ω ↦ ((history O A Y n ω, O n ω), A n ω))
+      ⟂ᵢ[P[|(fun ω ↦ ((history O A Y n ω, O n ω), A n ω)) ⁻¹' s]] Y n := by
+  have hO := h.measurable_obs
   have hA := h.measurable_action
   have hY := h.measurable_feedback
   refine (hasCondDistrib_feedback_history_action h n).indepFun_cond (by fun_prop) hs
@@ -249,20 +250,22 @@ lemma condDistrib_feedback_stationaryEnv [StandardBorelSpace 𝓨] [Nonempty �
 
 /-- Conditionally on an event determined by the history before time `n` and the action at time
 `n`, on which that action is equal to `b`, the feedback at time `n` has law `ν b`. -/
-lemma hasLaw_feedback_cond_stationaryEnv (h : IsAlgEnvSeq A Y alg (stationaryEnv ν) P) (n : ℕ)
-    {s : Set ((Fin n → 𝓐 × 𝓨) × 𝓐)} (hs : MeasurableSet s) {b : 𝓐} (hsb : ∀ u ∈ s, u.2 = b)
-    (hP : P ((fun ω ↦ (history A Y n ω, A n ω)) ⁻¹' s) ≠ 0) :
-    HasLaw (Y n) (ν b) P[|(fun ω ↦ (history A Y n ω, A n ω)) ⁻¹' s] := by
+lemma hasLaw_feedback_cond_stationaryEnv (h : IsAlgEnvSeq O A Y alg (stationaryEnv ν) P) (n : ℕ)
+    {s : Set ((Hist Unit 𝓐 𝓨 n × Unit) × 𝓐)} (hs : MeasurableSet s) {b : 𝓐}
+    (hsb : ∀ u ∈ s, u.2 = b)
+    (hP : P ((fun ω ↦ ((history O A Y n ω, O n ω), A n ω)) ⁻¹' s) ≠ 0) :
+    HasLaw (Y n) (ν b) P[|(fun ω ↦ ((history O A Y n ω, O n ω), A n ω)) ⁻¹' s] := by
   simpa using IsObliviousEnv.hasLaw_feedback_cond h n hs hsb hP
 
 /-- Conditionally on an event determined by the history before time `n` and the action at time
 `n`, on which that action is constant, the feedback at time `n` is independent of the
 history before time `n` and of the action at time `n`. -/
 lemma indepFun_history_action_feedback_cond_stationaryEnv
-    (h : IsAlgEnvSeq A Y alg (stationaryEnv ν) P) (n : ℕ)
-    {s : Set ((Fin n → 𝓐 × 𝓨) × 𝓐)} (hs : MeasurableSet s) {b : 𝓐} (hsb : ∀ u ∈ s, u.2 = b) :
-    (fun ω ↦ (history A Y n ω, A n ω))
-      ⟂ᵢ[P[|(fun ω ↦ (history A Y n ω, A n ω)) ⁻¹' s]] Y n :=
+    (h : IsAlgEnvSeq O A Y alg (stationaryEnv ν) P) (n : ℕ)
+    {s : Set ((Hist Unit 𝓐 𝓨 n × Unit) × 𝓐)} (hs : MeasurableSet s) {b : 𝓐}
+    (hsb : ∀ u ∈ s, u.2 = b) :
+    (fun ω ↦ ((history O A Y n ω, O n ω), A n ω))
+      ⟂ᵢ[P[|(fun ω ↦ ((history O A Y n ω, O n ω), A n ω)) ⁻¹' s]] Y n :=
   IsObliviousEnv.indepFun_history_action_feedback_cond h n hs hsb
 
 /-- The feedback at time `n` is conditionally independent of the history before time `n`
