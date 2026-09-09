@@ -25,8 +25,10 @@ source is countable), the function `a ↦ klDiv (κ a) (η a)` is measurable
 * `klDiv_compProd_eq_add_lintegral`:
   `klDiv (μ ⊗ₘ κ) (ν ⊗ₘ η) = klDiv μ ν + ∫⁻ a, klDiv (κ a) (η a) ∂μ`.
 
-We also record the invariance of the divergence under measurable embeddings
-(`klDiv_map_measurableEmbedding`) and measurable equivalences (`klDiv_map_measurableEquiv`).
+We also record the data processing inequality for the two projections
+(`klDiv_le_compProd`, `klDiv_comp_le_compProd`) and the invariance of the divergence under
+measurable embeddings (`klDiv_map_measurableEmbedding`) and measurable equivalences
+(`klDiv_map_measurableEquiv`).
 -/
 
 @[expose] public section
@@ -55,6 +57,25 @@ lemma klDiv_map_measurableEquiv (μ ν : Measure α) [IsFiniteMeasure μ] [IsFin
     (e : α ≃ᵐ β) :
     klDiv (μ.map e) (ν.map e) = klDiv μ ν :=
   klDiv_map_measurableEmbedding μ ν e.measurableEmbedding
+
+/-- **Data processing inequality** for the first projection: for Markov kernels `κ` and `η`,
+`μ` and `ν` are the images of `μ ⊗ₘ κ` and `ν ⊗ₘ η` under `Prod.fst`, hence
+`klDiv μ ν ≤ klDiv (μ ⊗ₘ κ) (ν ⊗ₘ η)`. -/
+lemma klDiv_le_compProd (μ ν : Measure α) [IsFiniteMeasure μ] [IsFiniteMeasure ν]
+    (κ η : Kernel α β) [IsMarkovKernel κ] [IsMarkovKernel η] :
+    klDiv μ ν ≤ klDiv (μ ⊗ₘ κ) (ν ⊗ₘ η) := by
+  conv_lhs => rw [← Measure.fst_compProd μ κ, ← Measure.fst_compProd ν η]
+  rw [Measure.fst, Measure.fst]
+  exact klDiv_map_le _ _ measurable_fst
+
+/-- **Data processing inequality** for the second projection: `κ ∘ₘ μ` and `η ∘ₘ ν` are the images
+of `μ ⊗ₘ κ` and `ν ⊗ₘ η` under `Prod.snd`, hence
+`klDiv (κ ∘ₘ μ) (η ∘ₘ ν) ≤ klDiv (μ ⊗ₘ κ) (ν ⊗ₘ η)`. -/
+lemma klDiv_comp_le_compProd (μ ν : Measure α) [IsFiniteMeasure μ] [IsFiniteMeasure ν]
+    (κ η : Kernel α β) [IsFiniteKernel κ] [IsFiniteKernel η] :
+    klDiv (κ ∘ₘ μ) (η ∘ₘ ν) ≤ klDiv (μ ⊗ₘ κ) (ν ⊗ₘ η) := by
+  rw [← Measure.snd_compProd μ κ, ← Measure.snd_compProd ν η, Measure.snd, Measure.snd]
+  exact klDiv_map_le _ _ measurable_snd
 
 section kernel
 

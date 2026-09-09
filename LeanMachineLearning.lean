@@ -1,6 +1,11 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.ChainRule
+public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.CompProd
+public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.Convex
+public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.DataProcessing
+public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.MapSequence
+public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.Restrict
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measurable
 public import LeanMachineLearning.ForMathlib.MeasureTheory.MeasurableSpace.Embedding
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measure.AbsolutelyContinuous
@@ -46,6 +51,7 @@ public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
 public import LeanMachineLearning.SequentialLearning.Algorithms.Uniform
 public import LeanMachineLearning.SequentialLearning.BayesStationaryEnv
 public import LeanMachineLearning.SequentialLearning.Deterministic
+public import LeanMachineLearning.SequentialLearning.DivergenceDecomposition
 public import LeanMachineLearning.SequentialLearning.EvaluationEnv
 public import LeanMachineLearning.SequentialLearning.FeedbackMartingale
 public import LeanMachineLearning.SequentialLearning.FiniteActions

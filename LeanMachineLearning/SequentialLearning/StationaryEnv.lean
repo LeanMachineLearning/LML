@@ -183,6 +183,10 @@ def stationaryEnv (ν : Kernel 𝓐 𝓨) [IsMarkovKernel ν] : Environment 𝓐
 lemma feedback_stationaryEnv (ν : Kernel 𝓐 𝓨) [IsMarkovKernel ν] (n : ℕ) :
     (stationaryEnv ν).feedback n = ν.prodMkLeft _ := rfl
 
+lemma stepKernel_stationaryEnv (alg : Algorithm 𝓐 𝓨) (η : Kernel 𝓐 𝓨) [IsMarkovKernel η] (n : ℕ) :
+    stepKernel alg (stationaryEnv η) n = alg.policy n ⊗ₖ η.prodMkLeft _ := by
+  rw [stepKernel, feedback_stationaryEnv]
+
 @[simp]
 lemma ν0_stationaryEnv (ν : Kernel 𝓐 𝓨) [IsMarkovKernel ν] : (stationaryEnv ν).ν0 = ν :=
   ν0_obliviousEnv _
