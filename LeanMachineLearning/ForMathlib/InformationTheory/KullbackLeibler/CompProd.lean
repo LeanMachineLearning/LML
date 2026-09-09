@@ -7,7 +7,7 @@ module
 
 public import Mathlib.InformationTheory.KullbackLeibler.Basic
 
-/-! # TODO
+/-! # Lemmas about the Kullback-Leibler divergence of the images of two measures by a measurable map
 -/
 
 @[expose] public section
