@@ -35,8 +35,6 @@ divergence `klDiv (β ⊗ₘ κ) (β ⊗ₘ η)`, which is `∫⁻ i, klDiv (κ 
   convexity of `klDiv` in its second argument.
 -/
 
-set_option autoImplicit false
-
 @[expose] public section
 
 open Real MeasureTheory ProbabilityTheory Set
