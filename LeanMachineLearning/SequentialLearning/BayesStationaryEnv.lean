@@ -246,7 +246,7 @@ lemma hasLaw_IT_hist (h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
       (condDistrib (trajectory (noObs Ω) A Y) E P e) := by
   rw [← h.hasLaw_env.map_eq, show history (noObs Ω) A Y n
     = IT.hist (𝓞 := Unit) (𝓐 := 𝓐) (𝓨 := 𝓨) n ∘ trajectory (noObs Ω) A Y from rfl]
-  filter_upwards [condDistrib_comp E
+  filter_upwards [condDistrib_comp h.measurable_param.aemeasurable
     (measurable_trajectory (O := noObs Ω) (fun _ ↦ measurable_const) h.measurable_action
       h.measurable_feedback).aemeasurable
     (IT.measurable_hist (𝓞 := Unit) (𝓐 := 𝓐) (𝓨 := 𝓨) n)] with _ he

@@ -117,6 +117,7 @@ lemma TS.hasCondDistrib_action (hK : 0 < K) (h : IsBayesAlgEnvSeq Q κ (tsAlgori
           simp_rw [Kernel.map_apply _ hm, IT.bayesTrajMeasurePosterior, hc]
       _ =ᵐ[P.map (history (noObs Ω) A R n)]
           condDistrib (bestAction κ E) (history (noObs Ω) A R n) P :=
-          (condDistrib_comp (history (noObs Ω) A R n) h.measurable_param.aemeasurable hm).symm
+          (condDistrib_comp (measurable_history (fun _ ↦ measurable_const) h.measurable_action
+            h.measurable_feedback n).aemeasurable h.measurable_param.aemeasurable hm).symm
 
 end Bandits

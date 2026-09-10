@@ -328,7 +328,8 @@ lemma integral_ucb_action_eq_integral_ucb_bestAction (hK : 0 < K)
     _ = ∫ ha, uc ha ∂P.map (fun ω ↦ (history (noObs Ω) A R n ω, A n ω)) := by
         rw [← integral_map (by fun_prop) (by fun_prop)]
     _ = ∫ ha, uc ha ∂P.map (fun ω ↦ (history (noObs Ω) A R n ω, bestAction κ E ω)) := by
-        rw [← compProd_map_condDistrib (by fun_prop), ← compProd_map_condDistrib (by fun_prop),
+        rw [← compProd_map_condDistrib (by fun_prop) (by fun_prop),
+          ← compProd_map_condDistrib (by fun_prop) (by fun_prop),
             Measure.compProd_congr (hasCondDistrib_action hK h n).condDistrib_eq]
     _ = P[fun ω ↦ ucb A R l u σ2 δ (bestAction κ E ω) n ω] := by
         rw [integral_map (by fun_prop) (by fun_prop)]

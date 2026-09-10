@@ -46,7 +46,7 @@ lemma condDistrib_reward'' [Countable 𝓐]
   rw [h_law]
   have h_prod : 𝓛[fun ω ↦ R n ω.1 | fun ω ↦ A n ω.1; 𝔓]
       =ᵐ[P.map (A n)] 𝓛[R n | A n; P] :=
-    condDistrib_fst_prod _ (by fun_prop) _
+    condDistrib_fst_prod (by fun_prop) (by fun_prop) _
   filter_upwards [h_ra', h_prod] with ω h_eq h_prod
   rw [h_prod, h_eq]
 
@@ -195,10 +195,7 @@ lemma hasLaw_rewardByCount [StandardBorelSpace Ω] [Countable 𝓐]
       rw [condDistrib_comp_map (by fun_prop) (by fun_prop)]
     _ = (Kernel.const _ (ν a)) ∘ₘ ((𝔓).map (fun ω ↦ stepsUntil A a m ω.1)) :=
       Measure.comp_congr h_condDistrib
-    _ = ν a := by
-      have : IsProbabilityMeasure ((𝔓).map (fun ω ↦ stepsUntil A a m ω.1)) :=
-        Measure.isProbabilityMeasure_map (by fun_prop)
-      simp
+    _ = ν a := by simp
 
 lemma identDistrib_rewardByCount [StandardBorelSpace Ω] [Countable 𝓐]
     (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P) (a : 𝓐) (n m : ℕ)
@@ -439,7 +436,7 @@ lemma hasLaw_rewardByCount_infinitePi (h : IsAlgEnvSeq O A R alg (stationaryEnv 
     HasLaw (fun ω (p : 𝓐 × ℕ) ↦ rewardByCount A R p.1 (p.2 + 1) ω)
       (Measure.infinitePi fun p : 𝓐 × ℕ ↦ ν p.1) 𝔓 := by
   have hY : Measurable fun ω (p : 𝓐 × ℕ) ↦ rewardByCount A R p.1 (p.2 + 1) ω :=
-    measurable_pi_lambda _ fun p ↦
+    .of_eval fun p ↦
       measurable_rewardByCount h.measurable_action h.measurable_feedback p.1 (p.2 + 1)
   -- `rewardByCountUntil A R t` has that law for all `t` and converges entrywise to the array
   exact hasLaw_of_forall_eventually_eq (L := Filter.atTop)

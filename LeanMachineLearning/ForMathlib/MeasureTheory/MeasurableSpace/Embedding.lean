@@ -129,8 +129,8 @@ def finSuccPiIic (X : ℕ → Type*) [∀ n, MeasurableSpace (X n)] (n : ℕ) :
   invFun h i := h ⟨i.1, mem_Iic.mpr (Nat.le_of_lt_succ i.2)⟩
   left_inv _ := rfl
   right_inv _ := rfl
-  measurable_toFun := measurable_pi_lambda _ fun _ ↦ measurable_pi_apply _
-  measurable_invFun := measurable_pi_lambda _ fun _ ↦ measurable_pi_apply _
+  measurable_toFun := .of_eval fun _ ↦ measurable_pi_apply _
+  measurable_invFun := .of_eval fun _ ↦ measurable_pi_apply _
 
 @[simp]
 lemma finSuccPiIic_apply (n : ℕ) (h : Π i : Fin (n + 1), X i) (i : Iic n) :

@@ -184,7 +184,7 @@ lemma iSup_comap_restrictFin {E : Type*} [mE : MeasurableSpace E] :
     ⨆ n : ℕ, MeasurableSpace.comap (fun f : ℕ → E ↦ fun i : Fin n ↦ f i)
       MeasurableSpace.pi = MeasurableSpace.pi := by
   refine le_antisymm
-    (iSup_le fun n ↦ (measurable_pi_lambda _ fun _ ↦ measurable_pi_apply _).comap_le)
+    (iSup_le fun n ↦ (Measurable.of_eval fun _ ↦ measurable_pi_apply _).comap_le)
     (iSup_le fun i ↦ le_iSup_of_le (i + 1) ?_)
   have : (fun f : ℕ → E ↦ f i) =
       (fun h : Fin (i + 1) → E ↦ h ⟨i, i.lt_succ_self⟩) ∘
