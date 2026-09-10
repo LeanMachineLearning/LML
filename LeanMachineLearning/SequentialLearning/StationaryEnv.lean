@@ -206,9 +206,11 @@ lemma obs_stationaryEnv (ν : Kernel 𝓐 𝓨) [IsMarkovKernel ν] (n : ℕ) :
 lemma feedback_stationaryEnv (ν : Kernel 𝓐 𝓨) [IsMarkovKernel ν] (n : ℕ) :
     (stationaryEnv ν).feedback n = ν.prodMkLeft _ := rfl
 
-lemma stepKernel_stationaryEnv (alg : Algorithm 𝓐 𝓨) (η : Kernel 𝓐 𝓨) [IsMarkovKernel η] (n : ℕ) :
-    stepKernel alg (stationaryEnv η) n = alg.policy n ⊗ₖ η.prodMkLeft _ := by
-  rw [stepKernel, feedback_stationaryEnv]
+lemma stepKernel_stationaryEnv (alg : Algorithm Unit 𝓐 𝓨) (η : Kernel 𝓐 𝓨) [IsMarkovKernel η]
+    (n : ℕ) :
+    stepKernel alg (stationaryEnv η) n
+      = Kernel.const _ (Measure.dirac ()) ⊗ₖ (alg.policy n ⊗ₖ η.prodMkLeft _) := by
+  rw [stepKernel_def, obs_stationaryEnv, feedback_stationaryEnv]
 
 @[simp]
 lemma obs0_stationaryEnv (ν : Kernel 𝓐 𝓨) [IsMarkovKernel ν] :
