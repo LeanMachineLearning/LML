@@ -1,14 +1,21 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
+public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.ChainRule
+public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.CompProd
+public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.Convex
+public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.DataProcessing
+public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.MapSequence
+public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.Restrict
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measurable
 public import LeanMachineLearning.ForMathlib.MeasureTheory.MeasurableSpace.Embedding
-public import LeanMachineLearning.ForMathlib.MeasureTheory.MeasurableSpace.Option
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measure.AbsolutelyContinuous
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Order.Lattice
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Order.MeasurableArg
 public import LeanMachineLearning.ForMathlib.MeasureTheory.OuterMeasure.Basic
 public import LeanMachineLearning.ForMathlib.Order.Interval.Finset
+public import LeanMachineLearning.ForMathlib.Probability.ConditionalProbability
 public import LeanMachineLearning.ForMathlib.Probability.HasCondDistrib
+public import LeanMachineLearning.ForMathlib.Probability.HasLaw
 public import LeanMachineLearning.ForMathlib.Probability.Independence.CondDistrib
 public import LeanMachineLearning.ForMathlib.Probability.Independence.CondIndepFun
 public import LeanMachineLearning.ForMathlib.Probability.Independence.IndepFun
@@ -16,11 +23,13 @@ public import LeanMachineLearning.ForMathlib.Probability.Independence.IndepInfin
 public import LeanMachineLearning.ForMathlib.Probability.Integrable
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Basic
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.IntegralCompProd
+public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.Lemmas
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.MapComap
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.MeasureCompProd
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.IonescuTulcea.Traj
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.KernelSub
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.MeasurableSpace
+public import LeanMachineLearning.ForMathlib.Probability.Moments.SubExponential
 public import LeanMachineLearning.ForMathlib.Probability.Moments.SubGaussian
 public import LeanMachineLearning.ForMathlib.Probability.WithDensity
 public import LeanMachineLearning.ForMathlib.Topology.Instances.ENNReal.Lemmas
@@ -42,10 +51,10 @@ public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling.B
 public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling.Tendsto
 public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
 public import LeanMachineLearning.SequentialLearning.Algorithms.Uniform
-public import LeanMachineLearning.SequentialLearning.Announce
 public import LeanMachineLearning.SequentialLearning.BayesStationaryEnv
 public import LeanMachineLearning.SequentialLearning.Comap
 public import LeanMachineLearning.SequentialLearning.Deterministic
+public import LeanMachineLearning.SequentialLearning.DivergenceDecomposition
 public import LeanMachineLearning.SequentialLearning.EvaluationEnv
 public import LeanMachineLearning.SequentialLearning.FeedbackMartingale
 public import LeanMachineLearning.SequentialLearning.FiniteActions

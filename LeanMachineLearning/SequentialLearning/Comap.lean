@@ -12,8 +12,8 @@ public import LeanMachineLearning.SequentialLearning.Algorithm
 
 ## Main definitions
 
-* `Round.map fo fa fy`, `Hist.map fo fa fy`, `Traj.map fo fa fy`: round-wise transport of a round,
-  a history and a trajectory along maps of the observation, the action and the feedback, with the
+* `Round.map fo fa fy`, `Hist.map fo fa fy`: round-wise transport of a round and a history
+  along maps of the observation, the action and the feedback, with the
   special cases `mapObs`, `mapAction` and `mapFeedback` that transport a single component.
 * `Algorithm.comap alg F hF`: the algorithm that transforms the pair (past rounds, current
   observation) by the measurable map `F n` at round `n` before applying the policy of `alg`.
@@ -51,8 +51,7 @@ variable {𝓞 𝓞' 𝓞'' 𝓐 𝓐' 𝓐'' 𝓨 𝓨' 𝓨'' Ω : Type*}
   {m𝓐 : MeasurableSpace 𝓐} {m𝓐' : MeasurableSpace 𝓐'} {m𝓐'' : MeasurableSpace 𝓐''}
   {m𝓨 : MeasurableSpace 𝓨} {m𝓨' : MeasurableSpace 𝓨'} {m𝓨'' : MeasurableSpace 𝓨''}
   {mΩ : MeasurableSpace Ω}
-  {fo : 𝓞 → 𝓞'} {fa : 𝓐 → 𝓐'} {fy : 𝓨 → 𝓨'}
-  {go : 𝓞' → 𝓞''} {ga : 𝓐' → 𝓐''} {gy : 𝓨' → 𝓨''}
+  {fo : 𝓞 → 𝓞'} {fa : 𝓐 → 𝓐'} {fy : 𝓨 → 𝓨'} {go : 𝓞' → 𝓞''} {ga : 𝓐' → 𝓐''} {gy : 𝓨' → 𝓨''}
 
 section Map
 
@@ -65,11 +64,6 @@ def Hist.map (fo : 𝓞 → 𝓞') (fa : 𝓐 → 𝓐') (fy : 𝓨 → 𝓨') {
     Hist 𝓞' 𝓐' 𝓨' n :=
   fun i ↦ Round.map fo fa fy (h i)
 
-/-- Transport a trajectory round-wise. -/
-def Traj.map (fo : 𝓞 → 𝓞') (fa : 𝓐 → 𝓐') (fy : 𝓨 → 𝓨') (τ : ℕ → Round 𝓞 𝓐 𝓨) :
-    ℕ → Round 𝓞' 𝓐' 𝓨' :=
-  fun n ↦ Round.map fo fa fy (τ n)
-
 @[simp] lemma Round.obs_map (r : Round 𝓞 𝓐 𝓨) : (Round.map fo fa fy r).obs = fo r.obs := rfl
 @[simp] lemma Round.action_map (r : Round 𝓞 𝓐 𝓨) :
     (Round.map fo fa fy r).action = fa r.action := rfl
@@ -79,15 +73,10 @@ def Traj.map (fo : 𝓞 → 𝓞') (fa : 𝓐 → 𝓐') (fy : 𝓨 → 𝓨') (
 @[simp] lemma Hist.map_apply {n : ℕ} (h : Hist 𝓞 𝓐 𝓨 n) (i : Fin n) :
     Hist.map fo fa fy h i = Round.map fo fa fy (h i) := rfl
 
-@[simp] lemma Traj.map_apply (τ : ℕ → Round 𝓞 𝓐 𝓨) (n : ℕ) :
-    Traj.map fo fa fy τ n = Round.map fo fa fy (τ n) := rfl
-
 @[simp] lemma Round.map_id : Round.map (id : 𝓞 → 𝓞) (id : 𝓐 → 𝓐) (id : 𝓨 → 𝓨) = id := rfl
 
 @[simp] lemma Hist.map_id {n : ℕ} :
     Hist.map (id : 𝓞 → 𝓞) (id : 𝓐 → 𝓐) (id : 𝓨 → 𝓨) (n := n) = id := rfl
-
-@[simp] lemma Traj.map_id : Traj.map (id : 𝓞 → 𝓞) (id : 𝓐 → 𝓐) (id : 𝓨 → 𝓨) = id := rfl
 
 lemma Round.map_comp (r : Round 𝓞 𝓐 𝓨) :
     Round.map go ga gy (Round.map fo fa fy r) = Round.map (go ∘ fo) (ga ∘ fa) (gy ∘ fy) r := rfl
@@ -95,27 +84,14 @@ lemma Round.map_comp (r : Round 𝓞 𝓐 𝓨) :
 lemma Hist.map_comp {n : ℕ} (h : Hist 𝓞 𝓐 𝓨 n) :
     Hist.map go ga gy (Hist.map fo fa fy h) = Hist.map (go ∘ fo) (ga ∘ fa) (gy ∘ fy) h := rfl
 
-lemma Traj.map_comp (τ : ℕ → Round 𝓞 𝓐 𝓨) :
-    Traj.map go ga gy (Traj.map fo fa fy τ) = Traj.map (go ∘ fo) (ga ∘ fa) (gy ∘ fy) τ := rfl
-
 @[fun_prop]
 lemma Round.measurable_map (hfo : Measurable fo) (hfa : Measurable fa) (hfy : Measurable fy) :
-    Measurable (Round.map fo fa fy) := by
-  unfold Round.map
-  fun_prop
+    Measurable (Round.map fo fa fy) := by unfold Round.map; fun_prop
 
 @[fun_prop]
 lemma Hist.measurable_map (hfo : Measurable fo) (hfa : Measurable fa) (hfy : Measurable fy)
     (n : ℕ) :
-    Measurable (Hist.map fo fa fy (n := n)) := by
-  unfold Hist.map
-  fun_prop
-
-@[fun_prop]
-lemma Traj.measurable_map (hfo : Measurable fo) (hfa : Measurable fa) (hfy : Measurable fy) :
-    Measurable (Traj.map fo fa fy) := by
-  unfold Traj.map
-  fun_prop
+    Measurable (Hist.map fo fa fy (n := n)) := by unfold Hist.map; fun_prop
 
 /-- Transport the observations of a round. -/
 abbrev Round.mapObs (f : 𝓞 → 𝓞') (r : Round 𝓞 𝓐 𝓨) : Round 𝓞' 𝓐 𝓨 := Round.map f id id r
@@ -124,9 +100,6 @@ abbrev Round.mapObs (f : 𝓞 → 𝓞') (r : Round 𝓞 𝓐 𝓨) : Round 𝓞
 abbrev Hist.mapObs (f : 𝓞 → 𝓞') {n : ℕ} (h : Hist 𝓞 𝓐 𝓨 n) : Hist 𝓞' 𝓐 𝓨 n :=
   Hist.map f id id h
 
-/-- Transport the observations of a trajectory. -/
-abbrev Traj.mapObs (f : 𝓞 → 𝓞') (τ : ℕ → Round 𝓞 𝓐 𝓨) : ℕ → Round 𝓞' 𝓐 𝓨 := Traj.map f id id τ
-
 /-- Transport the actions of a round. -/
 abbrev Round.mapAction (f : 𝓐 → 𝓐') (r : Round 𝓞 𝓐 𝓨) : Round 𝓞 𝓐' 𝓨 := Round.map id f id r
 
@@ -134,30 +107,12 @@ abbrev Round.mapAction (f : 𝓐 → 𝓐') (r : Round 𝓞 𝓐 𝓨) : Round �
 abbrev Hist.mapAction (f : 𝓐 → 𝓐') {n : ℕ} (h : Hist 𝓞 𝓐 𝓨 n) : Hist 𝓞 𝓐' 𝓨 n :=
   Hist.map id f id h
 
-/-- Transport the actions of a trajectory. -/
-abbrev Traj.mapAction (f : 𝓐 → 𝓐') (τ : ℕ → Round 𝓞 𝓐 𝓨) : ℕ → Round 𝓞 𝓐' 𝓨 :=
-  Traj.map id f id τ
-
 /-- Transport the feedback of a round. -/
 abbrev Round.mapFeedback (f : 𝓨 → 𝓨') (r : Round 𝓞 𝓐 𝓨) : Round 𝓞 𝓐 𝓨' := Round.map id id f r
 
 /-- Transport the feedback of a history. -/
 abbrev Hist.mapFeedback (f : 𝓨 → 𝓨') {n : ℕ} (h : Hist 𝓞 𝓐 𝓨 n) : Hist 𝓞 𝓐 𝓨' n :=
   Hist.map id id f h
-
-/-- Transport the feedback of a trajectory. -/
-abbrev Traj.mapFeedback (f : 𝓨 → 𝓨') (τ : ℕ → Round 𝓞 𝓐 𝓨) : ℕ → Round 𝓞 𝓐 𝓨' :=
-  Traj.map id id f τ
-
-variable {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
-
-lemma history_map (n : ℕ) :
-    history (fun n ω ↦ fo (O n ω)) (fun n ω ↦ fa (A n ω)) (fun n ω ↦ fy (Y n ω)) n
-      = Hist.map fo fa fy ∘ history O A Y n := rfl
-
-lemma trajectory_map :
-    trajectory (fun n ω ↦ fo (O n ω)) (fun n ω ↦ fa (A n ω)) (fun n ω ↦ fy (Y n ω))
-      = Traj.map fo fa fy ∘ trajectory O A Y := rfl
 
 end Map
 
@@ -370,11 +325,7 @@ end Comap
 section Congr
 
 /-- Relabelling of the observations, the actions and the feedbacks of an algorithm along measurable
-equivalences.
-
-This is the covariant transport that a player does admit: the algorithm reads its own past actions,
-so post-composing its policy with a map of the actions only defines an algorithm on the target
-types when that map can be inverted on the history. -/
+equivalences. -/
 noncomputable def Algorithm.congr (alg : Algorithm 𝓞 𝓐 𝓨) (e𝓞 : 𝓞 ≃ᵐ 𝓞') (e𝓐 : 𝓐 ≃ᵐ 𝓐')
     (e𝓨 : 𝓨 ≃ᵐ 𝓨') : Algorithm 𝓞' 𝓐' 𝓨' where
   policy n := ((alg.policy n).map e𝓐).comap
@@ -423,9 +374,10 @@ lemma Algorithm.congr_symm (alg : Algorithm 𝓞 𝓐 𝓨) (e𝓞 : 𝓞 ≃ᵐ
     MeasurableEquiv.self_trans_symm, congr_refl]
 
 /-- Relabelling of the observations, the actions and the feedbacks of an environment along
-measurable equivalences. See `Algorithm.congr`. -/
+measurable equivalences. See also `Algorithm.congr`. -/
 noncomputable def Environment.congr (env : Environment 𝓞 𝓐 𝓨) (e𝓞 : 𝓞 ≃ᵐ 𝓞') (e𝓐 : 𝓐 ≃ᵐ 𝓐')
-    (e𝓨 : 𝓨 ≃ᵐ 𝓨') : Environment 𝓞' 𝓐' 𝓨' where
+    (e𝓨 : 𝓨 ≃ᵐ 𝓨') :
+    Environment 𝓞' 𝓐' 𝓨' where
   obs n := ((env.obs n).map e𝓞).comap (Hist.map e𝓞.symm e𝓐.symm e𝓨.symm) (by fun_prop)
   feedback n := ((env.feedback n).map e𝓨).comap
     (fun p ↦ ((Hist.map e𝓞.symm e𝓐.symm e𝓨.symm p.1.1, e𝓞.symm p.1.2), e𝓐.symm p.2)) (by fun_prop)

@@ -171,16 +171,12 @@ lemma HasCondDistrib.prod {Z : α → Ω'} {η : Kernel (β × Ω) Ω'}
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
   rfl
 
-/-- A random variable that is almost surely a measurable function of `X` has the corresponding
-deterministic conditional distribution given `X`. -/
-lemma hasCondDistrib_deterministic [SFinite μ] {f : β → Ω} (hf : Measurable f)
-    (hX : AEMeasurable X μ) (hY : Y =ᵐ[μ] f ∘ X) :
-    HasCondDistrib Y X (Kernel.deterministic f hf) μ := by
-  have h : HasCondDistrib (f ∘ X) X (Kernel.deterministic f hf) μ := by
-    refine ⟨hX.prodMk (hf.comp_aemeasurable hX), ?_⟩
-    rw [Measure.compProd_deterministic, AEMeasurable.map_map_of_aemeasurable (by fun_prop) hX]
-    rfl
-  exact HasCondDistrib.congr h .rfl hY
+lemma hasCondDistrib_comp_self [SFinite μ] {f : β → Ω} (hf : Measurable f)
+    (hX : AEMeasurable X μ) :
+    HasCondDistrib (f ∘ X) X (Kernel.deterministic f hf) μ := by
+  refine ⟨hX.prodMk (hf.comp_aemeasurable hX), ?_⟩
+  rw [Measure.compProd_deterministic, AEMeasurable.map_map_of_aemeasurable (by fun_prop) hX]
+  rfl
 
 lemma ae_eq_of_hasCondDistrib_deterministic [MeasurableEq Ω] [SFinite μ] {f : β → Ω}
     (hf : Measurable f) (hX : AEMeasurable X μ)
@@ -190,6 +186,14 @@ lemma ae_eq_of_hasCondDistrib_deterministic [MeasurableEq Ω] [SFinite μ] {f : 
   rw [h.map_eq, Measure.compProd_deterministic,
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
   rfl
+
+lemma hasCondDistrib_deterministic_iff [MeasurableEq Ω] [SFinite μ] {f : β → Ω}
+    (hf : Measurable f) (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) :
+    HasCondDistrib Y X (Kernel.deterministic f hf) μ ↔ Y =ᵐ[μ] f ∘ X := by
+  refine ⟨ae_eq_of_hasCondDistrib_deterministic hf hX hY, fun h ↦ ?_⟩
+  refine HasCondDistrib.congr ?_ ?_ h (X := X)
+  · exact hasCondDistrib_comp_self hf hX
+  · rfl
 
 section Const
 
@@ -268,7 +272,8 @@ lemma _root_.MeasureTheory.Measure.dirac_compProd {κ : Kernel β Ω} [IsSFinite
 lemma hasCondDistrib_const_iff [IsProbabilityMeasure μ] [IsSFiniteKernel κ] {b : β} :
     HasCondDistrib Y (fun _ ↦ b) κ μ ↔ HasLaw Y (κ b) μ := by
   refine ⟨fun h ↦ ⟨h.aemeasurable_snd, ?_⟩, fun h ↦ ⟨aemeasurable_const.prodMk h.aemeasurable, ?_⟩⟩
-  · rw [← Measure.snd_map_prodMk₀ (X := fun _ ↦ b) (Y := Y) aemeasurable_const, h.map_eq,
+  · rw [← Measure.snd_map_prodMk₀ (X := fun _ ↦ b) (Y := Y) aemeasurable_const
+      h.aemeasurable_snd, h.map_eq,
       Measure.map_const, measure_univ, one_smul, Measure.dirac_compProd, Measure.snd,
       Measure.map_map measurable_snd measurable_prodMk_left]
     exact Measure.map_id
@@ -280,19 +285,76 @@ alias ⟨HasCondDistrib.hasLaw_of_const', HasLaw.hasCondDistrib_const⟩ := hasC
 
 end Const
 
+section Cond
+
+variable [IsSFiniteKernel κ]
+
+/-- If the conditional distribution of `Y` given `X` is a kernel `κ` which is constant equal to `η`
+on a measurable set `s`, then `μ (X ⁻¹' s ∩ Y ⁻¹' u) = μ (X ⁻¹' s) * η u` for all measurable `u`. -/
+lemma HasCondDistrib.measure_inter_preimage_eq_mul_of_eqOn_const [SFinite μ]
+    (h : HasCondDistrib Y X κ μ) {s : Set β} (hs : MeasurableSet s) {η : Measure Ω}
+    (hκ : Set.EqOn κ (fun _ ↦ η) s) {u : Set Ω} (hu : MeasurableSet u) :
+    μ (X ⁻¹' s ∩ Y ⁻¹' u) = μ (X ⁻¹' s) * η u := by
+  have h_eq : X ⁻¹' s ∩ Y ⁻¹' u = (fun ω ↦ (X ω, Y ω)) ⁻¹' (s ×ˢ u) := by
+    ext ω
+    simp
+  rw [h_eq, ← Measure.map_apply_of_aemeasurable h.aemeasurable (hs.prod hu), h.map_eq,
+    Measure.compProd_apply_prod hs hu,
+    setLIntegral_congr_fun hs (g := fun _ ↦ η u) (fun x hx ↦ by rw [hκ hx]),
+    setLIntegral_const, Measure.map_apply_of_aemeasurable h.aemeasurable_fst hs, mul_comm]
+
+variable [IsFiniteMeasure μ]
+
+/-- If the conditional distribution of `Y` given `X` is a kernel `κ` which is constant equal to `η`
+on a measurable set `s`, then the law of `Y` under `μ` conditioned on `X ∈ s` is `η`. -/
+lemma HasCondDistrib.hasLaw_cond (h : HasCondDistrib Y X κ μ) (hY : Measurable Y)
+    {s : Set β} (hs : MeasurableSet s) {η : Measure Ω} (hκ : Set.EqOn κ (fun _ ↦ η) s)
+    (hμs : μ (X ⁻¹' s) ≠ 0) :
+    HasLaw Y η μ[|X ⁻¹' s] where
+  aemeasurable := hY.aemeasurable
+  map_eq := by
+    ext u hu
+    rw [Measure.map_apply hY hu, cond_apply' (hu.preimage hY),
+      h.measure_inter_preimage_eq_mul_of_eqOn_const hs hκ hu, ← mul_assoc,
+      ENNReal.inv_mul_cancel hμs (measure_ne_top _ _), one_mul]
+
+/-- If the conditional distribution of `Y` given `X` is a kernel `κ` which is constant on a
+measurable set `s`, then `X` and `Y` are independent under `μ` conditioned on `X ∈ s`. -/
+lemma HasCondDistrib.indepFun_cond (h : HasCondDistrib Y X κ μ) (hX : Measurable X)
+    {s : Set β} (hs : MeasurableSet s) {η : Measure Ω} (hκ : Set.EqOn κ (fun _ ↦ η) s) :
+    X ⟂ᵢ[μ[|X ⁻¹' s]] Y := by
+  by_cases hμs : μ (X ⁻¹' s) = 0
+  · rw [cond_eq_zero.2 (Or.inr hμs)]
+    simp [indepFun_iff_measure_inter_preimage_eq_mul]
+  rw [indepFun_iff_measure_inter_preimage_eq_mul]
+  intro t u ht hu
+  have h1 : X ⁻¹' s ∩ (X ⁻¹' t ∩ Y ⁻¹' u) = X ⁻¹' (s ∩ t) ∩ Y ⁻¹' u := by
+    ext ω
+    simp only [Set.mem_inter_iff, Set.mem_preimage]
+    tauto
+  rw [cond_apply (hs.preimage hX), cond_apply (hs.preimage hX), cond_apply (hs.preimage hX), h1,
+    ← Set.preimage_inter,
+    h.measure_inter_preimage_eq_mul_of_eqOn_const (hs.inter ht) (hκ.mono Set.inter_subset_left)
+      hu,
+    h.measure_inter_preimage_eq_mul_of_eqOn_const hs hκ hu,
+    ← mul_assoc (μ (X ⁻¹' s))⁻¹ (μ (X ⁻¹' s)) (η u),
+    ENNReal.inv_mul_cancel hμs (measure_ne_top _ _), one_mul, mul_assoc]
+
+end Cond
+
 variable [StandardBorelSpace Ω] [Nonempty Ω] [StandardBorelSpace Ω'] [Nonempty Ω']
 
 lemma HasCondDistrib.condDistrib_eq [IsFiniteMeasure μ] [IsFiniteKernel κ]
     (h : HasCondDistrib Y X κ μ) :
     condDistrib Y X μ =ᵐ[μ.map X] κ := by
-  rw [condDistrib_ae_eq_iff_measure_eq_compProd _ (by fun_prop), h.map_eq]
+  rw [condDistrib_ae_eq_iff_measure_eq_compProd h.aemeasurable_fst h.aemeasurable_snd, h.map_eq]
 
 lemma hasCondDistrib_of_condDistrib_eq [IsFiniteMeasure μ] [IsFiniteKernel κ]
     (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ)
     (h : condDistrib Y X μ =ᵐ[μ.map X] κ) :
     HasCondDistrib Y X κ μ where
   aemeasurable := by fun_prop
-  map_eq := by rw [← compProd_map_condDistrib hY, Measure.compProd_congr h]
+  map_eq := by rw [← compProd_map_condDistrib hX hY, Measure.compProd_congr h]
 
 lemma HasCondDistrib.hasCondDistrib_sectR [IsFiniteMeasure μ] [StandardBorelSpace β] [Nonempty β]
     {W : α → Ω'} {Z : α → γ} {f : Ω' → β} {g : Ω' → Ω}
@@ -306,14 +368,13 @@ lemma HasCondDistrib.hasCondDistrib_sectR [IsFiniteMeasure μ] [StandardBorelSpa
     exact hasCondDistrib_of_condDistrib_eq (by fun_prop) (by fun_prop) hz
   have h_eq : condDistrib (g ∘ W) (fun a ↦ (Z a, (f ∘ W) a)) μ
       =ᵐ[μ.map Z ⊗ₘ (condDistrib W Z μ).map f] η := by
-    rw [← Measure.compProd_congr (condDistrib_comp Z hW hf),
-        compProd_map_condDistrib (hf.comp_aemeasurable hW)]
+    rw [← Measure.compProd_congr (condDistrib_comp hcd.aemeasurable_fst.fst hW hf),
+        compProd_map_condDistrib hcd.aemeasurable_fst.fst (hf.comp_aemeasurable hW)]
     exact hcd.condDistrib_eq
   filter_upwards [
     condDistrib_condDistrib_ae_eq_sectR_condDistrib hf hg hW hcd.aemeasurable_fst.fst,
     Measure.ae_ae_of_ae_compProd h_eq] with z hc ha
   rw [Kernel.map_apply _ hf] at ha
   filter_upwards [hc, ha] with b hcb hab using hcb.trans hab
-
 
 end ProbabilityTheory

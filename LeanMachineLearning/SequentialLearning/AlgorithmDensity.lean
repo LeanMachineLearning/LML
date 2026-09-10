@@ -144,12 +144,12 @@ lemma hasLaw_history_withDensity (h : IsAlgEnvSeq O A Y alg env P)
             = (alg₀.policy n ⊗ₖ env.feedback n).withDensity
               (fun p ar ↦ Kernel.rnDeriv (alg.policy n) (alg₀.policy n) p ar.1) := by
           conv_lhs => rw [← Kernel.withDensity_rnDeriv_eq' (hc.policy n)]
-          exact Kernel.compProd_withDensity_left (Kernel.measurable_rnDeriv _ _)
+          exact Kernel.withDensity_compProd (Kernel.measurable_rnDeriv _ _)
         have h_sf : IsSFiniteKernel ((alg₀.policy n ⊗ₖ env.feedback n).withDensity
             (fun p ar ↦ Kernel.rnDeriv (alg.policy n) (alg₀.policy n) p ar.1)) := by
           rw [← h_inner]
           infer_instance
-        rw [stepKernel_def alg env n, h_inner, Kernel.compProd_withDensity_right (by fun_prop)]
+        rw [stepKernel_def alg env n, h_inner, Kernel.compProd_withDensity (by fun_prop)]
         rfl
       have : IsMarkovKernel ((stepKernel alg₀ env n).withDensity ρ) := by
         rw [← hs]
@@ -160,7 +160,7 @@ lemma hasLaw_history_withDensity (h : IsAlgEnvSeq O A Y alg env P)
       · exact (h₀.measurable_history n).prodMk (h₀.measurable_step n)
       · exact (h.measurable_history n).prodMk (h.measurable_step n)
       rw [(h.hasCondDistrib_step n).map_eq, (h₀.hasCondDistrib_step n).map_eq, ih, hs,
-        Measure.compProd_withDensity_withDensity (by fun_prop) (by fun_prop)]
+        Measure.withDensity_compProd_withDensity (by fun_prop) (by fun_prop)]
       exact map_equiv_withDensity (by fun_prop)
 
 end IsAlgEnvSeq

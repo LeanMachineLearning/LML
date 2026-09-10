@@ -1,0 +1,115 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main # Trigger on pushes to the default branch
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:        # Allow manual triggering of the workflow from the GitHub Actions interface
+
+# Cancel previous runs if a new commit is pushed to the same PR or branch
+concurrency:
+  group: ${{ github.ref }}  # Group runs by the ref (branch or PR)
+  cancel-in-progress: true  # Cancel any ongoing runs in the same group
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: write         # Push the provenance ledger to its own branch (the referee action does)
+  pages: write            # Write access to GitHub Pages
+  id-token: write         # Write access to ID tokens
+  issues: write           # Write access to issues
+  pull-requests: write    # Write access to pull requests
+  actions: read           # Read the previous run's artifact, for the referee revision diff
+
+jobs:
+  build_project:
+    runs-on: ubuntu-latest
+    name: Build project
+    steps:
+      - name: Cleanup to free disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.0
+        with:
+          tool-cache: false
+          android: true # saves approximately 12 GB
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
+
+      - name: Checkout project
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Load-bearing for provenance, not just a convenience: the ledger's edit half is
+          # `git blame`, and at the default `fetch-depth: 1` blame attributes the entire library to
+          # the single fetched commit. The action would unshallow the checkout itself, but fetching
+          # it here saves that second round trip.
+          fetch-depth: 0 # Fetch all history for all branches and tags
+
+      - name: Build and lint project
+        uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596 # v1.6.0
+        with:
+          build: true
+          build-args: "--wfail"
+          lint: true
+          mk_all-check: true
+
+      # The whole Referee pipeline: the binary and its toolchain check, semantic_hash, collect,
+      # the provenance ledger's branch round trip, the revision-diff baseline, extract and
+      # build-site. All of it used to be spelled out here, in 240 lines that were copy-pasted into
+      # three repositories and then drifted apart. It now lives in the action, which is tested in
+      # its own repository.
+      #
+      # Pinned to a tag rather than left floating: the tag names the Lean toolchain the binary was
+      # built for (`v4.34.0-rc2` here, matching this project's lean-toolchain), and the action
+      # takes its binary from the release of the same tag by default.
+      - name: Build the referee site
+        id: referee
+        if: github.event_name == 'push'
+        uses: LeanMachineLearning/exposition@v4.34.0-rc2-5
+        with:
+          root: LeanMachineLearning
+          exclude-lib: LMLTutorial
+          site-url: https://leanmachinelearning.org/LML/exposition
+          # An editorial claim, not a derived fact: it says whoever publishes this site vouches for
+          # Mathlib and everything under it. Drop it and every upstream package counts as unaudited.
+          trust: mathlib
+
+      # Unconditional, unlike the referee step: on a pull request this is the check that the
+      # tutorial still builds. Placed after the referee step, which folds the provenance ledger, so
+      # that `home_page/` and `LMLTutorial/_out/` do not exist yet when the ledger records whether
+      # the tree was clean.
+      - name: Build Verso Documentation
+        run: |
+          ./scripts/build_docs.sh
+
+      - name: Build API documentation
+        uses: leanprover-community/docgen-action@7b5b9a1822650bd45aaeb4182d94bceba2030f89 # 2026-04-14
+        with:
+          homepage: home_page
+          blueprint: false
+          build-page: false
+          deploy: false
+
+      # After the docs step, which writes into the same folder alongside `tutorial/` from
+      # `build_docs.sh`. Those steps only ever add, so the order is not load-bearing — but copying
+      # last keeps the referee output out of reach of anything else that writes there.
+      - name: Add the referee site to the home page
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          mkdir -p home_page/exposition
+          cp -r "${{ steps.referee.outputs.site }}/." home_page/exposition/
+
+      - name: "Upload website (API documentation and home page)"
+        if: github.event_name == 'push'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: home_page/
+
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push'
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

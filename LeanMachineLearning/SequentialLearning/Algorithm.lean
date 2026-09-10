@@ -403,7 +403,6 @@ lemma isAlgEnvSeq_iff_forall_isAlgEnvSeqUntil :
     hasCondDistrib_action n := (h (n + 1)).hasCondDistrib_action n n.lt_succ_self
     hasCondDistrib_feedback n := (h (n + 1)).hasCondDistrib_feedback n n.lt_succ_self }
 
-@[fun_prop]
 lemma IsAlgEnvSeq.measurable_step (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     Measurable (step O A Y n) := by
   have hO := h.measurable_obs
@@ -411,7 +410,6 @@ lemma IsAlgEnvSeq.measurable_step (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
   have hY := h.measurable_feedback
   fun_prop
 
-@[fun_prop]
 lemma IsAlgEnvSeq.measurable_history (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     Measurable (history O A Y n) := by
   have hO := h.measurable_obs
@@ -419,12 +417,10 @@ lemma IsAlgEnvSeq.measurable_history (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ)
   have hY := h.measurable_feedback
   fun_prop
 
-@[fun_prop]
 lemma IsAlgEnvSeq.measurable_trajectory (h : IsAlgEnvSeq O A Y alg env P) :
     Measurable (trajectory O A Y) :=
   Learning.measurable_trajectory h.measurable_obs h.measurable_action h.measurable_feedback
 
-@[fun_prop]
 lemma IsAlgEnvSeqUntil.measurable_step (h : IsAlgEnvSeqUntil O A Y alg env P N) (n : ℕ) :
     Measurable (step O A Y n) := by
   have hO := h.measurable_obs
@@ -432,7 +428,6 @@ lemma IsAlgEnvSeqUntil.measurable_step (h : IsAlgEnvSeqUntil O A Y alg env P N) 
   have hY := h.measurable_feedback
   fun_prop
 
-@[fun_prop]
 lemma IsAlgEnvSeqUntil.measurable_history (h : IsAlgEnvSeqUntil O A Y alg env P N) (n : ℕ) :
     Measurable (history O A Y n) := by
   have hO := h.measurable_obs
@@ -531,6 +526,14 @@ lemma IsAlgEnvSeq.hasLaw_feedback_comp (h : IsAlgEnvSeq O A Y alg env P) (n : �
 lemma IsAlgEnvSeq.hasLaw_step_comp (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     HasLaw (step O A Y n) (stepKernel alg env n ∘ₘ (P.map (history O A Y n))) P :=
   HasCondDistrib.hasLaw_comp (h.hasCondDistrib_step n)
+
+/-- Conditionally on the event `(O 0, A 0) = p`, the first feedback has law `env.ν0 p`. -/
+lemma IsAlgEnvSeq.hasLaw_feedback_zero_cond [MeasurableSingletonClass 𝓞]
+    [MeasurableSingletonClass 𝓐] (h : IsAlgEnvSeq O A Y alg env P) {p : 𝓞 × 𝓐}
+    (hP : P ((fun ω ↦ (O 0 ω, A 0 ω)) ⁻¹' {p}) ≠ 0) :
+    HasLaw (Y 0) (env.ν0 p) P[|(fun ω ↦ (O 0 ω, A 0 ω)) ⁻¹' {p}] :=
+  h.hasCondDistrib_feedback_zero.hasLaw_cond (h.measurable_feedback 0)
+    (measurableSet_singleton p) (fun a ha ↦ by rw [Set.mem_singleton_iff.1 ha]) hP
 
 section Filtration
 
@@ -660,7 +663,6 @@ lemma filtrationAction_zero_eq_comap (h : IsAlgEnvSeq O A Y alg env P) :
       (measurable_iff_comap_le.mpr le_rfl)).prodMk
       (measurable_snd.comp (measurable_iff_comap_le.mpr le_rfl))
 
-@[fun_prop]
 lemma measurable_history_filtrationObs (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     Measurable[h.filtrationObs n] (history O A Y n) :=
   measurable_fst.comp (measurable_iff_comap_le.mpr le_rfl)
@@ -757,12 +759,6 @@ lemma hasCondDistrib_unit {α : Type*} {mα : MeasurableSpace α} {P : Measure �
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) hX]
   rfl
 
-/-- Any function with values in `Unit` is measurable. -/
-lemma measurable_unit {α : Type*} {mα : MeasurableSpace α} (f : α → Unit) : Measurable f := by
-  have hf : f = fun _ ↦ () := funext fun _ ↦ rfl
-  rw [hf]
-  exact measurable_const
-
 /-- The observation process of an algorithm-environment sequence without observations. -/
 def noObs (Ω : Type*) : ℕ → Ω → Unit := fun _ _ ↦ ()
 
@@ -770,19 +766,6 @@ def noObs (Ω : Type*) : ℕ → Ω → Unit := fun _ _ ↦ ()
 
 @[fun_prop]
 lemma measurable_noObs (n : ℕ) : Measurable (noObs Ω n) := measurable_const
-
-/-- The observation kernels of an environment without observations. -/
-noncomputable def unitObs (𝓐 𝓨 : Type*) [MeasurableSpace 𝓐] [MeasurableSpace 𝓨] (n : ℕ) :
-    Kernel (Hist Unit 𝓐 𝓨 n) Unit :=
-  Kernel.const _ (Measure.dirac ())
-deriving IsMarkovKernel
-
-lemma unitObs_def (n : ℕ) :
-    unitObs 𝓐 𝓨 n = Kernel.const _ (Measure.dirac ()) := rfl
-
-@[simp]
-lemma unitObs_apply (n : ℕ) (h : Hist Unit 𝓐 𝓨 n) :
-    unitObs 𝓐 𝓨 n h = Measure.dirac () := rfl
 
 end NoObservation
 

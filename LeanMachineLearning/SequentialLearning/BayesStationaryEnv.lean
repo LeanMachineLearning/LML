@@ -5,7 +5,7 @@ Authors: Paulo Rauber, Rémy Degenne
 -/
 module
 
-public import LeanMachineLearning.SequentialLearning.Announce
+public import LeanMachineLearning.SequentialLearning.Comap
 public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
 
@@ -14,14 +14,9 @@ public import LeanMachineLearning.SequentialLearning.StationaryEnv
 
 A Bayesian stationary environment is an environment that draws a parameter `e : 𝓔` from a prior
 `Q` before the first round and then behaves like the stationary environment
-`stationaryEnv (κ.sectR e)`. Following the "announced variables" mechanism of
-`LeanMachineLearning/SequentialLearning/Announce.lean`, the parameter is not hidden: it is part of
-the environment's move, and the algorithm is the one that ignores it. Concretely,
-`bayesStationaryEnv Q κ : Environment 𝓔 𝓐 𝓨` announces `e` as the observation of every round and
-runs against `alg.comapObs (fun _ ↦ ())`, for an `alg : Algorithm Unit 𝓐 𝓨`.
-
-The predicate `IsBayesAlgEnvSeq` is not a new notion of run: it is `IsAlgEnvSeq` for that pair,
-for the observation process that announces the parameter `E` at every round.
+`stationaryEnv (κ.sectR e)`. Concretely, `bayesStationaryEnv Q κ : Environment 𝓔 𝓐 𝓨` announces
+an observation `e` at every round and runs against `alg.comapObs (fun _ ↦ ())`, for
+an `alg : Algorithm Unit 𝓐 𝓨`, an algorithm that does not use the observation.
 
 ## Main definitions
 
@@ -133,50 +128,8 @@ def IsBayesAlgEnvSeq (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (�
 namespace IsBayesAlgEnvSeq
 
 variable {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × 𝓐) 𝓨} [IsMarkovKernel κ]
-variable {alg : Algorithm Unit 𝓐 𝓨}
-variable {E : Ω → 𝓔} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
-variable {P : Measure Ω} [IsProbabilityMeasure P]
-
-/-- Constructor for `IsBayesAlgEnvSeq` from the law of the parameter and the conditional
-distributions of the actions and of the feedbacks given the parameter and the observable history.
-Together with `IsBayesAlgEnvSeq.hasLaw_env`, `IsBayesAlgEnvSeq.hasCondDistrib_action` and
-`IsBayesAlgEnvSeq.hasCondDistrib_feedback`, this shows that being an `IsAlgEnvSeq` for the
-announcing environment is equivalent to those conditions. -/
-lemma mk (hasLaw_env : HasLaw E Q P)
-    (hasCondDistrib_action : ∀ n,
-      HasCondDistrib (A n) (fun ω ↦ (E ω, (history (noObs Ω) A Y n ω, noObs Ω n ω)))
-        ((alg.policy n).prodMkLeft _) P)
-    (hasCondDistrib_feedback : ∀ n,
-      HasCondDistrib (Y n) (fun ω ↦ ((history (noObs Ω) A Y n ω, noObs Ω n ω), (E ω, A n ω)))
-        (κ.prodMkLeft _) P)
-    (measurable_param : Measurable E := by fun_prop)
-    (measurable_action : ∀ n, Measurable (A n) := by fun_prop)
-    (measurable_feedback : ∀ n, Measurable (Y n) := by fun_prop) :
-    IsBayesAlgEnvSeq Q κ alg E A Y P := by
-  refine IsAlgEnvSeq.mk (fun _ ↦ measurable_param) measurable_action measurable_feedback ?_ ?_ ?_
-  · intro n
-    cases n with
-    | zero =>
-      rw [history_zero, obs_bayesStationaryEnv_zero]
-      exact hasLaw_env.hasCondDistrib_const
-    | succ n =>
-      rw [obs_bayesStationaryEnv_succ]
-      exact hasCondDistrib_deterministic _
-        (measurable_history (fun _ ↦ measurable_param) measurable_action measurable_feedback
-          (n + 1)).aemeasurable (ae_of_all _ fun _ ↦ rfl)
-  · intro n
-    exact HasCondDistrib.comp_right
-      (f := fun q : 𝓔 × (Hist Unit 𝓐 𝓨 n × Unit) ↦ (announceHist q.1 q.2.1, q.1))
-      (hf := by fun_prop)
-      (Z := fun ω ↦ (E ω, (history (noObs Ω) A Y n ω, noObs Ω n ω)))
-      (hasCondDistrib_action n)
-  · intro n
-    exact HasCondDistrib.comp_right
-      (f := fun q : (Hist Unit 𝓐 𝓨 n × Unit) × (𝓔 × 𝓐) ↦
-        ((announceHist q.2.1 q.1.1, q.2.1), q.2.2))
-      (hf := by fun_prop)
-      (Z := fun ω ↦ ((history (noObs Ω) A Y n ω, noObs Ω n ω), (E ω, A n ω)))
-      (hasCondDistrib_feedback n)
+  {alg : Algorithm Unit 𝓐 𝓨} {P : Measure Ω} [IsProbabilityMeasure P]
+  {E : Ω → 𝓔} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 
 /-- A Bayesian algorithm-environment sequence is an algorithm-environment sequence for the
 announcing environment `bayesStationaryEnv Q κ`. -/
@@ -242,9 +195,6 @@ lemma hasCondDistrib_action_zero (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
     HasCondDistrib (A 0) E (Kernel.const _ (alg.p0 ())) P :=
   hasCondDistrib_prodMk_right_unique_iff.mp (h.hasCondDistrib_action 0)
 
-variable [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
-
-omit [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨] in
 /-- The posterior over the parameter given the empty history is the prior. -/
 lemma condDistrib_param_history_zero [StandardBorelSpace 𝓔] [Nonempty 𝓔]
     (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
@@ -258,8 +208,10 @@ lemma condDistrib_param_history_zero [StandardBorelSpace 𝓔] [Nonempty 𝓔]
     ae_dirac_iff Subsingleton.measurableSet] at h_ae
   exact h_ae
 
+variable [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
+
 lemma hasCondDistrib_IT_obs (_h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
-    ∀ᵐ e ∂Q, HasCondDistrib (IT.obs n) (IT.hist n) (unitObs 𝓐 𝓨 n)
+    ∀ᵐ e ∂Q, HasCondDistrib (IT.obs n) (IT.hist n) (Kernel.const _ (Measure.dirac ()))
       (condDistrib (trajectory (noObs Ω) A Y) E P e) :=
   ae_of_all _ fun _ ↦ hasCondDistrib_unit (IT.measurable_hist n).aemeasurable _ _
 
@@ -294,7 +246,7 @@ lemma hasLaw_IT_hist (h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ) :
       (condDistrib (trajectory (noObs Ω) A Y) E P e) := by
   rw [← h.hasLaw_env.map_eq, show history (noObs Ω) A Y n
     = IT.hist (𝓞 := Unit) (𝓐 := 𝓐) (𝓨 := 𝓨) n ∘ trajectory (noObs Ω) A Y from rfl]
-  filter_upwards [condDistrib_comp E
+  filter_upwards [condDistrib_comp h.measurable_param.aemeasurable
     (measurable_trajectory (O := noObs Ω) (fun _ ↦ measurable_const) h.measurable_action
       h.measurable_feedback).aemeasurable
     (IT.measurable_hist (𝓞 := Unit) (𝓐 := 𝓐) (𝓨 := 𝓨) n)] with _ he

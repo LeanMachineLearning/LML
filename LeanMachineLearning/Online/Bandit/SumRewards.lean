@@ -715,7 +715,7 @@ lemma prob_empMean_sub_actionMean_ge_le (h : IsBayesAlgEnvSeq Q κ alg E A R P) 
         rw [empMean] at hle
         exact ⟨a, t, ht, hpc, sqrt_two_mul_le_sub hpc hle⟩
     _ = (P.map E ⊗ₘ condDistrib (trajectory (noObs Ω) A R) E P) S := by
-        rw [← compProd_map_condDistrib (by fun_prop)]
+        rw [← compProd_map_condDistrib (by fun_prop) (by fun_prop)]
     _ = ∫⁻ e, condDistrib (trajectory (noObs Ω) A R) E P e (Prod.mk e ⁻¹' S) ∂(P.map E) :=
         Measure.compProd_apply (by measurability)
     _ ≤ ∫⁻ e, ENNReal.ofReal (Fintype.card (Fin K) * (n - 1) * δ) ∂(P.map E) := by
@@ -756,7 +756,7 @@ lemma prob_empMean_bestAction_sub_actionMean_le_le (h : IsBayesAlgEnvSeq Q κ al
         rw [empMean] at hle
         exact ⟨t, ht, hpc, sub_le_neg_sqrt_two_mul hpc hle⟩
     _ = (P.map E ⊗ₘ condDistrib (trajectory (noObs Ω) A R) E P) S := by
-        rw [← compProd_map_condDistrib (by fun_prop)]
+        rw [← compProd_map_condDistrib (by fun_prop) (by fun_prop)]
     _ = ∫⁻ e, condDistrib (trajectory (noObs Ω) A R) E P e (Prod.mk e ⁻¹' S) ∂(P.map E) :=
         Measure.compProd_apply (by measurability)
     _ ≤ ∫⁻ e, ENNReal.ofReal ((n - 1) * δ) ∂(P.map E) := by

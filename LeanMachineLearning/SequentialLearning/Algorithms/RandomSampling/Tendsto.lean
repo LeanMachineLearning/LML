@@ -148,8 +148,6 @@ lemma feedback_tendsto_any (h : IsAlgEnvSeq O A Y (randomSampling μ) (evalEnv f
   let g : ((Iic n) → 𝓨) → ℝ := fun r ↦ (fun i ↦ dist (r i) (f a)).min
   filter_upwards [feedback_evalEnv_ae_eq_eval_action_comp h g] with ω hω
   simp only [eq_iff_iff]
-  change ε ≤ (fun (j : Iic n) ↦ dist (Y j ω) (f a)).min ↔
-    ε ≤ (fun (j : Iic n) ↦ dist (f (A j ω)) (f a)).min
   simp [g, hω]
 
 variable {R : ℕ → Ω → ℝ} {f : 𝓐 → ℝ} (hfc : Continuous f) {a : 𝓐}

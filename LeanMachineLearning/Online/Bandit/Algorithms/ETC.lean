@@ -185,7 +185,7 @@ lemma probReal_sumRewards_le_sumRewards_le [Nonempty (Fin K)]
   simp_rw [measureReal_def]
   congr 1
   refine measure_congr ?_
-  rw [Filter.eventuallyEq_set]
+  rw [Filter.eventuallyEqSet_iff]
   filter_upwards [pullCount_mul h a, pullCount_mul h (bestArm ν)] with ω ha h_best
   simp [ha, h_best]
 
