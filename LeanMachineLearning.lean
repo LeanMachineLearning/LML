@@ -50,6 +50,7 @@ public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling.T
 public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin
 public import LeanMachineLearning.SequentialLearning.Algorithms.Uniform
 public import LeanMachineLearning.SequentialLearning.BayesStationaryEnv
+public import LeanMachineLearning.SequentialLearning.Comap
 public import LeanMachineLearning.SequentialLearning.Deterministic
 public import LeanMachineLearning.SequentialLearning.DivergenceDecomposition
 public import LeanMachineLearning.SequentialLearning.EvaluationEnv

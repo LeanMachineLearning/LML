@@ -33,8 +33,9 @@ open MeasureTheory ProbabilityTheory Filter Finset
 
 namespace Learning
 
-variable {Ω 𝓐 𝓨 : Type*} {mΩ : MeasurableSpace Ω} {m𝓐 : MeasurableSpace 𝓐} {m𝓨 : MeasurableSpace 𝓨}
-  [MeasurableSingletonClass 𝓐] {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {P : Measure Ω}
+variable {Ω 𝓞 𝓐 𝓨 : Type*} {mΩ : MeasurableSpace Ω} {m𝓞 : MeasurableSpace 𝓞}
+  {m𝓐 : MeasurableSpace 𝓐} {m𝓨 : MeasurableSpace 𝓨}
+  [MeasurableSingletonClass 𝓐] {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {P : Measure Ω}
 
 /-- The `{0,1}`-valued assignment indicator of action `k`:
 `actionIndicator A k n ω = 𝟙{A n ω = k}`. -/
@@ -93,16 +94,16 @@ lemma integrable_actionIndicator (P : Measure Ω) [IsFiniteMeasure P]
 
 /-- The action indicator is adapted to the history filtration: whether action `k` was chosen at `n`
 is known at time `n`. -/
-lemma IsAlgEnvSeq.adapted_actionIndicator {alg : Algorithm 𝓐 𝓨} {env : Environment 𝓐 𝓨}
-    [IsFiniteMeasure P] (h : IsAlgEnvSeq A Y alg env P) (k : 𝓐) :
+lemma IsAlgEnvSeq.adapted_actionIndicator {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨}
+    [IsFiniteMeasure P] (h : IsAlgEnvSeq O A Y alg env P) (k : 𝓐) :
     Adapted h.filtration (actionIndicator A k) :=
   fun _ ↦ Measurable.indicator measurable_const (h.adapted_action _ (measurableSet_singleton k))
 
 /-- The action indicator is adapted to the history+action filtration: whether action `k` was chosen
 at `n` is known once we know the action at `n`. -/
 lemma IsAlgEnvSeq.adapted_actionIndicator_filtrationAction
-    {alg : Algorithm 𝓐 𝓨} {env : Environment 𝓐 𝓨}
-    [IsFiniteMeasure P] (h : IsAlgEnvSeq A Y alg env P) (k : 𝓐) :
+    {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨}
+    [IsFiniteMeasure P] (h : IsAlgEnvSeq O A Y alg env P) (k : 𝓐) :
     Adapted h.filtrationAction (actionIndicator A k) :=
   fun _ ↦ Measurable.indicator measurable_const
     (h.adapted_action_filtrationAction _ (measurableSet_singleton k))

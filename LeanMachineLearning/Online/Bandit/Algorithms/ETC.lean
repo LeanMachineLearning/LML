@@ -29,12 +29,12 @@ For `n < K * m`, this is arm `n % K`.
 For `n = K * m`, this is the arm with the highest empirical mean after the exploration phase.
 For `n > K * m`, this is the same arm as at time `n - 1`. -/
 noncomputable
-def ETC.nextArm (hK : 0 < K) (m n : ℕ) (h : Fin n → Fin K × ℝ) : Fin K :=
+def ETC.nextArm (hK : 0 < K) (m n : ℕ) (h : Hist Unit (Fin K) ℝ n) : Fin K :=
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   if hn : n < K * m then RoundRobin.nextAction hK n
   else
     if hn_eq : n = K * m then argmax (empMean' n h)
-    else (h ⟨n - 1, by omega⟩).1
+    else (h ⟨n - 1, by omega⟩).action
 
 /-- The next arm pulled by ETC is chosen in a measurable way. -/
 @[fun_prop]
@@ -54,8 +54,8 @@ lemma ETC.measurable_nextArm (hK : 0 < K) (m n : ℕ) : Measurable (nextArm hK m
 /-- The Explore-Then-Commit algorithm: deterministic algorithm that chooses the next arm according
 to `ETC.nextArm`. -/
 noncomputable
-def etcAlgorithm (hK : 0 < K) (m : ℕ) : Algorithm (Fin K) ℝ :=
-  detAlgorithm (ETC.nextArm hK m) (by fun_prop)
+def etcAlgorithm (hK : 0 < K) (m : ℕ) : Algorithm Unit (Fin K) ℝ :=
+  detAlgorithm (fun n p ↦ ETC.nextArm hK m n p.1) (by fun_prop)
 
 end AlgorithmDefinition
 
@@ -64,15 +64,17 @@ namespace ETC
 variable {hK : 0 < K} {m : ℕ} {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν]
   {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {P : Measure Ω} [IsProbabilityMeasure P]
-  {A : ℕ → Ω → Fin K} {R : ℕ → Ω → ℝ}
+  {O : ℕ → Ω → Unit} {A : ℕ → Ω → Fin K} {R : ℕ → Ω → ℝ}
   {σ2 : ℝ≥0}
 
 /-- Before round `K * m`, the ETC algorithm behaves like the Round-Robin algorithm. -/
 lemma isAlgEnvSeqUntil_roundRobinAlgorithm
-    (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) :
-    IsAlgEnvSeqUntil A R (roundRobinAlgorithm hK) (stationaryEnv ν) P (K * m) where
+    (h : IsAlgEnvSeq O A R (etcAlgorithm hK m) (stationaryEnv ν) P) :
+    IsAlgEnvSeqUntil O A R (roundRobinAlgorithm hK) (stationaryEnv ν) P (K * m) where
+  measurable_obs := h.measurable_obs
   measurable_action := h.measurable_action
   measurable_feedback := h.measurable_feedback
+  hasCondDistrib_obs n _ := h.hasCondDistrib_obs n
   hasCondDistrib_action n hn := by
     convert h.hasCondDistrib_action n using 1
     simp only [roundRobinAlgorithm, detAlgorithm_policy, etcAlgorithm]
@@ -82,13 +84,13 @@ lemma isAlgEnvSeqUntil_roundRobinAlgorithm
 
 section AlgorithmBehavior
 
-lemma arm_ae_eq_etcNextArm (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) (n : ℕ) :
-    A n =ᵐ[P] fun ω ↦ nextArm hK m n (history A R n ω) := by
+lemma arm_ae_eq_etcNextArm (h : IsAlgEnvSeq O A R (etcAlgorithm hK m) (stationaryEnv ν) P) (n : ℕ) :
+    A n =ᵐ[P] fun ω ↦ nextArm hK m n (history O A R n ω) := by
   have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   exact h.action_detAlgorithm_ae_eq n
 
 /-- For `n < K * m`, the arm pulled at time `n` is the arm `n % K`. -/
-lemma arm_of_lt (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
+lemma arm_of_lt (h : IsAlgEnvSeq O A R (etcAlgorithm hK m) (stationaryEnv ν) P)
     {n : ℕ} (hn : n < K * m) :
     A n =ᵐ[P] fun _ ↦ ⟨n % K, Nat.mod_lt _ hK⟩ :=
   RoundRobin.action_ae_eq n ((isAlgEnvSeqUntil_roundRobinAlgorithm h).mono hn)
@@ -96,13 +98,13 @@ lemma arm_of_lt (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
 /-- The arm pulled at time `K * m` is the arm with the highest empirical mean after the exploration
 phase. -/
 lemma arm_mul [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) :
-    A (K * m) =ᵐ[P] fun ω ↦ argmax (empMean' (K * m) (history A R (K * m) ω)) := by
+    (h : IsAlgEnvSeq O A R (etcAlgorithm hK m) (stationaryEnv ν) P) :
+    A (K * m) =ᵐ[P] fun ω ↦ argmax (empMean' (K * m) (history O A R (K * m) ω)) := by
   filter_upwards [arm_ae_eq_etcNextArm h (K * m)] with ω hn_eq
   rw [hn_eq, nextArm, dite_eq_right (by simp), dite_eq_left rfl]
 
 /-- For `n ≥ K * m`, the arm pulled at time `n + 1` is the same as the arm pulled at time `n`. -/
-lemma arm_add_one_of_ge (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
+lemma arm_add_one_of_ge (h : IsAlgEnvSeq O A R (etcAlgorithm hK m) (stationaryEnv ν) P)
     {n : ℕ} (hn : K * m ≤ n) :
     A (n + 1) =ᵐ[P] fun ω ↦ A n ω := by
   filter_upwards [arm_ae_eq_etcNextArm h (n + 1)] with ω hn_eq
@@ -110,7 +112,7 @@ lemma arm_add_one_of_ge (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv 
   rfl
 
 /-- For `n ≥ K * m`, the arm pulled at time `n` is the same as the arm pulled at time `K * m`. -/
-lemma arm_of_ge (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
+lemma arm_of_ge (h : IsAlgEnvSeq O A R (etcAlgorithm hK m) (stationaryEnv ν) P)
     {n : ℕ} (hn : K * m ≤ n) :
     A n =ᵐ[P] A (K * m) := by
   have h_ae n : K * m ≤ n → A (n + 1) =ᵐ[P] fun ω ↦ A n ω := arm_add_one_of_ge h
@@ -121,11 +123,11 @@ lemma arm_of_ge (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
   | succ n hmn h_ind => rw [h_ae n hmn, h_ind]
 
 /-- At time `K * m`, the number of pulls of each arm is equal to `m`. -/
-lemma pullCount_mul (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) (a : Fin K) :
+lemma pullCount_mul (h : IsAlgEnvSeq O A R (etcAlgorithm hK m) (stationaryEnv ν) P) (a : Fin K) :
     pullCount A a (K * m) =ᵐ[P] fun _ ↦ m :=
   RoundRobin.pullCount_mul m (isAlgEnvSeqUntil_roundRobinAlgorithm h) a
 
-lemma pullCount_add_one_of_ge (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
+lemma pullCount_add_one_of_ge (h : IsAlgEnvSeq O A R (etcAlgorithm hK m) (stationaryEnv ν) P)
     (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
     pullCount A a (n + 1)
       =ᵐ[P] fun ω ↦ pullCount A a n ω + {ω' | A (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
@@ -135,7 +137,7 @@ lemma pullCount_add_one_of_ge (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationa
 
 /-- For `n ≥ K * m`, the number of pulls of each arm `a` at time `n` is equal to `m` plus
 `n - K * m` if arm `a` is the best arm after the exploration phase. -/
-lemma pullCount_of_ge (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
+lemma pullCount_of_ge (h : IsAlgEnvSeq O A R (etcAlgorithm hK m) (stationaryEnv ν) P)
     (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
     pullCount A a n
       =ᵐ[P] fun ω ↦ m + (n - K * m) * {ω' | A (K * m) ω' = a}.indicator (fun _ ↦ 1) ω := by
@@ -155,16 +157,16 @@ lemma pullCount_of_ge (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν
 /-- If at time `K * m` the algorithm chooses arm `a`, then the total reward obtained by pulling
 arm `a` is at least the total reward obtained by pulling the best arm. -/
 lemma sumRewards_bestArm_le_of_arm_mul_eq [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P) (a : Fin K) (hm : m ≠ 0) :
+    (h : IsAlgEnvSeq O A R (etcAlgorithm hK m) (stationaryEnv ν) P) (a : Fin K) (hm : m ≠ 0) :
     ∀ᵐ h ∂P, A (K * m) h = a → sumRewards A R (bestArm ν) (K * m) h ≤
       sumRewards A R a (K * m) h := by
   filter_upwards [arm_mul h, pullCount_mul h a, pullCount_mul h (bestArm ν)]
     with h h_arm ha h_best h_eq
-  have h_max := isMaxOn_argmax (empMean' (K * m) (history A R (K * m) h)) (bestArm ν)
+  have h_max := isMaxOn_argmax (empMean' (K * m) (history O A R (K * m) h)) (bestArm ν)
   rw [← h_arm, h_eq] at h_max
   rw [sumRewards_eq_pullCount_mul_empMean, sumRewards_eq_pullCount_mul_empMean, ha, h_best]
   · gcongr
-    rwa [empMean_eq_empMean', empMean_eq_empMean']
+    rwa [empMean_eq_empMean' (O := O), empMean_eq_empMean' (O := O)]
   · simp [ha, hm]
   · simp [h_best, hm]
 
@@ -173,7 +175,7 @@ end AlgorithmBehavior
 section Regret
 
 lemma probReal_sumRewards_le_sumRewards_le [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
+    (h : IsAlgEnvSeq O A R (etcAlgorithm hK m) (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (a : Fin K) :
     P.real {ω | sumRewards A R (bestArm ν) (K * m) ω ≤ sumRewards A R a (K * m) ω} ≤
       Real.exp (-↑m * gap ν a ^ 2 / (4 * σ2)) := by
@@ -190,7 +192,7 @@ lemma probReal_sumRewards_le_sumRewards_le [Nonempty (Fin K)]
 /-- The probability that at time `K * m` the ETC algorithm chooses arm `a` is at most
 `exp(- m * Δ_a^2 / 4)`. -/
 lemma prob_arm_mul_eq_le [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
+    (h : IsAlgEnvSeq O A R (etcAlgorithm hK m) (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (a : Fin K)
     (hm : m ≠ 0) :
     P.real {ω | A (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / (4 * σ2)) := by
@@ -206,7 +208,7 @@ lemma prob_arm_mul_eq_le [Nonempty (Fin K)]
 
 /-- Bound on the expectation of the number of pulls of each arm by the ETC algorithm. -/
 lemma expectation_pullCount_le [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
+    (h : IsAlgEnvSeq O A R (etcAlgorithm hK m) (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m ≤ n) :
     P[fun ω ↦ (pullCount A a n ω : ℝ)]
@@ -235,7 +237,7 @@ lemma expectation_pullCount_le [Nonempty (Fin K)]
 
 /-- Regret bound for the ETC algorithm. -/
 theorem regret_le [Nonempty (Fin K)]
-    (h : IsAlgEnvSeq A R (etcAlgorithm hK m) (stationaryEnv ν) P)
+    (h : IsAlgEnvSeq O A R (etcAlgorithm hK m) (stationaryEnv ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (hm : m ≠ 0)
     (n : ℕ) (hn : K * m ≤ n) :
     P[regret ν A n] ≤

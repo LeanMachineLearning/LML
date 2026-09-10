@@ -145,6 +145,17 @@ lemma HasLaw.prod_of_hasCondDistrib {P : Measure β}
     HasLaw (fun ω ↦ (X ω, Y ω)) (P ⊗ₘ κ) μ :=
   ⟨by fun_prop, by rw [h2.map_eq, h1.map_eq]⟩
 
+/-- `HasCondDistrib` only depends on the almost everywhere equivalence classes of the two random
+variables. -/
+lemma HasCondDistrib.congr {X' : α → β} {Y' : α → Ω} (h : HasCondDistrib Y X κ μ)
+    (hX : X' =ᵐ[μ] X) (hY : Y' =ᵐ[μ] Y) :
+    HasCondDistrib Y' X' κ μ := by
+  have h_pair : (fun a ↦ (X' a, Y' a)) =ᵐ[μ] fun a ↦ (X a, Y a) := by
+    filter_upwards [hX, hY] with a h1 h2
+    rw [h1, h2]
+  exact ⟨h.aemeasurable.congr h_pair.symm, by rw [Measure.map_congr h_pair,
+    Measure.map_congr hX, h.map_eq]⟩
+
 lemma HasCondDistrib.hasLaw_comp [SFinite μ] [IsSFiniteKernel κ] (h : HasCondDistrib Y X κ μ) :
     HasLaw Y (κ ∘ₘ (μ.map X)) μ := by
   refine ⟨by fun_prop, ?_⟩
@@ -160,6 +171,13 @@ lemma HasCondDistrib.prod {Z : α → Ω'} {η : Kernel (β × Ω) Ω'}
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
   rfl
 
+lemma hasCondDistrib_comp_self [SFinite μ] {f : β → Ω} (hf : Measurable f)
+    (hX : AEMeasurable X μ) :
+    HasCondDistrib (f ∘ X) X (Kernel.deterministic f hf) μ := by
+  refine ⟨hX.prodMk (hf.comp_aemeasurable hX), ?_⟩
+  rw [Measure.compProd_deterministic, AEMeasurable.map_map_of_aemeasurable (by fun_prop) hX]
+  rfl
+
 lemma ae_eq_of_hasCondDistrib_deterministic [MeasurableEq Ω] [SFinite μ] {f : β → Ω}
     (hf : Measurable f) (hX : AEMeasurable X μ)
     (hY : AEMeasurable Y μ) (h : HasCondDistrib Y X (Kernel.deterministic f hf) μ) :
@@ -168,6 +186,14 @@ lemma ae_eq_of_hasCondDistrib_deterministic [MeasurableEq Ω] [SFinite μ] {f : 
   rw [h.map_eq, Measure.compProd_deterministic,
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
   rfl
+
+lemma hasCondDistrib_deterministic_iff [MeasurableEq Ω] [SFinite μ] {f : β → Ω}
+    (hf : Measurable f) (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) :
+    HasCondDistrib Y X (Kernel.deterministic f hf) μ ↔ Y =ᵐ[μ] f ∘ X := by
+  refine ⟨ae_eq_of_hasCondDistrib_deterministic hf hX hY, fun h ↦ ?_⟩
+  refine HasCondDistrib.congr ?_ ?_ h (X := X)
+  · exact hasCondDistrib_comp_self hf hX
+  · rfl
 
 section Const
 
@@ -349,6 +375,5 @@ lemma HasCondDistrib.hasCondDistrib_sectR [IsFiniteMeasure μ] [StandardBorelSpa
     Measure.ae_ae_of_ae_compProd h_eq] with z hc ha
   rw [Kernel.map_apply _ hf] at ha
   filter_upwards [hc, ha] with b hcb hab using hcb.trans hab
-
 
 end ProbabilityTheory

@@ -42,7 +42,8 @@ namespace Learning.randomSampling
 
 variable {𝓐 𝓨 Ω : Type*} {m𝓐 : MeasurableSpace 𝓐} {m𝓨 : MeasurableSpace 𝓨}
   {mΩ : MeasurableSpace Ω} {μ : Measure 𝓐} [IsProbabilityMeasure μ] {P : Measure Ω}
-  [IsProbabilityMeasure P] {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {env : Environment 𝓐 𝓨}
+  [IsProbabilityMeasure P] {O : ℕ → Ω → Unit} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
+  {env : Environment Unit 𝓐 𝓨}
   {f : 𝓐 → 𝓨} {hf : Measurable f}
 
 section rewards
@@ -50,7 +51,7 @@ section rewards
 variable [StandardBorelSpace 𝓨] [Nonempty 𝓨]
 
 /-- Each reward follows the distribution μ.map f. -/
-lemma hasLaw_feeback (h : IsAlgEnvSeq A Y (randomSampling μ) (evalEnv f hf) P) (n : ℕ) :
+lemma hasLaw_feeback (h : IsAlgEnvSeq O A Y (randomSampling μ) (evalEnv f hf) P) (n : ℕ) :
     HasLaw (Y n) (μ.map f) P := by
   refine HasLaw.congr ?_ (feedback_evalEnv_ae_eq_eval_action h n)
   have hA := h.measurable_action n
@@ -58,7 +59,7 @@ lemma hasLaw_feeback (h : IsAlgEnvSeq A Y (randomSampling μ) (evalEnv f hf) P) 
   rw [← Measure.map_map hf hA, (hasLaw_action h n).map_eq]
 
 /-- Rewards are mutually independent. -/
-lemma iIndep_feedback (h : IsAlgEnvSeq A Y (randomSampling μ) (evalEnv f hf) P) :
+lemma iIndep_feedback (h : IsAlgEnvSeq O A Y (randomSampling μ) (evalEnv f hf) P) :
     iIndepFun Y P :=
   have (n : ℕ) : f ∘ A n =ᵐ[P] Y n :=
     (feedback_evalEnv_ae_eq_eval_action h n).symm
@@ -70,10 +71,10 @@ variable [PseudoMetricSpace 𝓐] [SecondCountableTopology 𝓐] [OpensMeasurabl
   [μ.IsOpenPosMeasure]
 
 /-- The minimum distance from sampled actions to any point tends to zero. -/
-theorem action_tendsto_any (h : IsAlgEnvSeq A Y (randomSampling μ) (evalEnv f hf) P) (a : 𝓐)
+theorem action_tendsto_any (h : IsAlgEnvSeq O A Y (randomSampling μ) (evalEnv f hf) P) (a : 𝓐)
     {ε : ℝ} (hε : 0 < ε) :
     Tendsto (fun i => P {x | ε ≤ (fun (j : Iic i) ↦ dist (A j.1 x) a).min}) atTop (𝓝 0) := by
-  set randomSampling_alg := randomSampling (𝓨 := 𝓨) μ
+  set randomSampling_alg := randomSampling (𝓞 := Unit) (𝓨 := 𝓨) μ
   refine tendsto_zero_of_le (g := fun n ↦ P (⋂ i ∈ Iic n, {x | ε ≤ dist (A i x) a})) ?_ ?_
   · have inter_prod (n : ℕ) : P (⋂ j ∈ Iic n, {x | ε ≤ dist (A j x) a}) =
         ∏ j ∈ Iic n, P {x | ε ≤ dist (A j x) a} := by
@@ -117,7 +118,7 @@ variable [PseudoMetricSpace 𝓨] [BorelSpace 𝓨] (hfc : Continuous f)
 
 /-- The minimum distance from image of actions to any function value tends to zero. -/
 lemma image_action_tendsto_any
-    (h : IsAlgEnvSeq A Y (randomSampling μ) (evalEnv f hfc.measurable) P)
+    (h : IsAlgEnvSeq O A Y (randomSampling μ) (evalEnv f hfc.measurable) P)
     (a : 𝓐) {ε : ℝ} (hε : 0 < ε) :
     Tendsto (fun i => P {x | ε ≤ (fun (j : Iic i) ↦
       dist (f (A j.1 x)) (f a)).min}) atTop (𝓝 0) := by
@@ -139,7 +140,7 @@ lemma image_action_tendsto_any
 variable [StandardBorelSpace 𝓨] [Nonempty 𝓨]
 
 /-- The minimum distance from rewards to any function value tends to zero. -/
-lemma feedback_tendsto_any (h : IsAlgEnvSeq A Y (randomSampling μ) (evalEnv f hfc.measurable) P)
+lemma feedback_tendsto_any (h : IsAlgEnvSeq O A Y (randomSampling μ) (evalEnv f hfc.measurable) P)
     (a : 𝓐) {ε : ℝ} (hε : 0 < ε) :
     Tendsto (fun i => P {x | ε ≤ (fun (j : Iic i) ↦ dist (Y j.1 x) (f a)).min}) atTop (𝓝 0) := by
   convert image_action_tendsto_any hfc h a hε using 2 with n
@@ -154,7 +155,7 @@ lemma feedback_tendsto_any (h : IsAlgEnvSeq A Y (randomSampling μ) (evalEnv f h
 variable {R : ℕ → Ω → ℝ} {f : 𝓐 → ℝ} (hfc : Continuous f) {a : 𝓐}
 
 /-- The minimum image action converges to the function's global minimum. -/
-lemma tendsto_min₀ (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv f hfc.measurable) P)
+lemma tendsto_min₀ (h : IsAlgEnvSeq O A R (randomSampling μ) (evalEnv f hfc.measurable) P)
     (hf_min : ∀ x, f a ≤ f x) :
     TendstoInMeasure P (fun n ω ↦ (fun (i : Iic n) ↦ f (A i.1 ω)).min) atTop (fun _ ↦ f a) := by
   rw [tendstoInMeasure_iff_dist]
@@ -175,7 +176,7 @@ lemma tendsto_min₀ (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv f hfc.mea
   grind
 
 /-- The minimum reward converges to the function's global minimum. -/
-lemma tendsto_min (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv f hfc.measurable) P)
+lemma tendsto_min (h : IsAlgEnvSeq O A R (randomSampling μ) (evalEnv f hfc.measurable) P)
     (hf_min : ∀ x, f a ≤ f x) :
     TendstoInMeasure P (fun n ω ↦ (fun (i : Iic n) ↦ R i.1 ω).min) atTop (fun _ ↦ f a) := by
   refine TendstoInMeasure.congr_left (fun n ↦ ?_) <| tendsto_min₀ hfc h hf_min
@@ -183,7 +184,7 @@ lemma tendsto_min (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv f hfc.measur
   rw [← hω]
 
 /-- The maximum image action converges to the function's global maximum. -/
-lemma tendsto_max₀ (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv f hfc.measurable) P)
+lemma tendsto_max₀ (h : IsAlgEnvSeq O A R (randomSampling μ) (evalEnv f hfc.measurable) P)
     (hf_max : ∀ x, f x ≤ f a) :
     TendstoInMeasure P (fun n ω ↦ (fun (i : Iic n) ↦ f (A i.1 ω)).max) atTop (fun _ ↦ f a) := by
   rw [tendstoInMeasure_iff_dist]
@@ -205,7 +206,7 @@ lemma tendsto_max₀ (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv f hfc.mea
   grind
 
 /-- The maximum reward converges to the function's global maximum. -/
-lemma tendsto_max (h : IsAlgEnvSeq A R (randomSampling μ) (evalEnv f hfc.measurable) P)
+lemma tendsto_max (h : IsAlgEnvSeq O A R (randomSampling μ) (evalEnv f hfc.measurable) P)
     (hf_max : ∀ x, f x ≤ f a) :
     TendstoInMeasure P (fun n ω ↦ (fun (i : Iic n) ↦ R i.1 ω).max) atTop (fun _ ↦ f a) := by
   refine TendstoInMeasure.congr_left (fun n ↦ ?_) <| tendsto_max₀ hfc h hf_max

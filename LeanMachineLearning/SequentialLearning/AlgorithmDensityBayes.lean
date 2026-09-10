@@ -43,23 +43,23 @@ namespace IsBayesAlgEnvSeq
 variable {𝓐 𝓨 : Type*} [MeasurableSpace 𝓐] [MeasurableSpace 𝓨]
 variable {𝓔 : Type*} [MeasurableSpace 𝓔]
 variable [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
-variable {Q : Measure 𝓔}
+variable {Q : Measure 𝓔} [IsProbabilityMeasure Q]
 variable {κ : Kernel (𝓔 × 𝓐) 𝓨} [IsMarkovKernel κ]
 
 variable {Ω : Type*} [MeasurableSpace Ω]
 variable {E : Ω → 𝓔} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
-variable {alg : Algorithm 𝓐 𝓨}
+variable {alg : Algorithm Unit 𝓐 𝓨}
 variable {P : Measure Ω} [IsProbabilityMeasure P]
 
 variable {Ω₀ : Type*} [MeasurableSpace Ω₀]
 variable {E₀ : Ω₀ → 𝓔} {A₀ : ℕ → Ω₀ → 𝓐} {Y₀ : ℕ → Ω₀ → 𝓨}
-variable {alg₀ : Algorithm 𝓐 𝓨}
+variable {alg₀ : Algorithm Unit 𝓐 𝓨}
 variable {P₀ : Measure Ω₀} [IsProbabilityMeasure P₀]
 
 lemma condDistrib_history_eq_condDistrib_hist_withDensity (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
     (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ Y₀ P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) :
-    condDistrib (history A Y n) E P =ᵐ[Q]
-      ((condDistrib (history A₀ Y₀ n) E₀ P₀).withDensity
+    condDistrib (history (noObs Ω) A Y n) E P =ᵐ[Q]
+      ((condDistrib (history (noObs Ω₀) A₀ Y₀ n) E₀ P₀).withDensity
         (fun _ ↦ alg.density alg₀ n)) := by
     filter_upwards [h.ae_IsAlgEnvSeq, h₀.ae_IsAlgEnvSeq, h.hasLaw_IT_hist n, h₀.hasLaw_IT_hist n]
       with _ hae hae₀ he he₀
@@ -68,10 +68,13 @@ lemma condDistrib_history_eq_condDistrib_hist_withDensity (h : IsBayesAlgEnvSeq 
 
 lemma hasLaw_history_withDensity (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
     (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ Y₀ P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) :
-    HasLaw (history A Y n)
-      ((P₀.map (history A₀ Y₀ n)).withDensity (alg.density alg₀ n)) P where
-  aemeasurable := (measurable_history h.measurable_action h.measurable_feedback n).aemeasurable
+    HasLaw (history (noObs Ω) A Y n)
+      ((P₀.map (history (noObs Ω₀) A₀ Y₀ n)).withDensity (alg.density alg₀ n)) P where
+  aemeasurable := (measurable_history (fun _ ↦ measurable_const) h.measurable_action
+    h.measurable_feedback n).aemeasurable
   map_eq := by
+    have hO : ∀ n, Measurable (noObs Ω n) := fun _ ↦ measurable_const
+    have hO₀ : ∀ n, Measurable (noObs Ω₀ n) := fun _ ↦ measurable_const
     have hA := h.measurable_action
     have hY := h.measurable_feedback
     have hA₀ := h₀.measurable_action
@@ -84,14 +87,16 @@ lemma hasLaw_history_withDensity (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
           ← h₀.hasLaw_env.map_eq, condDistrib_comp_map hE₀.aemeasurable (by fun_prop)]
 
 variable [StandardBorelSpace 𝓔] [Nonempty 𝓔]
-variable [IsProbabilityMeasure Q]
 
 lemma hasCondDistrib_env_history (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
     (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ Y₀ P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) :
-    HasCondDistrib E (history A Y n) (condDistrib E₀ (history A₀ Y₀ n) P₀) P where
-  aemeasurable := ((measurable_history h.measurable_action
+    HasCondDistrib E (history (noObs Ω) A Y n)
+      (condDistrib E₀ (history (noObs Ω₀) A₀ Y₀ n) P₀) P where
+  aemeasurable := ((measurable_history (fun _ ↦ measurable_const) h.measurable_action
     h.measurable_feedback n).prodMk h.measurable_param).aemeasurable
   map_eq := by
+    have hO : ∀ n, Measurable (noObs Ω n) := fun _ ↦ measurable_const
+    have hO₀ : ∀ n, Measurable (noObs Ω₀ n) := fun _ ↦ measurable_const
     have hA := h.measurable_action
     have hY := h.measurable_feedback
     have hA₀ := h₀.measurable_action

@@ -26,6 +26,18 @@ learning algorithms (elements of `Fin n → 𝓐 × 𝓨` or `Iic n → 𝓐 × 
 
 open Finset Preorder
 
+/-- `Prod.mk x` is a measurable embedding as soon as `{x}` is measurable. This generalises
+`measurableEmbedding_prodMk_left`, which assumes `MeasurableSingletonClass`. -/
+lemma measurableEmbedding_prodMk_left_of_measurableSet {α β : Type*} [MeasurableSpace α]
+    [MeasurableSpace β] {x : α} (hx : MeasurableSet {x}) :
+    MeasurableEmbedding (Prod.mk x : β → α × β) where
+  injective _ _ h := (Prod.ext_iff.mp h).2
+  measurable := by fun_prop
+  measurableSet_image' s hs := by
+    convert! hx.prod hs
+    ext p
+    simp [Prod.ext_iff, eq_comm, and_left_comm]
+
 lemma coe_default_Iic_zero : ((default : Iic 0) : ℕ) = 0 := rfl
 
 namespace MeasurableEquiv
