@@ -208,7 +208,7 @@ def truncRow [DecidableEq 𝓐] (a : 𝓐) (m : ℕ) (ω : probSpace 𝓐 𝓡) 
 lemma measurable_truncRow [DecidableEq 𝓐] (a : 𝓐) (m : ℕ) :
     Measurable (truncRow a m : probSpace 𝓐 𝓡 → probSpace 𝓐 𝓡) := by
   refine Measurable.prodMk measurable_fst
-    (measurable_pi_lambda _ fun i ↦ measurable_pi_lambda _ fun b ↦ ?_)
+    (.of_eval fun i ↦ .of_eval fun b ↦ ?_)
   by_cases hb : b = a <;> simp only [hb, ↓reduceIte] <;> fun_prop
 
 variable [Nonempty 𝓐] [StandardBorelSpace 𝓐]

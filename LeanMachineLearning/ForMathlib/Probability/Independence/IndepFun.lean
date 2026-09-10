@@ -130,7 +130,6 @@ lemma IndepFun_map_iff [IsFiniteMeasure μ] {X : Ω' → E} {Y : Ω' → E} {f :
 lemma iIndepFun_map_iff [IsProbabilityMeasure μ] {X : ι → Ω' → E} {f : Ω → Ω'}
     (hf : AEMeasurable f μ) (hX : ∀ n, AEMeasurable (X n) (μ.map f)) :
     iIndepFun X (μ.map f) ↔ iIndepFun (fun n ↦ X n ∘ f) μ := by
-  have := Measure.isProbabilityMeasure_map hf (μ := μ)
   rw [iIndepFun_iff_map_fun_eq_infinitePi_map₀' hX,
     iIndepFun_iff_map_fun_eq_infinitePi_map₀' (by fun_prop)]
   rw [AEMeasurable.map_map_of_aemeasurable (by fun_prop) hf]

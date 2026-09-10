@@ -124,7 +124,7 @@ lemma klDiv_map_trajectory_eq_iSup (hO : ∀ n, Measurable (O n)) (hA : ∀ n, M
     klDiv (P.map (trajectory O A Y)) (P'.map (trajectory O' A' Y')) =
       ⨆ n, klDiv (P.map (history O A Y n)) (P'.map (history O' A' Y' n)) := by
   have hg : ∀ n, Measurable fun f : ℕ → Round 𝓞 𝓐 𝓨 ↦ fun i : Fin n ↦ f i.1 := fun n ↦
-    measurable_pi_lambda _ fun i ↦ measurable_pi_apply i.1
+    .of_eval fun i ↦ measurable_pi_apply i.1
   rw [klDiv_eq_iSup_map hg ?_ MeasurableSpace.iSup_comap_restrictFin]
   · refine iSup_congr fun n ↦ ?_
     rw [Measure.map_map (hg n) (measurable_trajectory hO hA hY),
@@ -136,7 +136,7 @@ lemma klDiv_map_trajectory_eq_iSup (hO : ∀ n, Measurable (O n)) (hA : ∀ n, M
           fun f : ℕ → Round 𝓞 𝓐 𝓨 ↦ fun i : Fin m ↦ f i.1 := rfl
     beta_reduce
     rw [this, ← MeasurableSpace.comap_comp]
-    exact MeasurableSpace.comap_mono (measurable_pi_lambda _ fun i ↦
+    exact MeasurableSpace.comap_mono (Measurable.of_eval fun i ↦
       measurable_pi_apply (Fin.castLE hnm i)).comap_le
 
 /-- **Chain rule for trajectories.** For two algorithms `alg` and `alg'` run against

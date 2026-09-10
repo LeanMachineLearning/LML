@@ -83,7 +83,7 @@ lemma hasLaw_history_withDensity (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
     have hE₀ := h₀.measurable_param
     rw [← condDistrib_comp_map hE.aemeasurable (by fun_prop), h.hasLaw_env.map_eq,
           Measure.bind_congr_right (h.condDistrib_history_eq_condDistrib_hist_withDensity h₀ hc n),
-          Kernel.comp_withDensity_eq_withDensity_comp (by fun_prop),
+          ← Measure.withDensity_comp (by fun_prop),
           ← h₀.hasLaw_env.map_eq, condDistrib_comp_map hE₀.aemeasurable (by fun_prop)]
 
 variable [StandardBorelSpace 𝓔] [Nonempty 𝓔]
@@ -101,13 +101,15 @@ lemma hasCondDistrib_env_history (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
     have hY := h.measurable_feedback
     have hA₀ := h₀.measurable_action
     have hY₀ := h₀.measurable_feedback
+    have hE := h.measurable_param
     have hE₀ := h₀.measurable_param
-    rw [← map_swap_compProd_map_condDistrib (by fun_prop), h.hasLaw_env.map_eq,
+    rw [← map_swap_compProd_map_condDistrib (by fun_prop) (by fun_prop), h.hasLaw_env.map_eq,
       Measure.compProd_eq_compProd_withDensity_comp_snd (by fun_prop)
         (h.condDistrib_history_eq_condDistrib_hist_withDensity h₀ hc n),
       map_swap_withDensity_comp_snd (by fun_prop),
-      ← h₀.hasLaw_env.map_eq, map_swap_compProd_map_condDistrib (by fun_prop),
-      ← compProd_map_condDistrib (by fun_prop), ← Measure.compProd_withDensity_left (by fun_prop),
+      ← h₀.hasLaw_env.map_eq, map_swap_compProd_map_condDistrib (by fun_prop) (by fun_prop),
+      ← compProd_map_condDistrib (by fun_prop) (by fun_prop),
+      ← Measure.withDensity_compProd (by fun_prop),
       ← (hasLaw_history_withDensity h h₀ hc n).map_eq]
 
 end IsBayesAlgEnvSeq
