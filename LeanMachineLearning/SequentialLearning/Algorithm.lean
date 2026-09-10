@@ -7,6 +7,7 @@ module
 
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measurable
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.IonescuTulcea.Traj
+public import LeanMachineLearning.ForMathlib.Probability.Kernel.MeasurableSpace
 
 /-!
 # Algorithms and environments
@@ -110,6 +111,15 @@ structure Algorithm (𝓞 𝓐 𝓨 : Type*) [MeasurableSpace 𝓞] [MeasurableS
 instance (alg : Algorithm 𝓞 𝓐 𝓨) (n : ℕ) : IsMarkovKernel (alg.policy n) :=
   alg.isMarkovKernel_policy n
 
+instance : MeasurableSpace (Algorithm 𝓞 𝓐 𝓨) :=
+  MeasurableSpace.comap (fun alg ↦ alg.policy) inferInstance
+
+lemma measurable_algorithm_iff (f : Ω → Algorithm 𝓞 𝓐 𝓨) :
+    Measurable f ↔ ∀ n, Measurable fun x ↦ (f x).policy n := by
+  unfold instMeasurableSpaceAlgorithm
+  rw [measurable_comap_iff, measurable_pi_iff]
+  simp
+
 /-- A stochastic environment.
 At each round, an observation is drawn prior to the algorithm taking an action. Then the environment
 provides feedback based on the observation and the action. -/
@@ -128,6 +138,16 @@ structure Environment (𝓞 𝓐 𝓨 : Type*) [MeasurableSpace 𝓞] [Measurabl
 instance (env : Environment 𝓞 𝓐 𝓨) (n : ℕ) : IsMarkovKernel (env.obs n) := env.isMarkovKernel_obs n
 instance (env : Environment 𝓞 𝓐 𝓨) (n : ℕ) : IsMarkovKernel (env.feedback n) :=
   env.isMarkovKernel_feedback n
+
+instance : MeasurableSpace (Environment 𝓞 𝓐 𝓨) :=
+  MeasurableSpace.comap (fun env ↦ (env.obs, env.feedback)) inferInstance
+
+lemma measurable_environment_iff (f : Ω → Environment 𝓞 𝓐 𝓨) :
+    Measurable f ↔
+      ∀ n, Measurable (fun x ↦ (f x).obs n) ∧ Measurable (fun x ↦ (f x).feedback n) := by
+  simp_rw [measurable_comap_iff, measurable_fun_prod, forall_and, measurable_pi_iff,
+    measurable_kernel_iff]
+  rfl
 
 /-- Distribution of the first observation: the observation kernel at time `0` applied to the empty
 history. -/
