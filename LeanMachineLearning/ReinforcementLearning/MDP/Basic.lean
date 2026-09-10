@@ -79,7 +79,7 @@ noncomputable def stateLaw (M : MDP 𝓢 𝓐 𝓡) (π : 𝓢 → 𝓐) (hπ : 
   (policyMeasure M π hπ s).map (fun h n ↦ ((h n).obs, (h n).action))
 
 instance (M : MDP 𝓢 𝓐 𝓡) (π : 𝓢 → 𝓐) (hπ : Measurable π) (s : 𝓢) :
-    IsProbabilityMeasure (stateLaw M π hπ s) := Measure.isProbabilityMeasure_map (by fun_prop)
+    IsProbabilityMeasure (stateLaw M π hπ s) := by unfold stateLaw; infer_instance
 
 /-! ### Mean rewards -/
 
