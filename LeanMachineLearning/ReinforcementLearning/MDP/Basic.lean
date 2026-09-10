@@ -15,7 +15,7 @@ public import LeanMachineLearning.SequentialLearning.Deterministic
 
 @[expose] public section
 
-open MeasureTheory ProbabilityTheory Finset Learning
+open MeasureTheory ProbabilityTheory Learning
 
 /-- Markov decision process with state space `𝓢`, action space `𝓐`, and reward space `𝓡`, described
 by a transition kernel `P : Kernel (𝓢 × 𝓐) 𝓢` and a reward kernel `R : Kernel (𝓢 × 𝓐) 𝓡`.
@@ -38,14 +38,14 @@ instance (M : MDP 𝓢 𝓐 𝓡) : IsMarkovKernel M.R := M.hR
 open Classical in
 protected noncomputable def env [h𝓢 : Nonempty 𝓢] (M : MDP 𝓢 𝓐 𝓡) (μ₀ : Measure 𝓢) :
     Environment 𝓢 𝓐 𝓡 where
-      obs
-      | 0 => Kernel.const _ (if IsProbabilityMeasure μ₀ then μ₀ else Measure.dirac h𝓢.some)
-      | n + 1 => M.P.comap (fun h ↦ ((h (Fin.last n)).obs, (h (Fin.last n)).action)) (by fun_prop)
-      feedback := fun _ ↦ M.R.comap (fun p ↦ (p.1.2, p.2)) (by fun_prop)
-      isMarkovKernel_obs n := by
-        cases n
-        · split_ifs <;> infer_instance
-        · infer_instance
+  obs
+  | 0 => Kernel.const _ (if IsProbabilityMeasure μ₀ then μ₀ else Measure.dirac h𝓢.some)
+  | n + 1 => M.P.comap (fun h ↦ ((h (Fin.last n)).obs, (h (Fin.last n)).action)) (by fun_prop)
+  feedback := fun _ ↦ M.R.comap (fun p ↦ (p.1.2, p.2)) (by fun_prop)
+  isMarkovKernel_obs n := by
+    cases n
+    · split_ifs <;> infer_instance
+    · infer_instance
 
 lemma measurable_env [Nonempty 𝓢] (M : MDP 𝓢 𝓐 𝓡) : Measurable M.env := by
   rw [measurable_environment_iff]
