@@ -377,4 +377,34 @@ lemma HasCondDistrib.hasCondDistrib_sectR [IsFiniteMeasure μ] [StandardBorelSpa
   rw [Kernel.map_apply _ hf] at ha
   filter_upwards [hc, ha] with b hcb hab using hcb.trans hab
 
+/-- The restriction of `μ ⊗ₘ κ` to `s ×ˢ univ` is `μ.restrict s ⊗ₘ κ`. -/
+lemma _root_.MeasureTheory.Measure.restrict_compProd_prod_univ (μ : Measure α) [SFinite μ]
+    (κ : Kernel α β) [IsSFiniteKernel κ] {s : Set α} (hs : MeasurableSet s) :
+    (μ ⊗ₘ κ).restrict (s ×ˢ Set.univ) = μ.restrict s ⊗ₘ κ := by
+  ext t ht
+  rw [Measure.restrict_apply ht, Measure.compProd_apply (ht.inter (hs.prod MeasurableSet.univ)),
+    Measure.compProd_apply ht, ← lintegral_indicator hs]
+  refine lintegral_congr fun a ↦ ?_
+  by_cases ha : a ∈ s
+  · have : Prod.mk a ⁻¹' (t ∩ s ×ˢ Set.univ) = Prod.mk a ⁻¹' t := by ext b; simp [ha]
+    simp [Set.indicator, ha, this]
+  · have : Prod.mk a ⁻¹' (t ∩ s ×ˢ Set.univ) = ∅ := by ext b; simp [ha]
+    simp [Set.indicator, ha, this]
+
+omit [StandardBorelSpace Ω] [Nonempty Ω] in
+/-- A conditional law given `X` is a conditional law given `X` under the restriction of `P` to an
+event determined by `X`. -/
+lemma HasCondDistrib.restrict_preimage [SFinite μ] [IsSFiniteKernel κ]
+    (hX : Measurable X) (hY : Measurable Y)
+    (h : HasCondDistrib Y X κ μ) {s : Set β} (hs : MeasurableSet s) :
+    HasCondDistrib Y X κ (μ.restrict (X ⁻¹' s)) := by
+  refine ⟨(hX.prodMk hY).aemeasurable, ?_⟩
+  have h1 : (fun ω ↦ (X ω, Y ω)) ⁻¹' (s ×ˢ Set.univ) = X ⁻¹' s := by ext; simp
+  calc (μ.restrict (X ⁻¹' s)).map (fun ω ↦ (X ω, Y ω))
+      = (μ.map (fun ω ↦ (X ω, Y ω))).restrict (s ×ˢ Set.univ) := by
+        rw [Measure.restrict_map (hX.prodMk hY) (hs.prod MeasurableSet.univ), h1]
+    _ = (μ.map X ⊗ₘ κ).restrict (s ×ˢ Set.univ) := by rw [h.map_eq]
+    _ = (μ.map X).restrict s ⊗ₘ κ := Measure.restrict_compProd_prod_univ _ _ hs
+    _ = (μ.restrict (X ⁻¹' s)).map X ⊗ₘ κ := by rw [Measure.restrict_map hX hs]
+
 end ProbabilityTheory
