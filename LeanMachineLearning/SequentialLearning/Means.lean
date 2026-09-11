@@ -116,10 +116,10 @@ lemma IsAlgEnvSeq.stronglyAdapted_means_filtrationAction [SecondCountableTopolog
     StronglyAdapted h.filtrationAction (fun n ω ↦ env.means O A Y (A n ω) n ω) :=
   (h.adapted_means_filtrationAction).stronglyAdapted
 
-lemma IsAlgEnvSeq.adapted_means [SecondCountableTopology 𝓨] [BorelSpace 𝓨]
-    (h : IsAlgEnvSeq O A Y alg env P) :
-    Adapted h.filtration (fun n ω ↦ env.means O A Y (A n ω) n ω) :=
-  fun n ↦ (h.adapted_means_filtrationAction n).mono (h.filtrationAction_le_filtration n) le_rfl
+lemma IsAlgEnvSeq.measurable_means_filtration_succ [SecondCountableTopology 𝓨] [BorelSpace 𝓨]
+    (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
+    Measurable[h.filtration (n + 1)] (fun ω ↦ env.means O A Y (A n ω) n ω) :=
+  (h.adapted_means_filtrationAction n).mono (h.filtrationAction_le_filtration_succ n) le_rfl
 
 omit [NormedSpace ℝ 𝓨] in
 lemma IsAlgEnvSeq.condExp_feedback_comp {𝓩 : Type*} [NormedAddCommGroup 𝓩] [NormedSpace ℝ 𝓩]
