@@ -29,6 +29,38 @@ lemma _root_.AEMeasurable.hasLaw_map {X : Ω → 𝓧} (hX : AEMeasurable X P) :
 lemma _root_.Measurable.hasLaw_map {X : Ω → 𝓧} (hX : Measurable X) (P : Measure Ω) :
     HasLaw X (P.map X) P := ⟨hX.aemeasurable, rfl⟩
 
+section Restrict
+
+variable {X : Ω → 𝓧} {μ ν : Measure 𝓧}
+
+/-- If a random variable with law `μ` almost surely does not belong to a measurable set `T`, then
+`μ T = 0`. -/
+lemma HasLaw.measure_eq_zero_of_ae_notMem (h : HasLaw X μ P) {T : Set 𝓧} (hT : MeasurableSet T)
+    (hXT : ∀ᵐ ω ∂P, X ω ∉ T) :
+    μ T = 0 := by
+  rw [← h.map_eq, Measure.map_apply_of_aemeasurable h.aemeasurable hT,
+    measure_eq_zero_iff_ae_notMem]
+  exact hXT
+
+/-- If `X` has law `μ` under the restriction of `P` to a measurable set `s` and law `ν` under the
+restriction of `P` to `sᶜ`, then `X` has law `μ + ν` under `P`. -/
+lemma HasLaw.add_of_restrict_compl {s : Set Ω} (hs : MeasurableSet s)
+    (hμ : HasLaw X μ (P.restrict s)) (hν : HasLaw X ν (P.restrict sᶜ)) :
+    HasLaw X (μ + ν) P := by
+  have hX : AEMeasurable X P := by
+    rw [← Measure.restrict_add_restrict_compl (μ := P) hs, aemeasurable_add_measure_iff]
+    exact ⟨hμ.aemeasurable, hν.aemeasurable⟩
+  refine ⟨hX, ?_⟩
+  calc P.map X = (P.restrict s + P.restrict sᶜ).map (hX.mk X) := by
+        rw [Measure.restrict_add_restrict_compl hs, Measure.map_congr hX.ae_eq_mk]
+    _ = (P.restrict s).map X + (P.restrict sᶜ).map X := by
+        rw [Measure.map_add _ _ hX.measurable_mk,
+          Measure.map_congr (ae_restrict_of_ae (s := s) hX.ae_eq_mk),
+          Measure.map_congr (ae_restrict_of_ae (s := sᶜ) hX.ae_eq_mk)]
+    _ = μ + ν := by rw [hμ.map_eq, hν.map_eq]
+
+end Restrict
+
 section Cond
 
 variable {ι : Type*} [Countable ι] {mι : MeasurableSpace ι} [MeasurableSingletonClass ι]
