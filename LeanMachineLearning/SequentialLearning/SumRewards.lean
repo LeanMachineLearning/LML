@@ -187,64 +187,45 @@ lemma measurable_uncurry_empMean' [MeasurableEq 𝓐] (n : ℕ) :
 
 variable [MeasurableSingletonClass 𝓐]
 
-lemma IsAlgEnvSeq.isStronglyPredictable_sumRewards {𝓨 : Type*} {_ : MeasurableSpace 𝓨}
+/-- The sum of rewards of action `a` before time `n` is a function of the first `n` rounds. -/
+lemma IsAlgEnvSeq.adapted_sumRewards [MeasurableAdd₂ 𝓨]
+    {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨}
+    (h : IsAlgEnvSeq O A R alg env P) (a : 𝓐) :
+    Adapted h.filtration (sumRewards A R a) := by
+  intro n
+  change Measurable[h.filtration n] (sumRewards A R a n)
+  rw [measurable_iff_comap_le, h.filtration_eq_comap, sumRewards_eq_comp_history (O := O),
+    ← measurable_iff_comap_le]
+  exact measurable_comp_comap _ (measurable_sumRewards' n a)
+
+lemma IsAlgEnvSeq.stronglyAdapted_sumRewards {𝓨 : Type*} {_ : MeasurableSpace 𝓨}
     [NormedAddCommGroup 𝓨] [OpensMeasurableSpace 𝓨] [SecondCountableTopology 𝓨]
     {R : ℕ → Ω → 𝓨} {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨}
     (h : IsAlgEnvSeq O A R alg env P) (a : 𝓐) :
-    IsStronglyPredictable h.filtration (sumRewards A R a) := by
-  rw [IsStronglyPredictable.iff_measurable_add_one]
-  constructor
-  · simp only [sumRewards_zero]
-    fun_prop
+    StronglyAdapted h.filtration (sumRewards A R a) := by
   refine fun n ↦ Finset.stronglyMeasurable_fun_sum _
     fun i hi ↦ (Measurable.ite ?_ ?_ (by fun_prop)).stronglyMeasurable
   · refine (measurableSet_singleton a).preimage ?_
-    have h_meas_i := h.adapted_action i
     simp only [mem_range] at hi
-    exact h_meas_i.mono (h.filtration.mono (by lia)) le_rfl
-  · have h_meas_i := h.adapted_feedback i
-    simp only [mem_range] at hi
-    exact h_meas_i.mono (h.filtration.mono (by lia)) le_rfl
+    exact h.measurable_action_filtration_of_lt hi
+  · simp only [mem_range] at hi
+    exact h.measurable_feedback_filtration_of_lt hi
 
-lemma IsAlgEnvSeq.stronglyAdapted_sumRewards_add_one {𝓨 : Type*} {_ : MeasurableSpace 𝓨}
-    [NormedAddCommGroup 𝓨] [OpensMeasurableSpace 𝓨] [SecondCountableTopology 𝓨]
-    {R : ℕ → Ω → 𝓨} {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨}
-    (h : IsAlgEnvSeq O A R alg env P) (a : 𝓐) :
-    StronglyAdapted h.filtration (fun n ↦ sumRewards A R a (n + 1)) := by
-  have h_predictable := h.isStronglyPredictable_sumRewards a
-  rw [IsStronglyPredictable.iff_measurable_add_one] at h_predictable
-  exact h_predictable.2
-
--- TODO: give a direct proof, without a topology
-lemma IsAlgEnvSeq.adapted_sumRewards_add_one {𝓨 : Type*} {_ : MeasurableSpace 𝓨}
-    [NormedAddCommGroup 𝓨] [BorelSpace 𝓨] [SecondCountableTopology 𝓨]
-    {R : ℕ → Ω → 𝓨} {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨}
-    (h : IsAlgEnvSeq O A R alg env P) (a : 𝓐) :
-    Adapted h.filtration (fun n ↦ sumRewards A R a (n + 1)) :=
-  (h.stronglyAdapted_sumRewards_add_one a).adapted
-
-lemma IsAlgEnvSeq.isStronglyPredictable_empMean {R' : ℕ → Ω → ℝ}
+/-- The empirical mean of action `a` before time `n` is a function of the first `n` rounds. -/
+lemma IsAlgEnvSeq.adapted_empMean {R' : ℕ → Ω → ℝ}
     {alg : Algorithm 𝓞 𝓐 ℝ} {env : Environment 𝓞 𝓐 ℝ}
     (h : IsAlgEnvSeq O A R' alg env P) (a : 𝓐) :
-    IsStronglyPredictable h.filtration (empMean A R' a) := by
-  unfold empMean
-  refine StronglyMeasurable.div ?_ ?_
-  · exact h.isStronglyPredictable_sumRewards a
-  · have h_meas := (isStronglyPredictable_pullCount h a).measurable
-    fun_prop
+    Adapted h.filtration (empMean A R' a) := by
+  intro n
+  change Measurable[h.filtration n] (empMean A R' a n)
+  rw [measurable_iff_comap_le, h.filtration_eq_comap, empMean_eq_comp_history (O := O),
+    ← measurable_iff_comap_le]
+  exact measurable_comp_comap _ (measurable_empMean' n a)
 
-lemma IsAlgEnvSeq.stronglyAdapted_empMean_add_one
-    {R' : ℕ → Ω → ℝ} {alg : Algorithm 𝓞 𝓐 ℝ} {env : Environment 𝓞 𝓐 ℝ}
-    (h : IsAlgEnvSeq O A R' alg env P) (a : 𝓐) :
-    StronglyAdapted h.filtration (fun n ↦ empMean A R' a (n + 1)) := by
-  have h_predictable := h.isStronglyPredictable_empMean a
-  rw [IsStronglyPredictable.iff_measurable_add_one] at h_predictable
-  exact h_predictable.2
-
-lemma IsAlgEnvSeq.adapted_empMean_add_one {R' : ℕ → Ω → ℝ}
+lemma IsAlgEnvSeq.stronglyAdapted_empMean {R' : ℕ → Ω → ℝ}
     {alg : Algorithm 𝓞 𝓐 ℝ} {env : Environment 𝓞 𝓐 ℝ}
     (h : IsAlgEnvSeq O A R' alg env P) (a : 𝓐) :
-    Adapted h.filtration (fun n ↦ empMean A R' a (n + 1)) :=
-  (h.stronglyAdapted_empMean_add_one a).adapted
+    StronglyAdapted h.filtration (empMean A R' a) :=
+  (h.adapted_empMean a).stronglyAdapted
 
 end Learning

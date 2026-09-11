@@ -24,7 +24,8 @@ at round `n`. It is the increment weight of every per-action sum attached to an 
 
 * `Learning.sum_range_actionIndicator_eq_pullCount`, `Learning.sum_actionIndicator_mul` — the two
   partial-sum identities.
-* `Learning.adapted_actionIndicator`, `Learning.integrable_actionIndicator`.
+* `Learning.IsAlgEnvSeq.measurable_actionIndicator_filtration_succ`,
+  `Learning.integrable_actionIndicator`.
 -/
 
 @[expose] public section
@@ -92,12 +93,13 @@ lemma integrable_actionIndicator (P : Measure Ω) [IsFiniteMeasure P]
     Integrable (actionIndicator A k n) P :=
   (integrable_const (1 : ℝ)).indicator (hA (measurableSet_singleton k))
 
-/-- The action indicator is adapted to the history filtration: whether action `k` was chosen at `n`
-is known at time `n`. -/
-lemma IsAlgEnvSeq.adapted_actionIndicator {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨}
-    [IsFiniteMeasure P] (h : IsAlgEnvSeq O A Y alg env P) (k : 𝓐) :
-    Adapted h.filtration (actionIndicator A k) :=
-  fun _ ↦ Measurable.indicator measurable_const (h.adapted_action _ (measurableSet_singleton k))
+/-- Whether action `k` was chosen at time `n` is known once the first `n + 1` rounds are known. -/
+lemma IsAlgEnvSeq.measurable_actionIndicator_filtration_succ {alg : Algorithm 𝓞 𝓐 𝓨}
+    {env : Environment 𝓞 𝓐 𝓨} [IsFiniteMeasure P] (h : IsAlgEnvSeq O A Y alg env P) (k : 𝓐)
+    (n : ℕ) :
+    Measurable[h.filtration (n + 1)] (actionIndicator A k n) :=
+  Measurable.indicator measurable_const
+    (h.measurable_action_filtration_succ n (measurableSet_singleton k))
 
 /-- The action indicator is adapted to the history+action filtration: whether action `k` was chosen
 at `n` is known once we know the action at `n`. -/

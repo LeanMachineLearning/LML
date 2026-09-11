@@ -219,27 +219,20 @@ lemma measurable_uncurry_pullCount' [MeasurableEq 𝓐] (n : ℕ) :
     exact measurableSet_eq_fun (by fun_prop) (by fun_prop)
   fun_prop
 
-lemma adapted_pullCount_add_one [MeasurableSingletonClass 𝓐]
+/-- The number of pulls of `a` before time `n` is a function of the first `n` rounds. -/
+lemma adapted_pullCount [MeasurableSingletonClass 𝓐]
     (h : IsAlgEnvSeq O A R' alg env P) (a : 𝓐) :
-    Adapted h.filtration (fun n ↦ pullCount A a (n + 1)) := by
+    Adapted h.filtration (pullCount A a) := by
   intro n
-  change Measurable[h.filtration n] (pullCount A a (n + 1))
+  change Measurable[h.filtration n] (pullCount A a n)
   rw [measurable_iff_comap_le, h.filtration_eq_comap, pullCount_eq_comp_history (O := O) (R' := R'),
     ← measurable_iff_comap_le]
-  exact measurable_comp_comap _ (measurable_pullCount' (n + 1) a)
+  exact measurable_comp_comap _ (measurable_pullCount' n a)
 
-lemma stronglyAdapted_pullCount_add_one [MeasurableSingletonClass 𝓐]
+lemma stronglyAdapted_pullCount [MeasurableSingletonClass 𝓐]
     (h : IsAlgEnvSeq O A R' alg env P) (a : 𝓐) :
-    StronglyAdapted h.filtration (fun n ↦ pullCount A a (n + 1)) :=
-  (adapted_pullCount_add_one h a).stronglyAdapted
-
-lemma isStronglyPredictable_pullCount [MeasurableSingletonClass 𝓐]
-    (h : IsAlgEnvSeq O A R' alg env P) (a : 𝓐) :
-    IsStronglyPredictable h.filtration (pullCount A a) := by
-  rw [IsStronglyPredictable.iff_measurable_add_one]
-  refine ⟨?_, stronglyAdapted_pullCount_add_one h a⟩
-  simp only [pullCount_zero]
-  fun_prop
+    StronglyAdapted h.filtration (pullCount A a) :=
+  (adapted_pullCount h a).stronglyAdapted
 
 lemma measurableSet_action_eq_and_pullCount_eq [MeasurableSingletonClass 𝓐]
     (hA : ∀ n, Measurable (A n)) (t : ℕ) (b : 𝓐) (k : ℕ) :
@@ -529,16 +522,6 @@ lemma stepsUntil_eq_congr {ω' : Ω} (h_eq : ∀ i ≤ n, A i ω = A i ω') :
 
 section Measurability
 
-lemma isStoppingTime_stepsUntil [MeasurableSingletonClass 𝓐]
-    (h : IsAlgEnvSeq O A R' alg env P) (a : 𝓐) (hm : m ≠ 0) :
-    IsStoppingTime h.filtration (stepsUntil A a m) := by
-  rw [stepsUntil_eq_leastGE _ hm]
-  refine StronglyAdapted.isStoppingTime_leastGE _ fun n ↦ ?_
-  suffices StronglyMeasurable[h.filtration n] (pullCount A a (n + 1)) by
-    fun_prop
-  refine Measurable.stronglyMeasurable ?_
-  exact adapted_pullCount_add_one h a n
-
 -- todo: get this from the stopping time property?
 @[fun_prop]
 lemma measurable_stepsUntil [MeasurableSingletonClass 𝓐]
@@ -643,6 +626,27 @@ lemma isStoppingTime_stepsUntil_filtrationAction [MeasurableSingletonClass 𝓐]
   refine isStoppingTime_of_measurableSet_eq fun n ↦ ?_
   rw [h.filtrationAction_eq_comap n]
   exact measurableSet_stepsUntil_eq O R' a m n
+
+/-- `stepsUntil a m + 1`, the number of rounds played until action `a` has been pulled `m`
+times, is a stopping time with respect to the history filtration (`stepsUntil a m` itself is the
+index of the round of the `m`-th pull, which is known only once that round is played). -/
+lemma isStoppingTime_stepsUntil_add_one [MeasurableSingletonClass 𝓐]
+    (h : IsAlgEnvSeq O A R' alg env P) (a : 𝓐) (m : ℕ) :
+    IsStoppingTime h.filtration (fun ω ↦ (stepsUntil A a m ω + 1 : ℕ∞)) := by
+  intro n
+  change MeasurableSet[h.filtration n] {ω | stepsUntil A a m ω + 1 ≤ (n : ℕ∞)}
+  cases n with
+  | zero =>
+    convert @MeasurableSet.empty Ω (h.filtration 0) using 1
+    ext ω
+    simp only [Set.mem_ofPred_eq, Set.mem_empty_iff_false, iff_false]
+    exact fun h' ↦ absurd (le_add_self.trans h') (by simp)
+  | succ j =>
+    convert h.filtrationAction_le_filtration_succ j _
+      (isStoppingTime_stepsUntil_filtrationAction h a m j) using 1
+    ext ω
+    simp only [Set.mem_ofPred_eq, ENat.some_eq_natCast, Nat.cast_add, Nat.cast_one]
+    exact ENat.add_le_add_iff_right (by simp)
 
 end Measurability
 
