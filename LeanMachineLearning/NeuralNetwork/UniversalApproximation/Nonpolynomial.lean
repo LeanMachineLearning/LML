@@ -72,8 +72,7 @@ theorem iteratedLineDerivOp_apply_iterated_testFunction
   | zero => simp
   | succ n ih =>
       rw [Function.iterate_succ_apply']
-      change Distribution.lineDerivCLM (1 : ℝ) ((∂_{(1 : ℝ)})^[n] T) φ =
-        (-1 : ℝ) ^ (n + 1) • T (((TestFunction.lineDerivCLM ℝ (1 : ℝ))^[n + 1]) φ)
+      change Distribution.lineDerivCLM (1 : ℝ) _ φ = _
       simp [Distribution.lineDerivCLM_apply, ih, Function.iterate_succ_apply, pow_succ]
 
 /-- Every distributional derivative of a continuous nonpolynomial function is nonzero.
@@ -109,8 +108,7 @@ theorem exists_testFunction_iteratedLineDeriv_integral_mul_reflected_ne_zero
   let T : 𝓓'((⊤ : TopologicalSpace.Opens ℝ), ℝ) :=
     LineDeriv.iteratedLineDerivOp (fun _ : Fin n ↦ (1 : ℝ))
       (Distribution.ofFun (⊤ : TopologicalSpace.Opens ℝ) f volume ⊤)
-  have hf : ¬ Function.IsPolynomial f := by
-    simpa [f, isPolynomial_reflectedActivation_iff] using hσ
+  have hf : ¬ Function.IsPolynomial f := by simpa [f, isPolynomial_reflectedActivation_iff]
   have hT : T ≠ 0 := Distribution.iteratedLineDerivOp_ofFun_ne_zero_of_not_isPolynomial hf n
   obtain ⟨φ, hφ⟩ := T.exists_ne_zero hT
   refine ⟨φ, ?_⟩
@@ -123,7 +121,7 @@ theorem exists_testFunction_iteratedLineDeriv_integral_mul_reflected_ne_zero
     simp [smul_eq_mul, f, reflectedActivation_apply]
   intro hzero
   apply hφ
-  exact heval.trans (by rw [hzero, mul_zero])
+  exact heval.trans (by simpa)
 
 /-- For every order, a nonpolynomial continuous activation has a test-function convolution whose
 derivative is nonzero at the origin in that order. -/

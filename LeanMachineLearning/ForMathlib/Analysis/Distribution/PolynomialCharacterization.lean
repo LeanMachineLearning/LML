@@ -47,38 +47,26 @@ theorem exists_polynomial_of_iteratedLineDerivOp_eq_zero
     ∃ p : Polynomial ℝ, T = ofFun Ω (fun x => p.eval x) volume ⊤ := by
   induction k generalizing T with
   | zero =>
-      simp only [iteratedLineDerivOp_fin_zero] at hT
       refine ⟨0, ?_⟩
-      rw [show (fun x : ℝ => (0 : Polynomial ℝ).eval x) = 0 by funext x; simp,
-        ofFun_zero]
-      exact hT
+      rwa [show (fun x : ℝ => (0 : Polynomial ℝ).eval x) = 0 by funext x; simp, ofFun_zero]
   | succ k ih =>
       let DT : 𝓓'(Ω, ℝ) := ∂_{(1 : ℝ)} T
       have hDT : iteratedLineDerivOp (fun _ : Fin k => (1 : ℝ)) DT = 0 := by
-        rw [iteratedLineDerivOp_const_eq_iter_lineDerivOp] at hT ⊢
-        exact hT
+        rwa [iteratedLineDerivOp_const_eq_iter_lineDerivOp] at hT ⊢
       obtain ⟨p, hp⟩ := ih DT hDT
       obtain ⟨q, hq⟩ := Polynomial.derivative_surjective_of_charZero p
       let Q : 𝓓'(Ω, ℝ) := ofFun Ω (fun x => q.eval x) volume ⊤
       have hqLoc : LocallyIntegrableOn (fun x => q.eval x) Ω volume :=
         q.continuous.locallyIntegrable.locallyIntegrableOn _
-      have hDQ : lineDerivCLM (1 : ℝ) Q =
-          ofFun Ω (fun x => p.eval x) volume ⊤ := by
-        dsimp only [Q]
-        rw [lineDerivCLM_ofFun_eq_of_hasDerivAt
-          (fun x => q.hasDerivAt x) hqLoc
-          ((q.derivative.continuous).locallyIntegrable.locallyIntegrableOn _)]
-        rw [hq]
       have hDsub : (lineDerivCLM (1 : ℝ) (T - Q) : 𝓓'(Ω, ℝ)) = 0 := by
-        rw [map_sub, hDQ, ← hp]
-        change DT - DT = 0
+        rw [map_sub, lineDerivCLM_ofFun_eq_of_hasDerivAt (fun x => q.hasDerivAt x) hqLoc
+          ((q.derivative.continuous).locallyIntegrable.locallyIntegrableOn _), hq, ← hp]
         exact sub_self _
       have hconst := eq_ofFun_const_of_lineDerivCLM_eq_zero_of_hasCompactSupportPrimitive
         ρ hρ (T - Q) hDsub
       let c : ℝ := (T - Q) ρ
       have hcLoc : LocallyIntegrableOn (fun _ : ℝ => c) Ω volume :=
-        (continuous_const : Continuous (fun _ : ℝ => c)).locallyIntegrable
-          |>.locallyIntegrableOn _
+        continuous_const.locallyIntegrable.locallyIntegrableOn _
       refine ⟨q + Polynomial.C c, ?_⟩
       have heval : (fun x => (q + Polynomial.C c).eval x) =
           (fun x => q.eval x) + (fun _ : ℝ => c) := by
@@ -104,8 +92,7 @@ theorem ofFun_eq_iff_eq_of_continuous
       ofFun (⊤ : TopologicalSpace.Opens E) g μ n ↔ f = g := by
   constructor
   · intro h
-    have hae : f =ᵐ[μ.restrict (Set.univ : Set E)] g :=
-      ofFun_injective hfloc hgloc h
+    have hae : f =ᵐ[μ.restrict (Set.univ : Set E)] g := ofFun_injective hfloc hgloc h
     exact (Continuous.ae_eq_iff_eq μ hf hg).mp <| by simpa using hae
   · rintro rfl
     rfl
@@ -133,11 +120,9 @@ theorem isPolynomial_of_iteratedLineDerivOp_ofFun_eq_zero
 vanishes, assuming the compactly supported primitive property on the real line. -/
 theorem isPolynomial_iff_exists_iteratedLineDerivOp_ofFun_eq_zero
     [TestFunction.HasCompactSupportPrimitive (⊤ : TopologicalSpace.Opens ℝ)]
-    (ρ : 𝓓((⊤ : TopologicalSpace.Opens ℝ), ℝ)) (hρ : ∫ x, ρ x = 1)
-    {f : ℝ → ℝ} (hf : Continuous f) :
-    Function.IsPolynomial f ↔
-      ∃ k : ℕ, iteratedLineDerivOp (fun _ : Fin k => (1 : ℝ))
-        (ofFun (⊤ : TopologicalSpace.Opens ℝ) f volume ⊤) = 0 := by
+    (ρ : 𝓓((⊤ : TopologicalSpace.Opens ℝ), ℝ)) (hρ : ∫ x, ρ x = 1) {f : ℝ → ℝ} (hf : Continuous f) :
+    Function.IsPolynomial f ↔ ∃ k : ℕ, iteratedLineDerivOp (fun _ : Fin k => (1 : ℝ))
+      (ofFun (⊤ : TopologicalSpace.Opens ℝ) f volume ⊤) = 0 := by
   constructor
   · rintro ⟨p, hp⟩
     refine ⟨p.natDegree + 1, ?_⟩

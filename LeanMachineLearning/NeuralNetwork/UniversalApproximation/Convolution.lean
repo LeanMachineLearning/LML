@@ -216,8 +216,6 @@ theorem hasDerivAt_convolutionActivation_iterate_lineDerivCLM
     (φ : 𝓓((⊤ : TopologicalSpace.Opens ℝ), ℝ)) (σ : C(ℝ, ℝ)) (n : ℕ) (x : ℝ) :
     HasDerivAt (convolutionActivation (((TestFunction.lineDerivCLM ℝ (1 : ℝ))^[n]) φ) σ)
       (convolutionActivation (((TestFunction.lineDerivCLM ℝ (1 : ℝ))^[n + 1]) φ) σ x) x := by
-  let _ : (volume : Measure ℝ).IsNegInvariant :=
-    Measure.IsAddHaarMeasure.isNegInvariant_of_regular volume
   have h := (((TestFunction.lineDerivCLM ℝ (1 : ℝ))^[n]) φ).hasCompactSupport
     |>.hasDerivAt_convolution_left (μ := volume) (ContinuousLinearMap.mul ℝ ℝ)
       ((TestFunction.contDiff (((TestFunction.lineDerivCLM ℝ (1 : ℝ))^[n]) φ)).of_le (by simp))

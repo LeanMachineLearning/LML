@@ -101,12 +101,7 @@ theorem annihilates_coordinate_pow_of_iteratedDeriv_ne_zero
         rw [hd0]
         have heq : g.comp (arg t) = (neuron g (t • w) b).restrict K := by
           ext x
-          simp only [arg, ContinuousMap.comp_apply, ContinuousMap.add_apply,
-            ContinuousMap.const_apply, ContinuousMap.mul_apply, u,
-            ContinuousMap.innerProductCoordinate_apply,
-            neuron_apply, ContinuousMap.restrict_apply, real_inner_smul_left]
-          congr 1
-          ring
+          simp [arg, u, neuron_apply, real_inner_smul_left, add_comm]
         rw [heq]
         simpa using hΛ (t • w) b
     | succ m ihm =>
@@ -144,8 +139,7 @@ smooth function may depend on the degree, as needed after mollification. -/
 theorem isDiscriminatory_of_smooth_ridges {σ : C(ℝ, ℝ)} (hsmooth : ∀ n : ℕ, ∃ (g : C(ℝ, ℝ)) (b : ℝ),
     ContDiff ℝ ∞ g ∧ iteratedDeriv n g b ≠ 0 ∧
       ∀ (K : Set E) (_hK : IsCompact K) (Λ : StrongDual ℝ C(K, ℝ)),
-        (∀ w c, Λ ((neuron σ w c).restrict K) = 0) →
-          ∀ w c, Λ ((neuron g w c).restrict K) = 0) :
+        (∀ w c, Λ ((neuron σ w c).restrict K) = 0) → ∀ w c, Λ ((neuron g w c).restrict K) = 0) :
     IsDiscriminatory E σ := by
   constructor
   intro K hK Λ hΛ

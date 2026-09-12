@@ -31,8 +31,7 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [HasContDiffBump
   [IsLocallyFiniteMeasure μ] [μ.IsOpenPosMeasure]
 
 /-- Regard a normalized smooth bump as a test function on an open set containing its support. -/
-def toTestFunctionNormed
-    (h : Metric.closedBall c f.rOut ⊆ Ω) : 𝓓(Ω, ℝ) where
+def toTestFunctionNormed (h : Metric.closedBall c f.rOut ⊆ Ω) : 𝓓(Ω, ℝ) where
   toFun := f.normed μ
   contDiff' := f.contDiff_normed
   hasCompactSupport' := f.hasCompactSupport_normed
@@ -40,16 +39,12 @@ def toTestFunctionNormed
 
 @[simp]
 theorem toTestFunctionNormed_apply
-    (h : Metric.closedBall c f.rOut ⊆ Ω) (x : E) :
-    f.toTestFunctionNormed μ h x = f.normed μ x :=
+    (h : Metric.closedBall c f.rOut ⊆ Ω) (x : E) : f.toTestFunctionNormed μ h x = f.normed μ x :=
   rfl
 
 /-- A normalized smooth bump, regarded as a test function, still has integral one. -/
 @[simp]
-theorem integral_toTestFunctionNormed
-    (h : Metric.closedBall c f.rOut ⊆ Ω) :
-    ∫ x, f.toTestFunctionNormed μ h x ∂μ = 1 := by
-  simpa only [toTestFunctionNormed_apply] using f.integral_normed (μ := μ)
+theorem integral_toTestFunctionNormed : ∫ (x : E), f.normed μ x ∂μ = 1 := f.integral_normed
 
 end ContDiffBump
 
@@ -67,10 +62,8 @@ theorem exists_integral_eq_one (hΩ : (Ω : Set E).Nonempty) :
   obtain ⟨ε, hε, hball⟩ := Metric.mem_nhds_iff.mp (Ω.isOpen.mem_nhds hc)
   let f : ContDiffBump c :=
     ContDiffBump.mk (ε / 4) (ε / 2) (by positivity) (by linarith)
-  have hf : Metric.closedBall c f.rOut ⊆ Ω := by
-    refine (Metric.closedBall_subset_ball ?_).trans hball
-    change ε / 2 < ε
-    exact half_lt_self hε
-  exact ⟨f.toTestFunctionNormed μ hf, f.integral_toTestFunctionNormed μ hf⟩
+  have hf : Metric.closedBall c f.rOut ⊆ Ω :=
+    (Metric.closedBall_subset_ball (half_lt_self hε)).trans hball
+  exact ⟨f.toTestFunctionNormed μ hf, by simp⟩
 
 end TestFunction

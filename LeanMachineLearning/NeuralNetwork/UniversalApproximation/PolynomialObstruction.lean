@@ -41,8 +41,6 @@ theorem finrank_continuousMap_range_fin_smul {e : E} (he : e ≠ 0) (n : ℕ) :
       apply Fin.ext
       exact_mod_cast (smul_left_injective ℝ he hij)⟩
   let K : Set E := Set.range emb
-  let _ : Fintype K := (Set.finite_range emb).fintype
-  let _ : DiscreteTopology K := Finite.instDiscreteTopology
   have hcard : Fintype.card K = n :=
     (Fintype.card_congr emb.toEquivRange).symm.trans (Fintype.card_fin n)
   change Module.finrank ℝ C(K, ℝ) = n
@@ -72,14 +70,12 @@ theorem exists_compact_not_dense_of_isPolynomial [Nontrivial E]
       apply Fin.ext
       exact_mod_cast (smul_left_injective ℝ he hij)⟩
   let K : Set E := Set.range emb
-  let coordinate : C(K, ℝ) :=
-    ⟨fun x ↦ inner ℝ e x / inner ℝ e e, (continuous_const.inner continuous_subtype_val).div_const _⟩
-  let evalDegree : ↥(degreeLT ℝ (p.natDegree + 1)) →ₗ[ℝ] C(K, ℝ) :=
+  let coordinate : C(K, ℝ) := ⟨fun x ↦ inner ℝ e x / inner ℝ e e, by fun_prop⟩
+  let evalDegree : degreeLT ℝ (p.natDegree + 1) →ₗ[ℝ] C(K, ℝ) :=
     (Polynomial.aeval coordinate).toLinearMap.domRestrict (degreeLT ℝ (p.natDegree + 1))
   have hfinrank : Module.finrank ℝ C(K, ℝ) = p.natDegree + 2 :=
     finrank_continuousMap_range_fin_smul he _
-  have hproper : evalDegree.range ≠ ⊤ :=
-    aeval_degreeLT_range_ne_top (by simpa using hfinrank)
+  have hproper : evalDegree.range ≠ ⊤ := aeval_degreeLT_range_ne_top hfinrank
   have hspace : (spaceOn σ K : Set C(K, ℝ)) ⊆ evalDegree.range := by
     rw [SetLike.coe_subset_coe, spaceOn]
     apply Submodule.span_le.2
@@ -89,8 +85,7 @@ theorem exists_compact_not_dense_of_isPolynomial [Nontrivial E]
       rw [degreeLT_succ_eq_degreeLE, mem_degreeLE, ← natDegree_le_iff_degree_le]
       calc
         q.natDegree ≤ p.natDegree * (C (inner ℝ w e) * X + C b).natDegree := natDegree_comp_le
-        _ ≤ p.natDegree * 1 := Nat.mul_le_mul_left _ <|
-          natDegree_add_le_of_degree_le
+        _ ≤ p.natDegree * 1 := Nat.mul_le_mul_left _ <| natDegree_add_le_of_degree_le
             (by simpa using natDegree_C_mul_X_pow_le (inner ℝ w e) 1) (by simp)
         _ = p.natDegree := Nat.mul_one _
     refine ⟨⟨q, hq⟩, ?_⟩

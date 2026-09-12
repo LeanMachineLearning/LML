@@ -85,7 +85,7 @@ indefinite integral over lower rays is compactly supported.
 This statement is independent of differentiability and works for functions with values in any
 complete real normed space. -/
 theorem hasCompactSupport_integral_Iic_of_integral_eq_zero
-    {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F]
+    {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
     {f : ℝ → F} (hfc : HasCompactSupport f) (hfi : Integrable f)
     (hzero : ∫ x, f x = 0) :
     HasCompactSupport (fun b ↦ ∫ x in Set.Iic b, f x) := by
