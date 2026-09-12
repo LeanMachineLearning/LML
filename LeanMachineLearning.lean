@@ -1,4 +1,5 @@
 module  -- shake: keep-all --deprecated_module: ignore
+
 public import LeanMachineLearning.ForMathlib.Algebra.Polynomial.Function
 public import LeanMachineLearning.ForMathlib.Analysis.Calculus.ContinuousMapComposition
 public import LeanMachineLearning.ForMathlib.Analysis.Distribution.Polynomial
@@ -6,17 +7,16 @@ public import LeanMachineLearning.ForMathlib.Analysis.Distribution.PolynomialCha
 public import LeanMachineLearning.ForMathlib.Analysis.Distribution.TestFunction
 public import LeanMachineLearning.ForMathlib.Analysis.Distribution.TestFunction.Normalize
 public import LeanMachineLearning.ForMathlib.Analysis.LocallyConvex.Annihilator
-public import LeanMachineLearning.ForMathlib.LinearAlgebra.Multilinear.Polarization
-
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.ChainRule
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.CompProd
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.Convex
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.DataProcessing
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.MapSequence
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.Restrict
+public import LeanMachineLearning.ForMathlib.LinearAlgebra.Multilinear.Polarization
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Integral.ClosedSubmodule
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measurable
 public import LeanMachineLearning.ForMathlib.MeasureTheory.MeasurableSpace.Embedding
-public import LeanMachineLearning.ForMathlib.MeasureTheory.Integral.ClosedSubmodule
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measure.AbsolutelyContinuous
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Order.Lattice
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Order.MeasurableArg
