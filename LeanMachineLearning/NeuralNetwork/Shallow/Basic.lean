@@ -8,7 +8,7 @@ module
 public import Mathlib.Analysis.InnerProductSpace.Continuous
 public import Mathlib.LinearAlgebra.Finsupp.LinearCombination
 public import Mathlib.Topology.ContinuousMap.Algebra
-public import LeanMachineLearning.ForMathlib.Topology.ContinuousMap.Dense
+public import Mathlib.Topology.ContinuousMap.Compact
 
 /-!
 # Single-hidden-layer neural networks
@@ -26,8 +26,7 @@ variable {E : Type*} [SeminormedAddCommGroup E] [InnerProductSpace ℝ E]
 
 /-- A single neuron with weight `w`, bias `b`, and activation `σ`. -/
 def neuron (σ : C(ℝ, ℝ)) (w : E) (b : ℝ) : C(E, ℝ) :=
-  σ.comp ⟨fun x ↦ inner ℝ w x + b,
-    (continuous_const.inner continuous_id).add continuous_const⟩
+  σ.comp ⟨fun x ↦ inner ℝ w x + b, by fun_prop⟩
 
 @[simp]
 theorem neuron_apply (σ : C(ℝ, ℝ)) (w : E) (b : ℝ) (x : E) :
@@ -86,16 +85,14 @@ theorem mem_spaceOn_iff (σ : C(ℝ, ℝ)) (K : Set E) (f : C(K, ℝ)) :
 
 /-- `spaceOn` is the image of the global network space under restriction. -/
 theorem spaceOn_eq_map (σ : C(ℝ, ℝ)) (K : Set E) :
-    spaceOn σ K =
-      (space σ).map
-        (ContinuousMap.compCLM ℝ ℝ
-          ⟨((↑) : K → E), continuous_subtype_val⟩).toLinearMap := by
+    spaceOn σ K = (space σ).map
+      (ContinuousMap.compCLM ℝ ℝ ⟨((↑) : K → E), continuous_subtype_val⟩).toLinearMap := by
   rw [spaceOn, space, Submodule.map_span]
   congr 1
   ext f
-  simp only [Set.mem_range, Set.mem_image]
   aesop
 
+variable (E) in
 /-- An activation is universal on `E` if its shallow networks are dense on every compact
 subset. This class packages the property for downstream approximation theorems. -/
 class IsUniversal (σ : C(ℝ, ℝ)) : Prop where
@@ -103,23 +100,27 @@ class IsUniversal (σ : C(ℝ, ℝ)) : Prop where
 
 /-- The typeclass formulation of universality unfolds to density on every compact subset. -/
 theorem isUniversal_iff (σ : C(ℝ, ℝ)) :
-    IsUniversal (E := E) σ ↔
-      ∀ (K : Set E), IsCompact K → Dense (spaceOn σ K : Set C(K, ℝ)) := by
+    IsUniversal E σ ↔ ∀ (K : Set E), IsCompact K → Dense (spaceOn σ K : Set C(K, ℝ)) := by
   grind [IsUniversal]
 
 /-- The usual uniform epsilon formulation of universal approximation on every compact set. -/
 theorem isUniversal_iff_uniform_approximation (σ : C(ℝ, ℝ)) :
-    IsUniversal (E := E) σ ↔
+    IsUniversal E σ ↔
       ∀ (K : Set E), IsCompact K → ∀ (f : C(K, ℝ)) (ε : ℝ), 0 < ε →
         ∃ g ∈ spaceOn σ K, ∀ x, dist (g x) (f x) < ε := by
   constructor
   · rintro ⟨h⟩ K hK
     let _ : CompactSpace K := isCompact_iff_compactSpace.mp hK
-    exact ContinuousMap.dense_iff_forall_exists_forall_dist_lt.mp (h K hK)
+    intro f ε hε
+    obtain ⟨g, hgBall, hgSpace⟩ := Metric.dense_iff.mp (h K hK) f ε hε
+    exact ⟨g, hgSpace, (ContinuousMap.dist_lt_iff hε).mp hgBall⟩
   · intro h
     constructor
     intro K hK
     let _ : CompactSpace K := isCompact_iff_compactSpace.mp hK
-    exact ContinuousMap.dense_iff_forall_exists_forall_dist_lt.mpr (h K hK)
+    rw [Metric.dense_iff]
+    intro f ε hε
+    obtain ⟨g, hgSpace, hgDist⟩ := h K hK f ε hε
+    exact ⟨g, (ContinuousMap.dist_lt_iff hε).mpr hgDist, hgSpace⟩
 
 end Learning.ShallowNetwork

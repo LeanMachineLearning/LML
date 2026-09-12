@@ -26,17 +26,9 @@ variable [TopologicalSpace M] [AddCommMonoid M] [ContinuousAdd M]
 variable [Module R M] [ContinuousConstSMul R M]
 
 /-- Continuous maps from a discrete space are linearly equivalent to arbitrary functions. -/
-def linearEquivFnOfDiscrete : C(X, M) ≃ₗ[R] (X → M) where
-  __ := equivFnOfDiscrete
-  map_add' _ _ := rfl
-  map_smul' _ _ := rfl
-
-@[simp]
-theorem linearEquivFnOfDiscrete_apply (f : C(X, M)) (x : X) :
-    linearEquivFnOfDiscrete R f x = f x := rfl
-
-@[simp]
-theorem linearEquivFnOfDiscrete_symm_apply_apply (f : X → M) (x : X) :
-    (linearEquivFnOfDiscrete R).symm f x = f x := rfl
+def linearEquivFnOfDiscrete : C(X, M) ≃ₗ[R] (X → M) :=
+  equivFnOfDiscrete.toLinearEquiv
+    { map_add := fun _ _ ↦ rfl
+      map_smul := fun _ _ ↦ rfl }
 
 end ContinuousMap

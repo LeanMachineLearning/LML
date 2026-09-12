@@ -121,14 +121,6 @@ namespace ContinuousMap
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- The real inner-product coordinate `x ↦ ⟪w, x⟫` on a subtype. -/
-def innerProductCoordinate (K : Set E) (w : E) : C(K, ℝ) :=
-  ⟨fun x ↦ inner ℝ w x.1, continuous_const.inner continuous_subtype_val⟩
-
-@[simp]
-theorem innerProductCoordinate_apply (K : Set E) (w : E) (x : K) :
-    innerProductCoordinate K w x = inner ℝ w x.1 := rfl
-
 /-- The continuous linear map sending a vector to its inner-product coordinate on a compact
 subtype.  Compactness bounds the subtype, so finite-dimensionality is not required. -/
 noncomputable def innerProductCoordinateCLM (K : Set E) [CompactSpace K] :

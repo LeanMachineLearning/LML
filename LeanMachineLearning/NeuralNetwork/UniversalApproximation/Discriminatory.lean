@@ -5,34 +5,48 @@ Authors: Yi Yuan
 -/
 module
 
+public import LeanMachineLearning.ForMathlib.Analysis.Calculus.ContinuousMapComposition
 public import LeanMachineLearning.ForMathlib.Analysis.LocallyConvex.Annihilator
+public import LeanMachineLearning.ForMathlib.Topology.ContinuousMap.Moments
 public import LeanMachineLearning.NeuralNetwork.Shallow.Basic
+public import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
 
 /-!
-# Discriminatory activation functions
+# Discriminatory criteria for universal approximation
 
 An activation is discriminatory on an input space if the only continuous linear functional on
 `C(K, ℝ)` that annihilates every neuron is zero, for every compact `K`. Hahn--Banach makes this
 property equivalent to universal approximation.
+
+For smooth activations, annihilating all ridges whose `n`-th derivative is nonzero somewhere
+forces a functional to annihilate every `n`-th power of a linear coordinate. The resulting
+criterion permits a different smooth ridge function at each degree. Smoothness and successive
+derivatives are expressed using mathlib's `ContDiff` and `iteratedDeriv`.
 -/
 
 @[expose] public section
 
+open scoped ContDiff
+
 namespace Learning.ShallowNetwork
 
-variable {E : Type*} [SeminormedAddCommGroup E] [InnerProductSpace ℝ E]
+/-! ## The dual criterion -/
+
+section Discriminatory
 
 /-- An activation is discriminatory on `E` if no nonzero continuous linear functional annihilates
 all of its neurons on a compact subset of `E`. -/
-class IsDiscriminatory (σ : C(ℝ, ℝ)) : Prop where
-  annihilator_eq_zero :
-    ∀ (K : Set E), IsCompact K → ∀ Λ : StrongDual ℝ C(K, ℝ),
+class IsDiscriminatory (E : Type*) [SeminormedAddCommGroup E] [InnerProductSpace ℝ E]
+    (σ : C(ℝ, ℝ)) : Prop where
+  annihilator_eq_zero : ∀ (K : Set E), IsCompact K → ∀ Λ : StrongDual ℝ C(K, ℝ),
       (∀ w b, Λ ((neuron σ w b).restrict K) = 0) → Λ = 0
+
+variable {E : Type*} [SeminormedAddCommGroup E] [InnerProductSpace ℝ E]
 
 /-- For shallow networks, the discriminatory-functional criterion is equivalent to universal
 approximation. -/
 theorem isUniversal_iff_isDiscriminatory (σ : C(ℝ, ℝ)) :
-    IsUniversal (E := E) σ ↔ IsDiscriminatory (E := E) σ := by
+    IsUniversal E σ ↔ IsDiscriminatory E σ := by
   constructor
   · rintro ⟨h_dense⟩
     constructor
@@ -56,5 +70,116 @@ theorem isUniversal_iff_isDiscriminatory (σ : C(ℝ, ℝ)) :
     apply h_disc K hK Λ
     intro w b
     exact hΛ _ (Submodule.subset_span ⟨(w, b), rfl⟩)
+
+end Discriminatory
+
+/-! ## Smooth ridge criteria -/
+
+section SmoothActivation
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+
+/-- A functional annihilating every ridge of `g` also annihilates every power of a linear
+coordinate for which the corresponding derivative of `g` is nonzero somewhere. -/
+theorem annihilates_coordinate_pow_of_iteratedDeriv_ne_zero
+    {g : C(ℝ, ℝ)} {K : Set E} {Λ : StrongDual ℝ C(K, ℝ)} {n : ℕ} {b : ℝ} {w : E}
+    (hg : ContDiff ℝ ∞ g) (hK : IsCompact K)
+    (hΛ : ∀ w b, Λ ((neuron g w b).restrict K) = 0) (hb : iteratedDeriv n g b ≠ 0) :
+    Λ ((ContinuousMap.innerProductCoordinate K w) ^ n) = 0 := by
+  let _ : CompactSpace K := isCompact_iff_compactSpace.mp hK
+  let u : C(K, ℝ) := ContinuousMap.innerProductCoordinate K w
+  let arg (t : ℝ) : C(K, ℝ) := ContinuousMap.const K b + ContinuousMap.const K t * u
+  let d (m : ℕ) : C(ℝ, ℝ) := ⟨iteratedDeriv m g, hg.continuous_iteratedDeriv m (by simp)⟩
+  have hstep : ∀ m t, Λ (u ^ m * (d m).comp (arg t)) = 0 := by
+    intro m
+    induction m with
+    | zero =>
+        intro t
+        have hd0 : d 0 = g := by
+          ext x
+          simp [d]
+        rw [hd0]
+        have heq : g.comp (arg t) = (neuron g (t • w) b).restrict K := by
+          ext x
+          simp only [arg, ContinuousMap.comp_apply, ContinuousMap.add_apply,
+            ContinuousMap.const_apply, ContinuousMap.mul_apply, u,
+            ContinuousMap.innerProductCoordinate_apply,
+            neuron_apply, ContinuousMap.restrict_apply, real_inner_smul_left]
+          congr 1
+          ring
+        rw [heq]
+        simpa using hΛ (t • w) b
+    | succ m ihm =>
+        intro t
+        have hd : ∀ y, HasDerivAt (d m) (d (m + 1) y) y := by
+          intro y
+          simpa only [d, ContinuousMap.coe_mk, iteratedDeriv_succ] using
+            (hg.differentiable_iteratedDeriv m
+              (by exact_mod_cast ENat.natCast_lt_top m) y).hasDerivAt
+        have hcurve := HasDerivAt.continuousMap_comp_affine hd (ContinuousMap.const K b) u t
+        have hmul := hcurve.const_mul (u ^ m)
+        have hmul' : HasDerivAt (fun s ↦ u ^ m * (d m).comp (arg s))
+            (u ^ m * (u * (d (m + 1)).comp (arg t))) t := by
+          convert hmul using 1
+          ext x
+          simp [arg, smul_eq_mul]
+        have happly : HasDerivAt (fun s ↦ Λ (u ^ m * (d m).comp (arg s)))
+            (Λ (u ^ m * (u * (d (m + 1)).comp (arg t)))) t := by
+          simpa [Function.comp_def] using Λ.hasFDerivAt.comp_hasDerivAt_of_eq t hmul' rfl
+        have hzero : HasDerivAt (fun s ↦ Λ (u ^ m * (d m).comp (arg s))) 0 t := by
+          convert hasDerivAt_const t (0 : ℝ) using 1
+          funext s
+          exact ihm s
+        have hz := happly.unique hzero
+        simpa [pow_succ, mul_assoc] using hz
+  have h := hstep n 0
+  have harg : (d n).comp (arg 0) = ContinuousMap.const K (d n b) := by
+    ext x
+    simp [arg]
+  rw [harg] at h
+  have heq : u ^ n * ContinuousMap.const K (d n b) = d n b • u ^ n := by
+    ext x
+    simp [mul_comm]
+  rw [heq, map_smul] at h
+  exact (mul_eq_zero.mp h).resolve_left hb
+
+/-- A degree-by-degree smooth ridge family is enough for the discriminatory property.  The
+smooth function may depend on the degree, as needed after mollification. -/
+theorem isDiscriminatory_of_smooth_ridges {σ : C(ℝ, ℝ)} (hsmooth : ∀ n : ℕ, ∃ (g : C(ℝ, ℝ)) (b : ℝ),
+    ContDiff ℝ ∞ g ∧ iteratedDeriv n g b ≠ 0 ∧
+      ∀ (K : Set E) (_hK : IsCompact K) (Λ : StrongDual ℝ C(K, ℝ)),
+        (∀ w c, Λ ((neuron σ w c).restrict K) = 0) →
+          ∀ w c, Λ ((neuron g w c).restrict K) = 0) :
+    IsDiscriminatory E σ := by
+  constructor
+  intro K hK Λ hΛ
+  let _ : CompactSpace K := isCompact_iff_compactSpace.mp hK
+  apply StrongDual.eq_zero_of_innerProductCoordinate_powers K Λ
+  intro n w
+  obtain ⟨g, b, hg, hb, htransfer⟩ := hsmooth n
+  exact annihilates_coordinate_pow_of_iteratedDeriv_ne_zero hg hK (htransfer K hK Λ hΛ) hb
+
+/-- A smooth activation with no identically-zero derivative is discriminatory on every real
+inner-product space. -/
+theorem isDiscriminatory_of_contDiff_of_iteratedDeriv_ne_zero
+    {g : C(ℝ, ℝ)} (hg : ContDiff ℝ ∞ g) (hne : ∀ n : ℕ, ∃ b : ℝ, iteratedDeriv n g b ≠ 0) :
+    IsDiscriminatory E g := by
+  apply isDiscriminatory_of_smooth_ridges
+  intro n
+  obtain ⟨b, hb⟩ := hne n
+  exact ⟨g, b, hg, hb, by
+    intro K hK Λ hΛ
+    exact hΛ⟩
+
+/-- A smooth activation with no identically-zero derivative has the universal approximation
+property on every real inner-product space. -/
+theorem isUniversal_of_contDiff_of_iteratedDeriv_ne_zero
+    {g : C(ℝ, ℝ)} (hg : ContDiff ℝ ∞ g)
+    (hne : ∀ n : ℕ, ∃ b : ℝ, iteratedDeriv n g b ≠ 0) :
+    IsUniversal E g :=
+  (isUniversal_iff_isDiscriminatory g).2
+    (isDiscriminatory_of_contDiff_of_iteratedDeriv_ne_zero hg hne)
+
+end SmoothActivation
 
 end Learning.ShallowNetwork

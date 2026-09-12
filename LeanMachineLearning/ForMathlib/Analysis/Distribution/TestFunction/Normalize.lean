@@ -13,8 +13,7 @@ public import Mathlib.Analysis.Distribution.TestFunction
 # Test functions normalized by their integral
 
 This file constructs real-valued test functions of integral one from normalized smooth bump
-functions, both inside an arbitrary nonempty open subset of a finite-dimensional real normed
-space and as a fixed test function on the real line.
+functions inside an arbitrary nonempty open subset of a finite-dimensional real normed space.
 -/
 
 @[expose] public section
@@ -73,19 +72,5 @@ theorem exists_integral_eq_one (hΩ : (Ω : Set E).Nonempty) :
     change ε / 2 < ε
     exact half_lt_self hε
   exact ⟨f.toTestFunctionNormed μ hf, f.integral_toTestFunctionNormed μ hf⟩
-
-/-- A fixed smooth compactly supported function on `ℝ` whose Lebesgue integral is one. -/
-def normalizedBumpReal : 𝓓((⊤ : Opens ℝ), ℝ) :=
-  let f : ContDiffBump (0 : ℝ) :=
-    ContDiffBump.mk 1 2 zero_lt_one one_lt_two
-  f.toTestFunctionNormed volume (subset_univ _)
-
-@[simp]
-theorem integral_normalizedBumpReal :
-    ∫ x : ℝ, normalizedBumpReal x = 1 := by
-  let f : ContDiffBump (0 : ℝ) :=
-    ContDiffBump.mk 1 2 zero_lt_one one_lt_two
-  simpa only [normalizedBumpReal] using
-    f.integral_toTestFunctionNormed volume (subset_univ _)
 
 end TestFunction
