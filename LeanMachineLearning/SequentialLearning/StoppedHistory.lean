@@ -18,9 +18,10 @@ length: the interaction stops after `n` rounds if the history of these `n` round
 `S`. Its *stopping time* `stoppingTime O X Y S : Ω → ℕ∞` is the number of rounds played, the
 hitting time (Mathlib `hittingAfter`) of `S` by the process `sigmaHistory O X Y` of the histories
 seen as histories of variable length. For a random time `τ : Ω → ℕ∞`, `stoppedHist O X Y τ` is
-the history of the first `τ` rounds, as a history of variable length: it is the stopped value
-(Mathlib `stoppedValue`) of the process `sigmaHistory O X Y` at `τ`, except that when `τ = ⊤` it
-is the empty history rather than an arbitrary value.
+the history of the first `τ` rounds, as a history of variable length: the stopped value (Mathlib
+`stoppedValue`) of the process `sigmaHistory O X Y` at `τ` (when `τ = ⊤`, this is the history of
+an arbitrary, unspecified number of rounds). The history of the first `min τ M` rounds is the
+stopped process (Mathlib `stoppedProcess`) `stoppedProcess (sigmaHistory O X Y) τ M`.
 
 * `stoppingTime_le_iff`, `lt_stoppingTime_iff`, `stoppingTime_eq_coe_iff`,
   `stoppingTime_eq_top_iff`: characterizations of the stopping time;
@@ -31,8 +32,9 @@ is the empty history rather than an arbitrary value.
   the events `{n < stoppingTime O X Y S}` and `{stoppingTime O X Y S ≤ n}` are determined by the
   first `n` rounds; `IsAlgEnvSeq.isStoppingTime_stoppingTime`: `stoppingTime O X Y S` is a
   stopping time of the history filtration of an algorithm-environment sequence;
-* `hasLaw_stoppedHist_min_add`, `hasLaw_stoppedHist_min_succ_add`: the laws of the histories
-  stopped at `min τ M` and `min τ (M + 1)` split according to whether `τ ≤ M`;
+* `hasLaw_stoppedProcess_sigmaHistory_add`, `hasLaw_stoppedProcess_sigmaHistory_succ_add`: the
+  laws of the histories stopped at `min τ M` and `min τ (M + 1)` split according to whether
+  `τ ≤ M`;
 * `IsAlgEnvSeq.hasCondDistrib_step_restrict_lt_stoppingTime` (and `obs`, `action`, `feedback`):
   on the event `{M < τ}`, which is determined by the first `M` rounds, the round at time `M` keeps
   its conditional laws; `IsAlgEnvSeq.hasLaw_history_succ_restrict_lt_stoppingTime`: on this
@@ -65,12 +67,12 @@ noncomputable def stoppingTime (O : ℕ → Ω → 𝓞) (X : ℕ → Ω → �
     (S : Set (Σ n : ℕ, Hist 𝓞 𝓐 𝓨 n)) : Ω → ℕ∞ :=
   hittingAfter (sigmaHistory O X Y) S 0
 
-/-- The history of the first `τ ω` rounds, as a history of variable length. When `τ ω = ⊤`, this
-is the empty history (Mathlib's `stoppedValue` would use an arbitrary value instead). -/
-noncomputable def stoppedHist (O : ℕ → Ω → 𝓞) (X : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨) (τ : Ω → ℕ∞)
-    (ω : Ω) :
-    Σ n : ℕ, Hist 𝓞 𝓐 𝓨 n :=
-  sigmaHistory O X Y (τ ω).toNat ω
+/-- The history of the first `τ ω` rounds, as a history of variable length: the stopped value of
+the process `sigmaHistory O X Y` at the random time `τ`. When `τ ω = ⊤`, this is the history of an
+arbitrary, unspecified number of rounds. -/
+noncomputable def stoppedHist (O : ℕ → Ω → 𝓞) (X : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨) (τ : Ω → ℕ∞) :
+    Ω → Σ n : ℕ, Hist 𝓞 𝓐 𝓨 n :=
+  stoppedValue (sigmaHistory O X Y) τ
 
 variable {O : ℕ → Ω → 𝓞} {X : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {S : Set (Σ n : ℕ, Hist 𝓞 𝓐 𝓨 n)}
   {τ : Ω → ℕ∞} {ω : Ω} {n M : ℕ}
@@ -79,6 +81,9 @@ lemma sigmaHistory_apply (n : ℕ) (ω : Ω) :
     sigmaHistory O X Y n ω = ⟨n, history O X Y n ω⟩ := rfl
 
 lemma fst_sigmaHistory (n : ℕ) (ω : Ω) : (sigmaHistory O X Y n ω).1 = n := rfl
+
+lemma stoppedHist_def (τ : Ω → ℕ∞) :
+    stoppedHist O X Y τ = stoppedValue (sigmaHistory O X Y) τ := rfl
 
 section stoppingTime
 
@@ -121,51 +126,31 @@ lemma stoppingTime_empty : stoppingTime O X Y (∅ : Set (Σ n : ℕ, Hist 𝓞 
 
 lemma stoppedHist_congr (τ τ' : Ω → ℕ∞) (h : τ ω = τ' ω) :
     stoppedHist O X Y τ ω = stoppedHist O X Y τ' ω := by
-  unfold stoppedHist
-  rw [h]
+  simp only [stoppedHist, stoppedValue, h]
 
 lemma stoppedHist_coe (M : ℕ) (ω : Ω) :
-    stoppedHist O X Y (fun _ ↦ (M : ℕ∞)) ω = sigmaHistory O X Y M ω := by
-  change sigmaHistory O X Y (M : ℕ∞).toNat ω = _
-  rw [ENat.toNat_natCast]
+    stoppedHist O X Y (fun _ ↦ (M : ℕ∞)) ω = sigmaHistory O X Y M ω := rfl
 
 /-- The stopped history belongs to the stopping rule when the stopping time is finite. -/
 lemma stoppedHist_mem_of_ne_top (h : stoppingTime O X Y S ω ≠ ⊤) :
-    stoppedHist O X Y (stoppingTime O X Y S) ω ∈ S := by
-  obtain ⟨n, hn⟩ := ENat.ne_top_iff_exists.1 h
-  rw [stoppedHist_congr (stoppingTime O X Y S) (fun _ ↦ (n : ℕ∞)) hn.symm, stoppedHist_coe]
-  exact (stoppingTime_eq_coe_iff.1 hn.symm).1
+    stoppedHist O X Y (stoppingTime O X Y S) ω ∈ S :=
+  hittingAfter_mem_set_of_ne_top h
 
-/-- If `τ ω ≤ M`, the history stopped at `min τ M` is the history stopped at `τ`. -/
-lemma stoppedHist_min_of_le (h : τ ω ≤ M) :
-    stoppedHist O X Y (fun ω ↦ min (τ ω) M) ω = stoppedHist O X Y τ ω :=
-  stoppedHist_congr (fun ω ↦ min (τ ω) M) τ (min_eq_left h)
+/-! The history of the first `min τ M` rounds is `stoppedProcess (sigmaHistory O X Y) τ M`: it
+is the history of the first `M` rounds if `M ≤ τ` (`stoppedProcess_eq_of_le`) and the history
+stopped at `τ` otherwise (`stoppedProcess_eq_of_ge`). -/
 
-/-- If `M < τ ω`, the history stopped at `min τ M` is the history of the first `M` rounds. -/
-lemma stoppedHist_min_of_lt (h : (M : ℕ∞) < τ ω) :
-    stoppedHist O X Y (fun ω ↦ min (τ ω) M) ω = sigmaHistory O X Y M ω := by
-  rw [stoppedHist_congr (fun ω ↦ min (τ ω) M) (fun _ ↦ (M : ℕ∞)) (min_eq_right h.le),
-    stoppedHist_coe]
+/-- The history of the first `min τ M` rounds has length at most `M`. -/
+lemma fst_stoppedProcess_sigmaHistory_le :
+    (stoppedProcess (sigmaHistory O X Y) τ M ω).1 ≤ M :=
+  (WithTop.untopA_le_iff (ne_top_of_le_ne_top (ENat.natCast_ne_top M) (min_le_left _ _))).2
+    (min_le_left _ _)
 
-/-- If `M < τ ω`, the history stopped at `min τ (M + 1)` is the history of the first `M + 1`
-rounds. -/
-lemma stoppedHist_min_succ_of_lt (h : (M : ℕ∞) < τ ω) :
-    stoppedHist O X Y (fun ω ↦ min (τ ω) (M + 1 : ℕ)) ω = sigmaHistory O X Y (M + 1) ω := by
-  rw [stoppedHist_congr (fun ω ↦ min (τ ω) (M + 1 : ℕ)) (fun _ ↦ ((M + 1 : ℕ) : ℕ∞))
-    (min_eq_right ?_), stoppedHist_coe]
-  exact_mod_cast Order.add_one_le_of_lt h
-
-/-- The history stopped at `min τ M` has length at most `M`. -/
-lemma fst_stoppedHist_min_le : (stoppedHist O X Y (fun ω ↦ min (τ ω) M) ω).1 ≤ M :=
-  ENat.toNat_le_of_le_natCast (min_le_right _ _)
-
-/-- The history stopped at `min τ 0` is the empty history. -/
-lemma stoppedHist_min_zero (τ : Ω → ℕ∞) :
-    (stoppedHist O X Y fun ω ↦ min (τ ω) ((0 : ℕ) : ℕ∞)) = fun _ ↦ ⟨0, default⟩ := by
-  funext ω
-  rw [stoppedHist_congr (fun ω ↦ min (τ ω) ((0 : ℕ) : ℕ∞)) (fun _ ↦ ((0 : ℕ) : ℕ∞))
-    (min_eq_right (by simp)), stoppedHist_coe]
-  exact congrArg (Sigma.mk 0) (Subsingleton.elim _ _)
+/-- The history of the first `min τ 0` rounds is the empty history. -/
+lemma stoppedProcess_sigmaHistory_zero (τ : Ω → ℕ∞) :
+    stoppedProcess (sigmaHistory O X Y) τ 0 = fun _ ↦ ⟨0, default⟩ :=
+  funext fun ω ↦ (stoppedProcess_eq_of_le (zero_le : (0 : ℕ∞) ≤ τ ω)).trans
+    (congrArg (Sigma.mk 0) (Subsingleton.elim _ _))
 
 end stoppingTime
 
@@ -189,11 +174,12 @@ end natCast
 
 variable {m𝓞 : MeasurableSpace 𝓞} {m𝓐 : MeasurableSpace 𝓐} {m𝓨 : MeasurableSpace 𝓨}
 
-/-- The history stopped at `min τ 0` has law the Dirac mass at the empty history. -/
-lemma hasLaw_stoppedHist_min_zero (P : Measure Ω) [IsProbabilityMeasure P] (τ : Ω → ℕ∞) :
-    HasLaw (stoppedHist O X Y fun ω ↦ min (τ ω) ((0 : ℕ) : ℕ∞))
+/-- The history of the first `min τ 0` rounds has law the Dirac mass at the empty history. -/
+lemma hasLaw_stoppedProcess_sigmaHistory_zero (P : Measure Ω) [IsProbabilityMeasure P]
+    (τ : Ω → ℕ∞) :
+    HasLaw (stoppedProcess (sigmaHistory O X Y) τ 0)
       (Measure.dirac (⟨0, default⟩ : Σ n : ℕ, Hist 𝓞 𝓐 𝓨 n)) P := by
-  rw [stoppedHist_min_zero]
+  rw [stoppedProcess_sigmaHistory_zero]
   exact hasLaw_dirac_of_ae_eq (ae_eq_refl _)
 
 section measurability
@@ -226,9 +212,10 @@ lemma measurable_stoppingTime (hS : MeasurableSet S) : Measurable (stoppingTime 
 lemma measurable_stoppedHist (hτ : Measurable τ) : Measurable (stoppedHist O X Y τ) :=
   Measurable.sigmaMk (measurable_from_top.comp hτ) (measurable_history hO hX hY)
 
-lemma measurable_stoppedHist_min (hτ : Measurable τ) (M : ℕ) :
-    Measurable (stoppedHist O X Y fun ω ↦ min (τ ω) M) :=
-  measurable_stoppedHist hO hX hY ((measurable_from_top (f := fun t : ℕ∞ ↦ min t M)).comp hτ)
+lemma measurable_stoppedProcess_sigmaHistory (hτ : Measurable τ) (M : ℕ) :
+    Measurable (stoppedProcess (sigmaHistory O X Y) τ M) :=
+  measurable_stoppedHist hO hX hY
+    ((measurable_from_top (f := fun t : ℕ∞ ↦ min (M : ℕ∞) t)).comp hτ)
 
 end measurability
 
@@ -262,63 +249,66 @@ section law
 
 variable {P : Measure Ω}
 
-/-- The law of the history stopped at `min τ M` splits according to whether `τ ≤ M`: on
-`{τ ≤ M}` it is the law of the history stopped at `τ` (or equivalently at `min τ M`), on
-`{M < τ}` it is the law of the history of the first `M` rounds. -/
-lemma hasLaw_stoppedHist_min_add (hτ : Measurable τ) {μ : Measure (Σ n : ℕ, Hist 𝓞 𝓐 𝓨 n)}
-    {ν : Measure (Hist 𝓞 𝓐 𝓨 M)}
-    (hμ : HasLaw (stoppedHist O X Y fun ω ↦ min (τ ω) M) μ (P.restrict {ω | τ ω ≤ M}))
+/-- The law of the history of the first `min τ M` rounds splits according to whether `τ ≤ M`:
+on `{τ ≤ M}` it is the law of the history stopped at `τ` (or equivalently of the first `min τ M`
+rounds), on `{M < τ}` it is the law of the history of the first `M` rounds. -/
+lemma hasLaw_stoppedProcess_sigmaHistory_add (hτ : Measurable τ)
+    {μ : Measure (Σ n : ℕ, Hist 𝓞 𝓐 𝓨 n)} {ν : Measure (Hist 𝓞 𝓐 𝓨 M)}
+    (hμ : HasLaw (stoppedProcess (sigmaHistory O X Y) τ M) μ (P.restrict {ω | τ ω ≤ M}))
     (hν : HasLaw (history O X Y M) ν (P.restrict {ω | (M : ℕ∞) < τ ω})) :
-    HasLaw (stoppedHist O X Y fun ω ↦ min (τ ω) M) (μ + ν.map (Sigma.mk M)) P := by
+    HasLaw (stoppedProcess (sigmaHistory O X Y) τ M) (μ + ν.map (Sigma.mk M)) P := by
   refine hμ.add_of_restrict_compl (measurableSet_le_natCast hτ M) ?_
   rw [compl_setOf_le_natCast]
   refine (((measurable_sigma_mk M).hasLaw_map ν).comp hν).congr
     ((ae_restrict_iff' (measurableSet_natCast_lt hτ M)).2
       (Filter.Eventually.of_forall fun ω hω ↦ ?_))
-  exact stoppedHist_min_of_lt hω
+  exact stoppedProcess_eq_of_le hω.le
 
-/-- The law of the history stopped at `min τ (M + 1)` splits according to whether `τ ≤ M`: on
-`{τ ≤ M}` it is the law of the history stopped at `min τ M`, on `{M < τ}` it is the law of the
-history of the first `M + 1` rounds. -/
-lemma hasLaw_stoppedHist_min_succ_add (hτ : Measurable τ)
+/-- The law of the history of the first `min τ (M + 1)` rounds splits according to whether
+`τ ≤ M`: on `{τ ≤ M}` it is the law of the history of the first `min τ M` rounds, on `{M < τ}` it
+is the law of the history of the first `M + 1` rounds. -/
+lemma hasLaw_stoppedProcess_sigmaHistory_succ_add (hτ : Measurable τ)
     {μ : Measure (Σ n : ℕ, Hist 𝓞 𝓐 𝓨 n)} {ν : Measure (Hist 𝓞 𝓐 𝓨 (M + 1))}
-    (hμ : HasLaw (stoppedHist O X Y fun ω ↦ min (τ ω) M) μ (P.restrict {ω | τ ω ≤ M}))
+    (hμ : HasLaw (stoppedProcess (sigmaHistory O X Y) τ M) μ (P.restrict {ω | τ ω ≤ M}))
     (hν : HasLaw (history O X Y (M + 1)) ν (P.restrict {ω | (M : ℕ∞) < τ ω})) :
-    HasLaw (stoppedHist O X Y fun ω ↦ min (τ ω) (M + 1 : ℕ)) (μ + ν.map (Sigma.mk (M + 1))) P := by
+    HasLaw (stoppedProcess (sigmaHistory O X Y) τ (M + 1)) (μ + ν.map (Sigma.mk (M + 1))) P := by
   refine HasLaw.add_of_restrict_compl (measurableSet_le_natCast hτ M) ?_ ?_
   · refine hμ.congr ((ae_restrict_iff' (measurableSet_le_natCast hτ M)).2
       (Filter.Eventually.of_forall fun ω hω ↦ ?_))
-    rw [stoppedHist_min_of_le hω, stoppedHist_min_of_le (hω.trans (by exact_mod_cast M.le_succ))]
+    rw [stoppedProcess_eq_of_ge hω, stoppedProcess_eq_of_ge
+      (hω.trans (by exact_mod_cast M.le_succ : (M : ℕ∞) ≤ ((M + 1 : ℕ) : ℕ∞)))]
   · rw [compl_setOf_le_natCast]
     refine (((measurable_sigma_mk (M + 1)).hasLaw_map ν).comp hν).congr
       ((ae_restrict_iff' (measurableSet_natCast_lt hτ M)).2
         (Filter.Eventually.of_forall fun ω hω ↦ ?_))
-    exact stoppedHist_min_succ_of_lt hω
+    have hω' : (M : ℕ∞) < τ ω := hω
+    have h_succ : ((M + 1 : ℕ) : ℕ∞) ≤ τ ω := by exact_mod_cast Order.add_one_le_of_lt hω'
+    exact stoppedProcess_eq_of_le h_succ
 
-/-- The history stopped at `min τ M` has length at most `M`: its law gives measure zero to the
-histories of length `> M`. -/
-lemma _root_.ProbabilityTheory.HasLaw.stoppedHist_min_apply_compl_fst_le
+/-- The history of the first `min τ M` rounds has length at most `M`: its law gives measure zero
+to the histories of length `> M`. -/
+lemma _root_.ProbabilityTheory.HasLaw.stoppedProcess_sigmaHistory_apply_compl_fst_le
     {μ : Measure (Σ n : ℕ, Hist 𝓞 𝓐 𝓨 n)}
-    (hμ : HasLaw (stoppedHist O X Y fun ω ↦ min (τ ω) M) μ P) :
+    (hμ : HasLaw (stoppedProcess (sigmaHistory O X Y) τ M) μ P) :
     μ {h | h.1 ≤ M}ᶜ = 0 :=
   hμ.measure_eq_zero_of_ae_notMem (measurableSet_sigma_fst_le M).compl
-    (ae_of_all _ fun _ h ↦ h fst_stoppedHist_min_le)
+    (ae_of_all _ fun _ h ↦ h fst_stoppedProcess_sigmaHistory_le)
 
 variable (hO : ∀ n, Measurable (O n)) (hX : ∀ n, Measurable (X n)) (hY : ∀ n, Measurable (Y n))
   (hS : MeasurableSet S)
 include hO hX hY hS
 
-/-- On `{τ ≤ M}`, the history stopped at `min τ M` belongs to the stopping rule: its law under
-the restriction of `P` to `{τ ≤ M}` gives measure zero to `Sᶜ`. -/
-lemma _root_.ProbabilityTheory.HasLaw.stoppedHist_min_restrict_stoppingTime_le_apply_compl
+/-- On `{τ ≤ M}`, the history of the first `min τ M` rounds belongs to the stopping rule: its
+law under the restriction of `P` to `{τ ≤ M}` gives measure zero to `Sᶜ`. -/
+lemma _root_.ProbabilityTheory.HasLaw.stoppedProcess_sigmaHistory_stoppingTime_apply_compl
     {μ : Measure (Σ n : ℕ, Hist 𝓞 𝓐 𝓨 n)}
-    (hμ : HasLaw (stoppedHist O X Y fun ω ↦ min (stoppingTime O X Y S ω) M) μ
+    (hμ : HasLaw (stoppedProcess (sigmaHistory O X Y) (stoppingTime O X Y S) M) μ
       (P.restrict {ω | stoppingTime O X Y S ω ≤ M})) :
     μ Sᶜ = 0 := by
   refine hμ.measure_eq_zero_of_ae_notMem hS.compl
     ((ae_restrict_iff' (measurableSet_le_natCast (measurable_stoppingTime hO hX hY hS) M)).2
       (Filter.Eventually.of_forall fun ω hω h ↦ h ?_))
-  rw [stoppedHist_min_of_le hω]
+  rw [stoppedProcess_eq_of_ge hω]
   exact stoppedHist_mem_of_ne_top (ne_top_of_le_ne_top (ENat.natCast_ne_top M) hω)
 
 /-- On `{M < τ}`, the history of the first `M` rounds does not belong to the stopping rule: if it
@@ -414,14 +404,6 @@ of the stopped history is determined by the algorithm and the environment: it is
 
 variable {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨}
 
-lemma stoppingTime_eq_comp_trajectory (S : Set (Σ n : ℕ, Hist 𝓞 𝓐 𝓨 n)) :
-    stoppingTime O X Y S = stoppingTime IT.obs IT.action IT.feedback S ∘ trajectory O X Y := rfl
-
-lemma stoppedHist_stoppingTime_eq_comp_trajectory (S : Set (Σ n : ℕ, Hist 𝓞 𝓐 𝓨 n)) :
-    stoppedHist O X Y (stoppingTime O X Y S) =
-      stoppedHist IT.obs IT.action IT.feedback (stoppingTime IT.obs IT.action IT.feedback S) ∘
-        trajectory O X Y := rfl
-
 /-- The law of the history stopped by the stopping rule `S`, for the algorithm `alg` in the
 environment `env`: the law of the stopped history on the canonical space `trajMeasure alg env`.
 This is the law of the stopped history for any algorithm-environment sequence
@@ -431,19 +413,14 @@ noncomputable def stoppedHistMeasure (alg : Algorithm 𝓞 𝓐 𝓨) (env : Env
     Measure (Σ n : ℕ, Hist 𝓞 𝓐 𝓨 n) :=
   (trajMeasure alg env).map
     (stoppedHist IT.obs IT.action IT.feedback (stoppingTime IT.obs IT.action IT.feedback S))
-
-instance (alg : Algorithm 𝓞 𝓐 𝓨) (env : Environment 𝓞 𝓐 𝓨) (S : Set (Σ n : ℕ, Hist 𝓞 𝓐 𝓨 n)) :
-    IsProbabilityMeasure (stoppedHistMeasure alg env S) := by
-  unfold stoppedHistMeasure
-  infer_instance
+deriving IsProbabilityMeasure
 
 /-- The law of the history stopped by `S` under any algorithm-environment sequence for `alg` and
 `env` is `stoppedHistMeasure alg env S`. -/
 lemma IsAlgEnvSeq.hasLaw_stoppedHist_stoppingTime {P : Measure Ω} [IsProbabilityMeasure P]
     (h : IsAlgEnvSeq O X Y alg env P) (hS : MeasurableSet S) :
-    HasLaw (stoppedHist O X Y (stoppingTime O X Y S)) (stoppedHistMeasure alg env S) P := by
-  rw [stoppedHist_stoppingTime_eq_comp_trajectory]
-  exact ((measurable_stoppedHist IT.measurable_obs IT.measurable_action IT.measurable_feedback
+    HasLaw (stoppedHist O X Y (stoppingTime O X Y S)) (stoppedHistMeasure alg env S) P :=
+  ((measurable_stoppedHist IT.measurable_obs IT.measurable_action IT.measurable_feedback
     (measurable_stoppingTime IT.measurable_obs IT.measurable_action IT.measurable_feedback
       hS)).hasLaw_map _).comp h.hasLaw_trajectory
 
