@@ -305,6 +305,18 @@ lemma history_succ (n : ℕ) :
   · simp [history, step]
   · simp [history]
 
+/-- If the history of the first `n` rounds has law `μ` and the round at time `n` has conditional
+law `κ` given this history, then the history of the first `n + 1` rounds has law the image of
+`μ ⊗ₘ κ` by the identification of `Hist 𝓞 𝓐 𝓨 n × Round 𝓞 𝓐 𝓨` with `Hist 𝓞 𝓐 𝓨 (n + 1)`. -/
+lemma hasLaw_history_succ {P : Measure Ω} {n : ℕ} {μ : Measure (Hist 𝓞 𝓐 𝓨 n)}
+    {κ : Kernel (Hist 𝓞 𝓐 𝓨 n) (Round 𝓞 𝓐 𝓨)}
+    (hμ : HasLaw (history O A Y n) μ P) (hκ : HasCondDistrib (step O A Y n) (history O A Y n) κ P) :
+    HasLaw (history O A Y (n + 1))
+      ((μ ⊗ₘ κ).map (MeasurableEquiv.finSuccProd (Round 𝓞 𝓐 𝓨) n).symm) P := by
+  rw [history_succ]
+  exact (hasLaw_map (MeasurableEquiv.finSuccProd (Round 𝓞 𝓐 𝓨) n).symm.measurable.aemeasurable).comp
+    (hμ.prodMk_of_hasCondDistrib hκ)
+
 /-- An algorithm-environment sequence: a sequence of observations, actions and feedbacks generated
 by an algorithm interacting with an environment. -/
 structure IsAlgEnvSeq

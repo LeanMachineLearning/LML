@@ -6,16 +6,18 @@ Authors: Rémy Degenne
 module
 
 public import Mathlib.MeasureTheory.MeasurableSpace.Embedding
+public import Mathlib.MeasureTheory.Measure.Map
 
 /-!
 # Measurability of functions on a sigma type
 
 A function on `Σ a, β a` is measurable as soon as each of its restrictions `f ∘ Sigma.mk a` is.
+We also record measurability facts about the first projection of `Σ n : ℕ, β n`.
 -/
 
 @[expose] public section
 
-open MeasurableSpace
+open MeasurableSpace MeasureTheory
 
 variable {α γ : Type*} {β : α → Type*} [∀ a, MeasurableSpace (β a)] [MeasurableSpace γ]
 
@@ -73,3 +75,27 @@ lemma measurableEmbedding_sigma_mk (a : α) :
       rwa [sigma_mk_preimage_image_eq_self]
     · rw [sigma_mk_preimage_image' hab]
       exact MeasurableSet.empty
+
+section Nat
+
+variable {X : ℕ → Type*} [∀ n, MeasurableSpace (X n)] {M : ℕ}
+
+/-- The set of elements of `Σ n : ℕ, X n` with first component at most `M` is measurable. -/
+lemma measurableSet_sigma_fst_le (M : ℕ) : MeasurableSet {x : Σ n, X n | x.1 ≤ M} :=
+  measurable_sigma_fst (MeasurableSet.of_discrete (s := Set.Iic M))
+
+/-- The set of elements of `Σ n : ℕ, X n` with first component less than `M` is measurable. -/
+lemma measurableSet_sigma_fst_lt (M : ℕ) : MeasurableSet {x : Σ n, X n | x.1 < M} :=
+  measurable_sigma_fst (MeasurableSet.of_discrete (s := Set.Iio M))
+
+/-- The image of a measure on `X (M + 1)` by `Sigma.mk (M + 1)` gives measure zero to the elements
+of `Σ n : ℕ, X n` with first component at most `M`. -/
+lemma MeasureTheory.Measure.map_sigmaMk_succ_apply_fst_le (μ : Measure (X (M + 1))) :
+    (μ.map (Sigma.mk (M + 1))) {x : Σ n, X n | x.1 ≤ M} = 0 := by
+  rw [Measure.map_apply (measurable_sigma_mk (M + 1)) (measurableSet_sigma_fst_le M)]
+  have : Sigma.mk (M + 1) ⁻¹' {x : Σ n, X n | x.1 ≤ M} = ∅ := by
+    ext x
+    simp
+  rw [this, measure_empty]
+
+end Nat

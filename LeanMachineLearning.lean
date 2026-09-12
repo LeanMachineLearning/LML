@@ -30,6 +30,7 @@ public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.Meas
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.IonescuTulcea.Traj
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.KernelSub
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.MeasurableSpace
+public import LeanMachineLearning.ForMathlib.Probability.Kernel.Sigma
 public import LeanMachineLearning.ForMathlib.Probability.Moments.SubExponential
 public import LeanMachineLearning.ForMathlib.Probability.Moments.SubGaussian
 public import LeanMachineLearning.ForMathlib.Probability.WithDensity
