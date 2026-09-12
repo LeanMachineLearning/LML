@@ -39,6 +39,8 @@ measurable functions.
   The initial action is `fun o ↦ nextA 0 (default, o)`.
 * `detEnvironment obs f hf`: a deterministic environment with observation kernels `obs`, that gives
   feedback according to the measurable function `f` (with proof of measurability `hf`).
+* `fixedDesignAlg x`: the deterministic algorithm that plays the fixed sequence of actions `x`,
+  whatever the history and the observations (a *fixed design*).
 
 -/
 
@@ -265,6 +267,20 @@ lemma actionZero_detAlgorithm [MeasurableSpace.SeparatesPoints 𝓐] :
     actionZero (detAlgorithm nextA h_next) = fun o ↦ nextA 0 (default, o) := by
   unfold actionZero
   rw [nextAction_detAlgorithm]
+
+/-- The deterministic algorithm that plays the fixed sequence of actions `x : ℕ → 𝓐`, whatever
+the history and the observations (a *fixed design*). -/
+noncomputable def fixedDesignAlg (x : ℕ → 𝓐) : Algorithm 𝓞 𝓐 𝓨 :=
+  detAlgorithm (fun n _ ↦ x n) fun _ ↦ measurable_const
+
+@[simp]
+lemma fixedDesignAlg_policy (x : ℕ → 𝓐) (n : ℕ) :
+    (fixedDesignAlg (𝓞 := 𝓞) (𝓨 := 𝓨) x).policy n =
+      Kernel.deterministic (fun _ ↦ x n) measurable_const := rfl
+
+instance (x : ℕ → 𝓐) :
+    IsDeterministicAlg (fixedDesignAlg (m𝓞 := m𝓞) (m𝓐 := m𝓐) (m𝓨 := m𝓨) x) :=
+  inferInstanceAs (IsDeterministicAlg (detAlgorithm _ _))
 
 /-- A deterministic environment, where the feedback is given by evaluating
 fixed measurable functions. -/
