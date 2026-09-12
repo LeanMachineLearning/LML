@@ -172,7 +172,7 @@ theorem annihilates_convolutionActivation_neurons
   let _ : CompactSpace K := isCompact_iff_compactSpace.mp hK
   intro w b
   let u : C(K, ℝ) :=
-    ⟨fun x => inner ℝ w (x : E), continuous_const.inner continuous_subtype_val⟩
+    ⟨fun x ↦ inner ℝ w (x : E), continuous_const.inner continuous_subtype_val⟩
   have htrans : ∀ c, Λ (activationAlong σ u c) = 0 := by
     intro c
     rw [show activationAlong σ u c = (neuron σ w c).restrict K by rfl]

@@ -110,14 +110,14 @@ theorem exists_testFunction_iteratedLineDeriv_integral_mul_reflected_ne_zero
     LineDeriv.iteratedLineDerivOp (fun _ : Fin n ↦ (1 : ℝ))
       (Distribution.ofFun (⊤ : TopologicalSpace.Opens ℝ) f volume ⊤)
   have hf : ¬ Function.IsPolynomial f := by
-    simpa only [f, isPolynomial_reflectedActivation_iff] using hσ
+    simpa [f, isPolynomial_reflectedActivation_iff] using hσ
   have hT : T ≠ 0 := Distribution.iteratedLineDerivOp_ofFun_ne_zero_of_not_isPolynomial hf n
   obtain ⟨φ, hφ⟩ := T.exists_ne_zero hT
   refine ⟨φ, ?_⟩
-  have hfloc : LocallyIntegrableOn f (Set.univ : Set ℝ) volume :=
+  have hfloc : LocallyIntegrableOn f ⊤ volume :=
     f.continuous.locallyIntegrable.locallyIntegrableOn _
   have heval : T φ = (-1 : ℝ) ^ n *
-      ∫ s : ℝ, (((TestFunction.lineDerivCLM ℝ (1 : ℝ))^[n]) φ) s * σ (-s) := by
+      ∫ s : ℝ, ((TestFunction.lineDerivCLM ℝ (1 : ℝ))^[n]) φ s * σ (-s) := by
     rw [Distribution.iteratedLineDerivOp_apply_iterated_testFunction,
       Distribution.ofFun_apply hfloc]
     simp [smul_eq_mul, f, reflectedActivation_apply]

@@ -113,14 +113,13 @@ theorem annihilates_coordinate_pow_of_iteratedDeriv_ne_zero
         intro t
         have hd : ∀ y, HasDerivAt (d m) (d (m + 1) y) y := by
           intro y
-          simpa only [d, ContinuousMap.coe_mk, iteratedDeriv_succ] using
+          simpa [d, ContinuousMap.coe_mk, iteratedDeriv_succ] using
             (hg.differentiable_iteratedDeriv m
               (by exact_mod_cast ENat.natCast_lt_top m) y).hasDerivAt
         have hcurve := HasDerivAt.continuousMap_comp_affine hd (ContinuousMap.const K b) u t
-        have hmul := hcurve.const_mul (u ^ m)
         have hmul' : HasDerivAt (fun s ↦ u ^ m * (d m).comp (arg s))
             (u ^ m * (u * (d (m + 1)).comp (arg t))) t := by
-          convert hmul using 1
+          convert hcurve.const_mul (u ^ m) using 1
           ext x
           simp [arg, smul_eq_mul]
         have happly : HasDerivAt (fun s ↦ Λ (u ^ m * (d m).comp (arg s)))
@@ -130,17 +129,14 @@ theorem annihilates_coordinate_pow_of_iteratedDeriv_ne_zero
           convert hasDerivAt_const t (0 : ℝ) using 1
           funext s
           exact ihm s
-        have hz := happly.unique hzero
-        simpa [pow_succ, mul_assoc] using hz
-  have h := hstep n 0
-  have harg : (d n).comp (arg 0) = ContinuousMap.const K (d n b) := by
-    ext x
-    simp [arg]
-  rw [harg] at h
-  have heq : u ^ n * ContinuousMap.const K (d n b) = d n b • u ^ n := by
-    ext x
-    simp [mul_comm]
-  rw [heq, map_smul] at h
+        simpa [pow_succ, mul_assoc] using happly.unique hzero
+  have h : d n b * Λ (u ^ n) = 0 := calc
+    d n b * Λ (u ^ n) = Λ (d n b • u ^ n) := by simp
+    _ = Λ (u ^ n * (d n).comp (arg 0)) := by
+      congr 1
+      ext x
+      simp [arg, mul_comm]
+    _ = 0 := hstep n 0
   exact (mul_eq_zero.mp h).resolve_left hb
 
 /-- A degree-by-degree smooth ridge family is enough for the discriminatory property.  The
@@ -167,9 +163,7 @@ theorem isDiscriminatory_of_contDiff_of_iteratedDeriv_ne_zero
   apply isDiscriminatory_of_smooth_ridges
   intro n
   obtain ⟨b, hb⟩ := hne n
-  exact ⟨g, b, hg, hb, by
-    intro K hK Λ hΛ
-    exact hΛ⟩
+  exact ⟨g, b, hg, hb, by simp⟩
 
 /-- A smooth activation with no identically-zero derivative has the universal approximation
 property on every real inner-product space. -/

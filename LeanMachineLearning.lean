@@ -42,7 +42,7 @@ public import LeanMachineLearning.ForMathlib.Probability.Moments.SubExponential
 public import LeanMachineLearning.ForMathlib.Probability.Moments.SubGaussian
 public import LeanMachineLearning.ForMathlib.Probability.WithDensity
 public import LeanMachineLearning.ForMathlib.Topology.Algebra.Module.FiniteDimension
-public import LeanMachineLearning.ForMathlib.Topology.ContinuousMap.Discrete
+public import LeanMachineLearning.ForMathlib.Topology.ContinuousMap.Algebra
 public import LeanMachineLearning.ForMathlib.Topology.ContinuousMap.InnerProduct
 public import LeanMachineLearning.ForMathlib.Topology.ContinuousMap.Moments
 public import LeanMachineLearning.ForMathlib.Topology.Instances.ENNReal.Lemmas

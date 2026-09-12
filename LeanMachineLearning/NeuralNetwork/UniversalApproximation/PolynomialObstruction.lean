@@ -7,7 +7,7 @@ module
 
 public import LeanMachineLearning.ForMathlib.Algebra.Polynomial.Function
 public import LeanMachineLearning.ForMathlib.Topology.Algebra.Module.FiniteDimension
-public import LeanMachineLearning.ForMathlib.Topology.ContinuousMap.Discrete
+public import LeanMachineLearning.ForMathlib.Topology.ContinuousMap.Algebra
 public import LeanMachineLearning.NeuralNetwork.Shallow.Basic
 public import Mathlib.RingTheory.Polynomial.DegreeLT
 public import Mathlib.Topology.Separation.Basic
@@ -46,7 +46,8 @@ theorem finrank_continuousMap_range_fin_smul {e : E} (he : e ≠ 0) (n : ℕ) :
   have hcard : Fintype.card K = n :=
     (Fintype.card_congr emb.toEquivRange).symm.trans (Fintype.card_fin n)
   change Module.finrank ℝ C(K, ℝ) = n
-  rw [(ContinuousMap.linearEquivFnOfDiscrete ℝ).finrank_eq, Module.finrank_pi, hcard]
+  rw [(LinearEquiv.ofBijective (ContinuousMap.coeFnCLM ℝ).toLinearMap
+    ContinuousMap.equivFnOfDiscrete.bijective).finrank_eq, Module.finrank_pi, hcard]
 
 private theorem aeval_degreeLT_range_ne_top {X : Type*} [TopologicalSpace X]
     {coordinate : C(X, ℝ)} {n : ℕ}
@@ -64,7 +65,6 @@ finite (hence compact) set.  No finite-dimensionality assumption on the input sp
 theorem exists_compact_not_dense_of_isPolynomial [Nontrivial E]
     {σ : C(ℝ, ℝ)} (hσ : Function.IsPolynomial σ) :
     ∃ K : Set E, IsCompact K ∧ ¬ Dense (spaceOn σ K : Set C(K, ℝ)) := by
-  classical
   obtain ⟨p, hp⟩ := hσ
   obtain ⟨e, he⟩ : ∃ e : E, e ≠ 0 := exists_ne 0
   let emb : Fin (p.natDegree + 2) ↪ E :=
@@ -73,8 +73,7 @@ theorem exists_compact_not_dense_of_isPolynomial [Nontrivial E]
       exact_mod_cast (smul_left_injective ℝ he hij)⟩
   let K : Set E := Set.range emb
   let coordinate : C(K, ℝ) :=
-    ⟨fun x ↦ inner ℝ e x / inner ℝ e e,
-      (continuous_const.inner continuous_subtype_val).div_const _⟩
+    ⟨fun x ↦ inner ℝ e x / inner ℝ e e, (continuous_const.inner continuous_subtype_val).div_const _⟩
   let evalDegree : ↥(degreeLT ℝ (p.natDegree + 1)) →ₗ[ℝ] C(K, ℝ) :=
     (Polynomial.aeval coordinate).toLinearMap.domRestrict (degreeLT ℝ (p.natDegree + 1))
   have hfinrank : Module.finrank ℝ C(K, ℝ) = p.natDegree + 2 :=
@@ -105,9 +104,7 @@ theorem exists_compact_not_dense_of_isPolynomial [Nontrivial E]
     have : inner ℝ e ((i : ℝ) • e) / inner ℝ e e = (i : ℝ) := by
       rw [real_inner_smul_right, div_eq_iff (inner_self_ne_zero.mpr he)]
     rw [hemb, this]
-    simp only [q, Polynomial.eval_comp, Polynomial.eval_add, Polynomial.eval_C_mul,
-      Polynomial.eval_X, Polynomial.eval_C, real_inner_smul_right]
-    rw [mul_comm (inner ℝ w e)]
+    simp [q, real_inner_smul_right, mul_comm (inner ℝ w e)]
   exact ⟨K, (Set.finite_range emb).isCompact,
     evalDegree.range.not_dense_of_subset_of_finiteDimensional hproper hspace⟩
 

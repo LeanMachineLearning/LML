@@ -37,12 +37,8 @@ theorem integral_mem_ker (L : E →L[𝕜] F) {f : α → E}
   by_cases hE : CompleteSpace E
   · let _ := hE
     by_cases hfi : Integrable f μ
-    · apply LinearMap.mem_ker.mpr
-      change L (∫ x, f x ∂μ) = 0
-      rw [← L.integral_comp_comm hfi]
-      exact integral_eq_zero_of_ae (hf.mono fun x hx ↦ by
-        change L (f x) = 0
-        exact LinearMap.mem_ker.mp hx)
+    · simp only [LinearMap.mem_ker, coe_coe, ← L.integral_comp_comm hfi]
+      exact integral_eq_zero_of_ae (hf.mono fun x hx ↦ LinearMap.mem_ker.mp hx)
     · simp [integral_undef hfi]
   · simp [integral, hE]
 
@@ -65,9 +61,7 @@ theorem integral_mem (S : Submodule 𝕜 E) (hS : IsClosed (S : Set E))
     rw [← S.ker_mkQ]
     exact S.mkQL.integral_mem_ker (by
       filter_upwards [hf] with x hx
-      apply LinearMap.mem_ker.mpr
-      change S.mkQL (f x) = 0
-      exact (Submodule.Quotient.mk_eq_zero S).2 hx)
+      exact LinearMap.mem_ker.mpr ((Submodule.Quotient.mk_eq_zero S).2 hx))
   · simp [integral, hE]
 
 /-- The Bochner integral of a function valued almost everywhere in a submodule belongs to the
