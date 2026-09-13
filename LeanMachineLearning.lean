@@ -1,11 +1,20 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
+public import LeanMachineLearning.ForMathlib.Algebra.Polynomial.Function
+public import LeanMachineLearning.ForMathlib.Analysis.Calculus.ContinuousMapComposition
+public import LeanMachineLearning.ForMathlib.Analysis.Distribution.Polynomial
+public import LeanMachineLearning.ForMathlib.Analysis.Distribution.PolynomialCharacterization
+public import LeanMachineLearning.ForMathlib.Analysis.Distribution.TestFunction
+public import LeanMachineLearning.ForMathlib.Analysis.Distribution.TestFunction.Normalize
+public import LeanMachineLearning.ForMathlib.Analysis.LocallyConvex.Annihilator
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.ChainRule
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.CompProd
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.Convex
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.DataProcessing
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.MapSequence
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.Restrict
+public import LeanMachineLearning.ForMathlib.LinearAlgebra.Multilinear.Polarization
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Integral.ClosedSubmodule
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measurable
 public import LeanMachineLearning.ForMathlib.MeasureTheory.MeasurableSpace.Embedding
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measure.AbsolutelyContinuous
@@ -32,7 +41,17 @@ public import LeanMachineLearning.ForMathlib.Probability.Kernel.MeasurableSpace
 public import LeanMachineLearning.ForMathlib.Probability.Moments.SubExponential
 public import LeanMachineLearning.ForMathlib.Probability.Moments.SubGaussian
 public import LeanMachineLearning.ForMathlib.Probability.WithDensity
+public import LeanMachineLearning.ForMathlib.Topology.Algebra.Module.FiniteDimension
+public import LeanMachineLearning.ForMathlib.Topology.ContinuousMap.Algebra
+public import LeanMachineLearning.ForMathlib.Topology.ContinuousMap.InnerProduct
+public import LeanMachineLearning.ForMathlib.Topology.ContinuousMap.Moments
 public import LeanMachineLearning.ForMathlib.Topology.Instances.ENNReal.Lemmas
+public import LeanMachineLearning.NeuralNetwork.Shallow.Basic
+public import LeanMachineLearning.NeuralNetwork.UniversalApproximation.Convolution
+public import LeanMachineLearning.NeuralNetwork.UniversalApproximation.Discriminatory
+public import LeanMachineLearning.NeuralNetwork.UniversalApproximation.Leshno
+public import LeanMachineLearning.NeuralNetwork.UniversalApproximation.Nonpolynomial
+public import LeanMachineLearning.NeuralNetwork.UniversalApproximation.PolynomialObstruction
 public import LeanMachineLearning.Online.Bandit.Algorithms.ETC
 public import LeanMachineLearning.Online.Bandit.Algorithms.Regret.BayesRegretTS
 public import LeanMachineLearning.Online.Bandit.Algorithms.TS
