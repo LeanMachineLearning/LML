@@ -103,18 +103,13 @@ theorem exists_compact_not_dense_of_isPolynomial [Nontrivial E]
   exact ⟨K, (Set.finite_range emb).isCompact,
     evalDegree.range.not_dense_of_subset_of_finiteDimensional hproper hspace⟩
 
-/-- A polynomial activation is not universal on a nontrivial real inner product space. -/
-theorem not_isUniversal_of_isPolynomial [Nontrivial E]
-    {σ : C(ℝ, ℝ)} (hσ : Function.IsPolynomial σ) :
-    ¬ IsUniversal E σ := by
-  intro hUniversal
-  obtain ⟨K, hK, hnotDense⟩ := exists_compact_not_dense_of_isPolynomial (E := E) hσ
-  exact hnotDense (hUniversal.dense_on_compact K hK)
-
-/-- Universality forces the activation not to be a polynomial. -/
-theorem not_isPolynomial_of_isUniversal [Nontrivial E]
-    (σ : C(ℝ, ℝ)) [hσ : IsUniversal E σ] :
-    ¬ Function.IsPolynomial σ :=
-  fun hPolynomial ↦ not_isUniversal_of_isPolynomial (E := E) hPolynomial hσ
+/-- Density of the network space on every compact set forces the activation not to be a
+polynomial, provided the input space is nontrivial. -/
+theorem not_isPolynomial_of_dense_spaceOn [Nontrivial E] (σ : C(ℝ, ℝ))
+    (hσ : ∀ (K : Set E), IsCompact K → Dense (spaceOn σ K : Set C(K, ℝ))) :
+    ¬ Function.IsPolynomial σ := by
+  intro hPolynomial
+  obtain ⟨K, hK, hnotDense⟩ := exists_compact_not_dense_of_isPolynomial (E := E) hPolynomial
+  exact hnotDense (hσ K hK)
 
 end Learning.ShallowNetwork

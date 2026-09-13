@@ -39,10 +39,8 @@ derivative and the proposed derivative is continuous in the uniform norm.
 
 The compactness of `X` equips `C(X, E)` with its supremum norm.  The proof uses the fundamental
 theorem of calculus after applying each continuous evaluation map. -/
-theorem continuousMap_of_continuous
-    {f f' : ℝ → C(X, E)}
-    (hf : ∀ x t, HasDerivAt (fun s ↦ f s x) (f' t x) t)
-    (hf' : Continuous f') (t : ℝ) :
+theorem continuousMap_of_continuous {f f' : ℝ → C(X, E)}
+    (hf : ∀ x t, HasDerivAt (fun s ↦ f s x) (f' t x) t) (hf' : Continuous f') (t : ℝ) :
     HasDerivAt f (f' t) t := by
   have hfi : ∀ a b, IntervalIntegrable f' volume a b :=
     fun a b ↦ hf'.intervalIntegrable a b
@@ -52,20 +50,16 @@ theorem continuousMap_of_continuous
     funext s
     apply ContinuousMap.ext
     intro x
-    have hFTC :
-        ∫ r in 0..s, (ContinuousMap.evalCLM ℝ x) (f' r) = f s x - f 0 x :=
-      intervalIntegral.integral_eq_sub_of_hasDerivAt
-        (fun r _ ↦ hf x r)
+    have hFTC : ∫ r in 0..s, (ContinuousMap.evalCLM ℝ x) (f' r) = f s x - f 0 x :=
+      intervalIntegral.integral_eq_sub_of_hasDerivAt (fun r _ ↦ hf x r)
         (((ContinuousMap.evalCLM ℝ x).continuous.comp hf').intervalIntegrable 0 s)
     change f 0 x + (ContinuousMap.evalCLM ℝ x) (∫ r in 0..s, f' r) = f s x
     rw [← ContinuousLinearMap.intervalIntegral_comp_comm
       (ContinuousMap.evalCLM ℝ x) (hfi 0 s), hFTC]
     simp
-  have hder :
-      HasDerivAt q (0 + f' t) t :=
+  have hder : HasDerivAt q (0 + f' t) t :=
     (hasDerivAt_const t (f 0)).add (hf'.integral_hasStrictDerivAt 0 t).hasDerivAt
-  rw [hEq] at hder
-  simpa using hder
+  simpa [hEq] using hder
 
 /-- Compose a differentiable Banach-valued function with the family of affine arguments
 `x ↦ u x + t * v x`.  Differentiation in `t` may be performed in the uniform norm on
@@ -73,27 +67,15 @@ theorem continuousMap_of_continuous
 
 Bundling `g` and `dg` as continuous maps records exactly the continuity needed to upgrade the
 pointwise derivatives `hg` to a derivative in the function space. -/
-theorem continuousMap_comp_affine
-    {g dg : C(ℝ, E)}
-    (hg : ∀ y, HasDerivAt g (dg y) y)
-    (u v : C(X, ℝ)) (t : ℝ) :
-    HasDerivAt
-      (fun s ↦ g.comp (u + ContinuousMap.const X s * v))
-      ⟨fun x ↦ v x • dg (u x + t * v x),
-        v.continuous.smul
-          (dg.continuous.comp
-            (u.continuous.add (continuous_const.mul v.continuous)))⟩
-      t := by
+theorem continuousMap_comp_affine {g dg : C(ℝ, E)} (hg : ∀ y, HasDerivAt g (dg y) y)
+   (u v : C(X, ℝ)) (t : ℝ) : HasDerivAt (fun s ↦ g.comp (u + ContinuousMap.const X s * v))
+    ⟨fun x ↦ v x • dg (u x + t * v x), by fun_prop⟩ t := by
   apply continuousMap_of_continuous (t := t)
   · intro x s
-    convert
-      (hg (u x + s * v x)).scomp s
+    convert (hg (u x + s * v x)).scomp s
         ((hasDerivAt_const s (u x)).add (hasDerivAt_mul_const (v x))) using 1 <;>
       simp [Function.comp_def]
   · apply ContinuousMap.continuous_of_continuous_uncurry
-    exact (v.continuous.comp continuous_snd).smul <|
-      dg.continuous.comp <|
-        (u.continuous.comp continuous_snd).add <|
-          continuous_fst.mul (v.continuous.comp continuous_snd)
+    exact (v.continuous.comp continuous_snd).smul <| by fun_prop
 
 end HasDerivAt

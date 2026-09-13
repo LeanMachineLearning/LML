@@ -194,19 +194,15 @@ theorem isDiscriminatory_of_convolutionActivation
     (σ := convolutionActivation φ σ) (E := E) K hK Λ
   exact annihilates_convolutionActivation_neurons φ hK hΛ
 
-/-- Universality of one compactly supported convolution smoothing implies universality of the
-original activation. -/
-theorem isUniversal_of_convolutionActivation
+/-- If the network space of one compactly supported convolution smoothing is dense on a compact
+set, then the network space of the original activation is dense there. -/
+theorem dense_spaceOn_of_convolutionActivation
     {E : Type*} [SeminormedAddCommGroup E] [InnerProductSpace ℝ E]
     {B : Type*} [FunLike B ℝ ℝ] [CompactlySupportedContinuousMapClass B ℝ ℝ]
-    (φ : B) (σ : C(ℝ, ℝ))
-    [IsUniversal E (convolutionActivation φ σ)] :
-    IsUniversal E σ := by
-  apply (isUniversal_iff_isDiscriminatory σ).mpr
-  let _ : IsDiscriminatory E (convolutionActivation φ σ) :=
-    (isUniversal_iff_isDiscriminatory (convolutionActivation φ σ)).mp
-    (inferInstance : IsUniversal E (convolutionActivation φ σ))
-  exact isDiscriminatory_of_convolutionActivation φ σ
+    (φ : B) (σ : C(ℝ, ℝ)) {K : Set E} (hK : IsCompact K)
+    (h : Dense (spaceOn (convolutionActivation φ σ) K : Set C(K, ℝ))) :
+    Dense (spaceOn σ K : Set C(K, ℝ)) :=
+  (Dense.mono (convolved_spaceOn_le_topologicalClosure φ σ hK) h).of_closure
 
 /-! ## Iterated derivatives for smooth kernels -/
 

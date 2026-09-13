@@ -43,12 +43,13 @@ class IsDiscriminatory (E : Type*) [SeminormedAddCommGroup E] [InnerProductSpace
 
 variable {E : Type*} [SeminormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- For shallow networks, the discriminatory-functional criterion is equivalent to universal
-approximation. -/
-theorem isUniversal_iff_isDiscriminatory (σ : C(ℝ, ℝ)) :
-    IsUniversal E σ ↔ IsDiscriminatory E σ := by
+/-- Density of the network space on every compact set is equivalent to the
+discriminatory-functional criterion. -/
+theorem dense_spaceOn_iff_isDiscriminatory (σ : C(ℝ, ℝ)) :
+    (∀ (K : Set E), IsCompact K → Dense (spaceOn σ K : Set C(K, ℝ))) ↔
+      IsDiscriminatory E σ := by
   constructor
-  · rintro ⟨h_dense⟩
+  · intro h_dense
     constructor
     intro K hK
     let _ : CompactSpace K := isCompact_iff_compactSpace.mp hK
@@ -62,7 +63,6 @@ theorem isUniversal_iff_isDiscriminatory (σ : C(ℝ, ℝ)) :
       exact hΛ p.1 p.2
     exact hle hf
   · rintro ⟨h_disc⟩
-    constructor
     intro K hK
     let _ : CompactSpace K := isCompact_iff_compactSpace.mp hK
     rw [Submodule.dense_iff_forall_dual_eq_zero]
@@ -159,14 +159,14 @@ theorem isDiscriminatory_of_contDiff_of_iteratedDeriv_ne_zero
   obtain ⟨b, hb⟩ := hne n
   exact ⟨g, b, hg, hb, by simp⟩
 
-/-- A smooth activation with no identically-zero derivative has the universal approximation
-property on every real inner-product space. -/
-theorem isUniversal_of_contDiff_of_iteratedDeriv_ne_zero
+/-- A smooth activation with no identically-zero derivative has dense network space on every
+compact subset of a real inner-product space. -/
+theorem dense_spaceOn_of_contDiff_of_iteratedDeriv_ne_zero
     {g : C(ℝ, ℝ)} (hg : ContDiff ℝ ∞ g)
-    (hne : ∀ n : ℕ, ∃ b : ℝ, iteratedDeriv n g b ≠ 0) :
-    IsUniversal E g :=
-  (isUniversal_iff_isDiscriminatory g).2
-    (isDiscriminatory_of_contDiff_of_iteratedDeriv_ne_zero hg hne)
+    (hne : ∀ n : ℕ, ∃ b : ℝ, iteratedDeriv n g b ≠ 0) {K : Set E} (hK : IsCompact K) :
+    Dense (spaceOn g K : Set C(K, ℝ)) :=
+  (dense_spaceOn_iff_isDiscriminatory g).2
+    (isDiscriminatory_of_contDiff_of_iteratedDeriv_ne_zero hg hne) K hK
 
 end SmoothActivation
 

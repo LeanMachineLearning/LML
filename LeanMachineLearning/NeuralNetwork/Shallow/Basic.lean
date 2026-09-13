@@ -92,35 +92,20 @@ theorem spaceOn_eq_map (σ : C(ℝ, ℝ)) (K : Set E) :
   ext f
   aesop
 
-variable (E) in
-/-- An activation is universal on `E` if its shallow networks are dense on every compact
-subset. This class packages the property for downstream approximation theorems. -/
-class IsUniversal (σ : C(ℝ, ℝ)) : Prop where
-  dense_on_compact : ∀ (K : Set E), IsCompact K → Dense (spaceOn σ K : Set C(K, ℝ))
-
-/-- The typeclass formulation of universality unfolds to density on every compact subset. -/
-theorem isUniversal_iff (σ : C(ℝ, ℝ)) :
-    IsUniversal E σ ↔ ∀ (K : Set E), IsCompact K → Dense (spaceOn σ K : Set C(K, ℝ)) := by
-  grind [IsUniversal]
-
-/-- The usual uniform epsilon formulation of universal approximation on every compact set. -/
-theorem isUniversal_iff_uniform_approximation (σ : C(ℝ, ℝ)) :
-    IsUniversal E σ ↔
-      ∀ (K : Set E), IsCompact K → ∀ (f : C(K, ℝ)) (ε : ℝ), 0 < ε →
+/-- Density of the network space on a compact set is equivalent to uniform approximation. -/
+theorem dense_spaceOn_iff_uniform_approximation (σ : C(ℝ, ℝ)) {K : Set E} (hK : IsCompact K) :
+    Dense (spaceOn σ K : Set C(K, ℝ)) ↔
+      ∀ (f : C(K, ℝ)) (ε : ℝ), 0 < ε →
         ∃ g ∈ spaceOn σ K, ∀ x, dist (g x) (f x) < ε := by
+  let _ : CompactSpace K := isCompact_iff_compactSpace.mp hK
   constructor
-  · rintro ⟨h⟩ K hK
-    let _ : CompactSpace K := isCompact_iff_compactSpace.mp hK
-    intro f ε hε
-    obtain ⟨g, hgBall, hgSpace⟩ := Metric.dense_iff.mp (h K hK) f ε hε
+  · intro h f ε hε
+    obtain ⟨g, hgBall, hgSpace⟩ := Metric.dense_iff.mp h f ε hε
     exact ⟨g, hgSpace, (ContinuousMap.dist_lt_iff hε).mp hgBall⟩
   · intro h
-    constructor
-    intro K hK
-    let _ : CompactSpace K := isCompact_iff_compactSpace.mp hK
     rw [Metric.dense_iff]
     intro f ε hε
-    obtain ⟨g, hgSpace, hgDist⟩ := h K hK f ε hε
+    obtain ⟨g, hgSpace, hgDist⟩ := h f ε hε
     exact ⟨g, (ContinuousMap.dist_lt_iff hε).mpr hgDist, hgSpace⟩
 
 end Learning.ShallowNetwork

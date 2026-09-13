@@ -147,10 +147,11 @@ theorem isDiscriminatory_of_not_isPolynomial {σ : C(ℝ, ℝ)}
   intro K hK Λ hΛ
   exact annihilates_convolutionActivation_neurons φ hK hΛ
 
-/-- Every continuous nonpolynomial activation is universal on compact subsets of a real
-inner-product space. -/
-theorem isUniversal_of_not_isPolynomial
-    {σ : C(ℝ, ℝ)} (hσ : ¬ Function.IsPolynomial σ) : IsUniversal E σ :=
-  (isUniversal_iff_isDiscriminatory σ).2 (isDiscriminatory_of_not_isPolynomial hσ)
+/-- Every continuous nonpolynomial activation has dense network space on every compact subset
+of a real inner-product space. -/
+theorem dense_spaceOn_of_not_isPolynomial
+    {σ : C(ℝ, ℝ)} (hσ : ¬ Function.IsPolynomial σ) {K : Set E} (hK : IsCompact K) :
+    Dense (spaceOn σ K : Set C(K, ℝ)) :=
+  (dense_spaceOn_iff_isDiscriminatory σ).2 (isDiscriminatory_of_not_isPolynomial hσ) K hK
 
 end Learning.ShallowNetwork

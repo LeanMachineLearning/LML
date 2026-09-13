@@ -74,8 +74,7 @@ theorem hasDerivAt_integral_Iic
       fun y ↦ (∫ x in b..y, f x) + ∫ x in Set.Iic b, f x := by
     funext y
     exact sub_eq_iff_eq_add.mp <| intervalIntegral.integral_Iic_sub_Iic
-      (hfi.integrableOn : IntegrableOn f (Set.Iic b))
-      (hfi.integrableOn : IntegrableOn f (Set.Iic y))
+      hfi.integrableOn hfi.integrableOn
   rw [hEq]
   exact (hf.integral_hasStrictDerivAt b b).hasDerivAt.add_const _
 
@@ -112,8 +111,7 @@ theorem hasCompactSupport_integral_Iic_of_integral_eq_zero
     have hsplit := intervalIntegral.integral_Iic_add_Ioi
       (hfi.integrableOn : IntegrableOn f (Set.Iic x))
       (hfi.integrableOn : IntegrableOn f (Set.Ioi x))
-    rw [hIoi, hzero, add_zero] at hsplit
-    exact hsplit
+    rwa [hIoi, hzero, add_zero] at hsplit
 
 /-- Every smooth compactly supported function on the real line with integral zero has a smooth
 compactly supported primitive.
@@ -123,24 +121,19 @@ core of exactness of differentiation and integration on real test functions. -/
 theorem exists_contDiff_primitive_hasCompactSupport
     {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F]
     {f : ℝ → F} (hf : ContDiff ℝ (↑(⊤ : ℕ∞)) f) (hfc : HasCompactSupport f)
-    (hzero : ∫ x, f x = 0) :
-    ∃ g : ℝ → F, ContDiff ℝ (↑(⊤ : ℕ∞)) g ∧ HasCompactSupport g ∧
+    (hzero : ∫ x, f x = 0) : ∃ g : ℝ → F, ContDiff ℝ (↑(⊤ : ℕ∞)) g ∧ HasCompactSupport g ∧
       ∀ x, HasDerivAt g (f x) x := by
   have hfcont : Continuous f := hf.continuous
   have hfi : Integrable f := hfcont.integrable_of_hasCompactSupport hfc
   let g : ℝ → F := fun b ↦ ∫ x in Set.Iic b, f x
-  have hgDeriv (x : ℝ) : HasDerivAt g (f x) x :=
-    hasDerivAt_integral_Iic hfcont hfi x
-  have hgDiff : Differentiable ℝ g := fun x ↦ (hgDeriv x).differentiableAt
+  have hgDeriv (x : ℝ) : HasDerivAt g (f x) x := hasDerivAt_integral_Iic hfcont hfi x
   have hgderiv : deriv g = f := by
     funext x
     exact (hgDeriv x).deriv
   have hgSmooth : ContDiff ℝ (↑(⊤ : ℕ∞)) g := by
     rw [contDiff_infty_iff_deriv]
-    exact ⟨hgDiff, hgderiv ▸ hf⟩
-  have hgCompact : HasCompactSupport g :=
-    hasCompactSupport_integral_Iic_of_integral_eq_zero hfc hfi hzero
-  exact ⟨g, hgSmooth, hgCompact, hgDeriv⟩
+    exact ⟨fun x ↦ (hgDeriv x).differentiableAt, hgderiv ▸ hf⟩
+  exact ⟨g, hgSmooth, hasCompactSupport_integral_Iic_of_integral_eq_zero hfc hfi hzero, hgDeriv⟩
 
 end MeasureTheory
 
@@ -177,7 +170,7 @@ lemma lineDerivCLM_one_apply {Ω : TopologicalSpace.Opens ℝ} (φ : 𝓓(Ω, �
     (lineDerivCLM ℝ (1 : ℝ) φ : 𝓓(Ω, ℝ)) x = deriv φ x := by
   rw [lineDerivCLM_apply_of_le]
   · calc
-      lineDeriv ℝ (φ : ℝ → ℝ) x 1 = (fderiv ℝ (φ : ℝ → ℝ) x) 1 :=
+      _ = (fderiv ℝ (φ : ℝ → ℝ) x) 1 :=
         (φ.contDiff.differentiable (by simp)).differentiableAt.lineDeriv_eq_fderiv
       _ = deriv (φ : ℝ → ℝ) x := fderiv_apply_one_eq_deriv
   · simp
@@ -199,8 +192,7 @@ instance instHasCompactSupportPrimitiveTop :
     obtain ⟨g, hgSmooth, hgCompact, hgDeriv⟩ :=
       MeasureTheory.exists_contDiff_primitive_hasCompactSupport
         φ.contDiff φ.hasCompactSupport hφ
-    let ψ : 𝓓((⊤ : TopologicalSpace.Opens ℝ), ℝ) :=
-      ⟨g, hgSmooth, hgCompact, by simp⟩
+    let ψ : 𝓓((⊤ : TopologicalSpace.Opens ℝ), ℝ) := ⟨g, hgSmooth, hgCompact, by simp⟩
     refine ⟨ψ, ?_⟩
     ext x
     rw [lineDerivCLM_one_apply]
@@ -230,36 +222,30 @@ theorem lineDerivCLM_ofFun_eq_of_hasDerivAt {Ω : TopologicalSpace.Opens ℝ}
   have hdφ (x : ℝ) : dφ x = deriv (φ : ℝ → ℝ) x :=
     TestFunction.lineDerivCLM_one_apply φ x
   have hibp := MeasureTheory.integral_bilinear_hasDerivAt_right_eq_neg_left_of_integrable
-    (L := ContinuousLinearMap.lsmul ℝ ℝ) (u := (φ : ℝ → ℝ)) (v := f)
-    (u' := fun x => deriv (φ : ℝ → ℝ) x) (v' := f')
-    (fun _ _ => (φ.contDiff.differentiable (by simp)).differentiableAt.hasDerivAt)
-    (fun x _ => hf x)
-    (φ.integrable_smul hf'loc)
-    (by simpa only [hdφ, ContinuousLinearMap.lsmul_apply] using dφ.integrable_smul hfloc)
-    (φ.integrable_smul hfloc)
+    (L := ContinuousLinearMap.lsmul ℝ ℝ)
+    (fun _ _ ↦ (φ.contDiff.differentiable (by simp)).differentiableAt.hasDerivAt)
+    (fun x _ ↦ hf x) (φ.integrable_smul hf'loc)
+    (by simpa [hdφ] using dφ.integrable_smul hfloc) (φ.integrable_smul hfloc)
   simp only [ContinuousLinearMap.lsmul_apply] at hibp
-  rw [show (TestFunction.lineDerivCLM ℝ (1 : ℝ) φ : 𝓓(Ω, ℝ)) = dφ from rfl]
-  simp_rw [hdφ]
+  rw [DFunLike.congr_fun rfl φ]
   exact hibp.symm
 
 /-- The distributional derivative of a regular constant distribution vanishes. -/
 theorem lineDerivCLM_ofFun_const_eq_zero {Ω : TopologicalSpace.Opens ℝ} (c : F) :
-    (lineDerivCLM (1 : ℝ) (ofFun Ω (fun _ : ℝ => c) volume ⊤) : 𝓓'(Ω, F)) = 0 := by
-  have hc : LocallyIntegrableOn (fun _ : ℝ => c) Ω volume :=
-    (continuous_const : Continuous (fun _ : ℝ => c)).locallyIntegrable.locallyIntegrableOn Ω
+    (lineDerivCLM (1 : ℝ) (ofFun Ω (fun _ : ℝ ↦ c) volume ⊤) : 𝓓'(Ω, F)) = 0 := by
+  have hc : LocallyIntegrableOn (fun _ : ℝ ↦ c) Ω volume :=
+    (continuous_const : Continuous (fun _ : ℝ ↦ c)).locallyIntegrable.locallyIntegrableOn Ω
   rw [lineDerivCLM_ofFun_eq_of_hasDerivAt
-    (fun x => hasDerivAt_const x c) hc locallyIntegrableOn_zero]
+    (fun x ↦ hasDerivAt_const x c) hc locallyIntegrableOn_zero]
   exact ofFun_zero
 
 /-- Integration annihilates derivatives of test functions. This is the easy half of the
 derivative--integral exactness statement. -/
-theorem ofFun_one_comp_testFunction_lineDerivCLM_eq_zero
-    {Ω : TopologicalSpace.Opens ℝ} :
-    (ofFun Ω (fun _ : ℝ => (1 : ℝ)) volume ⊤) ∘
-      (TestFunction.lineDerivCLM ℝ (1 : ℝ) : 𝓓(Ω, ℝ) → 𝓓(Ω, ℝ)) = 0 := by
+theorem ofFun_one_comp_testFunction_lineDerivCLM_eq_zero {Ω : TopologicalSpace.Opens ℝ} :
+  (ofFun Ω (fun _ : ℝ ↦ (1 : ℝ)) volume ⊤) ∘
+    (TestFunction.lineDerivCLM ℝ (1 : ℝ) : 𝓓(Ω, ℝ) → 𝓓(Ω, ℝ)) = 0 := by
   funext φ
-  have h := congrArg (fun T : 𝓓'(Ω, ℝ) => T φ)
-    (lineDerivCLM_ofFun_const_eq_zero (Ω := Ω) (1 : ℝ))
+  have h := congrArg (fun T : 𝓓'(Ω, ℝ) ↦ T φ) (lineDerivCLM_ofFun_const_eq_zero (Ω := Ω) (1 : ℝ))
   rw [lineDerivCLM_apply] at h
   exact neg_eq_zero.mp h
 
@@ -267,18 +253,14 @@ theorem ofFun_one_comp_testFunction_lineDerivCLM_eq_zero
 integration on test functions. -/
 theorem exact_testFunction_lineDerivCLM_of_hasCompactSupportPrimitive
     {Ω : TopologicalSpace.Opens ℝ} [TestFunction.HasCompactSupportPrimitive Ω] :
-    Function.Exact
-      (TestFunction.lineDerivCLM ℝ (1 : ℝ) : 𝓓(Ω, ℝ) → 𝓓(Ω, ℝ))
-      (ofFun Ω (fun _ : ℝ => (1 : ℝ)) volume ⊤) := by
-  apply Function.Exact.of_comp_of_mem_range
-    ofFun_one_comp_testFunction_lineDerivCLM_eq_zero
+    Function.Exact (TestFunction.lineDerivCLM ℝ (1 : ℝ) : 𝓓(Ω, ℝ) → 𝓓(Ω, ℝ))
+      (ofFun Ω (fun _ : ℝ ↦ (1 : ℝ)) volume ⊤) := by
+  apply Function.Exact.of_comp_of_mem_range ofFun_one_comp_testFunction_lineDerivCLM_eq_zero
   intro φ hφ
-  have hOneLoc : LocallyIntegrableOn (fun _ : ℝ => (1 : ℝ)) Ω volume :=
-    (continuous_const : Continuous (fun _ : ℝ => (1 : ℝ))).locallyIntegrable
+  have hOneLoc : LocallyIntegrableOn (fun _ : ℝ ↦ (1 : ℝ)) Ω volume :=
+    (continuous_const : Continuous (fun _ : ℝ ↦ (1 : ℝ))).locallyIntegrable
       |>.locallyIntegrableOn Ω
-  have hIntegral : ∫ x, φ x = 0 := by
-    rw [ofFun_apply hOneLoc] at hφ
-    simpa using hφ
+  have hIntegral : ∫ x, φ x = 0 := by simpa [ofFun_apply hOneLoc] using hφ
   exact TestFunction.HasCompactSupportPrimitive.exists_eq_lineDerivCLM φ hIntegral
 
 /-- A distribution with zero derivative is a regular constant distribution, provided the
@@ -288,30 +270,25 @@ The exactness hypothesis precisely isolates the missing analytic input: every te
 integral zero must have a compactly supported smooth primitive. -/
 theorem eq_ofFun_const_of_lineDerivCLM_eq_zero [CompleteSpace F]
     {Ω : TopologicalSpace.Opens ℝ} (ρ : 𝓓(Ω, ℝ))
-    (hρ : ofFun Ω (fun _ : ℝ => (1 : ℝ)) volume ⊤ ρ = 1)
-    (hExact : Function.Exact
-      (TestFunction.lineDerivCLM ℝ (1 : ℝ) : 𝓓(Ω, ℝ) → 𝓓(Ω, ℝ))
-      (ofFun Ω (fun _ : ℝ => (1 : ℝ)) volume ⊤))
-    (T : 𝓓'(Ω, F)) (hT : (lineDerivCLM (1 : ℝ) T : 𝓓'(Ω, F)) = 0) :
-    T = ofFun Ω (fun _ => T ρ) volume ⊤ := by
-  have hOneLoc : LocallyIntegrableOn (fun _ : ℝ => (1 : ℝ)) Ω volume :=
-    (continuous_const : Continuous (fun _ : ℝ => (1 : ℝ))).locallyIntegrable
-      |>.locallyIntegrableOn Ω
-  have hConstLoc : LocallyIntegrableOn (fun _ : ℝ => T ρ) Ω volume :=
-    (continuous_const : Continuous (fun _ : ℝ => T ρ)).locallyIntegrable
-      |>.locallyIntegrableOn Ω
-  have hTD (φ : 𝓓(Ω, ℝ)) :
-      T (TestFunction.lineDerivCLM ℝ (1 : ℝ) φ) = 0 := by
-    have h := congrArg (fun S : 𝓓'(Ω, F) => S φ) hT
+    (hρ : ofFun Ω (fun _ : ℝ ↦ (1 : ℝ)) volume ⊤ ρ = 1)
+    (hExact : Function.Exact (TestFunction.lineDerivCLM ℝ (1 : ℝ) : 𝓓(Ω, ℝ) → 𝓓(Ω, ℝ))
+      (ofFun Ω (fun _ : ℝ ↦ (1 : ℝ)) volume ⊤)) (T : 𝓓'(Ω, F))
+    (hT : (lineDerivCLM (1 : ℝ) T : 𝓓'(Ω, F)) = 0) : T = ofFun Ω (fun _ ↦ T ρ) volume ⊤ := by
+  have hOneLoc : LocallyIntegrableOn (fun _ : ℝ ↦ (1 : ℝ)) Ω volume :=
+    (continuous_const : Continuous (fun _ : ℝ ↦ (1 : ℝ))).locallyIntegrable |>.locallyIntegrableOn Ω
+  have hConstLoc : LocallyIntegrableOn (fun _ : ℝ ↦ T ρ) Ω volume :=
+    (continuous_const : Continuous (fun _ : ℝ ↦ T ρ)).locallyIntegrable |>.locallyIntegrableOn Ω
+  have hTD (φ : 𝓓(Ω, ℝ)) : T (TestFunction.lineDerivCLM ℝ (1 : ℝ) φ) = 0 := by
+    have h := congrArg (fun S : 𝓓'(Ω, F) ↦ S φ) hT
     rw [lineDerivCLM_apply] at h
     exact neg_eq_zero.mp h
   ext φ
   rw [ofFun_apply hConstLoc]
   calc
-    T φ = (ofFun Ω (fun _ : ℝ => (1 : ℝ)) volume ⊤) φ • T ρ :=
+    T φ = (ofFun Ω (fun _ : ℝ ↦ (1 : ℝ)) volume ⊤) φ • T ρ :=
       LinearMap.apply_eq_smul_apply_of_exact
         (TestFunction.lineDerivCLM ℝ (1 : ℝ)).toLinearMap
-        (ofFun Ω (fun _ : ℝ => (1 : ℝ)) volume ⊤).toLinearMap
+        (ofFun Ω (fun _ : ℝ ↦ (1 : ℝ)) volume ⊤).toLinearMap
         T.toLinearMap hExact hρ hTD φ
     _ = (∫ x, φ x) • T ρ := by
       rw [ofFun_apply hOneLoc]
@@ -325,10 +302,9 @@ theorem eq_ofFun_const_of_lineDerivCLM_eq_zero_of_hasCompactSupportPrimitive [Co
     {Ω : TopologicalSpace.Opens ℝ} [TestFunction.HasCompactSupportPrimitive Ω]
     (ρ : 𝓓(Ω, ℝ)) (hρ : ∫ x, ρ x = 1) (T : 𝓓'(Ω, F))
     (hT : (lineDerivCLM (1 : ℝ) T : 𝓓'(Ω, F)) = 0) :
-    T = ofFun Ω (fun _ => T ρ) volume ⊤ := by
-  have hOneLoc : LocallyIntegrableOn (fun _ : ℝ => (1 : ℝ)) Ω volume :=
-    (continuous_const : Continuous (fun _ : ℝ => (1 : ℝ))).locallyIntegrable
-      |>.locallyIntegrableOn Ω
+    T = ofFun Ω (fun _ ↦ T ρ) volume ⊤ := by
+  have hOneLoc : LocallyIntegrableOn (fun _ : ℝ ↦ (1 : ℝ)) Ω volume :=
+    (continuous_const : Continuous (fun _ : ℝ ↦ (1 : ℝ))).locallyIntegrable |>.locallyIntegrableOn Ω
   apply eq_ofFun_const_of_lineDerivCLM_eq_zero ρ
   · rw [ofFun_apply hOneLoc]
     simpa using hρ
@@ -342,7 +318,7 @@ derivatives are supplied together with proofs of their values. -/
 theorem iteratedLineDerivOp_ofFun_eq_of_hasDerivAt {Ω : TopologicalSpace.Opens ℝ}
     (f : ℕ → ℝ → F) (hf : ∀ n x, HasDerivAt (f n) (f (n + 1) x) x)
     (hfloc : ∀ n, LocallyIntegrableOn (f n) Ω volume) (k : ℕ) :
-    iteratedLineDerivOp (fun _ : Fin k => (1 : ℝ)) (ofFun Ω (f 0) volume ⊤) =
+    iteratedLineDerivOp (fun _ : Fin k ↦ (1 : ℝ)) (ofFun Ω (f 0) volume ⊤) =
       ofFun Ω (f k) volume ⊤ := by
   rw [iteratedLineDerivOp_const_eq_iter_lineDerivOp]
   induction k with
@@ -355,13 +331,11 @@ theorem iteratedLineDerivOp_ofFun_eq_of_hasDerivAt {Ω : TopologicalSpace.Opens 
 agrees with iterated formal differentiation of that polynomial. -/
 theorem iteratedLineDerivOp_ofFun_polynomial {Ω : TopologicalSpace.Opens ℝ}
     (p : Polynomial ℝ) (k : ℕ) :
-    iteratedLineDerivOp (fun _ : Fin k => (1 : ℝ))
-        (ofFun Ω (fun x => p.eval x) volume ⊤) =
-      ofFun Ω
-        (fun x => (((Polynomial.derivative : Polynomial ℝ → Polynomial ℝ)^[k]) p).eval x)
+    iteratedLineDerivOp (fun _ : Fin k ↦ (1 : ℝ)) (ofFun Ω (fun x ↦ p.eval x) volume ⊤) =
+      ofFun Ω (fun x ↦ (((Polynomial.derivative : Polynomial ℝ → Polynomial ℝ)^[k]) p).eval x)
         volume ⊤ := by
   apply iteratedLineDerivOp_ofFun_eq_of_hasDerivAt
-    (f := fun n x => (((Polynomial.derivative : Polynomial ℝ → Polynomial ℝ)^[n]) p).eval x)
+    (fun n x ↦ ((Polynomial.derivative^[n]) p).eval x)
   · intro n x
     simpa only [Function.iterate_succ_apply'] using
       (((Polynomial.derivative : Polynomial ℝ → Polynomial ℝ)^[n]) p).hasDerivAt x
@@ -373,10 +347,10 @@ theorem iteratedLineDerivOp_ofFun_polynomial {Ω : TopologicalSpace.Opens ℝ}
 polynomial distribution vanishes. -/
 theorem iteratedLineDerivOp_ofFun_polynomial_eq_zero_of_natDegree_lt
     {Ω : TopologicalSpace.Opens ℝ} (p : Polynomial ℝ) (k : ℕ) (hpk : p.natDegree < k) :
-    iteratedLineDerivOp (fun _ : Fin k => (1 : ℝ))
-        (ofFun Ω (fun x => p.eval x) volume ⊤) = 0 := by
+    iteratedLineDerivOp (fun _ : Fin k ↦ (1 : ℝ))
+        (ofFun Ω (fun x ↦ p.eval x) volume ⊤) = 0 := by
   rw [iteratedLineDerivOp_ofFun_polynomial, Polynomial.iterate_derivative_eq_zero hpk]
-  have hz : (fun x : ℝ => Polynomial.eval x (0 : Polynomial ℝ)) = 0 := by
+  have hz : (fun x : ℝ ↦ Polynomial.eval x (0 : Polynomial ℝ)) = 0 := by
     funext x
     simp
   rw [hz]
@@ -386,8 +360,8 @@ theorem iteratedLineDerivOp_ofFun_polynomial_eq_zero_of_natDegree_lt
 vanishes. -/
 theorem iteratedLineDerivOp_ofFun_polynomial_natDegree_add_one_eq_zero
     {Ω : TopologicalSpace.Opens ℝ} (p : Polynomial ℝ) :
-    iteratedLineDerivOp (fun _ : Fin (p.natDegree + 1) => (1 : ℝ))
-        (ofFun Ω (fun x => p.eval x) volume ⊤) = 0 :=
+    iteratedLineDerivOp (fun _ : Fin (p.natDegree + 1) ↦ (1 : ℝ))
+      (ofFun Ω (fun x ↦ p.eval x) volume ⊤) = 0 :=
   iteratedLineDerivOp_ofFun_polynomial_eq_zero_of_natDegree_lt p _ (Nat.lt_succ_self _)
 
 end Distribution

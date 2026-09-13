@@ -62,18 +62,15 @@ theorem exists_polynomial_of_iteratedLineDerivOp_eq_zero
         rw [map_sub, lineDerivCLM_ofFun_eq_of_hasDerivAt (fun x => q.hasDerivAt x) hqLoc
           ((q.derivative.continuous).locallyIntegrable.locallyIntegrableOn _), hq, ← hp]
         exact sub_self _
-      have hconst := eq_ofFun_const_of_lineDerivCLM_eq_zero_of_hasCompactSupportPrimitive
-        ρ hρ (T - Q) hDsub
-      let c : ℝ := (T - Q) ρ
-      have hcLoc : LocallyIntegrableOn (fun _ : ℝ => c) Ω volume :=
+      have hcLoc : LocallyIntegrableOn (fun _ : ℝ => (T - Q) ρ) Ω volume :=
         continuous_const.locallyIntegrable.locallyIntegrableOn _
-      refine ⟨q + Polynomial.C c, ?_⟩
-      have heval : (fun x => (q + Polynomial.C c).eval x) =
-          (fun x => q.eval x) + (fun _ : ℝ => c) := by
+      refine ⟨q + Polynomial.C ((T - Q) ρ), ?_⟩
+      have heval : (fun x => (q + Polynomial.C ((T - Q) ρ)).eval x) =
+          (fun x => q.eval x) + (fun _ : ℝ => (T - Q) ρ) := by
         funext x
         simp
-      rw [heval, ofFun_add hqLoc hcLoc]
-      exact sub_eq_iff_eq_add'.mp hconst
+      rw [heval, ofFun_add hqLoc hcLoc, ← sub_eq_iff_eq_add']
+      exact eq_ofFun_const_of_lineDerivCLM_eq_zero_of_hasCompactSupportPrimitive ρ hρ (T - Q) hDsub
 
 /-- Two locally integrable continuous functions on a finite-dimensional real normed space induce
 the same regular distribution if and only if they are equal.
