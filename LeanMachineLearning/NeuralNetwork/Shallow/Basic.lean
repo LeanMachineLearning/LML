@@ -32,80 +32,8 @@ def neuron (σ : C(ℝ, ℝ)) (w : E) (b : ℝ) : C(E, ℝ) :=
 theorem neuron_apply (σ : C(ℝ, ℝ)) (w : E) (b : ℝ) (x : E) :
     neuron σ w b x = σ (inner ℝ w x + b) := rfl
 
-/-- The real vector space of finite-width, single-hidden-layer networks with activation `σ`. -/
-def space (σ : C(ℝ, ℝ)) : Submodule ℝ C(E, ℝ) :=
-  Submodule.span ℝ (Set.range fun p : E × ℝ ↦ neuron σ p.1 p.2)
-
 /-- The restrictions to `K` of finite-width, single-hidden-layer networks with activation `σ`. -/
 def spaceOn (σ : C(ℝ, ℝ)) (K : Set E) : Submodule ℝ C(K, ℝ) :=
   Submodule.span ℝ (Set.range fun p : E × ℝ ↦ (neuron σ p.1 p.2).restrict K)
-
-/-- Membership in `space` is exactly representability by a finite-width shallow network. -/
-theorem mem_space_iff (σ : C(ℝ, ℝ)) (f : C(E, ℝ)) :
-    f ∈ space σ ↔
-      ∃ (m : ℕ) (a : Fin m → ℝ) (w : Fin m → E) (b : Fin m → ℝ),
-        ∑ j, a j • neuron σ (w j) (b j) = f := by
-  constructor
-  · intro hf
-    rw [space, Submodule.mem_span_set'] at hf
-    obtain ⟨m, a, g, h⟩ := hf
-    have hg : ∀ j, ∃ w b, neuron σ w b = (g j : C(E, ℝ)) := by
-      intro j
-      obtain ⟨p, hp⟩ := (g j).property
-      exact ⟨p.1, p.2, hp⟩
-    choose w b hb using hg
-    exact ⟨m, a, w, b, by simpa only [← hb] using h⟩
-  · rintro ⟨m, a, w, b, rfl⟩
-    apply Submodule.sum_mem
-    intro j hj
-    apply Submodule.smul_mem
-    exact Submodule.subset_span ⟨(w j, b j), rfl⟩
-
-/-- Membership in `spaceOn` is exactly representability on `K` by a finite-width shallow
-network. -/
-theorem mem_spaceOn_iff (σ : C(ℝ, ℝ)) (K : Set E) (f : C(K, ℝ)) :
-    f ∈ spaceOn σ K ↔
-      ∃ (m : ℕ) (a : Fin m → ℝ) (w : Fin m → E) (b : Fin m → ℝ),
-        ∑ j, a j • (neuron σ (w j) (b j)).restrict K = f := by
-  constructor
-  · intro hf
-    rw [spaceOn, Submodule.mem_span_set'] at hf
-    obtain ⟨m, a, g, h⟩ := hf
-    have hg : ∀ j, ∃ w b, (neuron σ w b).restrict K = (g j : C(K, ℝ)) := by
-      intro j
-      obtain ⟨p, hp⟩ := (g j).property
-      exact ⟨p.1, p.2, hp⟩
-    choose w b hb using hg
-    exact ⟨m, a, w, b, by simpa only [← hb] using h⟩
-  · rintro ⟨m, a, w, b, rfl⟩
-    apply Submodule.sum_mem
-    intro j hj
-    apply Submodule.smul_mem
-    exact Submodule.subset_span ⟨(w j, b j), rfl⟩
-
-/-- `spaceOn` is the image of the global network space under restriction. -/
-theorem spaceOn_eq_map (σ : C(ℝ, ℝ)) (K : Set E) :
-    spaceOn σ K = (space σ).map
-      (ContinuousMap.compCLM ℝ ℝ ⟨((↑) : K → E), continuous_subtype_val⟩).toLinearMap := by
-  rw [spaceOn, space, Submodule.map_span]
-  congr 1
-  ext f
-  aesop
-
-/-- Density of the network space on a compact set is equivalent to uniform approximation. -/
-theorem dense_spaceOn_iff_uniform_approximation (σ : C(ℝ, ℝ)) {K : Set E} (hK : IsCompact K) :
-    Dense (spaceOn σ K : Set C(K, ℝ)) ↔
-      ∀ (f : C(K, ℝ)) (ε : ℝ), 0 < ε →
-        ∃ g ∈ spaceOn σ K, ∀ x, dist (g x) (f x) < ε := by
-  let _ : CompactSpace K := isCompact_iff_compactSpace.mp hK
-  constructor
-  · intro h f ε hε
-    obtain ⟨g, hgBall, hgSpace⟩ := Metric.dense_iff.mp h f ε hε
-    exact ⟨g, hgSpace, (ContinuousMap.dist_lt_iff hε).mp hgBall⟩
-  · intro h
-    rw [Metric.dense_iff]
-    intro f ε hε
-    obtain ⟨g, hgSpace, hgDist⟩ := h f ε hε
-    exact ⟨g, (ContinuousMap.dist_lt_iff hε).mpr hgDist, hgSpace⟩
 
 end Learning.ShallowNetwork

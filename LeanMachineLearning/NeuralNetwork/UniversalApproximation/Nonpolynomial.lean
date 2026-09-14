@@ -130,7 +130,7 @@ theorem exists_testFunction_iteratedDeriv_convolutionActivation_ne_zero
     ∃ φ : 𝓓((⊤ : TopologicalSpace.Opens ℝ), ℝ),
       iteratedDeriv n (convolutionActivation φ σ) 0 ≠ 0 := by
   obtain ⟨φ, hφ⟩ := exists_testFunction_iteratedLineDeriv_integral_mul_reflected_ne_zero hσ n
-  exact ⟨φ, by rwa [iteratedDeriv_convolutionActivation_testFunction_apply_zero]⟩
+  exact ⟨φ, by simpa⟩
 
 /-! ## Universality of nonpolynomial activations -/
 

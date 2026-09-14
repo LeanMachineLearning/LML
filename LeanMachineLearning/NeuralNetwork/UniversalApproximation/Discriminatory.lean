@@ -149,25 +149,6 @@ theorem isDiscriminatory_of_smooth_ridges {σ : C(ℝ, ℝ)} (hsmooth : ∀ n : 
   obtain ⟨g, b, hg, hb, htransfer⟩ := hsmooth n
   exact annihilates_coordinate_pow_of_iteratedDeriv_ne_zero hg hK (htransfer K hK Λ hΛ) hb
 
-/-- A smooth activation with no identically-zero derivative is discriminatory on every real
-inner-product space. -/
-theorem isDiscriminatory_of_contDiff_of_iteratedDeriv_ne_zero
-    {g : C(ℝ, ℝ)} (hg : ContDiff ℝ ∞ g) (hne : ∀ n : ℕ, ∃ b : ℝ, iteratedDeriv n g b ≠ 0) :
-    IsDiscriminatory E g := by
-  apply isDiscriminatory_of_smooth_ridges
-  intro n
-  obtain ⟨b, hb⟩ := hne n
-  exact ⟨g, b, hg, hb, by simp⟩
-
-/-- A smooth activation with no identically-zero derivative has dense network space on every
-compact subset of a real inner-product space. -/
-theorem dense_spaceOn_of_contDiff_of_iteratedDeriv_ne_zero
-    {g : C(ℝ, ℝ)} (hg : ContDiff ℝ ∞ g)
-    (hne : ∀ n : ℕ, ∃ b : ℝ, iteratedDeriv n g b ≠ 0) {K : Set E} (hK : IsCompact K) :
-    Dense (spaceOn g K : Set C(K, ℝ)) :=
-  (dense_spaceOn_iff_isDiscriminatory g).2
-    (isDiscriminatory_of_contDiff_of_iteratedDeriv_ne_zero hg hne) K hK
-
 end SmoothActivation
 
 end Learning.ShallowNetwork
