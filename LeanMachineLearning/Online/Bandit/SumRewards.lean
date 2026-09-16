@@ -284,6 +284,34 @@ lemma prob_pullCount_prod_sumRewards_mem_le [Countable 𝓐] [MeasurableSingleto
       streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} :=
     ArrayModel.prob_pullCount_prod_sumRewards_mem_le a n hs
 
+/-- Union bound over the possible values of the number of pulls: the probability that a measurable
+property `p` holds for the number of pulls and the sum of rewards of action `a` at time `n`, with at
+least one pull, is at most `n` times a uniform bound on the probability of that property for the
+sums of `k ∈ [1, n]` i.i.d. rewards. -/
+lemma prob_pullCount_pos_and_le [Countable 𝓐] [MeasurableSingletonClass 𝓐]
+    (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P) (a : 𝓐) (n : ℕ)
+    {p : ℕ → ℝ → Prop} (hp : Measurable fun q : ℕ × ℝ ↦ p q.1 q.2) {B : ℝ≥0∞}
+    (hB : ∀ k, k ≠ 0 → streamMeasure ν {ω | p k (∑ i ∈ range k, ω i a)} ≤ B) :
+    P {ω | 0 < pullCount A a n ω ∧ p (pullCount A a n ω) (sumRewards A R a n ω)} ≤ n * B := by
+  classical
+  let s : Set (ℕ × ℝ) := {q | 0 < q.1 ∧ p q.1 q.2}
+  have hs : MeasurableSet s := by
+    simp only [measurableSet_setOfPred, s]
+    fun_prop
+  calc P {ω | 0 < pullCount A a n ω ∧ p (pullCount A a n ω) (sumRewards A R a n ω)}
+  _ ≤ ∑ k ∈ (range (n + 1)).filter (· ∈ Prod.fst '' s),
+      streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} :=
+    prob_pullCount_prod_sumRewards_mem_le h hs
+  _ ≤ ∑ k ∈ Icc 1 n, streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} := by
+    refine Finset.sum_le_sum_of_subset_of_nonneg (fun m ↦ ?_) fun _ _ _ ↦ by positivity
+    simp [s]
+    grind
+  _ ≤ ∑ k ∈ Icc 1 n, B := by
+    gcongr with k hk
+    refine (measure_mono fun ω hω ↦ ?_).trans (hB k (by grind))
+    exact hω.2
+  _ = n * B := by simp
+
 lemma prob_pullCount_mem_and_sumRewards_mem_le [Countable 𝓐] [MeasurableSingletonClass 𝓐]
     (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
     {s : Set ℕ} [DecidablePred (· ∈ s)] (hs : MeasurableSet s) {B : Set ℝ} (hB : MeasurableSet B) :

@@ -17,8 +17,8 @@ probability of being optimal under the posterior over environments given the his
 
 ## Main definitions
 
-* `tsAlgorithm hK Q κ`: a Thompson sampling algorithm with actions in `Fin K` given `hK : 0 < K`,
-  a prior distribution over parameters `Q : Measure 𝓔`, and a Markov kernel
+* `tsAlgorithm Q κ`: a Thompson sampling algorithm with actions in `Fin K` (for `K ≠ 0`), given
+  a prior distribution over parameters `Q : Measure 𝓔` and a Markov kernel
   `κ : Kernel (𝓔 × Fin K) ℝ`. This kernel defines how a parameter `e : 𝓔` gives rise to
   a stationary environment: `stationaryEnv (κ.sectR e) : Environment (Fin K) ℝ`.
 
@@ -46,15 +46,13 @@ variable {𝓔 : Type*} [MeasurableSpace 𝓔] [StandardBorelSpace 𝓔] [Nonemp
 under the posterior over environments given the history so far.
 The posterior under a uniform algorithm is used to avoid a circular definition. -/
 noncomputable
-def TS.policy (hK : 0 < K) (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × Fin K) ℝ)
+def TS.policy [NeZero K] (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × Fin K) ℝ)
     [IsMarkovKernel κ] (n : ℕ) : Kernel (Hist Unit (Fin K) ℝ n × Unit) (Fin K) :=
-  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
   (((IT.bayesTrajMeasurePosterior Q κ uniformAlgorithm n).map
     (bestAction κ id)).prodMkRight Unit)
 
-instance {hK : 0 < K} {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × Fin K) ℝ}
-    [IsMarkovKernel κ] {n : ℕ} : IsMarkovKernel (TS.policy hK Q κ n) := by
-  have : Nonempty (Fin K) := Fin.pos_iff_nonempty.mp hK
+instance [NeZero K] {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × Fin K) ℝ}
+    [IsMarkovKernel κ] {n : ℕ} : IsMarkovKernel (TS.policy Q κ n) := by
   have : IsMarkovKernel ((IT.bayesTrajMeasurePosterior Q κ uniformAlgorithm n).map
       (bestAction κ id)) := Kernel.IsMarkovKernel.map _ (by fun_prop)
   unfold TS.policy
@@ -68,13 +66,13 @@ instance {hK : 0 < K} {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (
   history up to time `n` to derive the probability of each action being optimal. The action for time
   `n` is sampled according to these probabilities. -/
 noncomputable
-def tsAlgorithm (hK : 0 < K) (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × Fin K) ℝ)
+def tsAlgorithm [NeZero K] (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × Fin K) ℝ)
     [IsMarkovKernel κ] : Algorithm Unit (Fin K) ℝ where
-  policy := TS.policy hK Q κ
+  policy := TS.policy Q κ
 
 end Algorithm
 
-variable {K : ℕ} [Nonempty (Fin K)]
+variable {K : ℕ} [NeZero K]
 variable {Ω : Type*} [MeasurableSpace Ω]
 variable {𝓔 : Type*} [MeasurableSpace 𝓔] [StandardBorelSpace 𝓔] [Nonempty 𝓔]
 variable {E : Ω → 𝓔} {A : ℕ → Ω → Fin K} {R : ℕ → Ω → ℝ}
@@ -83,18 +81,17 @@ variable {P : Measure Ω} [IsProbabilityMeasure P]
 
 /-- The first action of Thompson sampling is sampled according to its probability of being optimal
 under the prior over environments. -/
-lemma TS.p0_tsAlgorithm (hK : 0 < K) :
-    (tsAlgorithm hK Q κ).p0 () = Q.map (bestAction κ id) := by
+lemma TS.p0_tsAlgorithm :
+    (tsAlgorithm Q κ).p0 () = Q.map (bestAction κ id) := by
   rw [Algorithm.p0_apply]
-  change TS.policy hK Q κ 0 (default, ()) = _
+  dsimp only [tsAlgorithm]
   rw [TS.policy, Kernel.prodMkRight_apply, Kernel.map_apply _ (by fun_prop),
     IT.bayesTrajMeasurePosterior_zero, Kernel.const_apply]
 
 /-- If Thompson sampling has the correct prior over environments, then the conditional distribution
 of the next action given the history so far is equal to the conditional distribution of the best
 action given the history so far. -/
-lemma TS.hasCondDistrib_action (hK : 0 < K) (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm hK Q κ) E A R P)
-    (n : ℕ) :
+lemma TS.hasCondDistrib_action (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ) E A R P) (n : ℕ) :
     HasCondDistrib (A n) (history (noObs Ω) A R n)
       (condDistrib (bestAction κ E) (history (noObs Ω) A R n) P) P where
   aemeasurable := ((measurable_history (fun _ ↦ measurable_const) h.measurable_action
@@ -102,7 +99,7 @@ lemma TS.hasCondDistrib_action (hK : 0 < K) (h : IsBayesAlgEnvSeq Q κ (tsAlgori
   map_eq := by
     have hm : Measurable (bestAction κ id) := by fun_prop
     have h' : HasCondDistrib (A n) (history (noObs Ω) A R n)
-        (((tsAlgorithm hK Q κ).policy n).sectL ()) P :=
+        (((tsAlgorithm Q κ).policy n).sectL ()) P :=
       hasCondDistrib_prodMk_right_unique_iff.mp (h.hasCondDistrib_action' n)
     rw [h'.map_eq]
     refine Measure.compProd_congr ?_
