@@ -37,6 +37,8 @@ public import LeanMachineLearning.ForMathlib.Probability.Process.HittingTime
 public import LeanMachineLearning.ForMathlib.Probability.WithDensity
 public import LeanMachineLearning.ForMathlib.Topology.Instances.ENNReal.Lemmas
 public import LeanMachineLearning.Online.Bandit.Algorithms.ETC
+public import LeanMachineLearning.Online.Bandit.Algorithms.LinUCB
+public import LeanMachineLearning.Online.Bandit.Algorithms.LinUCB.Basic
 public import LeanMachineLearning.Online.Bandit.Algorithms.Regret.BayesRegretTS
 public import LeanMachineLearning.Online.Bandit.Algorithms.Regret.ETC
 public import LeanMachineLearning.Online.Bandit.Algorithms.Regret.UCB
