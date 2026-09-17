@@ -5,7 +5,7 @@ Authors: Gaëtan Serré
 -/
 module
 
-public import LeanMachineLearning.SequentialLearning.Algorithm
+public import LeanMachineLearning.SequentialLearning.Algorithms.Markov
 
 import LeanMachineLearning.ForMathlib.Probability.Independence.IndepFun
 
@@ -47,16 +47,28 @@ noncomputable def randomSampling (μ : Measure 𝓐) [IsProbabilityMeasure μ] :
     Algorithm 𝓞 𝓐 𝓨 where
   policy _ := Kernel.const _ μ
 
+/-- The random sampling algorithm is the Markov algorithm with the constant kernel `μ`. -/
+lemma randomSampling_eq_markov :
+    (randomSampling μ : Algorithm 𝓞 𝓐 𝓨) = Algorithm.markov (Kernel.const 𝓞 μ) := rfl
+
+instance : (randomSampling μ : Algorithm 𝓞 𝓐 𝓨).IsMarkov where
+  exists_policy_eq_prodMkLeft := ⟨Kernel.const 𝓞 μ, fun _ ↦ rfl⟩
+
+@[simp]
+lemma policyCondObs_randomSampling :
+    (randomSampling μ : Algorithm 𝓞 𝓐 𝓨).policyCondObs = Kernel.const 𝓞 μ :=
+  Algorithm.policyCondObs_eq_of_policy_zero_eq _ rfl
+
 namespace randomSampling
 
 variable {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {env : Environment 𝓞 𝓐 𝓨}
 
-/-- Each action follows the distribution μ. -/
+/-- Each action of the random sampling algorithm follows the distribution μ. -/
 lemma hasLaw_action (h : IsAlgEnvSeq O A Y (randomSampling μ) env P) (n : ℕ) :
     HasLaw (A n) μ P :=
   (h.hasCondDistrib_action n).hasLaw_of_const
 
-/-- Actions are mutually independent. -/
+/-- Actions of the random sampling algorithm are mutually independent. -/
 lemma iIndep_action (h : IsAlgEnvSeq O A Y (randomSampling μ) env P) :
     iIndepFun A P := by
   have hO := h.measurable_obs
