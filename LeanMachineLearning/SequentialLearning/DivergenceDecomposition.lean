@@ -158,22 +158,22 @@ variable {O : ℕ → Ω → Unit} {O' : ℕ → Ω' → Unit} {alg : Algorithm 
   {κ κ' : Kernel 𝓐 𝓨} [IsMarkovKernel κ] [IsMarkovKernel κ']
 
 /-- Chain rule for histories of a single algorithm versus two stationary environments. -/
-lemma IsAlgEnvSeq.klDiv_map_history_compProd (h : IsAlgEnvSeq O A Y alg (stationaryEnv κ) P)
-    (h' : IsAlgEnvSeq O' A' Y' alg (stationaryEnv κ') P') (M : ℕ) :
+lemma IsAlgEnvSeq.klDiv_map_history_compProd (h : IsAlgEnvSeq O A Y alg (Environment.bandit κ) P)
+    (h' : IsAlgEnvSeq O' A' Y' alg (Environment.bandit κ') P') (M : ℕ) :
     klDiv (P.map (history O A Y M)) (P'.map (history O' A' Y' M)) =
       ∑ t ∈ range M, klDiv (P.map (A t) ⊗ₘ κ) (P.map (A t) ⊗ₘ κ') := by
   rw [h.klDiv_map_history_stepKernel h']
   refine sum_congr rfl fun t _ ↦ ?_
   have h_obs := (h.hasCondDistrib_obs t).map_eq
-  rw [obs_stationaryEnv] at h_obs
-  rw [stepKernel_stationaryEnv, stepKernel_stationaryEnv,
+  rw [obs_bandit] at h_obs
+  rw [stepKernel_bandit, stepKernel_bandit,
     klDiv_compProd_compProd_compProd_prodMkLeft_eq_klDiv_comp_compProd, ← h_obs,
     ← (h.hasCondDistrib_action t).hasLaw_comp.map_eq]
 
 /-- Chain rule for histories of a single algorithm versus two stationary environments. -/
 lemma IsAlgEnvSeq.klDiv_map_history [MeasurableSpace.CountablyGenerated 𝓨]
-    (h : IsAlgEnvSeq O A Y alg (stationaryEnv κ) P)
-    (h' : IsAlgEnvSeq O' A' Y' alg (stationaryEnv κ') P') (M : ℕ) :
+    (h : IsAlgEnvSeq O A Y alg (Environment.bandit κ) P)
+    (h' : IsAlgEnvSeq O' A' Y' alg (Environment.bandit κ') P') (M : ℕ) :
     klDiv (P.map (history O A Y M)) (P'.map (history O' A' Y' M)) =
       ∑ t ∈ range M, ∫⁻ ω, klDiv (κ (A t ω)) (κ' (A t ω)) ∂P := by
   rw [h.klDiv_map_history_compProd h']
@@ -182,8 +182,8 @@ lemma IsAlgEnvSeq.klDiv_map_history [MeasurableSpace.CountablyGenerated 𝓨]
     lintegral_map (measurable_klDiv_kernel κ κ') (h.measurable_action t)]
 
 /-- Chain rule for trajectories of a single algorithm versus two stationary environments. -/
-lemma IsAlgEnvSeq.klDiv_map_trajectory_compProd (h : IsAlgEnvSeq O A Y alg (stationaryEnv κ) P)
-    (h' : IsAlgEnvSeq O' A' Y' alg (stationaryEnv κ') P') :
+lemma IsAlgEnvSeq.klDiv_map_trajectory_compProd (h : IsAlgEnvSeq O A Y alg (Environment.bandit κ) P)
+    (h' : IsAlgEnvSeq O' A' Y' alg (Environment.bandit κ') P') :
     klDiv (P.map (trajectory O A Y)) (P'.map (trajectory O' A' Y')) =
       ∑' t : ℕ, klDiv (P.map (A t) ⊗ₘ κ) (P.map (A t) ⊗ₘ κ') := by
   rw [klDiv_map_trajectory_eq_iSup h.measurable_obs h.measurable_action h.measurable_feedback
@@ -192,8 +192,8 @@ lemma IsAlgEnvSeq.klDiv_map_trajectory_compProd (h : IsAlgEnvSeq O A Y alg (stat
 
 /-- Chain rule for trajectories of a single algorithm versus two stationary environments. -/
 lemma IsAlgEnvSeq.klDiv_map_trajectory [MeasurableSpace.CountablyGenerated 𝓨]
-    (h : IsAlgEnvSeq O A Y alg (stationaryEnv κ) P)
-    (h' : IsAlgEnvSeq O' A' Y' alg (stationaryEnv κ') P') :
+    (h : IsAlgEnvSeq O A Y alg (Environment.bandit κ) P)
+    (h' : IsAlgEnvSeq O' A' Y' alg (Environment.bandit κ') P') :
     klDiv (P.map (trajectory O A Y)) (P'.map (trajectory O' A' Y')) =
       ∑' t : ℕ, ∫⁻ ω, klDiv (κ (A t ω)) (κ' (A t ω)) ∂P := by
   rw [h.klDiv_map_trajectory_compProd h']
