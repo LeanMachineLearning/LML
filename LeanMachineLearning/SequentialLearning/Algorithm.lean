@@ -747,16 +747,22 @@ the algorithm only sees the past rounds. Since `Unit` carries a unique probabili
 observation kernels of such an environment are all equal to `Kernel.const _ (Measure.dirac ())`,
 and the observation process of an algorithm-environment sequence is `noObs`. -/
 
-/-- Every Markov kernel with codomain `Unit` is the constant kernel at `Measure.dirac ()`. -/
-lemma Kernel.eq_const_dirac_unit {α : Type*} {mα : MeasurableSpace α} (κ : Kernel α Unit)
-    [IsMarkovKernel κ] :
-    κ = Kernel.const α (Measure.dirac ()) := by
-  ext a s hs
-  rw [Kernel.const_apply]
+/-- Every probability measure on `Unit` is `Measure.dirac ()`. -/
+lemma Measure.eq_dirac_unit (μ : Measure Unit) [IsProbabilityMeasure μ] :
+    μ = Measure.dirac () := by
+  ext s hs
   rcases Set.eq_empty_or_nonempty s with rfl | ⟨u, hu⟩
   · simp
   · have hs_univ : s = Set.univ := Set.eq_univ_of_forall fun x ↦ by rwa [Subsingleton.elim x u]
     simp [hs_univ]
+
+/-- Every Markov kernel with codomain `Unit` is the constant kernel at `Measure.dirac ()`. -/
+lemma Kernel.eq_const_dirac_unit {α : Type*} {mα : MeasurableSpace α} (κ : Kernel α Unit)
+    [IsMarkovKernel κ] :
+    κ = Kernel.const α (Measure.dirac ()) := by
+  ext a : 1
+  rw [Kernel.const_apply]
+  exact Measure.eq_dirac_unit (κ a)
 
 /-- A random variable with values in `Unit` admits any Markov kernel as conditional
 distribution. -/

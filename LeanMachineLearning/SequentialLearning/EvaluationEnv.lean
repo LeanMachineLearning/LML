@@ -47,24 +47,25 @@ variable {𝓐 𝓨 : Type*} {m𝓐 : MeasurableSpace 𝓐} {m𝓨 : MeasurableS
 /-- The evaluation environment where the feedback is given by evaluating a fixed measurable function
 `f` at the chosen action. -/
 noncomputable def onlineEvalEnv (g : ℕ → 𝓐 → 𝓨) (hg : ∀ n, Measurable (g n)) :=
-  obliviousEnv (fun n ↦ Kernel.deterministic (g n) (hg n))
+  Environment.banditSeq (fun n ↦ Kernel.deterministic (g n) (hg n))
 
 instance : IsObliviousEnv (onlineEvalEnv g hg) :=
-  ⟨⟨fun n ↦ Kernel.deterministic (g n) (hg n), fun _ ↦ inferInstance, fun _ ↦ rfl⟩⟩
+  inferInstanceAs (IsObliviousEnv (Environment.banditSeq fun n ↦ Kernel.deterministic (g n) (hg n)))
 
 instance : IsDeterministicEnv (onlineEvalEnv g hg) where
   exists_f n := ⟨fun p ↦ g n p.2, by fun_prop, rfl⟩
 
 @[simp]
-lemma feedbackCondAction_onlineEvalEnv (n : ℕ) :
-    feedbackCondAction (onlineEvalEnv g hg) n = Kernel.deterministic (g n) (hg n) := by
+lemma feedbackCondObsAction_onlineEvalEnv (n : ℕ) :
+    (onlineEvalEnv g hg).feedbackCondObsAction n
+      = Kernel.deterministic (fun p ↦ g n p.2) (by fun_prop) := by
   simp [onlineEvalEnv]
 
 @[simp]
 lemma feedbackFun_onlineEvalEnv [MeasurableSpace.SeparatesPoints 𝓨] (n : ℕ) :
     feedbackFun (onlineEvalEnv g hg) n = fun p ↦ g n p.2 := by
   have h_eq := feedback_eq_deterministic (onlineEvalEnv g hg) n
-  simpa only [onlineEvalEnv, feedback_obliviousEnv, Kernel.prodMkLeft_deterministic,
+  simpa only [onlineEvalEnv, feedback_banditSeq, Kernel.prodMkLeft_deterministic,
     Kernel.deterministic_inj] using h_eq.symm
 
 @[simp]
@@ -80,17 +81,17 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {alg : Algorithm Unit 𝓐 𝓨
   {P : Measure Ω} [IsProbabilityMeasure P]
   {O : ℕ → Ω → Unit} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 
-lemma hascondDistrib_feedback_onlineEvalEnv
+lemma hasCondDistrib_feedback_onlineEvalEnv
     (h : IsAlgEnvSeq O A Y alg (onlineEvalEnv g hg) P) (n : ℕ) :
-    HasCondDistrib (Y n) (A n) (Kernel.deterministic (g n) (hg n)) P := by
-  simpa using IsObliviousEnv.hasCondDistrib_feedback h n
+    HasCondDistrib (Y n) (A n) (Kernel.deterministic (g n) (hg n)) P :=
+  h.hasCondDistrib_feedback_banditSeq n
 
 lemma feedback_onlineEvalEnv_ae_eq_eval_action [StandardBorelSpace 𝓨] [Nonempty 𝓨]
     (h : IsAlgEnvSeq O A Y alg (onlineEvalEnv g hg) P) (n : ℕ) :
     Y n =ᵐ[P] g n ∘ A n :=
   ae_eq_of_condDistrib_eq_deterministic (hg n) (h.measurable_action n).aemeasurable
     (h.measurable_feedback n).aemeasurable
-    (hascondDistrib_feedback_onlineEvalEnv h n).condDistrib_eq
+    (hasCondDistrib_feedback_onlineEvalEnv h n).condDistrib_eq
 
 lemma forall_feedback_onlineEvalEnv_ae_eq_eval_action [StandardBorelSpace 𝓨] [Nonempty 𝓨]
     (h : IsAlgEnvSeq O A Y alg (onlineEvalEnv g hg) P) :
@@ -110,8 +111,10 @@ instance : IsObliviousEnv (evalEnv f hf) := by unfold evalEnv; infer_instance
 instance : IsDeterministicEnv (evalEnv f hf) := by unfold evalEnv; infer_instance
 
 @[simp]
-lemma feedbackCondAction_evalEnv (n : ℕ) :
-    feedbackCondAction (evalEnv f hf) n = Kernel.deterministic f hf := by simp [evalEnv]
+lemma feedbackCondObsAction_evalEnv (n : ℕ) :
+    (evalEnv f hf).feedbackCondObsAction n
+      = Kernel.deterministic (fun p ↦ f p.2) (by fun_prop) := by
+  simp [evalEnv]
 
 @[simp]
 lemma feedbackFunZero_evalEnv [MeasurableSpace.SeparatesPoints 𝓨] :
@@ -128,9 +131,9 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {alg : Algorithm Unit 𝓐 𝓨
   {P : Measure Ω} [IsProbabilityMeasure P]
   {O : ℕ → Ω → Unit} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 
-lemma hascondDistrib_feedback_evalEnv (h : IsAlgEnvSeq O A Y alg (evalEnv f hf) P) (n : ℕ) :
-    HasCondDistrib (Y n) (A n) (Kernel.deterministic f hf) P := by
-  simpa using IsObliviousEnv.hasCondDistrib_feedback h n
+lemma hasCondDistrib_feedback_evalEnv (h : IsAlgEnvSeq O A Y alg (evalEnv f hf) P) (n : ℕ) :
+    HasCondDistrib (Y n) (A n) (Kernel.deterministic f hf) P :=
+  h.hasCondDistrib_feedback_banditSeq n
 
 lemma feedback_evalEnv_ae_eq_eval_action [StandardBorelSpace 𝓨] [Nonempty 𝓨]
   (h : IsAlgEnvSeq O A Y alg (evalEnv f hf) P) (n : ℕ) :

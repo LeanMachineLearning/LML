@@ -66,8 +66,8 @@ variable [NeZero K] {c : ℝ} {ν : Kernel (Fin K) ℝ} [IsMarkovKernel ν]
 
 /-- Before round `K`, the UCB algorithm behaves like the Round-Robin algorithm. -/
 lemma isAlgEnvSeqUntil_roundRobinAlgorithm
-    (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (stationaryEnv ν) P) :
-    IsAlgEnvSeqUntil O A R (roundRobinAlgorithm K) (stationaryEnv ν) P K := by
+    (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (Environment.bandit ν) P) :
+    IsAlgEnvSeqUntil O A R (roundRobinAlgorithm K) (Environment.bandit ν) P K := by
   refine h.isAlgEnvSeqUntil_of_policy_eq fun n hn ↦ ?_
   simp only [roundRobinAlgorithm, detAlgorithm_policy, ucbAlgorithm]
   congr 1 with p
@@ -92,16 +92,17 @@ lemma ucbWidth_eq_ucbWidth' (c : ℝ) (a : Fin K) (n : ℕ) (ω : Ω) :
     ucbWidth A c a n ω = ucbWidth' c n (history O A R n ω) a := by
   rw [ucbWidth, ucbWidth', pullCount_eq_pullCount' (O := O) (A := A) (R' := R)]
 
-lemma arm_zero (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (stationaryEnv ν) P) :
+lemma arm_zero (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (Environment.bandit ν) P) :
     A 0 =ᵐ[P] fun _ ↦ 0 :=
   RoundRobin.action_zero ((isAlgEnvSeqUntil_roundRobinAlgorithm h).mono (Nat.pos_of_neZero K))
 
-lemma arm_ae_eq_nextArm (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (stationaryEnv ν) P) (n : ℕ) :
+lemma arm_ae_eq_nextArm (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (Environment.bandit ν) P)
+    (n : ℕ) :
     A n =ᵐ[P] fun ω ↦ nextArm K c n (history O A R n ω) :=
   h.action_detAlgorithm_ae_eq n
 
 lemma ucbIndex_le_ucbIndex_arm
-    (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (stationaryEnv ν) P) (a : Fin K) (hn : K ≤ n) :
+    (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (Environment.bandit ν) P) (a : Fin K) (hn : K ≤ n) :
     ∀ᵐ ω ∂P, empMean A R a n ω + ucbWidth A c a n ω ≤
       empMean A R (A n ω) n ω + ucbWidth A c (A n ω) n ω := by
   filter_upwards [arm_ae_eq_nextArm h n] with ω h_arm
@@ -111,7 +112,7 @@ lemma ucbIndex_le_ucbIndex_arm
   exact isMaxOn_argmax (fun a ↦ empMean' n (history O A R n ω) a
     + ucbWidth' c n (history O A R n ω) a) _
 
-lemma forall_arm_eq_mod_of_lt (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (stationaryEnv ν) P) :
+lemma forall_arm_eq_mod_of_lt (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (Environment.bandit ν) P) :
     ∀ᵐ ω ∂P, ∀ n < K, A n ω = RoundRobin.nextAction K n := by
   simp_rw [ae_all_iff]
   intro n hn
@@ -120,7 +121,7 @@ lemma forall_arm_eq_mod_of_lt (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (station
   simp only [nextArm, hn, ↓reduceIte]
 
 lemma forall_ucbIndex_le_ucbIndex_arm
-    (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (stationaryEnv ν) P) (a : Fin K) :
+    (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (Environment.bandit ν) P) (a : Fin K) :
     ∀ᵐ ω ∂P, ∀ n, K ≤ n →
       empMean A R a n ω + ucbWidth A c a n ω ≤
         empMean A R (A n ω) n ω + ucbWidth A c (A n ω) n ω := by
@@ -128,12 +129,12 @@ lemma forall_ucbIndex_le_ucbIndex_arm
   exact fun _ ↦ ucbIndex_le_ucbIndex_arm h a
 
 lemma time_gt_of_pullCount_gt_one
-    (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (stationaryEnv ν) P) (a : Fin K) :
+    (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (Environment.bandit ν) P) (a : Fin K) :
     ∀ᵐ ω ∂P, ∀ n, 1 < pullCount A a n ω → K < n :=
   RoundRobin.time_gt_of_pullCount_gt_one (isAlgEnvSeqUntil_roundRobinAlgorithm h) a
 
 lemma pullCount_pos_of_pullCount_gt_one
-    (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (stationaryEnv ν) P) (a : Fin K) :
+    (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (Environment.bandit ν) P) (a : Fin K) :
     ∀ᵐ ω ∂P, ∀ n, 1 < pullCount A a n ω → ∀ b : Fin K, 0 < pullCount A b n ω :=
   RoundRobin.pullCount_pos_of_pullCount_gt_one (isAlgEnvSeqUntil_roundRobinAlgorithm h) a
 

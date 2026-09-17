@@ -40,6 +40,9 @@ noncomputable
 def uniformAlgorithm [Finite 𝓐] [Nonempty 𝓐] : Algorithm 𝓞 𝓐 𝓨 :=
   randomSampling (uniformOn Set.univ)
 
+instance [Finite 𝓐] [Nonempty 𝓐] : (uniformAlgorithm : Algorithm 𝓞 𝓐 𝓨).IsMarkov :=
+  inferInstanceAs (randomSampling (uniformOn Set.univ) : Algorithm 𝓞 𝓐 𝓨).IsMarkov
+
 lemma absolutelyContinuous_uniformAlgorithm [Finite 𝓐] [Nonempty 𝓐] {alg : Algorithm 𝓞 𝓐 𝓨} :
     alg ≪ₐ uniformAlgorithm where
   policy n h := Measure.absolutelyContinuous_of_measure_singleton_ne_zero
