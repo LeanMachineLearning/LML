@@ -47,17 +47,18 @@ noncomputable def randomSampling (μ : Measure 𝓐) [IsProbabilityMeasure μ] :
     Algorithm 𝓞 𝓐 𝓨 where
   policy _ := Kernel.const _ μ
 
-/-- The random sampling algorithm is the Markov algorithm with the constant kernel `μ`. -/
+/-- The random sampling algorithm is the Markov algorithm with the constant kernel `μ` at every
+time. -/
 lemma randomSampling_eq_markov :
-    (randomSampling μ : Algorithm 𝓞 𝓐 𝓨) = Algorithm.markov (Kernel.const 𝓞 μ) := rfl
+    (randomSampling μ : Algorithm 𝓞 𝓐 𝓨) = Algorithm.markov (fun _ ↦ Kernel.const 𝓞 μ) := rfl
 
-instance : (randomSampling μ : Algorithm 𝓞 𝓐 𝓨).IsMarkov where
-  exists_policy_eq_prodMkLeft := ⟨Kernel.const 𝓞 μ, fun _ ↦ rfl⟩
+instance : (randomSampling μ : Algorithm 𝓞 𝓐 𝓨).IsMarkov :=
+  inferInstanceAs (Algorithm.markov (fun _ ↦ Kernel.const 𝓞 μ) : Algorithm 𝓞 𝓐 𝓨).IsMarkov
 
 @[simp]
-lemma policyCondObs_randomSampling :
-    (randomSampling μ : Algorithm 𝓞 𝓐 𝓨).policyCondObs = Kernel.const 𝓞 μ :=
-  Algorithm.policyCondObs_eq_of_policy_zero_eq _ rfl
+lemma policyCondObs_randomSampling [Nonempty 𝓨] (n : ℕ) :
+    (randomSampling μ : Algorithm 𝓞 𝓐 𝓨).policyCondObs n = Kernel.const 𝓞 μ :=
+  Algorithm.policyCondObs_eq_of_policy_eq _ rfl
 
 namespace randomSampling
 
