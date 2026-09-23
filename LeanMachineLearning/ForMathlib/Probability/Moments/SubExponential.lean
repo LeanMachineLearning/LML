@@ -136,10 +136,11 @@ lemma ae_forall_integrable_exp_mul (h : HasSubexponentialMGF X V b κ ν) :
 lemma ae_forall_memLp_exp_mul (h : HasSubexponentialMGF X V b κ ν) (p : ℝ≥0) :
     ∀ᵐ ω' ∂ν, ∀ t : ℝ, b * |(p : ℝ) * t| ≤ 1 → MemLp (fun ω ↦ exp (t * X ω)) p (κ ω') := by
   filter_upwards [h.ae_forall_integrable_exp_mul, h.ae_aestronglyMeasurable] with ω' hi hm t ht
-  refine ⟨continuous_exp.comp_aestronglyMeasurable (hm.const_mul t), ?_⟩
+  have hmeas : AEStronglyMeasurable (fun ω ↦ exp (t * X ω)) (κ ω') :=
+    continuous_exp.comp_aestronglyMeasurable (hm.const_mul t)
   by_cases hp : p = 0
-  · simp [hp]
-  rw [eLpNorm_lt_top_iff_lintegral_rpow_enorm_lt_top (mod_cast hp) (by simp),
+  · simp [hp, hmeas]
+  rw [memLp_iff, eLpNorm_lt_top_iff_lintegral_rpow_enorm_lt_top (mod_cast hp) (by simp) hmeas,
     ENNReal.coe_toReal]
   have hf := (hi (p * t) ht).lintegral_lt_top
   convert! hf using 3 with ω
@@ -150,10 +151,11 @@ lemma ae_forall_memLp_exp_mul (h : HasSubexponentialMGF X V b κ ν) (p : ℝ≥
 lemma memLp_exp_mul (h : HasSubexponentialMGF X V b κ ν) {t : ℝ} (p : ℝ≥0)
     (ht : b * |(p : ℝ) * t| ≤ 1) :
     MemLp (fun ω ↦ exp (t * X ω)) p (κ ∘ₘ ν) := by
-  refine ⟨continuous_exp.comp_aestronglyMeasurable (h.aestronglyMeasurable.const_mul t), ?_⟩
+  have hmeas : AEStronglyMeasurable (fun ω ↦ exp (t * X ω)) (κ ∘ₘ ν) :=
+    continuous_exp.comp_aestronglyMeasurable (h.aestronglyMeasurable.const_mul t)
   by_cases hp0 : p = 0
-  · simp [hp0]
-  rw [eLpNorm_lt_top_iff_lintegral_rpow_enorm_lt_top (mod_cast hp0) (by simp)]
+  · simp [hp0, hmeas]
+  rw [memLp_iff, eLpNorm_lt_top_iff_lintegral_rpow_enorm_lt_top (mod_cast hp0) (by simp) hmeas]
   simp only [ENNReal.coe_toReal]
   have h' := (h.integrable_exp_mul (p * t) ht).2
   rw [hasFiniteIntegral_def] at h'

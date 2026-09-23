@@ -63,6 +63,6 @@ lemma norm_integral_rpow_le_integral_norm_rpow
     ConvexOn.map_integral_le (convexOn_rpow hp1')
       (Real.continuous_rpow_const (by positivity)).continuousOn isClosed_Ici
       (ae_of_all _ fun x ↦ norm_nonneg _) (hf.integrable hp1).norm
-      ((integrable_norm_rpow_iff hf.1 hp0 hp_top).mpr hf)
+      ((integrable_norm_rpow_iff hf.aestronglyMeasurable hp0 hp_top).mpr hf)
 
 end MeasureTheory

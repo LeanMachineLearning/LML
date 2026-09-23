@@ -7,6 +7,15 @@ module
 
 public import VersoManual
 public import LeanMachineLearning
+-- `import all` is needed to load the docstrings for the `{docstring}` blocks below.
+import all LeanMachineLearning.Online.Bandit.Algorithms.Regret.UCB
+import all LeanMachineLearning.Online.Bandit.Algorithms.UCB
+import all LeanMachineLearning.Online.Bandit.Regret
+import all LeanMachineLearning.SequentialLearning.Algorithm
+import all LeanMachineLearning.SequentialLearning.Deterministic
+import all LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
+import all LeanMachineLearning.SequentialLearning.StationaryEnv
+import all LeanMachineLearning.SequentialLearning.SumRewards
 
 set_option linter.style.header false
 set_option linter.style.setOption false
@@ -122,7 +131,7 @@ To define the algorithm, we first define the exploration bonus and the next acti
 We also need to prove that the next action function is measurable, which is done by the `measurable_nextArm` lemma.
 Note that we are careful to use a measurable version of the argmax function, `argmax`.
 
-{docstring Bandits.ucbWidth'}
+{docstring Bandits.UCB.ucbWidth'}
 
 {docstring Bandits.UCB.nextArm}
 
@@ -132,7 +141,7 @@ Note that we are careful to use a measurable version of the argmax function, `ar
 
 The last line builds the algorithm using `detAlgorithm` and the function `UCB.nextArm`.
 Its measurability is proved by the `fun_prop` tactic, which proves measurability of functions by using lemmas tagged with `@[fun_prop]`.
-The first action of the algorithm is `UCB.nextArm hK c 0` applied to the empty history, which is 0 as an element of `Fin K`.
+The first action of the algorithm is `UCB.nextArm K c 0` applied to the empty history, which is 0 as an element of `Fin K`.
 
 ## A theorem about UCB
 

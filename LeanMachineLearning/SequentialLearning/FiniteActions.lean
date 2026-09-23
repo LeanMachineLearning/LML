@@ -418,7 +418,6 @@ lemma action_stepsUntil (hm : m ≠ 0) (h_exists : ∃ s, pullCount A a (s + 1) 
   · simp [h_pos]
   rw [Nat.sub_add_cancel (by omega)]
   rwa [← pullCount_eq_pullCount_of_action_ne]
-  exact h_ne
 
 lemma action_eq_of_stepsUntil_eq_coe (hm : m ≠ 0) (h : stepsUntil A a m ω = n) :
     A n ω = a := by
