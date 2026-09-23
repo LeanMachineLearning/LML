@@ -52,7 +52,8 @@ theorem exists_polynomial_of_iteratedLineDerivOp_eq_zero
   | succ k ih =>
       let DT : 𝓓'(Ω, ℝ) := ∂_{(1 : ℝ)} T
       have hDT : iteratedLineDerivOp (fun _ : Fin k => (1 : ℝ)) DT = 0 := by
-        rwa [iteratedLineDerivOp_const_eq_iter_lineDerivOp] at hT ⊢
+        rw [iteratedLineDerivOp_const_eq_iter_lineDerivOp] at hT ⊢
+        exact hT
       obtain ⟨p, hp⟩ := ih DT hDT
       obtain ⟨q, hq⟩ := Polynomial.derivative_surjective_of_charZero p
       let Q : 𝓓'(Ω, ℝ) := ofFun Ω (fun x => q.eval x) volume ⊤
