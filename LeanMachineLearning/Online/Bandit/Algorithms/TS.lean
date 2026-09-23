@@ -20,7 +20,7 @@ probability of being optimal under the posterior over environments given the his
 * `tsAlgorithm Q κ`: a Thompson sampling algorithm with actions in `Fin K` (for `K ≠ 0`), given
   a prior distribution over parameters `Q : Measure 𝓔` and a Markov kernel
   `κ : Kernel (𝓔 × Fin K) ℝ`. This kernel defines how a parameter `e : 𝓔` gives rise to
-  a stationary environment: `stationaryEnv (κ.sectR e) : Environment (Fin K) ℝ`.
+  a stationary environment: `Environment.bandit (κ.sectR e) : Environment (Fin K) ℝ`.
 
 ## Main results
 
@@ -60,7 +60,7 @@ instance [NeZero K] {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (�
 
 /-- The Thompson sampling algorithm with actions in `Fin K`, where `Q : Measure 𝓔` is a prior
   distribution over parameters, and `κ : Kernel (𝓔 × Fin K) ℝ` is a Markov kernel that defines the
-  stationary environment `stationaryEnv (κ.sectR e)` that corresponds to a parameter `e : 𝓔`.
+  stationary environment `Environment.bandit (κ.sectR e)` that corresponds to a parameter `e : 𝓔`.
 
   At every time `n`, the Thompson sampling policy uses the posterior over the parameters given the
   history up to time `n` to derive the probability of each action being optimal. The action for time

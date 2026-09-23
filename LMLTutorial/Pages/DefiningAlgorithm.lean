@@ -82,16 +82,18 @@ The `Environment` structure is the mirror of the `Algorithm` structure, with a k
 The distribution of the first observation is `obs 0` applied to the empty history; it is called `Environment.obs0`.
 The distribution of the first feedback given the first observation and action is `feedback 0` applied to the empty history; it is called `Environment.ν0`.
 
-In many applications there is no observation and the feedback depends only on the last action, not on the prior history.
-We provide an `obliviousEnv` definition that builds an environment for those cases.
+In many applications neither the observation nor the feedback depends on the prior history: the observation at time `n` has a fixed law, and the feedback depends only on the current observation and action.
+We provide an `obliviousEnv` definition that builds an environment for those cases from a sequence of observation laws and a sequence of feedback kernels.
 
 {docstring obliviousEnv}
 
-`(ν n).prodMkLeft _` is the kernel `ν n` seen as a `Kernel ((Hist Unit 𝓐 𝓨 n × Unit) × 𝓐) 𝓨` by ignoring the history and the observation.
-
-If furthermore the feedback kernel does not change with time, we can use the `stationaryEnv` definition to build the environment.
+If furthermore those sequences do not change with time, we can use the `stationaryEnv` definition to build the environment.
 
 {docstring stationaryEnv}
+
+When there is no observation (`𝓞 = Unit`), the feedback depends only on the last action. `Environment.banditSeq` builds such an environment from a sequence of kernels `ν : ℕ → Kernel 𝓐 𝓨`, and `Environment.bandit` from a single kernel `ν : Kernel 𝓐 𝓨` used at every time.
+
+{docstring Environment.bandit}
 
 
 # Sequences of actions and feedback, probability space
@@ -120,7 +122,7 @@ We now illustrate the use of `Algorithm`, `Environment`, and `IsAlgEnvSeq` by de
 
 In a stochastic bandit, an algorithm chooses at each time an action from a finite set (here `Fin K`, the type of natural numbers less than `K`) and receives a reward drawn from a distribution that depends only on the action, not on the prior history.
 
-The environment is thus simply `stationaryEnv ν` for some kernel `ν : Kernel (Fin K) ℝ`.
+The environment is thus simply `Environment.bandit ν` for some kernel `ν : Kernel (Fin K) ℝ`.
 
 ## Algorithm
 

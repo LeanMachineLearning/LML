@@ -755,7 +755,7 @@ lemma hasCondDistrib_reward (alg : Algorithm Unit 𝓐 𝓡) (ν : Kernel 𝓐 �
     (n : ℕ) :
     HasCondDistrib (reward alg n)
       (fun ω ↦ ((history (noObs _) (action alg) (reward alg) n ω, noObs _ n ω), action alg n ω))
-      ((stationaryEnv ν).feedback n) (arrayMeasure ν) := by
+      ((Environment.bandit ν).feedback n) (arrayMeasure ν) := by
   let e : (Hist Unit 𝓐 𝓡 n × 𝓐) ≃ᵐ ((Hist Unit 𝓐 𝓡 n × Unit) × 𝓐) :=
     { toFun := fun p ↦ ((p.1, ()), p.2)
       invFun := fun p ↦ (p.1.1, p.2)
@@ -763,13 +763,14 @@ lemma hasCondDistrib_reward (alg : Algorithm Unit 𝓐 𝓡) (ν : Kernel 𝓐 �
       right_inv := fun _ ↦ rfl
       measurable_toFun := by simp only [Equiv.coe_fn_mk]; fun_prop
       measurable_invFun := by simp only [Equiv.symm_mk, Equiv.coe_fn_mk]; fun_prop }
-  rw [feedback_stationaryEnv]
+  rw [feedback_bandit]
   have h := (hasCondDistrib_reward' alg ν n).measurableEquiv_comp_right e
   simp only [hist_eq_history] at h
   exact h
 
 lemma isAlgEnvSeq_arrayMeasure (alg : Algorithm Unit 𝓐 𝓡) (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] :
-    IsAlgEnvSeq (noObs _) (action alg) (reward alg) alg (stationaryEnv ν) (arrayMeasure ν) where
+    IsAlgEnvSeq (noObs _) (action alg) (reward alg) alg (Environment.bandit ν)
+      (arrayMeasure ν) where
   hasCondDistrib_obs n :=
     hasCondDistrib_unit (measurable_history (fun _ ↦ measurable_const)
       (measurable_action alg) (measurable_reward alg) n).aemeasurable _ _
@@ -786,7 +787,7 @@ lemma hasCondDistrib_reward_zero (alg : Algorithm Unit 𝓐 𝓡) (ν : Kernel �
     [IsMarkovKernel ν] :
     HasCondDistrib (reward alg 0) (action alg 0) ν (arrayMeasure ν) := by
   have h := (isAlgEnvSeq_arrayMeasure alg ν).hasCondDistrib_feedback_zero
-  rw [ν0_stationaryEnv] at h
+  rw [ν0_bandit] at h
   simpa using hasCondDistrib_prodMk_left_unique_iff.mp h
 
 end Laws

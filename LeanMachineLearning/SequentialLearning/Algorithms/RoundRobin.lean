@@ -97,12 +97,12 @@ variable [NeZero K] {ν : Kernel (Fin K) 𝓨} [IsMarkovKernel ν]
 
 /-- The action chosen at time `n` is the action `n % K`. -/
 lemma action_ae_eq (n : ℕ)
-    (h : IsAlgEnvSeqUntil O A Y (roundRobinAlgorithm K) (stationaryEnv ν) P (n + 1)) :
+    (h : IsAlgEnvSeqUntil O A Y (roundRobinAlgorithm K) (Environment.bandit ν) P (n + 1)) :
     A n =ᵐ[P] fun _ ↦ nextAction K n :=
   h.action_detAlgorithm_ae_eq n.lt_succ_self
 
 lemma action_zero
-    (h : IsAlgEnvSeqUntil O A Y (roundRobinAlgorithm K) (stationaryEnv ν) P 1) :
+    (h : IsAlgEnvSeqUntil O A Y (roundRobinAlgorithm K) (Environment.bandit ν) P 1) :
     A 0 =ᵐ[P] fun _ ↦ 0 := by
   filter_upwards [action_ae_eq 0 h] with ω hω
   rw [hω]
@@ -110,7 +110,7 @@ lemma action_zero
 
 /-- At time `K * m`, the number of times each action is chosen is equal to `m`. -/
 lemma pullCount_mul (m : ℕ)
-    (h : IsAlgEnvSeqUntil O A Y (roundRobinAlgorithm K) (stationaryEnv ν) P (K * m))
+    (h : IsAlgEnvSeqUntil O A Y (roundRobinAlgorithm K) (Environment.bandit ν) P (K * m))
     (a : Fin K) :
     pullCount A a (K * m) =ᵐ[P] fun _ ↦ m := by
   rw [Filter.EventuallyEq]
@@ -126,14 +126,14 @@ lemma pullCount_mul (m : ℕ)
   _ = m := sum_mod_range_mul (Nat.pos_of_neZero K) m a
 
 lemma pullCount_eq_one
-    (h : IsAlgEnvSeqUntil O A Y (roundRobinAlgorithm K) (stationaryEnv ν) P K) (a : Fin K) :
+    (h : IsAlgEnvSeqUntil O A Y (roundRobinAlgorithm K) (Environment.bandit ν) P K) (a : Fin K) :
     pullCount A a K =ᵐ[P] fun _ ↦ 1 := by
   suffices pullCount A a (K * 1) =ᵐ[P] fun _ ↦ 1 by simpa using this
   refine pullCount_mul 1 (P := P) (ν := ν) (O := O) (Y := Y) ?_ a
   simpa
 
 lemma time_gt_of_pullCount_gt_one
-    (h : IsAlgEnvSeqUntil O A Y (roundRobinAlgorithm K) (stationaryEnv ν) P K) (a : Fin K) :
+    (h : IsAlgEnvSeqUntil O A Y (roundRobinAlgorithm K) (Environment.bandit ν) P K) (a : Fin K) :
     ∀ᵐ ω ∂P, ∀ n, 1 < pullCount A a n ω → K < n := by
   filter_upwards [pullCount_eq_one h a] with h h_eq n hn
   rw [← h_eq] at hn
@@ -141,7 +141,7 @@ lemma time_gt_of_pullCount_gt_one
   exact hn.not_ge (pullCount_mono _ h_lt _)
 
 lemma pullCount_pos_of_time_ge
-    (h : IsAlgEnvSeqUntil O A Y (roundRobinAlgorithm K) (stationaryEnv ν) P K) :
+    (h : IsAlgEnvSeqUntil O A Y (roundRobinAlgorithm K) (Environment.bandit ν) P K) :
     ∀ᵐ ω ∂P, ∀ n, K ≤ n → ∀ b : Fin K, 0 < pullCount A b n ω := by
   have h_ae a := pullCount_eq_one h a
   simp_rw [Filter.EventuallyEq, ← ae_all_iff] at h_ae
@@ -151,7 +151,7 @@ lemma pullCount_pos_of_time_ge
   exact pullCount_mono _ hn _
 
 lemma pullCount_pos_of_pullCount_gt_one
-    (h : IsAlgEnvSeqUntil O A Y (roundRobinAlgorithm K) (stationaryEnv ν) P K) (a : Fin K) :
+    (h : IsAlgEnvSeqUntil O A Y (roundRobinAlgorithm K) (Environment.bandit ν) P K) (a : Fin K) :
     ∀ᵐ ω ∂P, ∀ n, 1 < pullCount A a n ω → ∀ b : Fin K, 0 < pullCount A b n ω := by
   filter_upwards [time_gt_of_pullCount_gt_one h a, pullCount_pos_of_time_ge h] with ω h1 h2 n h_gt a
   exact h2 n (h1 n h_gt).le a
