@@ -7,6 +7,15 @@ module
 
 public import VersoManual
 public import LeanMachineLearning
+-- `import all` is needed to load the docstrings for the `{docstring}` blocks below.
+import all LeanMachineLearning.Online.Bandit.Algorithms.Regret.UCB
+import all LeanMachineLearning.Online.Bandit.Algorithms.UCB
+import all LeanMachineLearning.Online.Bandit.Regret
+import all LeanMachineLearning.SequentialLearning.Algorithm
+import all LeanMachineLearning.SequentialLearning.Deterministic
+import all LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
+import all LeanMachineLearning.SequentialLearning.StationaryEnv
+import all LeanMachineLearning.SequentialLearning.SumRewards
 
 set_option linter.style.header false
 set_option linter.style.setOption false
