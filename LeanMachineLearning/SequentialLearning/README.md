@@ -27,6 +27,10 @@ structure Environment (𝓞 𝓐 𝓨 : Type*) [MeasurableSpace 𝓞] [Measurabl
 In many applications, some of those kernels are deterministic, or do not depend on some of their inputs.
 We detail here the naming conventions for the various constructors, predicates and accessors that are used in the library.
 
+NOTE: some names described below are marked as MISSING because they are not yet implemented in the library.
+They may never be implemented if we don't need them.
+If you need one of them, treat the name here as a recommendation that you may want to use.
+
 Generic constructions live in the `Algorithm` and `Environment` namespaces.
 Predicates live in the `Algorithm` and `Environment` namespaces: they are classes when they carry an accessor, and `Prop` definitions otherwise.
 Accessors are namespaced so that dot notation works.
