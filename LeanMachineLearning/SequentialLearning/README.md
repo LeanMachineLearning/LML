@@ -62,7 +62,7 @@ All for obs, no action for feedback: `Environment.FeedbackIgnoresAction` (MISSIN
 
 No history for obs and feedback: `Environment.IsOblivious`, `Environment.oblivious`.
 
-No time, no history for obs and feedback: `Environment.IsStationary` (MISSING), `Environment.stationary`.
+No time, no history for obs and feedback: `Environment.IsStationary`, `Environment.stationary`.
 
 No time, last round of history for obs, not history for feedback: `Environment.IsMarkov` (MISSING), `Environment.markov` (MISSING).
 

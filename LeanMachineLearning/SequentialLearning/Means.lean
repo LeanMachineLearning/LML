@@ -75,6 +75,11 @@ lemma means_of_isOblivious [env.IsOblivious] (O : ℕ → Ω → 𝓞) (A : ℕ 
   simp [Environment.means, Environment.measure, env.feedback_eq_comap_feedbackCondObsAction,
     Kernel.comap_apply]
 
+lemma means_of_isStationary [env.IsStationary] (O : ℕ → Ω → 𝓞) (A : ℕ → Ω → 𝓐)
+    (Y : ℕ → Ω → 𝓨) (k : 𝓐) (n : ℕ) (ω : Ω) :
+    env.means O A Y k n ω = (env.feedbackZero (O n ω, k))[id] := by
+  rw [means_of_isOblivious, env.feedbackCondObsAction_eq_feedbackZero]
+
 lemma means_oblivious (μ : ℕ → Measure 𝓞) [∀ n, IsProbabilityMeasure (μ n)]
     (ν : ℕ → Kernel (𝓞 × 𝓐) 𝓨) [∀ n, IsMarkovKernel (ν n)] (k : 𝓐) (n : ℕ) (ω : Ω) :
     (Environment.oblivious μ ν).means O A Y k n ω = (ν n (O n ω, k))[id] := by simp

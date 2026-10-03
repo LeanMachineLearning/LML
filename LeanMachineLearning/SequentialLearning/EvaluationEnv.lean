@@ -24,7 +24,8 @@ to change at every time step, while the second one uses a fixed function at ever
   kernel that evaluates a fixed measurable function `f` at the chosen action.
 
 They both satisfy the typeclasses `Environment.IsOblivious` and
-`Environment.HasDeterministicFeedback`.
+`Environment.HasDeterministicFeedback`, and `Environment.eval f hf` is also
+`Environment.IsStationary`.
 
 ## Main statements
 
@@ -107,6 +108,11 @@ end OnlineEvalEnv
 `f` at the chosen action. -/
 noncomputable def Environment.eval (f : 𝓐 → 𝓨) (hf : Measurable f) :=
   Environment.evalSeq (fun _ ↦ f) (fun _ ↦ hf)
+
+instance : (Environment.eval f hf).IsStationary where
+  exists_obs_eq_const := ⟨Measure.dirac (), inferInstance, fun _ ↦ rfl⟩
+  exists_feedback_eq_comap :=
+    ⟨(Kernel.deterministic f hf).prodMkLeft Unit, inferInstance, fun _ ↦ rfl⟩
 
 instance : (Environment.eval f hf).IsOblivious := by unfold Environment.eval; infer_instance
 

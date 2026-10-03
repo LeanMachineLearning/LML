@@ -15,22 +15,27 @@ An oblivious environment is an environment in which the distributions of the obs
 the feedback do not depend on the past history: at time `n`, the observation has law
 `env.obsLaw n`, and the feedback depends only on the current observation and action, through the
 Markov kernel `env.feedbackCondObsAction n`.
-If there are no observations (`𝓞 = Unit`) and the kernel that gives the distribution of the
-feedback given the action is the same at every time step, then we say that the environment is
-stationary.
+A stationary environment is an oblivious environment in which these laws do not depend on time
+either: every observation has law `env.obsZero`, and the feedback is drawn from the Markov kernel
+`env.feedbackZero` applied to the current observation and action.
 
 ## Main definitions
 
-We define a `Prop`-valued typeclass `Environment.IsOblivious` to express that an environment is
-oblivious, and we define constructors for oblivious environments, with and without observations.
+We define `Prop`-valued typeclasses `Environment.IsOblivious` and `Environment.IsStationary` to
+express that an environment is oblivious or stationary, and we define constructors for oblivious
+and stationary environments, with and without observations.
 
-Typeclass and related definitions:
+Typeclasses and related definitions:
 * `Environment.IsOblivious env`: the environment `env` is oblivious.
 * `Environment.obsLaw env n`: the law of the observation at time `n` in an oblivious
   environment `env`.
 * `Environment.feedbackCondObsAction env n`: the kernel representing the conditional distribution
   of the feedback given the observation and the action at time `n` in an oblivious
   environment `env`.
+* `Environment.IsStationary env`: the environment `env` is stationary. A stationary environment is
+  oblivious, and its laws are described by the time zero accessors `env.obsZero` and
+  `env.feedbackZero` (see `Environment.obs_eq_const_obsZero` and
+  `Environment.feedback_eq_comap_feedbackZero`).
 
 Constructors for oblivious environments:
 * `Environment.oblivious μ ν`: the oblivious environment in which the observation at time `n` has
@@ -104,6 +109,35 @@ lemma feedbackZero_eq_feedbackCondObsAction (env : Environment 𝓞 𝓐 𝓨) [
   ext p : 1
   rw [Environment.feedbackZero_def, Kernel.comap_apply, feedback_eq_comap_feedbackCondObsAction,
     Kernel.comap_apply]
+
+lemma obsLaw_eq_of_obs_eq_const [Nonempty 𝓐] [Nonempty 𝓨]
+    (env : Environment 𝓞 𝓐 𝓨) [env.IsOblivious] {n : ℕ} {μ : Measure 𝓞} [IsProbabilityMeasure μ]
+    (h : env.obs n = Kernel.const _ μ) :
+    env.obsLaw n = μ := by
+  have : Nonempty 𝓞 := Measure.nonempty_of_neZero μ
+  have h_eq := env.obs_eq_const_obsLaw n
+  rw [h, Kernel.ext_iff] at h_eq
+  simpa using (h_eq (Classical.arbitrary _)).symm
+
+lemma feedbackCondObsAction_eq_of_feedback_eq (env : Environment 𝓞 𝓐 𝓨) [env.IsOblivious]
+    {n : ℕ} {ν : Kernel (𝓞 × 𝓐) 𝓨} [hν : IsMarkovKernel ν]
+    (h : env.feedback n = ν.comap (fun p ↦ (p.1.2, p.2)) (by fun_prop)) :
+    env.feedbackCondObsAction n = ν := by
+  rcases isEmpty_or_nonempty 𝓞 with h𝓞 | h𝓞
+  · ext p : 1
+    exact h𝓞.elim p.1
+  rcases isEmpty_or_nonempty 𝓐 with h𝓐 | h𝓐
+  · ext p : 1
+    exact h𝓐.elim p.2
+  rcases isEmpty_or_nonempty 𝓨 with h𝓨 | h𝓨
+  · refine absurd hν ?_
+    rw [Subsingleton.eq_zero ν]
+    exact Kernel.not_isMarkovKernel_zero
+  have h_eq := env.feedback_eq_comap_feedbackCondObsAction n
+  rw [h, Kernel.ext_iff] at h_eq
+  ext p : 1
+  obtain ⟨o, a⟩ := p
+  exact (h_eq ((Classical.arbitrary _, o), a)).symm
 
 end Environment
 
@@ -202,10 +236,100 @@ lemma condIndepFun_feedback_history_obs_action [StandardBorelSpace Ω]
 
 end Environment.IsOblivious
 
+/-- An environment is stationary if it is oblivious and its laws do not depend on time: the
+observations have a fixed law, and the feedback depends only on the current observation and action,
+through a fixed Markov kernel. -/
+class Environment.IsStationary (env : Environment 𝓞 𝓐 𝓨) : Prop where
+  exists_obs_eq_const : ∃ μ : Measure 𝓞, IsProbabilityMeasure μ ∧ ∀ n, env.obs n = Kernel.const _ μ
+  exists_feedback_eq_comap : ∃ ν : Kernel (𝓞 × 𝓐) 𝓨, IsMarkovKernel ν ∧
+    ∀ n, env.feedback n = ν.comap (fun p ↦ (p.1.2, p.2)) (by fun_prop)
+
+namespace Environment
+
+/-- In a stationary environment, the observation at every time has law `env.obsZero`. -/
+lemma obs_eq_const_obsZero (env : Environment 𝓞 𝓐 𝓨) [h : env.IsStationary] (n : ℕ) :
+    env.obs n = Kernel.const _ env.obsZero := by
+  obtain ⟨μ, -, hμ⟩ := h.exists_obs_eq_const
+  rw [hμ n, obsZero_def, hμ 0, Kernel.const_apply]
+
+/-- In a stationary environment, the feedback at every time is drawn from `env.feedbackZero` applied
+to the current observation and action. -/
+lemma feedback_eq_comap_feedbackZero (env : Environment 𝓞 𝓐 𝓨) [h : env.IsStationary] (n : ℕ) :
+    env.feedback n = env.feedbackZero.comap (fun p ↦ (p.1.2, p.2)) (by fun_prop) := by
+  obtain ⟨ν, -, hν⟩ := h.exists_feedback_eq_comap
+  have hν0 : env.feedbackZero = ν := by
+    ext p : 1
+    rw [feedbackZero_def, Kernel.comap_apply, hν 0, Kernel.comap_apply]
+  rw [hν n, hν0]
+
+instance (env : Environment 𝓞 𝓐 𝓨) [env.IsStationary] : env.IsOblivious where
+  exists_obs_eq_const := ⟨fun _ ↦ env.obsZero, fun _ ↦ inferInstance, env.obs_eq_const_obsZero⟩
+  exists_feedback_eq_comap :=
+    ⟨fun _ ↦ env.feedbackZero, fun _ ↦ inferInstance, env.feedback_eq_comap_feedbackZero⟩
+
+/-- In a stationary environment, the law of the observation at time `n` is `env.obsZero`. -/
+lemma obsLaw_eq_obsZero (env : Environment 𝓞 𝓐 𝓨) [env.IsStationary] [Nonempty 𝓐] [Nonempty 𝓨]
+    (n : ℕ) :
+    env.obsLaw n = env.obsZero :=
+  env.obsLaw_eq_of_obs_eq_const (env.obs_eq_const_obsZero n)
+
+/-- In a stationary environment, the conditional distribution of the feedback given the observation
+and the action at time `n` is `env.feedbackZero`. -/
+lemma feedbackCondObsAction_eq_feedbackZero (env : Environment 𝓞 𝓐 𝓨) [env.IsStationary]
+    (n : ℕ) :
+    env.feedbackCondObsAction n = env.feedbackZero :=
+  env.feedbackCondObsAction_eq_of_feedback_eq (env.feedback_eq_comap_feedbackZero n)
+
+end Environment
+
+namespace Environment.IsStationary
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
+  {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨} {P : Measure Ω}
+  {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
+
+/-- The observation at time `n` has law `env.obsZero`. -/
+lemma hasLaw_obs [IsProbabilityMeasure P] [env.IsStationary]
+    (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
+    HasLaw (O n) env.obsZero P := by
+  have h' := h.hasCondDistrib_obs n
+  rw [env.obs_eq_const_obsZero] at h'
+  exact h'.hasLaw_of_const
+
+variable [IsFiniteMeasure P]
+
+lemma hasCondDistrib_feedback_history_action [env.IsStationary]
+    (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
+    HasCondDistrib (Y n) (fun ω ↦ ((history O A Y n ω, O n ω), A n ω))
+      (env.feedbackZero.comap (fun p ↦ (p.1.2, p.2)) (by fun_prop)
+        : Kernel ((Hist 𝓞 𝓐 𝓨 n × 𝓞) × 𝓐) 𝓨) P := by
+  rw [← env.feedback_eq_comap_feedbackZero]
+  exact h.hasCondDistrib_feedback n
+
+/-- The conditional distribution of the feedback at time `n` given the observation and the action
+at time `n` is `env.feedbackZero`. -/
+lemma hasCondDistrib_feedback [env.IsStationary] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
+    HasCondDistrib (Y n) (fun ω ↦ (O n ω, A n ω)) env.feedbackZero P :=
+  (hasCondDistrib_feedback_history_action h n).comp_right
+
+/-- Conditionally on an event determined by the history before time `n`, the observation and the
+action at time `n`, on which the observation-action pair is equal to `b`, the feedback at time `n`
+has law `env.feedbackZero b`. -/
+lemma hasLaw_feedback_cond [env.IsStationary] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ)
+    {s : Set ((Hist 𝓞 𝓐 𝓨 n × 𝓞) × 𝓐)} (hs : MeasurableSet s) {b : 𝓞 × 𝓐}
+    (hsb : ∀ u ∈ s, (u.1.2, u.2) = b)
+    (hP : P ((fun ω ↦ ((history O A Y n ω, O n ω), A n ω)) ⁻¹' s) ≠ 0) :
+    HasLaw (Y n) (env.feedbackZero b)
+      P[|(fun ω ↦ ((history O A Y n ω, O n ω), A n ω)) ⁻¹' s] := by
+  rw [← env.feedbackCondObsAction_eq_feedbackZero n]
+  exact IsOblivious.hasLaw_feedback_cond h n hs hsb hP
+
+end Environment.IsStationary
+
 section Oblivious
 
 variable {μ : ℕ → Measure 𝓞} [∀ n, IsProbabilityMeasure (μ n)]
-  {ν : ℕ → Kernel (𝓞 × 𝓐) 𝓨} [hν : ∀ n, IsMarkovKernel (ν n)]
+  {ν : ℕ → Kernel (𝓞 × 𝓐) 𝓨} [∀ n, IsMarkovKernel (ν n)]
 
 /-- The oblivious environment in which the observation at time `n` has law `μ n` and the feedback
 at time `n` is drawn from `ν n` applied to the observation and the action at time `n`, whatever the
@@ -245,30 +369,13 @@ instance : (Environment.oblivious μ ν).IsOblivious where
 ensure that there are histories of every length, so that the observation kernels determine `μ`. -/
 @[simp]
 lemma obsLaw_oblivious [Nonempty 𝓐] [Nonempty 𝓨] (n : ℕ) :
-    (Environment.oblivious μ ν).obsLaw n = μ n := by
-  have : Nonempty 𝓞 := Measure.nonempty_of_neZero (μ n)
-  have h_eq := (Environment.oblivious μ ν).obs_eq_const_obsLaw n
-  rw [obs_oblivious, Kernel.ext_iff] at h_eq
-  simpa using (h_eq (Classical.arbitrary _)).symm
+    (Environment.oblivious μ ν).obsLaw n = μ n :=
+  Environment.obsLaw_eq_of_obs_eq_const _ rfl
 
 @[simp]
 lemma feedbackCondObsAction_oblivious (n : ℕ) :
-    (Environment.oblivious μ ν).feedbackCondObsAction n = ν n := by
-  rcases isEmpty_or_nonempty 𝓞 with h𝓞 | h𝓞
-  · ext p : 1
-    exact h𝓞.elim p.1
-  rcases isEmpty_or_nonempty 𝓐 with h𝓐 | h𝓐
-  · ext p : 1
-    exact h𝓐.elim p.2
-  rcases isEmpty_or_nonempty 𝓨 with h𝓨 | h𝓨
-  · refine absurd (hν 0) ?_
-    simp only [Subsingleton.eq_zero ν, Pi.zero_apply]
-    exact Kernel.not_isMarkovKernel_zero
-  have h_eq := (Environment.oblivious μ ν).feedback_eq_comap_feedbackCondObsAction n
-  rw [feedback_oblivious, Kernel.ext_iff] at h_eq
-  ext p : 1
-  obtain ⟨o, a⟩ := p
-  exact (h_eq ((Classical.arbitrary _, o), a)).symm
+    (Environment.oblivious μ ν).feedbackCondObsAction n = ν n :=
+  Environment.feedbackCondObsAction_eq_of_feedback_eq _ rfl
 
 end Oblivious
 
@@ -304,6 +411,10 @@ lemma stepKernel_stationary (alg : Algorithm 𝓞 𝓐 𝓨) (n : ℕ) :
     stepKernel alg (Environment.stationary μ ν) n
       = Kernel.const _ μ ⊗ₖ (alg.policy n ⊗ₖ ν.comap (fun p ↦ (p.1.2, p.2)) (by fun_prop)) :=
   rfl
+
+instance : (Environment.stationary μ ν).IsStationary where
+  exists_obs_eq_const := ⟨μ, inferInstance, fun _ ↦ rfl⟩
+  exists_feedback_eq_comap := ⟨ν, inferInstance, fun _ ↦ rfl⟩
 
 instance : (Environment.stationary μ ν).IsOblivious :=
   inferInstanceAs (Environment.oblivious _ _).IsOblivious
@@ -397,6 +508,9 @@ lemma obsZero_bandit : (Environment.bandit ν).obsZero = Measure.dirac () := rfl
 @[simp]
 lemma feedbackZero_bandit : (Environment.bandit ν).feedbackZero = ν.prodMkLeft Unit :=
   feedbackZero_oblivious
+
+instance : (Environment.bandit ν).IsStationary :=
+  inferInstanceAs (Environment.stationary _ _).IsStationary
 
 instance : (Environment.bandit ν).IsOblivious :=
   inferInstanceAs (Environment.oblivious _ _).IsOblivious
