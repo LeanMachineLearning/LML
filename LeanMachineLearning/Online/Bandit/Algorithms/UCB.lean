@@ -44,6 +44,7 @@ def UCB.nextArm (K : ℕ) [NeZero K] (c : ℝ) (n : ℕ) (h : Hist Unit (Fin K) 
   if n < K then RoundRobin.nextAction K n else
   argmax (fun a ↦ empMean' n h a + ucbWidth' c n h a)
 
+/-- The next-arm function of UCB is measurable. -/
 @[fun_prop]
 lemma UCB.measurable_nextArm [NeZero K] (c : ℝ) (n : ℕ) : Measurable (nextArm K c n) := by
   unfold nextArm

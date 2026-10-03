@@ -28,9 +28,4 @@ You can also see the [roadmap](https://leanmachinelearning.org/roadmap) for idea
 
 ## Current state of the library
 
-As a first proof of concept, the repository contains a formalization of regret bounds for several stochastic bandit algorithms.
-
-Main results:
-- Framework for working on (bandit) algorithms in Lean.
-- Regret bound for the Explore-Then-Commit algorithm.
-- Regret bound for the UCB algorithm.
+See the [library overview page](https://leanmachinelearning.org/library/).
