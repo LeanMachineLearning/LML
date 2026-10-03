@@ -136,12 +136,13 @@ lemma Algorithm.policy_comap (alg : Algorithm 𝓞 𝓐 𝓨)
     (alg.comap F hF).policy n = (alg.policy n).comap (F n) (hF n) := rfl
 
 @[simp]
-lemma Algorithm.p0_comap (alg : Algorithm 𝓞 𝓐 𝓨)
+lemma Algorithm.policyZero_comap (alg : Algorithm 𝓞 𝓐 𝓨)
     {F : (n : ℕ) → Hist 𝓞' 𝓐 𝓨' n × 𝓞' → Hist 𝓞 𝓐 𝓨 n × 𝓞} (hF : ∀ n, Measurable (F n)) :
-    (alg.comap F hF).p0
-      = alg.p0.comap (fun o ↦ (F 0 (default, o)).2) (((hF 0).comp measurable_prodMk_left).snd) := by
+    (alg.comap F hF).policyZero
+      = alg.policyZero.comap (fun o ↦ (F 0 (default, o)).2)
+          (((hF 0).comp measurable_prodMk_left).snd) := by
   ext o : 1
-  rw [p0_apply, policy_comap, Kernel.comap_apply, alg.policy_zero, Kernel.comap_apply]
+  rw [policyZero_apply, policy_comap, Kernel.comap_apply, alg.policy_zero, Kernel.comap_apply]
 
 @[simp]
 lemma Algorithm.comap_id (alg : Algorithm 𝓞 𝓐 𝓨) :
@@ -172,10 +173,10 @@ lemma Algorithm.policy_comapObs (alg : Algorithm 𝓞 𝓐 𝓨) (hf : Measurabl
       = (alg.policy n).comap (fun p ↦ (Hist.mapObs f p.1, f p.2)) (by fun_prop) := rfl
 
 @[simp]
-lemma Algorithm.p0_comapObs (alg : Algorithm 𝓞 𝓐 𝓨) (hf : Measurable f) :
-    (alg.comapObs f hf).p0 = alg.p0.comap f hf := by
+lemma Algorithm.policyZero_comapObs (alg : Algorithm 𝓞 𝓐 𝓨) (hf : Measurable f) :
+    (alg.comapObs f hf).policyZero = alg.policyZero.comap f hf := by
   ext o : 1
-  rw [p0_apply, policy_comapObs, Kernel.comap_apply, alg.policy_zero, Kernel.comap_apply]
+  rw [policyZero_apply, policy_comapObs, Kernel.comap_apply, alg.policy_zero, Kernel.comap_apply]
 
 @[simp]
 lemma Algorithm.comapObs_id (alg : Algorithm 𝓞 𝓐 𝓨) : alg.comapObs id measurable_id = alg := rfl
@@ -205,10 +206,10 @@ lemma Algorithm.policy_comapFeedback (alg : Algorithm 𝓞 𝓐 𝓨) (hg : Meas
       = (alg.policy n).comap (fun p ↦ (Hist.mapFeedback g p.1, p.2)) (by fun_prop) := rfl
 
 @[simp]
-lemma Algorithm.p0_comapFeedback (alg : Algorithm 𝓞 𝓐 𝓨) (hg : Measurable g) :
-    (alg.comapFeedback g hg).p0 = alg.p0 := by
+lemma Algorithm.policyZero_comapFeedback (alg : Algorithm 𝓞 𝓐 𝓨) (hg : Measurable g) :
+    (alg.comapFeedback g hg).policyZero = alg.policyZero := by
   ext o : 1
-  rw [p0_apply, policy_comapFeedback, Kernel.comap_apply, alg.policy_zero, p0_apply]
+  rw [policyZero_apply, policy_comapFeedback, Kernel.comap_apply, alg.policy_zero, policyZero_apply]
 
 @[simp]
 lemma Algorithm.comapFeedback_id (alg : Algorithm 𝓞 𝓐 𝓨) :
@@ -255,17 +256,18 @@ lemma Environment.feedback_comap (env : Environment 𝓞 𝓐 𝓨) (hF : ∀ n,
       = (env.feedback n).comap (fun p ↦ ((F n p.1.1, p.1.2), f p.2)) (by fun_prop) := rfl
 
 @[simp]
-lemma Environment.obs0_comap (env : Environment 𝓞 𝓐 𝓨) (hF : ∀ n, Measurable (F n))
+lemma Environment.obsZero_comap (env : Environment 𝓞 𝓐 𝓨) (hF : ∀ n, Measurable (F n))
     (hf : Measurable f) :
-    (env.comap F hF f hf).obs0 = env.obs0 := by
-  rw [Environment.obs0_def, obs_comap, Kernel.comap_apply, env.obs_zero]
+    (env.comap F hF f hf).obsZero = env.obsZero := by
+  rw [Environment.obsZero_def, obs_comap, Kernel.comap_apply, env.obs_zero]
 
 @[simp]
-lemma Environment.ν0_comap (env : Environment 𝓞 𝓐 𝓨) (hF : ∀ n, Measurable (F n))
+lemma Environment.feedbackZero_comap (env : Environment 𝓞 𝓐 𝓨) (hF : ∀ n, Measurable (F n))
     (hf : Measurable f) :
-    (env.comap F hF f hf).ν0 = env.ν0.comap (fun p ↦ (p.1, f p.2)) (by fun_prop) := by
+    (env.comap F hF f hf).feedbackZero
+      = env.feedbackZero.comap (fun p ↦ (p.1, f p.2)) (by fun_prop) := by
   ext p : 1
-  rw [Environment.ν0_apply, feedback_comap, Kernel.comap_apply, env.feedback_zero,
+  rw [Environment.feedbackZero_apply, feedback_comap, Kernel.comap_apply, env.feedback_zero,
     Kernel.comap_apply]
 
 @[simp]
@@ -299,15 +301,16 @@ lemma Environment.feedback_comapAction (env : Environment 𝓞 𝓐 𝓨) (hf : 
       (fun p ↦ ((Hist.mapAction f p.1.1, p.1.2), f p.2)) (by fun_prop) := rfl
 
 @[simp]
-lemma Environment.obs0_comapAction (env : Environment 𝓞 𝓐 𝓨) (hf : Measurable f) :
-    (env.comapAction f hf).obs0 = env.obs0 := by
-  rw [Environment.obs0_def, obs_comapAction, Kernel.comap_apply, env.obs_zero]
+lemma Environment.obsZero_comapAction (env : Environment 𝓞 𝓐 𝓨) (hf : Measurable f) :
+    (env.comapAction f hf).obsZero = env.obsZero := by
+  rw [Environment.obsZero_def, obs_comapAction, Kernel.comap_apply, env.obs_zero]
 
 @[simp]
-lemma Environment.ν0_comapAction (env : Environment 𝓞 𝓐 𝓨) (hf : Measurable f) :
-    (env.comapAction f hf).ν0 = env.ν0.comap (fun p ↦ (p.1, f p.2)) (by fun_prop) := by
+lemma Environment.feedbackZero_comapAction (env : Environment 𝓞 𝓐 𝓨) (hf : Measurable f) :
+    (env.comapAction f hf).feedbackZero
+      = env.feedbackZero.comap (fun p ↦ (p.1, f p.2)) (by fun_prop) := by
   ext p : 1
-  rw [Environment.ν0_apply, feedback_comapAction, Kernel.comap_apply, env.feedback_zero,
+  rw [Environment.feedbackZero_apply, feedback_comapAction, Kernel.comap_apply, env.feedback_zero,
     Kernel.comap_apply]
 
 @[simp]
@@ -341,11 +344,11 @@ lemma Algorithm.policy_congr (alg : Algorithm 𝓞 𝓐 𝓨) (e𝓞 : 𝓞 ≃�
       (fun p ↦ (Hist.map e𝓞.symm e𝓐.symm e𝓨.symm p.1, e𝓞.symm p.2)) (by fun_prop) := rfl
 
 @[simp]
-lemma Algorithm.p0_congr (alg : Algorithm 𝓞 𝓐 𝓨) (e𝓞 : 𝓞 ≃ᵐ 𝓞') (e𝓐 : 𝓐 ≃ᵐ 𝓐')
+lemma Algorithm.policyZero_congr (alg : Algorithm 𝓞 𝓐 𝓨) (e𝓞 : 𝓞 ≃ᵐ 𝓞') (e𝓐 : 𝓐 ≃ᵐ 𝓐')
     (e𝓨 : 𝓨 ≃ᵐ 𝓨') :
-    (alg.congr e𝓞 e𝓐 e𝓨).p0 = (alg.p0.map e𝓐).comap e𝓞.symm e𝓞.symm.measurable := by
+    (alg.congr e𝓞 e𝓐 e𝓨).policyZero = (alg.policyZero.map e𝓐).comap e𝓞.symm e𝓞.symm.measurable := by
   ext o : 1
-  rw [p0_apply, policy_congr, Kernel.comap_apply, Kernel.map_apply _ e𝓐.measurable,
+  rw [policyZero_apply, policy_congr, Kernel.comap_apply, Kernel.map_apply _ e𝓐.measurable,
     alg.policy_zero, Kernel.comap_apply, Kernel.map_apply _ e𝓐.measurable]
 
 @[simp]
@@ -402,19 +405,19 @@ lemma Environment.feedback_congr (env : Environment 𝓞 𝓐 𝓨) (e𝓞 : �
       (by fun_prop) := rfl
 
 @[simp]
-lemma Environment.obs0_congr (env : Environment 𝓞 𝓐 𝓨) (e𝓞 : 𝓞 ≃ᵐ 𝓞') (e𝓐 : 𝓐 ≃ᵐ 𝓐')
+lemma Environment.obsZero_congr (env : Environment 𝓞 𝓐 𝓨) (e𝓞 : 𝓞 ≃ᵐ 𝓞') (e𝓐 : 𝓐 ≃ᵐ 𝓐')
     (e𝓨 : 𝓨 ≃ᵐ 𝓨') :
-    (env.congr e𝓞 e𝓐 e𝓨).obs0 = env.obs0.map e𝓞 := by
-  rw [Environment.obs0_def, obs_congr, Kernel.comap_apply, Kernel.map_apply _ e𝓞.measurable,
+    (env.congr e𝓞 e𝓐 e𝓨).obsZero = env.obsZero.map e𝓞 := by
+  rw [Environment.obsZero_def, obs_congr, Kernel.comap_apply, Kernel.map_apply _ e𝓞.measurable,
     env.obs_zero]
 
 @[simp]
-lemma Environment.ν0_congr (env : Environment 𝓞 𝓐 𝓨) (e𝓞 : 𝓞 ≃ᵐ 𝓞') (e𝓐 : 𝓐 ≃ᵐ 𝓐')
+lemma Environment.feedbackZero_congr (env : Environment 𝓞 𝓐 𝓨) (e𝓞 : 𝓞 ≃ᵐ 𝓞') (e𝓐 : 𝓐 ≃ᵐ 𝓐')
     (e𝓨 : 𝓨 ≃ᵐ 𝓨') :
-    (env.congr e𝓞 e𝓐 e𝓨).ν0
-      = (env.ν0.map e𝓨).comap (fun p ↦ (e𝓞.symm p.1, e𝓐.symm p.2)) (by fun_prop) := by
+    (env.congr e𝓞 e𝓐 e𝓨).feedbackZero
+      = (env.feedbackZero.map e𝓨).comap (fun p ↦ (e𝓞.symm p.1, e𝓐.symm p.2)) (by fun_prop) := by
   ext p : 1
-  rw [Environment.ν0_apply, feedback_congr, Kernel.comap_apply,
+  rw [Environment.feedbackZero_apply, feedback_congr, Kernel.comap_apply,
     Kernel.map_apply _ e𝓨.measurable, env.feedback_zero, Kernel.comap_apply,
     Kernel.map_apply _ e𝓨.measurable]
 

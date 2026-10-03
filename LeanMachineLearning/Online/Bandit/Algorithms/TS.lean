@@ -81,9 +81,9 @@ variable {P : Measure Ω} [IsProbabilityMeasure P]
 
 /-- The first action of Thompson sampling is sampled according to its probability of being optimal
 under the prior over environments. -/
-lemma TS.p0_tsAlgorithm :
-    (tsAlgorithm Q κ).p0 () = Q.map (bestAction κ id) := by
-  rw [Algorithm.p0_apply]
+lemma TS.policyZero_tsAlgorithm :
+    (tsAlgorithm Q κ).policyZero () = Q.map (bestAction κ id) := by
+  rw [Algorithm.policyZero_apply]
   dsimp only [tsAlgorithm]
   rw [TS.policy, Kernel.prodMkRight_apply, Kernel.map_apply _ (by fun_prop),
     IT.bayesTrajMeasurePosterior_zero, Kernel.const_apply]

@@ -54,7 +54,7 @@ variable (K) in
 /-- The UCB algorithm. -/
 noncomputable
 def ucbAlgorithm [NeZero K] (c : ℝ) : Algorithm Unit (Fin K) ℝ :=
-  detAlgorithm (fun n p ↦ UCB.nextArm K c n p.1) (by fun_prop)
+  Algorithm.deterministic (fun n p ↦ UCB.nextArm K c n p.1) (by fun_prop)
 end Algorithm
 
 namespace UCB
@@ -70,7 +70,7 @@ lemma isAlgEnvSeqUntil_roundRobinAlgorithm
     (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (Environment.bandit ν) P) :
     IsAlgEnvSeqUntil O A R (roundRobinAlgorithm K) (Environment.bandit ν) P K := by
   refine h.isAlgEnvSeqUntil_of_policy_eq fun n hn ↦ ?_
-  simp only [roundRobinAlgorithm, detAlgorithm_policy, ucbAlgorithm]
+  simp only [roundRobinAlgorithm, Algorithm.deterministic_policy, ucbAlgorithm]
   congr 1 with p
   simp [UCB.nextArm, hn]
 
@@ -100,7 +100,7 @@ lemma arm_zero (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (Environment.bandit ν)
 lemma arm_ae_eq_nextArm (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (Environment.bandit ν) P)
     (n : ℕ) :
     A n =ᵐ[P] fun ω ↦ nextArm K c n (history O A R n ω) :=
-  h.action_detAlgorithm_ae_eq n
+  h.action_deterministic_ae_eq n
 
 lemma ucbIndex_le_ucbIndex_arm
     (h : IsAlgEnvSeq O A R (ucbAlgorithm K c) (Environment.bandit ν) P) (a : Fin K) (hn : K ≤ n) :

@@ -84,7 +84,7 @@ variable (K) in
 /-- The Round-Robin algorithm: deterministic algorithm that chooses action `n % K` at time `n`. -/
 noncomputable
 def roundRobinAlgorithm [NeZero K] : Algorithm 𝓞 (Fin K) 𝓨 :=
-  detAlgorithm (fun n _ ↦ RoundRobin.nextAction K n) (by fun_prop)
+  Algorithm.deterministic (fun n _ ↦ RoundRobin.nextAction K n) (by fun_prop)
 
 end AlgorithmDefinition
 
@@ -99,7 +99,7 @@ variable [NeZero K] {ν : Kernel (Fin K) 𝓨} [IsMarkovKernel ν]
 lemma action_ae_eq (n : ℕ)
     (h : IsAlgEnvSeqUntil O A Y (roundRobinAlgorithm K) (Environment.bandit ν) P (n + 1)) :
     A n =ᵐ[P] fun _ ↦ nextAction K n :=
-  h.action_detAlgorithm_ae_eq n.lt_succ_self
+  h.action_deterministic_ae_eq n.lt_succ_self
 
 lemma action_zero
     (h : IsAlgEnvSeqUntil O A Y (roundRobinAlgorithm K) (Environment.bandit ν) P 1) :

@@ -225,7 +225,7 @@ lemma algFunction_map (alg : Algorithm Unit 𝓐 𝓡) (n : ℕ) (h : Hist Unit 
 
 /-- The initial action is the image of a uniform random variable by `algFunction alg 0 default`. -/
 lemma algFunction_zero_map (alg : Algorithm Unit 𝓐 𝓡) :
-    volume.map (algFunction alg 0 default) = alg.p0 () :=
+    volume.map (algFunction alg 0 default) = alg.policyZero () :=
   algFunction_map alg 0 default
 
 @[fun_prop]
@@ -778,8 +778,9 @@ lemma isAlgEnvSeq_arrayMeasure (alg : Algorithm Unit 𝓐 𝓡) (ν : Kernel �
   hasCondDistrib_feedback := hasCondDistrib_reward alg ν
 
 lemma hasLaw_action_zero (alg : Algorithm Unit 𝓐 𝓡) (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] :
-    HasLaw (action alg 0) (alg.p0 ()) (arrayMeasure ν) := by
-  have h : HasCondDistrib (action alg 0) (fun _ : probSpace 𝓐 𝓡 ↦ ()) alg.p0 (arrayMeasure ν) :=
+    HasLaw (action alg 0) (alg.policyZero ()) (arrayMeasure ν) := by
+  have h : HasCondDistrib (action alg 0) (fun _ : probSpace 𝓐 𝓡 ↦ ()) alg.policyZero
+      (arrayMeasure ν) :=
     (isAlgEnvSeq_arrayMeasure alg ν).hasCondDistrib_action_zero
   exact h.hasLaw_of_const'
 
@@ -787,7 +788,7 @@ lemma hasCondDistrib_reward_zero (alg : Algorithm Unit 𝓐 𝓡) (ν : Kernel �
     [IsMarkovKernel ν] :
     HasCondDistrib (reward alg 0) (action alg 0) ν (arrayMeasure ν) := by
   have h := (isAlgEnvSeq_arrayMeasure alg ν).hasCondDistrib_feedback_zero
-  rw [ν0_bandit] at h
+  rw [feedbackZero_bandit] at h
   simpa using hasCondDistrib_prodMk_left_unique_iff.mp h
 
 end Laws

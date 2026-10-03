@@ -58,8 +58,8 @@ structure AbsolutelyContinuous (alg alg₀ : Algorithm 𝓞 𝓐 𝓨) : Prop wh
 @[inherit_doc AbsolutelyContinuous]
 scoped notation:50 alg " ≪ₐ " alg₀ => AbsolutelyContinuous alg alg₀
 
-lemma AbsolutelyContinuous.p0 {alg alg₀ : Algorithm 𝓞 𝓐 𝓨} (h : alg ≪ₐ alg₀) (o : 𝓞) :
-    alg.p0 o ≪ alg₀.p0 o :=
+lemma AbsolutelyContinuous.policyZero {alg alg₀ : Algorithm 𝓞 𝓐 𝓨} (h : alg ≪ₐ alg₀) (o : 𝓞) :
+    alg.policyZero o ≪ alg₀.policyZero o :=
   h.policy 0 (default, o)
 
 /-- If the algorithm `alg` is absolutely continuous with respect to the algorithm `alg₀` and they

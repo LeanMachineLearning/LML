@@ -65,23 +65,23 @@ noncomputable def Environment.means (env : Environment 𝓞 𝓐 𝓨) (O : ℕ 
 @[simp]
 lemma means_zero (env : Environment 𝓞 𝓐 𝓨) (O : ℕ → Ω → 𝓞) (A : ℕ → Ω → 𝓐) (Y : ℕ → Ω → 𝓨)
     (k : 𝓐) (ω : Ω) :
-    env.means O A Y k 0 ω = (env.ν0 (O 0 ω, k))[id] := by
+    env.means O A Y k 0 ω = (env.feedbackZero (O 0 ω, k))[id] := by
   simp [Environment.means, Environment.measure, Environment.feedback_zero]
 
 @[simp]
-lemma means_of_isObliviousEnv [IsObliviousEnv env] (O : ℕ → Ω → 𝓞) (A : ℕ → Ω → 𝓐)
+lemma means_of_isOblivious [env.IsOblivious] (O : ℕ → Ω → 𝓞) (A : ℕ → Ω → 𝓐)
     (Y : ℕ → Ω → 𝓨) (k : 𝓐) (n : ℕ) (ω : Ω) :
     env.means O A Y k n ω = (env.feedbackCondObsAction n (O n ω, k))[id] := by
   simp [Environment.means, Environment.measure, env.feedback_eq_comap_feedbackCondObsAction,
     Kernel.comap_apply]
 
-lemma means_obliviousEnv (μ : ℕ → Measure 𝓞) [∀ n, IsProbabilityMeasure (μ n)]
+lemma means_oblivious (μ : ℕ → Measure 𝓞) [∀ n, IsProbabilityMeasure (μ n)]
     (ν : ℕ → Kernel (𝓞 × 𝓐) 𝓨) [∀ n, IsMarkovKernel (ν n)] (k : 𝓐) (n : ℕ) (ω : Ω) :
-    (obliviousEnv μ ν).means O A Y k n ω = (ν n (O n ω, k))[id] := by simp
+    (Environment.oblivious μ ν).means O A Y k n ω = (ν n (O n ω, k))[id] := by simp
 
-lemma means_stationaryEnv (μ : Measure 𝓞) [IsProbabilityMeasure μ] (ν : Kernel (𝓞 × 𝓐) 𝓨)
+lemma means_stationary (μ : Measure 𝓞) [IsProbabilityMeasure μ] (ν : Kernel (𝓞 × 𝓐) 𝓨)
     [IsMarkovKernel ν] (k : 𝓐) (n : ℕ) (ω : Ω) :
-    (stationaryEnv μ ν).means O A Y k n ω = (ν (O n ω, k))[id] := by simp
+    (Environment.stationary μ ν).means O A Y k n ω = (ν (O n ω, k))[id] := by simp
 
 lemma means_banditSeq (ν : ℕ → Kernel 𝓐 𝓨) [∀ n, IsMarkovKernel (ν n)]
     {O : ℕ → Ω → Unit} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} (k : 𝓐) (n : ℕ) (ω : Ω) :

@@ -28,10 +28,10 @@ In many applications, some of those kernels are deterministic, or do not depend 
 We detail here the naming conventions for the various constructors, predicates and accessors that are used in the library.
 
 Generic constructions live in the `Algorithm` and `Environment` namespaces.
-Predicates are root-level `Is…Alg` / `Is…Env` classes when they carry an accessor, and namespaced `Prop` definitions otherwise.
+Predicates live in the `Algorithm` and `Environment` namespaces: they are classes when they carry an accessor, and `Prop` definitions otherwise.
 Accessors are namespaced so that dot notation works.
 
-All time zero accessors are root-level `…0` definitions. Example: `Algorithm.policy0`.
+All time zero accessors are `…Zero` definitions. Example: `Algorithm.policyZero`.
 
 ## Algorithms
 
@@ -39,13 +39,13 @@ The policy at round `n` can depend on `n`, on the history at `n` and the current
 
 Not stochastic: `Algorithm.IsDeterministic`, `Algorithm.deterministic`
 
-No observation: `Algorithm.IgnoresObs`, `Algorithm.comapObs fun _ ↦ ()`
+No observation: `Algorithm.IgnoresObs` (MISSING), `Algorithm.comapObs fun _ ↦ ()`
 
 No history: `Algorithm.IsMarkov`, `Algorithm.markov`
 
-No history, no observation: `Algorithm.IsOpenLoop`, `Algorithm.openLoop`, `Algorithm.ofSeq` (det version)
+No history, no observation: `Algorithm.IsOpenLoop` (MISSING), `Algorithm.openLoop` (MISSING), `Algorithm.ofSeq` (MISSING) (det version)
 
-Not time-dependent, no history: `Algorithm.IsStationary`, `Algorithm.stationary`
+Not time-dependent, no history: `Algorithm.IsStationary` (MISSING), `Algorithm.stationary` (MISSING)
 
 No time, no history, no observation: `Algorithm.const`
 
@@ -58,15 +58,15 @@ It can be deterministic or stochastic.
 
 In general, the dependence on history is the same for both kernels.
 
-All for obs, no action for feedback: `Environment.FeedbackIgnoresAction`, `Environment.adversary`.
+All for obs, no action for feedback: `Environment.FeedbackIgnoresAction` (MISSING), `Environment.adversary` (MISSING).
 
 No history for obs and feedback: `Environment.IsOblivious`, `Environment.oblivious`.
 
-No time, no history for obs and feedback: `Environment.IsStationary`, `Environment.stationary`.
+No time, no history for obs and feedback: `Environment.IsStationary` (MISSING), `Environment.stationary`.
 
-No time, last round of history for obs, not history for feedback: `Environment.IsMarkov`, `Environment.markov`.
+No time, last round of history for obs, not history for feedback: `Environment.IsMarkov` (MISSING), `Environment.markov` (MISSING).
 
-Determinism: `Environment.HasDeterministicObs`, `Environment.HasDeterministicFeedback`.
+Determinism: `Environment.HasDeterministicObs` (MISSING), `Environment.HasDeterministicFeedback`, `Environment.detFeedback` (any observation kernels, deterministic feedback).
 
 ### Obs = Unit
 
@@ -79,9 +79,9 @@ No history: `Environment.banditSeq` and `Environment.bandit` (no time).
 
 No history, deterministic: `Environment.evalSeq` and `Environment.eval` (no time).
 
-No history, no action (only time): `Environment.indep` and `Environment.ofSeq` (deterministic).
+No history, no action (only time): `Environment.indep` (MISSING) and `Environment.ofSeq` (MISSING) (deterministic).
 
-Nothing: `Environment.const` (stochastic). The deterministic version is probably not useful.
+Nothing: `Environment.const` (MISSING) (stochastic). The deterministic version is probably not useful.
 
 ## Examples
 

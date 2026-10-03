@@ -94,10 +94,10 @@ lemma feedback_bayesStationaryEnv (n : ℕ) :
     (bayesStationaryEnv Q κ).feedback n = κ.comap (fun p ↦ (p.1.2, p.2)) (by fun_prop) := rfl
 
 @[simp]
-lemma obs0_bayesStationaryEnv : (bayesStationaryEnv Q κ).obs0 = Q := rfl
+lemma obsZero_bayesStationaryEnv : (bayesStationaryEnv Q κ).obsZero = Q := rfl
 
 @[simp]
-lemma ν0_bayesStationaryEnv : (bayesStationaryEnv Q κ).ν0 = κ := rfl
+lemma feedbackZero_bayesStationaryEnv : (bayesStationaryEnv Q κ).feedbackZero = κ := rfl
 
 end BayesEnv
 
@@ -184,16 +184,16 @@ lemma hasCondDistrib_feedback' (h : IsBayesAlgEnvSeq Q κ alg E A Y P) (n : ℕ)
   (h.hasCondDistrib_feedback n).comp_right
 
 lemma hasLaw_action_zero (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
-    HasLaw (A 0) (alg.p0 ()) P := by
+    HasLaw (A 0) (alg.policyZero ()) P := by
   have h0 : HasCondDistrib (A 0)
       (fun _ : Ω ↦ ((default : Hist Unit 𝓐 𝓨 0), ())) (alg.policy 0) P := by
     have h1 := h.hasCondDistrib_action' 0
     rwa [history_zero] at h1
   exact h0.hasLaw_of_const'
 
-/-- The first action is independent of the parameter `E`, and has law `alg.p0 ()`. -/
+/-- The first action is independent of the parameter `E`, and has law `alg.policyZero ()`. -/
 lemma hasCondDistrib_action_zero (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
-    HasCondDistrib (A 0) E (Kernel.const _ (alg.p0 ())) P :=
+    HasCondDistrib (A 0) E (Kernel.const _ (alg.policyZero ())) P :=
   hasCondDistrib_prodMk_right_unique_iff.mp (h.hasCondDistrib_action 0)
 
 /-- The posterior over the parameter given the empty history is the prior. -/

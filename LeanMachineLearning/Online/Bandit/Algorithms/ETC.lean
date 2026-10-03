@@ -48,7 +48,7 @@ variable (K) in
 to `ETC.nextArm`. -/
 noncomputable
 def etcAlgorithm [NeZero K] (m : ℕ) : Algorithm Unit (Fin K) ℝ :=
-  detAlgorithm (fun n p ↦ ETC.nextArm K m n p.1) (by fun_prop)
+  Algorithm.deterministic (fun n p ↦ ETC.nextArm K m n p.1) (by fun_prop)
 
 end AlgorithmDefinition
 
@@ -64,7 +64,7 @@ lemma isAlgEnvSeqUntil_roundRobinAlgorithm
     (h : IsAlgEnvSeq O A R (etcAlgorithm K m) (Environment.bandit ν) P) :
     IsAlgEnvSeqUntil O A R (roundRobinAlgorithm K) (Environment.bandit ν) P (K * m) := by
   refine h.isAlgEnvSeqUntil_of_policy_eq fun n hn ↦ ?_
-  simp only [roundRobinAlgorithm, detAlgorithm_policy, etcAlgorithm]
+  simp only [roundRobinAlgorithm, Algorithm.deterministic_policy, etcAlgorithm]
   congr 1 with p
   simp [ETC.nextArm, hn]
 
@@ -73,7 +73,7 @@ section AlgorithmBehavior
 lemma arm_ae_eq_nextArm (h : IsAlgEnvSeq O A R (etcAlgorithm K m) (Environment.bandit ν) P)
     (n : ℕ) :
     A n =ᵐ[P] fun ω ↦ nextArm K m n (history O A R n ω) :=
-  h.action_detAlgorithm_ae_eq n
+  h.action_deterministic_ae_eq n
 
 /-- For `n < K * m`, the arm pulled at time `n` is the arm `n % K`. -/
 lemma arm_of_lt (h : IsAlgEnvSeq O A R (etcAlgorithm K m) (Environment.bandit ν) P)

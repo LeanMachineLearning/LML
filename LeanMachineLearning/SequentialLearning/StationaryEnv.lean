@@ -21,11 +21,11 @@ stationary.
 
 ## Main definitions
 
-We define a `Prop`-valued typeclass `IsObliviousEnv` to express that an environment is oblivious,
-and we define constructors for oblivious environments, with and without observations.
+We define a `Prop`-valued typeclass `Environment.IsOblivious` to express that an environment is
+oblivious, and we define constructors for oblivious environments, with and without observations.
 
 Typeclass and related definitions:
-* `IsObliviousEnv env`: the environment `env` is oblivious.
+* `Environment.IsOblivious env`: the environment `env` is oblivious.
 * `Environment.obsLaw env n`: the law of the observation at time `n` in an oblivious
   environment `env`.
 * `Environment.feedbackCondObsAction env n`: the kernel representing the conditional distribution
@@ -33,11 +33,11 @@ Typeclass and related definitions:
   environment `env`.
 
 Constructors for oblivious environments:
-* `obliviousEnv μ ν`: the oblivious environment in which the observation at time `n` has law `μ n`
-  and the feedback at time `n` is drawn from the Markov kernel `ν n : Kernel (𝓞 × 𝓐) 𝓨` applied to
-  the observation and the action at time `n`.
-* `stationaryEnv μ ν`: the oblivious environment with constant sequences: the observations have
-  law `μ` and the feedback is drawn from `ν` applied to the observation and the action.
+* `Environment.oblivious μ ν`: the oblivious environment in which the observation at time `n` has
+  law `μ n` and the feedback at time `n` is drawn from the Markov kernel `ν n : Kernel (𝓞 × 𝓐) 𝓨`
+  applied to the observation and the action at time `n`.
+* `Environment.stationary μ ν`: the oblivious environment with constant sequences: the observations
+  have law `μ` and the feedback is drawn from `ν` applied to the observation and the action.
 * `Environment.banditSeq ν`, `Environment.bandit ν`: the versions without observations
   (`𝓞 = Unit`), in which the feedback at time `n` is drawn from `ν n : Kernel 𝓐 𝓨`
   (respectively from `ν : Kernel 𝓐 𝓨`) applied to the action at time `n`.
@@ -58,7 +58,7 @@ variable {𝓞 𝓐 𝓨 : Type*} {m𝓞 : MeasurableSpace 𝓞} {m𝓐 : Measur
 /-- An environment is oblivious if the distributions of the next observation and feedback
 don't depend on the past history: the observation at time `n` has a fixed law, and the feedback
 at time `n` depends only on the observation and the action at time `n`. -/
-class IsObliviousEnv (env : Environment 𝓞 𝓐 𝓨) : Prop where
+class Environment.IsOblivious (env : Environment 𝓞 𝓐 𝓨) : Prop where
   exists_obs_eq_const : ∃ μ : ℕ → Measure 𝓞, (∀ n, IsProbabilityMeasure (μ n)) ∧
     ∀ n, env.obs n = Kernel.const _ (μ n)
   exists_feedback_eq_comap : ∃ ν : ℕ → Kernel (𝓞 × 𝓐) 𝓨, (∀ n, IsMarkovKernel (ν n)) ∧
@@ -68,53 +68,53 @@ namespace Environment
 
 /-- The law of the observation at time `n` in an oblivious environment. -/
 noncomputable
-def obsLaw (env : Environment 𝓞 𝓐 𝓨) [h_obl : IsObliviousEnv env] (n : ℕ) : Measure 𝓞 :=
+def obsLaw (env : Environment 𝓞 𝓐 𝓨) [h_obl : env.IsOblivious] (n : ℕ) : Measure 𝓞 :=
   h_obl.exists_obs_eq_const.choose n
 
-instance (env : Environment 𝓞 𝓐 𝓨) [IsObliviousEnv env] (n : ℕ) :
+instance (env : Environment 𝓞 𝓐 𝓨) [env.IsOblivious] (n : ℕ) :
     IsProbabilityMeasure (env.obsLaw n) :=
-  IsObliviousEnv.exists_obs_eq_const.choose_spec.1 n
+  IsOblivious.exists_obs_eq_const.choose_spec.1 n
 
-lemma obs_eq_const_obsLaw (env : Environment 𝓞 𝓐 𝓨) [IsObliviousEnv env] (n : ℕ) :
+lemma obs_eq_const_obsLaw (env : Environment 𝓞 𝓐 𝓨) [env.IsOblivious] (n : ℕ) :
     env.obs n = Kernel.const _ (env.obsLaw n) :=
-  IsObliviousEnv.exists_obs_eq_const.choose_spec.2 n
+  IsOblivious.exists_obs_eq_const.choose_spec.2 n
 
-lemma obs0_eq_obsLaw (env : Environment 𝓞 𝓐 𝓨) [IsObliviousEnv env] :
-    env.obs0 = env.obsLaw 0 := by
-  rw [Environment.obs0_def, obs_eq_const_obsLaw, Kernel.const_apply]
+lemma obsZero_eq_obsLaw (env : Environment 𝓞 𝓐 𝓨) [env.IsOblivious] :
+    env.obsZero = env.obsLaw 0 := by
+  rw [Environment.obsZero_def, obs_eq_const_obsLaw, Kernel.const_apply]
 
 /-- The kernel representing the conditional distribution of the feedback given the observation and
 the action at time `n` in an oblivious environment. -/
 noncomputable
-def feedbackCondObsAction (env : Environment 𝓞 𝓐 𝓨) [h_obl : IsObliviousEnv env] (n : ℕ) :
+def feedbackCondObsAction (env : Environment 𝓞 𝓐 𝓨) [h_obl : env.IsOblivious] (n : ℕ) :
     Kernel (𝓞 × 𝓐) 𝓨 :=
   h_obl.exists_feedback_eq_comap.choose n
 
-instance (env : Environment 𝓞 𝓐 𝓨) [IsObliviousEnv env] (n : ℕ) :
+instance (env : Environment 𝓞 𝓐 𝓨) [env.IsOblivious] (n : ℕ) :
     IsMarkovKernel (env.feedbackCondObsAction n) :=
-  IsObliviousEnv.exists_feedback_eq_comap.choose_spec.1 n
+  IsOblivious.exists_feedback_eq_comap.choose_spec.1 n
 
-lemma feedback_eq_comap_feedbackCondObsAction (env : Environment 𝓞 𝓐 𝓨) [IsObliviousEnv env]
+lemma feedback_eq_comap_feedbackCondObsAction (env : Environment 𝓞 𝓐 𝓨) [env.IsOblivious]
     (n : ℕ) :
     env.feedback n = (env.feedbackCondObsAction n).comap (fun p ↦ (p.1.2, p.2)) (by fun_prop) :=
-  IsObliviousEnv.exists_feedback_eq_comap.choose_spec.2 n
+  IsOblivious.exists_feedback_eq_comap.choose_spec.2 n
 
-lemma ν0_eq_feedbackCondObsAction (env : Environment 𝓞 𝓐 𝓨) [IsObliviousEnv env] :
-    env.ν0 = env.feedbackCondObsAction 0 := by
+lemma feedbackZero_eq_feedbackCondObsAction (env : Environment 𝓞 𝓐 𝓨) [env.IsOblivious] :
+    env.feedbackZero = env.feedbackCondObsAction 0 := by
   ext p : 1
-  rw [Environment.ν0_def, Kernel.comap_apply, feedback_eq_comap_feedbackCondObsAction,
+  rw [Environment.feedbackZero_def, Kernel.comap_apply, feedback_eq_comap_feedbackCondObsAction,
     Kernel.comap_apply]
 
 end Environment
 
-namespace IsObliviousEnv
+namespace Environment.IsOblivious
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨} {P : Measure Ω}
   {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {n N : ℕ}
 
 /-- The observation at time `n` has law `env.obsLaw n`. -/
-lemma hasLaw_obs [IsProbabilityMeasure P] [IsObliviousEnv env]
+lemma hasLaw_obs [IsProbabilityMeasure P] [env.IsOblivious]
     (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     HasLaw (O n) (env.obsLaw n) P := by
   have h' := h.hasCondDistrib_obs n
@@ -123,7 +123,7 @@ lemma hasLaw_obs [IsProbabilityMeasure P] [IsObliviousEnv env]
 
 variable [IsFiniteMeasure P]
 
-lemma hasCondDistrib_feedback_history_action [IsObliviousEnv env]
+lemma hasCondDistrib_feedback_history_action [env.IsOblivious]
     (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     HasCondDistrib (Y n) (fun ω ↦ ((history O A Y n ω, O n ω), A n ω))
       ((env.feedbackCondObsAction n).comap (fun p ↦ (p.1.2, p.2)) (by fun_prop)
@@ -133,14 +133,14 @@ lemma hasCondDistrib_feedback_history_action [IsObliviousEnv env]
 
 /-- The conditional distribution of the feedback at time `n` given the observation and the action
 at time `n` is `env.feedbackCondObsAction n`. -/
-lemma hasCondDistrib_feedback [IsObliviousEnv env] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
+lemma hasCondDistrib_feedback [env.IsOblivious] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     HasCondDistrib (Y n) (fun ω ↦ (O n ω, A n ω)) (env.feedbackCondObsAction n) P :=
   (hasCondDistrib_feedback_history_action h n).comp_right
 
 /-- Conditionally on an event determined by the history before time `n`, the observation and the
 action at time `n`, on which the observation-action pair is equal to `b`, the feedback at time `n`
 has law `env.feedbackCondObsAction n b`. -/
-lemma hasLaw_feedback_cond [IsObliviousEnv env] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ)
+lemma hasLaw_feedback_cond [env.IsOblivious] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ)
     {s : Set ((Hist 𝓞 𝓐 𝓨 n × 𝓞) × 𝓐)} (hs : MeasurableSet s) {b : 𝓞 × 𝓐}
     (hsb : ∀ u ∈ s, (u.1.2, u.2) = b)
     (hP : P ((fun ω ↦ ((history O A Y n ω, O n ω), A n ω)) ⁻¹' s) ≠ 0) :
@@ -153,7 +153,7 @@ lemma hasLaw_feedback_cond [IsObliviousEnv env] (h : IsAlgEnvSeq O A Y alg env P
 /-- Conditionally on an event determined by the history before time `n`, the observation and the
 action at time `n`, on which the observation-action pair is constant, the feedback at time `n` is
 independent of the history before time `n`, the observation and the action at time `n`. -/
-lemma indepFun_history_action_feedback_cond [IsObliviousEnv env]
+lemma indepFun_history_action_feedback_cond [env.IsOblivious]
     (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ)
     {s : Set ((Hist 𝓞 𝓐 𝓨 n × 𝓞) × 𝓐)} (hs : MeasurableSet s) {b : 𝓞 × 𝓐}
     (hsb : ∀ u ∈ s, (u.1.2, u.2) = b) :
@@ -172,7 +172,7 @@ variable [StandardBorelSpace 𝓞] [Nonempty 𝓞] [StandardBorelSpace 𝓐] [No
 /-- The feedback at time `n` is conditionally independent of the history before time `n`, given
 the observation and the action at time `n`. -/
 lemma condIndepFun_feedback_history [StandardBorelSpace Ω]
-    [IsObliviousEnv env] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
+    [env.IsOblivious] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     Y n ⟂ᵢ[fun ω ↦ (O n ω, A n ω), (h.measurable_obs n).prodMk (h.measurable_action n); P]
       history O A Y n := by
   have hO := h.measurable_obs
@@ -192,7 +192,7 @@ lemma condIndepFun_feedback_history [StandardBorelSpace Ω]
 /-- The feedback at time `n` is conditionally independent of the history before time `n`, the
 observation and the action at time `n`, given the observation and the action at time `n`. -/
 lemma condIndepFun_feedback_history_obs_action [StandardBorelSpace Ω]
-    [IsObliviousEnv env] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
+    [env.IsOblivious] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     Y n ⟂ᵢ[fun ω ↦ (O n ω, A n ω), (h.measurable_obs n).prodMk (h.measurable_action n); P]
       (fun ω ↦ (history O A Y n ω, (O n ω, A n ω))) := by
   have hO := h.measurable_obs
@@ -200,7 +200,7 @@ lemma condIndepFun_feedback_history_obs_action [StandardBorelSpace Ω]
   have hY := h.measurable_feedback
   exact (condIndepFun_feedback_history h n).prod_right (by fun_prop) (by fun_prop) (by fun_prop)
 
-end IsObliviousEnv
+end Environment.IsOblivious
 
 section Oblivious
 
@@ -211,49 +211,49 @@ variable {μ : ℕ → Measure 𝓞} [∀ n, IsProbabilityMeasure (μ n)]
 at time `n` is drawn from `ν n` applied to the observation and the action at time `n`, whatever the
 past history. -/
 noncomputable
-def obliviousEnv (μ : ℕ → Measure 𝓞) [∀ n, IsProbabilityMeasure (μ n)]
+def Environment.oblivious (μ : ℕ → Measure 𝓞) [∀ n, IsProbabilityMeasure (μ n)]
     (ν : ℕ → Kernel (𝓞 × 𝓐) 𝓨) [∀ n, IsMarkovKernel (ν n)] : Environment 𝓞 𝓐 𝓨 where
   obs n := Kernel.const _ (μ n)
   feedback n := (ν n).comap (fun p ↦ (p.1.2, p.2)) (by fun_prop)
 
 @[simp]
-lemma obs_obliviousEnv (n : ℕ) : (obliviousEnv μ ν).obs n = Kernel.const _ (μ n) := rfl
+lemma obs_oblivious (n : ℕ) : (Environment.oblivious μ ν).obs n = Kernel.const _ (μ n) := rfl
 
 @[simp]
-lemma feedback_obliviousEnv (n : ℕ) :
-    (obliviousEnv μ ν).feedback n = (ν n).comap (fun p ↦ (p.1.2, p.2)) (by fun_prop) := rfl
+lemma feedback_oblivious (n : ℕ) :
+    (Environment.oblivious μ ν).feedback n = (ν n).comap (fun p ↦ (p.1.2, p.2)) (by fun_prop) := rfl
 
 @[simp]
-lemma obs0_obliviousEnv : (obliviousEnv μ ν).obs0 = μ 0 := rfl
+lemma obsZero_oblivious : (Environment.oblivious μ ν).obsZero = μ 0 := rfl
 
 @[simp]
-lemma ν0_obliviousEnv : (obliviousEnv μ ν).ν0 = ν 0 := by
+lemma feedbackZero_oblivious : (Environment.oblivious μ ν).feedbackZero = ν 0 := by
   ext p : 1
-  rw [Environment.ν0_def, Kernel.comap_apply, feedback_obliviousEnv, Kernel.comap_apply]
+  rw [Environment.feedbackZero_def, Kernel.comap_apply, feedback_oblivious, Kernel.comap_apply]
 
-lemma stepKernel_obliviousEnv (alg : Algorithm 𝓞 𝓐 𝓨) (n : ℕ) :
-    stepKernel alg (obliviousEnv μ ν) n
+lemma stepKernel_oblivious (alg : Algorithm 𝓞 𝓐 𝓨) (n : ℕ) :
+    stepKernel alg (Environment.oblivious μ ν) n
       = Kernel.const _ (μ n)
         ⊗ₖ (alg.policy n ⊗ₖ (ν n).comap (fun p ↦ (p.1.2, p.2)) (by fun_prop)) :=
   rfl
 
-instance : IsObliviousEnv (obliviousEnv μ ν) where
+instance : (Environment.oblivious μ ν).IsOblivious where
   exists_obs_eq_const := ⟨μ, inferInstance, fun _ ↦ rfl⟩
   exists_feedback_eq_comap := ⟨ν, inferInstance, fun _ ↦ rfl⟩
 
-/-- The law of the observations of `obliviousEnv μ ν` is `μ`. The nonemptiness assumptions ensure
-that there are histories of every length, so that the observation kernels determine `μ`. -/
+/-- The law of the observations of `Environment.oblivious μ ν` is `μ`. The nonemptiness assumptions
+ensure that there are histories of every length, so that the observation kernels determine `μ`. -/
 @[simp]
-lemma obsLaw_obliviousEnv [Nonempty 𝓐] [Nonempty 𝓨] (n : ℕ) :
-    (obliviousEnv μ ν).obsLaw n = μ n := by
+lemma obsLaw_oblivious [Nonempty 𝓐] [Nonempty 𝓨] (n : ℕ) :
+    (Environment.oblivious μ ν).obsLaw n = μ n := by
   have : Nonempty 𝓞 := Measure.nonempty_of_neZero (μ n)
-  have h_eq := (obliviousEnv μ ν).obs_eq_const_obsLaw n
-  rw [obs_obliviousEnv, Kernel.ext_iff] at h_eq
+  have h_eq := (Environment.oblivious μ ν).obs_eq_const_obsLaw n
+  rw [obs_oblivious, Kernel.ext_iff] at h_eq
   simpa using (h_eq (Classical.arbitrary _)).symm
 
 @[simp]
-lemma feedbackCondObsAction_obliviousEnv (n : ℕ) :
-    (obliviousEnv μ ν).feedbackCondObsAction n = ν n := by
+lemma feedbackCondObsAction_oblivious (n : ℕ) :
+    (Environment.oblivious μ ν).feedbackCondObsAction n = ν n := by
   rcases isEmpty_or_nonempty 𝓞 with h𝓞 | h𝓞
   · ext p : 1
     exact h𝓞.elim p.1
@@ -264,8 +264,8 @@ lemma feedbackCondObsAction_obliviousEnv (n : ℕ) :
   · refine absurd (hν 0) ?_
     simp only [Subsingleton.eq_zero ν, Pi.zero_apply]
     exact Kernel.not_isMarkovKernel_zero
-  have h_eq := (obliviousEnv μ ν).feedback_eq_comap_feedbackCondObsAction n
-  rw [feedback_obliviousEnv, Kernel.ext_iff] at h_eq
+  have h_eq := (Environment.oblivious μ ν).feedback_eq_comap_feedbackCondObsAction n
+  rw [feedback_oblivious, Kernel.ext_iff] at h_eq
   ext p : 1
   obtain ⟨o, a⟩ := p
   exact (h_eq ((Classical.arbitrary _, o), a)).symm
@@ -279,42 +279,44 @@ variable {μ : Measure 𝓞} [IsProbabilityMeasure μ] {ν : Kernel (𝓞 × �
 /-- The stationary environment in which the observations have law `μ` and the feedback is drawn
 from `ν` applied to the observation and the action, whatever the past history. -/
 noncomputable
-def stationaryEnv (μ : Measure 𝓞) [IsProbabilityMeasure μ] (ν : Kernel (𝓞 × 𝓐) 𝓨)
+def Environment.stationary (μ : Measure 𝓞) [IsProbabilityMeasure μ] (ν : Kernel (𝓞 × 𝓐) 𝓨)
     [IsMarkovKernel ν] : Environment 𝓞 𝓐 𝓨 :=
-  obliviousEnv (fun _ ↦ μ) (fun _ ↦ ν)
+  Environment.oblivious (fun _ ↦ μ) (fun _ ↦ ν)
 
-lemma stationaryEnv_def : stationaryEnv μ ν = obliviousEnv (fun _ ↦ μ) (fun _ ↦ ν) := rfl
-
-@[simp]
-lemma obs_stationaryEnv (n : ℕ) : (stationaryEnv μ ν).obs n = Kernel.const _ μ := rfl
+lemma Environment.stationary_def :
+    Environment.stationary μ ν = Environment.oblivious (fun _ ↦ μ) (fun _ ↦ ν) := rfl
 
 @[simp]
-lemma feedback_stationaryEnv (n : ℕ) :
-    (stationaryEnv μ ν).feedback n = ν.comap (fun p ↦ (p.1.2, p.2)) (by fun_prop) := rfl
+lemma obs_stationary (n : ℕ) : (Environment.stationary μ ν).obs n = Kernel.const _ μ := rfl
 
 @[simp]
-lemma obs0_stationaryEnv : (stationaryEnv μ ν).obs0 = μ := rfl
+lemma feedback_stationary (n : ℕ) :
+    (Environment.stationary μ ν).feedback n = ν.comap (fun p ↦ (p.1.2, p.2)) (by fun_prop) := rfl
 
 @[simp]
-lemma ν0_stationaryEnv : (stationaryEnv μ ν).ν0 = ν := ν0_obliviousEnv
+lemma obsZero_stationary : (Environment.stationary μ ν).obsZero = μ := rfl
 
-lemma stepKernel_stationaryEnv (alg : Algorithm 𝓞 𝓐 𝓨) (n : ℕ) :
-    stepKernel alg (stationaryEnv μ ν) n
+@[simp]
+lemma feedbackZero_stationary : (Environment.stationary μ ν).feedbackZero = ν :=
+  feedbackZero_oblivious
+
+lemma stepKernel_stationary (alg : Algorithm 𝓞 𝓐 𝓨) (n : ℕ) :
+    stepKernel alg (Environment.stationary μ ν) n
       = Kernel.const _ μ ⊗ₖ (alg.policy n ⊗ₖ ν.comap (fun p ↦ (p.1.2, p.2)) (by fun_prop)) :=
   rfl
 
-instance : IsObliviousEnv (stationaryEnv μ ν) :=
-  inferInstanceAs (IsObliviousEnv (obliviousEnv _ _))
+instance : (Environment.stationary μ ν).IsOblivious :=
+  inferInstanceAs (Environment.oblivious _ _).IsOblivious
 
 @[simp]
-lemma obsLaw_stationaryEnv [Nonempty 𝓐] [Nonempty 𝓨] (n : ℕ) :
-    (stationaryEnv μ ν).obsLaw n = μ :=
-  obsLaw_obliviousEnv n
+lemma obsLaw_stationary [Nonempty 𝓐] [Nonempty 𝓨] (n : ℕ) :
+    (Environment.stationary μ ν).obsLaw n = μ :=
+  obsLaw_oblivious n
 
 @[simp]
-lemma feedbackCondObsAction_stationaryEnv (n : ℕ) :
-    (stationaryEnv μ ν).feedbackCondObsAction n = ν :=
-  feedbackCondObsAction_obliviousEnv n
+lemma feedbackCondObsAction_stationary (n : ℕ) :
+    (Environment.stationary μ ν).feedbackCondObsAction n = ν :=
+  feedbackCondObsAction_oblivious n
 
 end Stationary
 
@@ -327,11 +329,11 @@ variable {ν : ℕ → Kernel 𝓐 𝓨} [∀ n, IsMarkovKernel (ν n)]
 noncomputable
 def Environment.banditSeq (ν : ℕ → Kernel 𝓐 𝓨) [∀ n, IsMarkovKernel (ν n)] :
     Environment Unit 𝓐 𝓨 :=
-  obliviousEnv (fun _ ↦ Measure.dirac ()) (fun n ↦ (ν n).prodMkLeft Unit)
+  Environment.oblivious (fun _ ↦ Measure.dirac ()) (fun n ↦ (ν n).prodMkLeft Unit)
 
 lemma Environment.banditSeq_def :
     Environment.banditSeq ν
-      = obliviousEnv (fun _ ↦ Measure.dirac ()) (fun n ↦ (ν n).prodMkLeft Unit) :=
+      = Environment.oblivious (fun _ ↦ Measure.dirac ()) (fun n ↦ (ν n).prodMkLeft Unit) :=
   rfl
 
 @[simp]
@@ -342,13 +344,14 @@ lemma obs_banditSeq (n : ℕ) :
 lemma feedback_banditSeq (n : ℕ) : (Environment.banditSeq ν).feedback n = (ν n).prodMkLeft _ := rfl
 
 @[simp]
-lemma obs0_banditSeq : (Environment.banditSeq ν).obs0 = Measure.dirac () := rfl
+lemma obsZero_banditSeq : (Environment.banditSeq ν).obsZero = Measure.dirac () := rfl
 
 @[simp]
-lemma ν0_banditSeq : (Environment.banditSeq ν).ν0 = (ν 0).prodMkLeft Unit := ν0_obliviousEnv
+lemma feedbackZero_banditSeq : (Environment.banditSeq ν).feedbackZero = (ν 0).prodMkLeft Unit :=
+  feedbackZero_oblivious
 
-instance : IsObliviousEnv (Environment.banditSeq ν) :=
-  inferInstanceAs (IsObliviousEnv (obliviousEnv _ _))
+instance : (Environment.banditSeq ν).IsOblivious :=
+  inferInstanceAs (Environment.oblivious _ _).IsOblivious
 
 @[simp]
 lemma obsLaw_banditSeq (n : ℕ) : (Environment.banditSeq ν).obsLaw n = Measure.dirac () :=
@@ -357,7 +360,7 @@ lemma obsLaw_banditSeq (n : ℕ) : (Environment.banditSeq ν).obsLaw n = Measure
 @[simp]
 lemma feedbackCondObsAction_banditSeq (n : ℕ) :
     (Environment.banditSeq ν).feedbackCondObsAction n = (ν n).prodMkLeft Unit :=
-  feedbackCondObsAction_obliviousEnv n
+  feedbackCondObsAction_oblivious n
 
 end BanditSeq
 
@@ -369,10 +372,10 @@ variable {ν : Kernel 𝓐 𝓨} [IsMarkovKernel ν]
 applied to the action, whatever the past history: a stochastic bandit. -/
 noncomputable
 def Environment.bandit (ν : Kernel 𝓐 𝓨) [IsMarkovKernel ν] : Environment Unit 𝓐 𝓨 :=
-  stationaryEnv (Measure.dirac ()) (ν.prodMkLeft Unit)
+  Environment.stationary (Measure.dirac ()) (ν.prodMkLeft Unit)
 
 lemma Environment.bandit_def :
-    Environment.bandit ν = stationaryEnv (Measure.dirac ()) (ν.prodMkLeft Unit) := rfl
+    Environment.bandit ν = Environment.stationary (Measure.dirac ()) (ν.prodMkLeft Unit) := rfl
 
 lemma Environment.bandit_eq_banditSeq : Environment.bandit ν = Environment.banditSeq fun _ ↦ ν :=
   rfl
@@ -389,13 +392,14 @@ lemma stepKernel_bandit (alg : Algorithm Unit 𝓐 𝓨) (n : ℕ) :
   rw [stepKernel_def, obs_bandit, feedback_bandit]
 
 @[simp]
-lemma obs0_bandit : (Environment.bandit ν).obs0 = Measure.dirac () := rfl
+lemma obsZero_bandit : (Environment.bandit ν).obsZero = Measure.dirac () := rfl
 
 @[simp]
-lemma ν0_bandit : (Environment.bandit ν).ν0 = ν.prodMkLeft Unit := ν0_obliviousEnv
+lemma feedbackZero_bandit : (Environment.bandit ν).feedbackZero = ν.prodMkLeft Unit :=
+  feedbackZero_oblivious
 
-instance : IsObliviousEnv (Environment.bandit ν) :=
-  inferInstanceAs (IsObliviousEnv (obliviousEnv _ _))
+instance : (Environment.bandit ν).IsOblivious :=
+  inferInstanceAs (Environment.oblivious _ _).IsOblivious
 
 @[simp]
 lemma obsLaw_bandit (n : ℕ) : (Environment.bandit ν).obsLaw n = Measure.dirac () :=
@@ -404,7 +408,7 @@ lemma obsLaw_bandit (n : ℕ) : (Environment.bandit ν).obsLaw n = Measure.dirac
 @[simp]
 lemma feedbackCondObsAction_bandit (n : ℕ) :
     (Environment.bandit ν).feedbackCondObsAction n = ν.prodMkLeft Unit :=
-  feedbackCondObsAction_obliviousEnv n
+  feedbackCondObsAction_oblivious n
 
 end Bandit
 
@@ -417,38 +421,38 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {alg : Algorithm 𝓞 𝓐 𝓨
   {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 
 /-- The observation at time `n` has law `μ n`. -/
-lemma hasLaw_obs_obliviousEnv {μ : ℕ → Measure 𝓞} [∀ n, IsProbabilityMeasure (μ n)]
+lemma hasLaw_obs_oblivious {μ : ℕ → Measure 𝓞} [∀ n, IsProbabilityMeasure (μ n)]
     {ν : ℕ → Kernel (𝓞 × 𝓐) 𝓨} [∀ n, IsMarkovKernel (ν n)]
-    (h : IsAlgEnvSeq O A Y alg (obliviousEnv μ ν) P) (n : ℕ) :
+    (h : IsAlgEnvSeq O A Y alg (Environment.oblivious μ ν) P) (n : ℕ) :
     HasLaw (O n) (μ n) P := by
   have h' := h.hasCondDistrib_obs n
-  rw [obs_obliviousEnv] at h'
+  rw [obs_oblivious] at h'
   exact h'.hasLaw_of_const
 
 /-- The conditional distribution of the feedback at time `n` given the observation and the action
 at time `n` is `ν n`. -/
-lemma hasCondDistrib_feedback_obliviousEnv {μ : ℕ → Measure 𝓞} [∀ n, IsProbabilityMeasure (μ n)]
+lemma hasCondDistrib_feedback_oblivious {μ : ℕ → Measure 𝓞} [∀ n, IsProbabilityMeasure (μ n)]
     {ν : ℕ → Kernel (𝓞 × 𝓐) 𝓨} [∀ n, IsMarkovKernel (ν n)]
-    (h : IsAlgEnvSeq O A Y alg (obliviousEnv μ ν) P) (n : ℕ) :
+    (h : IsAlgEnvSeq O A Y alg (Environment.oblivious μ ν) P) (n : ℕ) :
     HasCondDistrib (Y n) (fun ω ↦ (O n ω, A n ω)) (ν n) P := by
   have h' := h.hasCondDistrib_feedback n
-  rw [feedback_obliviousEnv] at h'
+  rw [feedback_oblivious] at h'
   exact h'.comp_right
 
 /-- The observation at time `n` has law `μ`. -/
-lemma hasLaw_obs_stationaryEnv {μ : Measure 𝓞} [IsProbabilityMeasure μ]
+lemma hasLaw_obs_stationary {μ : Measure 𝓞} [IsProbabilityMeasure μ]
     {ν : Kernel (𝓞 × 𝓐) 𝓨} [IsMarkovKernel ν]
-    (h : IsAlgEnvSeq O A Y alg (stationaryEnv μ ν) P) (n : ℕ) :
+    (h : IsAlgEnvSeq O A Y alg (Environment.stationary μ ν) P) (n : ℕ) :
     HasLaw (O n) μ P :=
-  hasLaw_obs_obliviousEnv h n
+  hasLaw_obs_oblivious h n
 
 /-- The conditional distribution of the feedback at time `n` given the observation and the action
 at time `n` is `ν`. -/
-lemma hasCondDistrib_feedback_stationaryEnv {μ : Measure 𝓞} [IsProbabilityMeasure μ]
+lemma hasCondDistrib_feedback_stationary {μ : Measure 𝓞} [IsProbabilityMeasure μ]
     {ν : Kernel (𝓞 × 𝓐) 𝓨} [IsMarkovKernel ν]
-    (h : IsAlgEnvSeq O A Y alg (stationaryEnv μ ν) P) (n : ℕ) :
+    (h : IsAlgEnvSeq O A Y alg (Environment.stationary μ ν) P) (n : ℕ) :
     HasCondDistrib (Y n) (fun ω ↦ (O n ω, A n ω)) ν P :=
-  hasCondDistrib_feedback_obliviousEnv h n
+  hasCondDistrib_feedback_oblivious h n
 
 end General
 
@@ -465,7 +469,7 @@ lemma hasCondDistrib_feedback_banditSeq {ν : ℕ → Kernel 𝓐 𝓨} [∀ n, 
     (h : IsAlgEnvSeq O A Y alg (Environment.banditSeq ν) P) (n : ℕ) :
     HasCondDistrib (Y n) (A n) (ν n) P := by
   have h' : HasCondDistrib (Y n) (fun ω ↦ (O n ω, A n ω)) ((ν n).prodMkLeft Unit) P :=
-    hasCondDistrib_feedback_obliviousEnv h n
+    hasCondDistrib_feedback_oblivious h n
   exact h'.comp_right
 
 /-- The conditional distribution of the feedback at time `n` given the action at time `n` is `ν`. -/
@@ -487,7 +491,7 @@ lemma hasLaw_feedback_cond_bandit (h : IsAlgEnvSeq O A Y alg (Environment.bandit
     (hsb : ∀ u ∈ s, u.2 = b)
     (hP : P ((fun ω ↦ ((history O A Y n ω, O n ω), A n ω)) ⁻¹' s) ≠ 0) :
     HasLaw (Y n) (ν b) P[|(fun ω ↦ ((history O A Y n ω, O n ω), A n ω)) ⁻¹' s] := by
-  simpa using IsObliviousEnv.hasLaw_feedback_cond h n hs (b := ((), b))
+  simpa using Environment.IsOblivious.hasLaw_feedback_cond h n hs (b := ((), b))
     (fun u hu ↦ by simp [hsb u hu]) hP
 
 /-- Conditionally on an event determined by the history before time `n` and the action at time
@@ -499,7 +503,7 @@ lemma indepFun_history_action_feedback_cond_bandit
     (hsb : ∀ u ∈ s, u.2 = b) :
     (fun ω ↦ ((history O A Y n ω, O n ω), A n ω))
       ⟂ᵢ[P[|(fun ω ↦ ((history O A Y n ω, O n ω), A n ω)) ⁻¹' s]] Y n :=
-  IsObliviousEnv.indepFun_history_action_feedback_cond h n hs (b := ((), b))
+  Environment.IsOblivious.indepFun_history_action_feedback_cond h n hs (b := ((), b))
     fun u hu ↦ by simp [hsb u hu]
 
 /-- The feedback at time `n` is conditionally independent of the history before time `n`

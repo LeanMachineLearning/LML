@@ -74,10 +74,10 @@ lemma policy_apply_eq_policyCondObs (alg : Algorithm 𝓞 𝓐 𝓨) [alg.IsMark
     alg.policy n (h, o) = alg.policyCondObs n o := by
   rw [policy_eq_prodMkLeft_policyCondObs, Kernel.prodMkLeft_apply]
 
-lemma p0_eq_policyCondObs (alg : Algorithm 𝓞 𝓐 𝓨) [alg.IsMarkov] :
-    alg.p0 = alg.policyCondObs 0 := by
+lemma policyZero_eq_policyCondObs (alg : Algorithm 𝓞 𝓐 𝓨) [alg.IsMarkov] :
+    alg.policyZero = alg.policyCondObs 0 := by
   ext o : 1
-  rw [p0_apply, policy_apply_eq_policyCondObs]
+  rw [policyZero_apply, policy_apply_eq_policyCondObs]
 
 /-- The kernel `alg.policyCondObs n` is determined by the policy at time `n`. The assumption
 `Nonempty 𝓨` ensures that there are histories of every length. -/
@@ -195,9 +195,9 @@ lemma policy_markov (n : ℕ) :
     (markov κ : Algorithm 𝓞 𝓐 𝓨).policy n = (κ n).prodMkLeft (Hist 𝓞 𝓐 𝓨 n) := rfl
 
 @[simp]
-lemma p0_markov : (markov κ : Algorithm 𝓞 𝓐 𝓨).p0 = κ 0 := by
+lemma policyZero_markov : (markov κ : Algorithm 𝓞 𝓐 𝓨).policyZero = κ 0 := by
   ext o : 1
-  rw [p0_apply, policy_markov, Kernel.prodMkLeft_apply]
+  rw [policyZero_apply, policy_markov, Kernel.prodMkLeft_apply]
 
 instance : (markov κ : Algorithm 𝓞 𝓐 𝓨).IsMarkov where
   exists_policy_eq_prodMkLeft := ⟨κ, inferInstance, fun _ ↦ rfl⟩
