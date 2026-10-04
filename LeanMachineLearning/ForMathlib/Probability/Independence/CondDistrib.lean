@@ -10,6 +10,8 @@ public import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 public import Mathlib.Probability.Independence.Basic
 public import Mathlib.Probability.Independence.Conditional
 
+import Mathlib.Probability.Kernel.CompProdEqIff
+
 /-!
 # Lemmas about conditional distributions
 
