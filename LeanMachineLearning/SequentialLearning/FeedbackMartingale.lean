@@ -119,7 +119,7 @@ lemma IsAlgEnvSeq.memLp_noiseSum_increment [BorelSpace 𝓨]
     {m : ℕ} (k : 𝓐) (h : IsAlgEnvSeq O A Y alg env P) {p : ℝ≥0∞} (hp1 : 1 ≤ p) (hp_top : p ≠ ∞)
     (hY : MemLp (Y m) p P) :
     MemLp ({ω | A m ω = k}.indicator (fun ω ↦ Y m ω - env.means O A Y (A m ω) m ω)) p P := by
-  refine (hY.sub ?_).indicator (h.measurable_action _ (measurableSet_singleton k))
+  refine (hY.sub ?_).indicator (h.measurable_action _ (measurableSet_singleton k)).nullMeasurableSet
   exact h.memLp_means_action hp1 hp_top hY
 
 lemma IsAlgEnvSeq.memLp_meanSum_increment [BorelSpace 𝓨]
@@ -127,7 +127,7 @@ lemma IsAlgEnvSeq.memLp_meanSum_increment [BorelSpace 𝓨]
     (hY : MemLp (Y m) p P) :
     MemLp ({ω | A m ω = k}.indicator (fun ω ↦ env.means O A Y (A m ω) m ω)) p P := by
   exact (h.memLp_means_action hp1 hp_top hY).indicator
-    (h.measurable_action _ (measurableSet_singleton k))
+    (h.measurable_action _ (measurableSet_singleton k)).nullMeasurableSet
 
 lemma IsAlgEnvSeq.memLp_noiseSum [BorelSpace 𝓨]
     (h : IsAlgEnvSeq O A Y alg env P) {p : ℝ≥0∞} (hp1 : 1 ≤ p) (hp_top : p ≠ ∞)
