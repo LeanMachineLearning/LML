@@ -38,7 +38,10 @@ variable {𝓞 𝓐 𝓨 : Type*} {m𝓞 : MeasurableSpace 𝓞} {m𝓐 : Measur
 /-- The Uniform algorithm: actions are chosen uniformly at random. -/
 noncomputable
 def uniformAlgorithm [Finite 𝓐] [Nonempty 𝓐] : Algorithm 𝓞 𝓐 𝓨 :=
-  randomSampling (uniformOn Set.univ)
+  Algorithm.const (uniformOn Set.univ)
+
+instance [Finite 𝓐] [Nonempty 𝓐] : (uniformAlgorithm : Algorithm 𝓞 𝓐 𝓨).IsMarkov :=
+  inferInstanceAs (Algorithm.const (uniformOn Set.univ) : Algorithm 𝓞 𝓐 𝓨).IsMarkov
 
 lemma absolutelyContinuous_uniformAlgorithm [Finite 𝓐] [Nonempty 𝓐] {alg : Algorithm 𝓞 𝓐 𝓨} :
     alg ≪ₐ uniformAlgorithm where

@@ -151,47 +151,48 @@ lemma measurable_environment_iff (f : Ω → Environment 𝓞 𝓐 𝓨) :
 
 /-- Distribution of the first observation: the observation kernel at time `0` applied to the empty
 history. -/
-def Environment.obs0 (env : Environment 𝓞 𝓐 𝓨) : Measure 𝓞 :=
+def Environment.obsZero (env : Environment 𝓞 𝓐 𝓨) : Measure 𝓞 :=
   env.obs 0 default
 deriving IsProbabilityMeasure
 
-lemma Environment.obs0_def (env : Environment 𝓞 𝓐 𝓨) : env.obs0 = env.obs 0 default := rfl
+lemma Environment.obsZero_def (env : Environment 𝓞 𝓐 𝓨) : env.obsZero = env.obs 0 default := rfl
 
 lemma Environment.obs_zero (env : Environment 𝓞 𝓐 𝓨) (h : Hist 𝓞 𝓐 𝓨 0) :
-    env.obs 0 h = env.obs0 := by
+    env.obs 0 h = env.obsZero := by
   rw [Unique.eq_default h]
   rfl
 
 /-- Distribution of the first action given the first observation: the policy at time `0` applied to
 the empty history. -/
-noncomputable def Algorithm.p0 (alg : Algorithm 𝓞 𝓐 𝓨) : Kernel 𝓞 𝓐 :=
+noncomputable def Algorithm.policyZero (alg : Algorithm 𝓞 𝓐 𝓨) : Kernel 𝓞 𝓐 :=
   (alg.policy 0).sectR default
 deriving IsMarkovKernel
 
-lemma Algorithm.p0_def (alg : Algorithm 𝓞 𝓐 𝓨) : alg.p0 = (alg.policy 0).sectR default := rfl
+lemma Algorithm.policyZero_def (alg : Algorithm 𝓞 𝓐 𝓨) :
+    alg.policyZero = (alg.policy 0).sectR default := rfl
 
-lemma Algorithm.p0_apply (alg : Algorithm 𝓞 𝓐 𝓨) (o : 𝓞) :
-    alg.p0 o = alg.policy 0 (default, o) := rfl
+lemma Algorithm.policyZero_apply (alg : Algorithm 𝓞 𝓐 𝓨) (o : 𝓞) :
+    alg.policyZero o = alg.policy 0 (default, o) := rfl
 
 lemma Algorithm.policy_zero (alg : Algorithm 𝓞 𝓐 𝓨) (h : Hist 𝓞 𝓐 𝓨 0) (o : 𝓞) :
-    alg.policy 0 (h, o) = alg.p0 o := by
+    alg.policy 0 (h, o) = alg.policyZero o := by
   rw [Unique.eq_default h]
   rfl
 
 /-- Distribution of the first feedback given the first observation and action: the feedback kernel
 at time `0` applied to the empty history. -/
-noncomputable def Environment.ν0 (env : Environment 𝓞 𝓐 𝓨) : Kernel (𝓞 × 𝓐) 𝓨 :=
+noncomputable def Environment.feedbackZero (env : Environment 𝓞 𝓐 𝓨) : Kernel (𝓞 × 𝓐) 𝓨 :=
   (env.feedback 0).comap (fun p ↦ ((default, p.1), p.2)) (by fun_prop)
 deriving IsMarkovKernel
 
-lemma Environment.ν0_def (env : Environment 𝓞 𝓐 𝓨) :
-    env.ν0 = (env.feedback 0).comap (fun p ↦ ((default, p.1), p.2)) (by fun_prop) := rfl
+lemma Environment.feedbackZero_def (env : Environment 𝓞 𝓐 𝓨) :
+    env.feedbackZero = (env.feedback 0).comap (fun p ↦ ((default, p.1), p.2)) (by fun_prop) := rfl
 
-lemma Environment.ν0_apply (env : Environment 𝓞 𝓐 𝓨) (o : 𝓞) (a : 𝓐) :
-    env.ν0 (o, a) = env.feedback 0 ((default, o), a) := rfl
+lemma Environment.feedbackZero_apply (env : Environment 𝓞 𝓐 𝓨) (o : 𝓞) (a : 𝓐) :
+    env.feedbackZero (o, a) = env.feedback 0 ((default, o), a) := rfl
 
 lemma Environment.feedback_zero (env : Environment 𝓞 𝓐 𝓨) (h : Hist 𝓞 𝓐 𝓨 0) (o : 𝓞) (a : 𝓐) :
-    env.feedback 0 ((h, o), a) = env.ν0 (o, a) := by
+    env.feedback 0 ((h, o), a) = env.feedbackZero (o, a) := by
   rw [Unique.eq_default h]
   rfl
 
@@ -211,7 +212,7 @@ lemma fst_stepKernel (alg : Algorithm 𝓞 𝓐 𝓨) (env : Environment 𝓞 �
   rw [stepKernel, Kernel.fst_compProd]
 
 lemma stepKernel_zero (alg : Algorithm 𝓞 𝓐 𝓨) (env : Environment 𝓞 𝓐 𝓨) (h : Hist 𝓞 𝓐 𝓨 0) :
-    stepKernel alg env 0 h = env.obs0 ⊗ₘ (alg.p0 ⊗ₖ env.ν0) := by
+    stepKernel alg env 0 h = env.obsZero ⊗ₘ (alg.policyZero ⊗ₖ env.feedbackZero) := by
   rw [Unique.eq_default h, stepKernel, Kernel.compProd_apply_eq_compProd_sectR]
   congr 1
   ext o s hs
@@ -475,30 +476,30 @@ lemma hasLaw_history_zero (O : ℕ → Ω → 𝓞) (A : ℕ → Ω → 𝓐) (Y
   map_eq := by rw [history_zero, Measure.map_const, measure_univ, one_smul]
 
 lemma IsAlgEnvSeqUntil.hasLaw_obs_zero (h : IsAlgEnvSeqUntil O A Y alg env P N) (hN : 0 < N) :
-    HasLaw (O 0) env.obs0 P := by
+    HasLaw (O 0) env.obsZero P := by
   have h0 := h.hasCondDistrib_obs 0 hN
   rw [history_zero] at h0
   exact h0.hasLaw_of_const'
 
 lemma IsAlgEnvSeq.hasLaw_obs_zero (h : IsAlgEnvSeq O A Y alg env P) :
-    HasLaw (O 0) env.obs0 P :=
+    HasLaw (O 0) env.obsZero P :=
   (h.isAlgEnvSeqUntil 1).hasLaw_obs_zero zero_lt_one
 
 omit [IsProbabilityMeasure P] in
 lemma IsAlgEnvSeqUntil.hasCondDistrib_action_zero (h : IsAlgEnvSeqUntil O A Y alg env P N)
     (hN : 0 < N) :
-    HasCondDistrib (A 0) (O 0) alg.p0 P :=
+    HasCondDistrib (A 0) (O 0) alg.policyZero P :=
   hasCondDistrib_prodMk_left_unique_iff.mp (h.hasCondDistrib_action 0 hN)
 
 omit [IsProbabilityMeasure P] in
 lemma IsAlgEnvSeq.hasCondDistrib_action_zero (h : IsAlgEnvSeq O A Y alg env P) :
-    HasCondDistrib (A 0) (O 0) alg.p0 P :=
+    HasCondDistrib (A 0) (O 0) alg.policyZero P :=
   (h.isAlgEnvSeqUntil 1).hasCondDistrib_action_zero zero_lt_one
 
 omit [IsProbabilityMeasure P] in
 lemma IsAlgEnvSeqUntil.hasCondDistrib_feedback_zero (h : IsAlgEnvSeqUntil O A Y alg env P N)
     (hN : 0 < N) :
-    HasCondDistrib (Y 0) (fun ω ↦ (O 0 ω, A 0 ω)) env.ν0 P := by
+    HasCondDistrib (Y 0) (fun ω ↦ (O 0 ω, A 0 ω)) env.feedbackZero P := by
   have h0 := h.hasCondDistrib_feedback 0 hN
   rw [history_zero] at h0
   exact h0.of_measurableEmbedding_comp_right
@@ -506,18 +507,18 @@ lemma IsAlgEnvSeqUntil.hasCondDistrib_feedback_zero (h : IsAlgEnvSeqUntil O A Y 
 
 omit [IsProbabilityMeasure P] in
 lemma IsAlgEnvSeq.hasCondDistrib_feedback_zero (h : IsAlgEnvSeq O A Y alg env P) :
-    HasCondDistrib (Y 0) (fun ω ↦ (O 0 ω, A 0 ω)) env.ν0 P :=
+    HasCondDistrib (Y 0) (fun ω ↦ (O 0 ω, A 0 ω)) env.feedbackZero P :=
   (h.isAlgEnvSeqUntil 1).hasCondDistrib_feedback_zero zero_lt_one
 
 lemma IsAlgEnvSeqUntil.hasLaw_step_zero (h : IsAlgEnvSeqUntil O A Y alg env P N) (hN : 0 < N) :
-    HasLaw (step O A Y 0) (env.obs0 ⊗ₘ (alg.p0 ⊗ₖ env.ν0)) P := by
+    HasLaw (step O A Y 0) (env.obsZero ⊗ₘ (alg.policyZero ⊗ₖ env.feedbackZero)) P := by
   have h0 := h.hasCondDistrib_step 0 hN
   rw [history_zero] at h0
   rw [← stepKernel_zero alg env default]
   exact h0.hasLaw_of_const'
 
 lemma IsAlgEnvSeq.hasLaw_step_zero (h : IsAlgEnvSeq O A Y alg env P) :
-    HasLaw (step O A Y 0) (env.obs0 ⊗ₘ (alg.p0 ⊗ₖ env.ν0)) P :=
+    HasLaw (step O A Y 0) (env.obsZero ⊗ₘ (alg.policyZero ⊗ₖ env.feedbackZero)) P :=
   (h.isAlgEnvSeqUntil 1).hasLaw_step_zero zero_lt_one
 
 end Zero
@@ -539,11 +540,11 @@ lemma IsAlgEnvSeq.hasLaw_step_comp (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     HasLaw (step O A Y n) (stepKernel alg env n ∘ₘ (P.map (history O A Y n))) P :=
   HasCondDistrib.hasLaw_comp (h.hasCondDistrib_step n)
 
-/-- Conditionally on the event `(O 0, A 0) = p`, the first feedback has law `env.ν0 p`. -/
+/-- Conditionally on the event `(O 0, A 0) = p`, the first feedback has law `env.feedbackZero p`. -/
 lemma IsAlgEnvSeq.hasLaw_feedback_zero_cond [MeasurableSingletonClass 𝓞]
     [MeasurableSingletonClass 𝓐] (h : IsAlgEnvSeq O A Y alg env P) {p : 𝓞 × 𝓐}
     (hP : P ((fun ω ↦ (O 0 ω, A 0 ω)) ⁻¹' {p}) ≠ 0) :
-    HasLaw (Y 0) (env.ν0 p) P[|(fun ω ↦ (O 0 ω, A 0 ω)) ⁻¹' {p}] :=
+    HasLaw (Y 0) (env.feedbackZero p) P[|(fun ω ↦ (O 0 ω, A 0 ω)) ⁻¹' {p}] :=
   h.hasCondDistrib_feedback_zero.hasLaw_cond (h.measurable_feedback 0)
     (measurableSet_singleton p) (fun a ha ↦ by rw [Set.mem_singleton_iff.1 ha]) hP
 
@@ -747,16 +748,22 @@ the algorithm only sees the past rounds. Since `Unit` carries a unique probabili
 observation kernels of such an environment are all equal to `Kernel.const _ (Measure.dirac ())`,
 and the observation process of an algorithm-environment sequence is `noObs`. -/
 
-/-- Every Markov kernel with codomain `Unit` is the constant kernel at `Measure.dirac ()`. -/
-lemma Kernel.eq_const_dirac_unit {α : Type*} {mα : MeasurableSpace α} (κ : Kernel α Unit)
-    [IsMarkovKernel κ] :
-    κ = Kernel.const α (Measure.dirac ()) := by
-  ext a s hs
-  rw [Kernel.const_apply]
+/-- Every probability measure on `Unit` is `Measure.dirac ()`. -/
+lemma Measure.eq_dirac_unit (μ : Measure Unit) [IsProbabilityMeasure μ] :
+    μ = Measure.dirac () := by
+  ext s hs
   rcases Set.eq_empty_or_nonempty s with rfl | ⟨u, hu⟩
   · simp
   · have hs_univ : s = Set.univ := Set.eq_univ_of_forall fun x ↦ by rwa [Subsingleton.elim x u]
     simp [hs_univ]
+
+/-- Every Markov kernel with codomain `Unit` is the constant kernel at `Measure.dirac ()`. -/
+lemma Kernel.eq_const_dirac_unit {α : Type*} {mα : MeasurableSpace α} (κ : Kernel α Unit)
+    [IsMarkovKernel κ] :
+    κ = Kernel.const α (Measure.dirac ()) := by
+  ext a : 1
+  rw [Kernel.const_apply]
+  exact Measure.eq_dirac_unit (κ a)
 
 /-- A random variable with values in `Unit` admits any Markov kernel as conditional
 distribution. -/
