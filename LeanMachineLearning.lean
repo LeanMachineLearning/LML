@@ -1,6 +1,7 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
 public import LeanMachineLearning.ForMathlib.Analysis.Convex.Bregman.Basic
+public import LeanMachineLearning.ForMathlib.Analysis.Convex.Bregman.MVT
 public import LeanMachineLearning.ForMathlib.Analysis.Convex.Subgradient.Basic
 public import LeanMachineLearning.ForMathlib.Analysis.Convex.Subgradient.Deriv
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.ChainRule
@@ -50,6 +51,37 @@ public import LeanMachineLearning.Online.Bandit.BayesRegret
 public import LeanMachineLearning.Online.Bandit.Regret
 public import LeanMachineLearning.Online.Bandit.RewardByCountMeasure
 public import LeanMachineLearning.Online.Bandit.SumRewards
+public import LeanMachineLearning.Online.OnlineConvexOptimization.Algorithms.COMD.RegretDecomposition
+public import LeanMachineLearning.Online.OnlineConvexOptimization.Algorithms.COMD2.RegretDecomposition
+public import LeanMachineLearning.Online.OnlineConvexOptimization.Algorithms.FTRL.RegretDecomposition
+public import LeanMachineLearning.Online.OnlineConvexOptimization.LEA.COMD2.Boundary
+public import LeanMachineLearning.Online.OnlineConvexOptimization.LEA.COMD2.Formula
+public import LeanMachineLearning.Online.OnlineConvexOptimization.LEA.COMD2.Optimality
+public import LeanMachineLearning.Online.OnlineConvexOptimization.LEA.COMD2.RegretBound
+public import LeanMachineLearning.Online.OnlineConvexOptimization.LEA.COMD2.RegretDecomposition
+public import LeanMachineLearning.Online.OnlineConvexOptimization.LEA.Common.Domain
+public import LeanMachineLearning.Online.OnlineConvexOptimization.LEA.Common.RegretTerms
+public import LeanMachineLearning.Online.OnlineConvexOptimization.LEA.Common.Regularizer
+public import LeanMachineLearning.Online.OnlineConvexOptimization.LEA.Common.Shift
+public import LeanMachineLearning.Online.OnlineConvexOptimization.LEA.Common.Stability
+public import LeanMachineLearning.Online.OnlineConvexOptimization.LEA.FTRL.Boundary
+public import LeanMachineLearning.Online.OnlineConvexOptimization.LEA.FTRL.Formula
+public import LeanMachineLearning.Online.OnlineConvexOptimization.LEA.FTRL.Optimality
+public import LeanMachineLearning.Online.OnlineConvexOptimization.LEA.FTRL.RegretBound
+public import LeanMachineLearning.Online.OnlineConvexOptimization.LEA.FTRL.RegretDecomposition
+public import LeanMachineLearning.Online.OnlineConvexOptimization.OGD.COMD2.Boundary
+public import LeanMachineLearning.Online.OnlineConvexOptimization.OGD.COMD2.Optimality
+public import LeanMachineLearning.Online.OnlineConvexOptimization.OGD.COMD2.Pathlength
+public import LeanMachineLearning.Online.OnlineConvexOptimization.OGD.COMD2.RegretBound
+public import LeanMachineLearning.Online.OnlineConvexOptimization.OGD.COMD2.RegretDecomposition
+public import LeanMachineLearning.Online.OnlineConvexOptimization.OGD.Common.RegretTerms
+public import LeanMachineLearning.Online.OnlineConvexOptimization.OGD.Common.Regularizer
+public import LeanMachineLearning.Online.OnlineConvexOptimization.OGD.Common.Shift
+public import LeanMachineLearning.Online.OnlineConvexOptimization.OGD.Common.Stability
+public import LeanMachineLearning.Online.OnlineConvexOptimization.OGD.FTRL.Boundary
+public import LeanMachineLearning.Online.OnlineConvexOptimization.OGD.FTRL.Optimality
+public import LeanMachineLearning.Online.OnlineConvexOptimization.OGD.FTRL.RegretBound
+public import LeanMachineLearning.Online.OnlineConvexOptimization.OGD.FTRL.RegretDecomposition
 public import LeanMachineLearning.SequentialLearning.ActionIndicator
 public import LeanMachineLearning.SequentialLearning.Algorithm
 public import LeanMachineLearning.SequentialLearning.AlgorithmDensity
