@@ -12,12 +12,12 @@ weak.linter.mathlibStandardSet = true
 [[require]]
 name = "verso"
 git = "https://github.com/leanprover/verso"
-rev = "v4.35.0-rc3"
+rev = "v4.35.0-rc4"
 
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
-rev = "1f414401f69059aa7eead47b53ee40bd38455eeb"
+rev = "41d048456026a1e519fbc9f74b3734eccc4c8556"
 
 [[lean_lib]]
 name = "LeanMachineLearning"

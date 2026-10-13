@@ -34,7 +34,7 @@ notation "𝓛[" Y " | " X " in " s "; " μ "]" => Measure.map Y (μ[|X ⁻¹' s
 notation "𝓛[" Y " | " X " ← " x "; " μ "]" => Measure.map Y (μ[|X ⁻¹' {x}])
 
 omit [DecidableEq 𝓐] in
-lemma condDistrib_reward'' [Countable 𝓐]
+lemma condDistrib_reward''
     (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P) (n : ℕ) :
     𝓛[fun ω ↦ R n ω.1 | fun ω ↦ A n ω.1; 𝔓] =ᵐ[(𝔓).map (fun ω ↦ A n ω.1)] ν := by
   have hA := h.measurable_action
