@@ -59,7 +59,6 @@ def Node.toPenroseVar_kernel (n : Node) : MetaM PenroseVar := do
       pure n.e
   return ⟨"E", [n.vPos, n.hPosSrc, n.hPosTar], expr⟩
 
-open scoped Jsx in
 /-- Construct a kernelized string diagram from a Penrose `sub`stance program and
 expressions `embeds` to display as labels in the diagram. -/
 def mkKernelDiagram (nodes : List (List Node)) (strands : List (List Strand)) :
@@ -90,9 +89,8 @@ end Mathlib.Tactic.Widget.StringDiagram
 
 namespace KernelDiagram
 
-open scoped Jsx in
 /-- Given a kernel expression, return a string diagram. Otherwise `none`. -/
-def KernelM? (e : Expr) : MetaM (Option Html) := do
+def KernelM? (e : Expr) : MetaM (Option ProofWidgets.Html) := do
   let e ← instantiateMVars e
   try
     let (e, _) ← transformKernelToHom e []
@@ -118,28 +116,27 @@ def KernelM? (e : Expr) : MetaM (Option Html) := do
         trace[string_diagram] "Penrose substance: \n{(← get).sub}"
         match ← DiagramBuilderM.buildDiagram StringDiagram.dsl StringDiagram.sty with
         | some html => return html
-        | none => return <span>No non-structural morphisms found.</span>
+        | none => return jsx%{<span>No non-structural morphisms found.</span>}
   catch _ => return none
 
-open scoped Jsx in
 /-- Help function for displaying two string diagrams in an equality. -/
-def mkEqHtml (lhs rhs : Html) : Html :=
-  <div className="flex">
+def mkEqHtml (lhs rhs : ProofWidgets.Html) : ProofWidgets.Html :=
+  jsx%{<div className="flex">
     <div className="w-50">
-      <details «open»={true}>
-        <summary className="mv2 pointer">Kernel diagram for LHS</summary> {lhs}
+      <details open={true}>
+        <summary className="mv2 pointer">Kernel diagram for LHS</summary>{lhs}
       </details>
     </div>
     <div className="w-50">
-      <details «open»={true}>
-        <summary className="mv2 pointer">Kernel diagram for RHS</summary> {rhs}
+      <details open={true}>
+        <summary className="mv2 pointer">Kernel diagram for RHS</summary>{rhs}
       </details>
     </div>
-  </div>
+  </div>}
 
 /-- Given an equality between kernels, return a string diagram of the LHS and RHS.
 Otherwise `none`. -/
-def kernelEqM? (e : Expr) : MetaM (Option Html) := do
+def kernelEqM? (e : Expr) : MetaM (Option ProofWidgets.Html) := do
   try
     let e ← unfoldKernelOp <| ← instantiateMVars e
     let (lifted_e, _) ← liftEquality e
@@ -151,16 +148,15 @@ def kernelEqM? (e : Expr) : MetaM (Option Html) := do
 
 /-- Reduce a forall expression and try to display a kernel diagram
 if it is an equality of kernels. -/
-def kernelEqMReduce? (e : Expr) : MetaM (Option Html) := do
+def kernelEqMReduce? (e : Expr) : MetaM (Option ProofWidgets.Html) := do
   forallTelescopeReducing (← whnfR <| ← inferType e) fun _ expr => do
     kernelEqM? expr
 
-open scoped Jsx in
 /-- The RPC method for displaying kernel diagrams. -/
 @[server_rpc_method]
-def rpc (props : PanelWidgetProps) : RequestM (RequestTask Html) :=
+def rpc (props : PanelWidgetProps) : RequestM (RequestTask ProofWidgets.Html) :=
   RequestM.asTask do
-    let html : Option Html ← (do
+    let html : Option ProofWidgets.Html ← (do
       if props.goals.isEmpty then
         return none
       let some g := props.goals[0]? | unreachable!
@@ -169,7 +165,7 @@ def rpc (props : PanelWidgetProps) : RequestM (RequestTask Html) :=
           let type ← g.mvarId.getType
           kernelEqM? type)
     match html with
-    | none => return <span>No Kernel Diagram.</span>
+    | none => return jsx%{<span>No Kernel Diagram.</span>}
     | some inner => return inner
 
 end KernelDiagram

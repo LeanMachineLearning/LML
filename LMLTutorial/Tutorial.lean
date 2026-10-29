@@ -12,12 +12,12 @@ set_option linter.style.setOption false
 
 @[expose] public section
 
-open Verso.Genre.Manual Verso.Output.Html
+open Verso.Genre.Manual
 
 def extraHead : Array Verso.Output.Html := #[
-  {{<link rel="icon" type="image/x-icon" href="static/favicon.svg"/>}},
-  {{<link rel="stylesheet" href="static/style.css"/>}},
-  {{<script src="static/scripts.js"></script>}},
+  html%{<link rel="icon" type="image/x-icon" href="static/favicon.svg"/>},
+  html%{<link rel="stylesheet" href="static/style.css"/>},
+  html%{<script src="static/scripts.js"></script>},
 ]
 
 def config : RenderConfig := {
