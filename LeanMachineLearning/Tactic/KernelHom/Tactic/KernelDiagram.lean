@@ -90,7 +90,7 @@ end Mathlib.Tactic.Widget.StringDiagram
 namespace KernelDiagram
 
 /-- Given a kernel expression, return a string diagram. Otherwise `none`. -/
-def KernelM? (e : Expr) : MetaM (Option Html) := do
+def KernelM? (e : Expr) : MetaM (Option ProofWidgets.Html) := do
   let e ← instantiateMVars e
   try
     let (e, _) ← transformKernelToHom e []
@@ -120,7 +120,7 @@ def KernelM? (e : Expr) : MetaM (Option Html) := do
   catch _ => return none
 
 /-- Help function for displaying two string diagrams in an equality. -/
-def mkEqHtml (lhs rhs : Html) : Html :=
+def mkEqHtml (lhs rhs : ProofWidgets.Html) : ProofWidgets.Html :=
   jsx%{<div className="flex">
     <div className="w-50">
       <details open={true}>
@@ -136,7 +136,7 @@ def mkEqHtml (lhs rhs : Html) : Html :=
 
 /-- Given an equality between kernels, return a string diagram of the LHS and RHS.
 Otherwise `none`. -/
-def kernelEqM? (e : Expr) : MetaM (Option Html) := do
+def kernelEqM? (e : Expr) : MetaM (Option ProofWidgets.Html) := do
   try
     let e ← unfoldKernelOp <| ← instantiateMVars e
     let (lifted_e, _) ← liftEquality e
@@ -148,15 +148,15 @@ def kernelEqM? (e : Expr) : MetaM (Option Html) := do
 
 /-- Reduce a forall expression and try to display a kernel diagram
 if it is an equality of kernels. -/
-def kernelEqMReduce? (e : Expr) : MetaM (Option Html) := do
+def kernelEqMReduce? (e : Expr) : MetaM (Option ProofWidgets.Html) := do
   forallTelescopeReducing (← whnfR <| ← inferType e) fun _ expr => do
     kernelEqM? expr
 
 /-- The RPC method for displaying kernel diagrams. -/
 @[server_rpc_method]
-def rpc (props : PanelWidgetProps) : RequestM (RequestTask Html) :=
+def rpc (props : PanelWidgetProps) : RequestM (RequestTask ProofWidgets.Html) :=
   RequestM.asTask do
-    let html : Option Html ← (do
+    let html : Option ProofWidgets.Html ← (do
       if props.goals.isEmpty then
         return none
       let some g := props.goals[0]? | unreachable!
