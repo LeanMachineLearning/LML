@@ -14,14 +14,14 @@ public import Mathlib.Analysis.Calculus.LineDeriv.Basic
 This file establishes the connection between Fréchet derivatives (`HasFDerivWithinAt`,
 `HasFDerivAt`) and subgradients (`HasSubgradientWithinAt f g s x`) for convex functions.
 
-## Main results
+## Main statements
 
 * `HasFDerivWithinAt.hasSubgradientWithinAt`: A Fréchet derivative within `s` of a function convex
   on `s` is a subgradient on `s`. `HasFDerivAt.hasSubgradientWithinAt` is the special case of a
   derivative at a point.
 * `HasFDerivAt.eq_of_hasSubgradientWithinAt`: Uniqueness of the subgradient at an interior
   differentiable point.
-* `HasFDerivAt.subdifferentialWithin_add`: Subdifferential sum rule when one component is
+* `HasFDerivWithinAt.subdifferentialWithin_add`: Subdifferential sum rule when one component is
   Fréchet differentiable.
 -/
 
@@ -46,6 +46,17 @@ lemma HasFDerivWithinAt.tendsto_bregDiv_slope_zero
   filter_upwards [self_mem_nhdsWithin] with t ht
   have ht0 : t ≠ 0 := ht.2
   simp [bregDiv, slope, smul_sub, ht0]
+
+/-- Along a segment `[x, z]` in a convex set `s`, the linearization error of a function Fréchet
+differentiable within `s` at `x`, scaled by `t⁻¹`, converges to `0` as the step size `t → 0⁺`. -/
+lemma HasFDerivWithinAt.tendsto_bregDiv_slope_zero_of_convex
+    (hderiv : HasFDerivWithinAt f g s x) (hs : Convex ℝ s) (hx : x ∈ s) {z : E} (hz : z ∈ s) :
+    Tendsto (fun t : ℝ ↦ t⁻¹ • D_[f](x + t • (z - x), x, g)) (𝓝[>] 0) (𝓝 0) := by
+  have h_sub : Set.Ioc (0 : ℝ) 1 ⊆ (fun t : ℝ ↦ x + t • (z - x)) ⁻¹' s \ {0} :=
+    fun t ht ↦ ⟨hs.add_smul_sub_mem hx hz ⟨ht.1.le, ht.2⟩, ht.1.ne'⟩
+  refine (hderiv.tendsto_bregDiv_slope_zero (z - x)).mono_left ?_
+  rw [← nhdsWithin_Ioc_eq_nhdsGT zero_lt_one]
+  exact nhdsWithin_mono _ h_sub
 
 /-- As the step size `t → 0⁺`, the linearization error of a Fréchet differentiable function
 scaled by `t⁻¹` converges to `0`. -/
@@ -78,12 +89,7 @@ lemma HasFDerivWithinAt.hasSubgradientWithinAt
     (hderiv : HasFDerivWithinAt f g s x) (hf : ConvexOn ℝ s f) (hx : x ∈ s) :
     HasSubgradientWithinAt f g s x := by
   intro z hz
-  have h_sub : Set.Ioc (0 : ℝ) 1 ⊆ (fun t : ℝ ↦ x + t • (z - x)) ⁻¹' s \ {0} :=
-    fun t ht ↦ ⟨hf.1.add_smul_sub_mem hx hz ⟨ht.1.le, ht.2⟩, ht.1.ne'⟩
-  have h_le : 𝓝[>] (0 : ℝ) ≤ 𝓝[(fun t : ℝ ↦ x + t • (z - x)) ⁻¹' s \ {0}] 0 := by
-    rw [← nhdsWithin_Ioc_eq_nhdsGT zero_lt_one]
-    exact nhdsWithin_mono _ h_sub
-  refine le_of_tendsto ((hderiv.tendsto_bregDiv_slope_zero (z - x)).mono_left h_le) ?_
+  refine le_of_tendsto (hderiv.tendsto_bregDiv_slope_zero_of_convex hf.1 hx hz) ?_
   filter_upwards [self_mem_nhdsWithin, nhdsWithin_le_nhds (eventually_le_nhds zero_lt_one)]
     with t (ht0 : 0 < t) ht1 using hf.bregDiv_slope_le hx hz g ht0 ht1
 
@@ -133,15 +139,17 @@ lemma subdifferentialWithin_const_eq (c : F) (hs : s ∈ 𝓝 x) :
   exact ⟨fun hsub ↦ (hasFDerivAt_const c x).eq_of_hasSubgradientWithinAt hs hsub,
     fun h_eq ↦ h_eq ▸ hasSubgradientWithinAt_const c⟩
 
-/-- Subdifferential sum rule when `f₁` is convex and Fréchet differentiable at `x`
-and `f₂` is convex on `s`: `g` is a subgradient of `f₁ + f₂` at `x` if and only if
+/-- Subdifferential sum rule when `f₁` is convex on `s` and Fréchet differentiable within `s` at
+`x` and `f₂` is convex on `s`: `g` is a subgradient of `f₁ + f₂` at `x` if and only if
 `g - g₁` is a subgradient of `f₂` at `x`. -/
-lemma HasFDerivAt.hasSubgradientWithinAt_add_iff {f₁ f₂ : E → F} {g₁ g : E →L[ℝ] F}
-    (hderiv₁ : HasFDerivAt f₁ g₁ x) (hf₁ : ConvexOn ℝ s f₁) (hf₂ : ConvexOn ℝ s f₂) (hx : x ∈ s) :
+lemma HasFDerivWithinAt.hasSubgradientWithinAt_add_iff {f₁ f₂ : E → F} {g₁ g : E →L[ℝ] F}
+    (hderiv₁ : HasFDerivWithinAt f₁ g₁ s x) (hf₁ : ConvexOn ℝ s f₁) (hf₂ : ConvexOn ℝ s f₂)
+    (hx : x ∈ s) :
     HasSubgradientWithinAt (f₁ + f₂) g s x ↔ HasSubgradientWithinAt f₂ (g - g₁) s x := by
   constructor
   · intro hg z hz
-    refine le_of_tendsto (by simpa using (hderiv₁.tendsto_bregDiv_slope_zero (z - x)).neg) ?_
+    refine le_of_tendsto
+      (by simpa using (hderiv₁.tendsto_bregDiv_slope_zero_of_convex hf₂.1 hx hz).neg) ?_
     filter_upwards [self_mem_nhdsWithin, nhdsWithin_le_nhds (eventually_le_nhds zero_lt_one)]
       with t (ht0 : 0 < t) ht1
     have h_nonneg := smul_nonneg (inv_nonneg.mpr ht0.le)
@@ -152,17 +160,18 @@ lemma HasFDerivAt.hasSubgradientWithinAt_add_iff {f₁ f₂ : E → F} {g₁ g :
     simpa using (hderiv₁.hasSubgradientWithinAt hf₁ hx).add h₂
 
 /-- Subdifferential sum rule in set form: `∂[ℝ, s, x](f₁ + f₂) = {g₁} + ∂[ℝ, s, x](f₂)`. -/
-lemma HasFDerivAt.subdifferentialWithin_add {f₁ f₂ : E → F} {g₁ : E →L[ℝ] F}
-    (hderiv₁ : HasFDerivAt f₁ g₁ x) (hf₁ : ConvexOn ℝ s f₁) (hf₂ : ConvexOn ℝ s f₂) (hx : x ∈ s) :
+lemma HasFDerivWithinAt.subdifferentialWithin_add {f₁ f₂ : E → F} {g₁ : E →L[ℝ] F}
+    (hderiv₁ : HasFDerivWithinAt f₁ g₁ s x) (hf₁ : ConvexOn ℝ s f₁) (hf₂ : ConvexOn ℝ s f₂)
+    (hx : x ∈ s) :
     ∂[ℝ, s, x](f₁ + f₂) = {g₁} + ∂[ℝ, s, x](f₂) := by
   ext g
   simp [mem_subdifferentialWithin, Set.singleton_add,
     hderiv₁.hasSubgradientWithinAt_add_iff hf₁ hf₂ hx, add_comm g₁, sub_eq_add_neg]
 
-/-- When `f` is convex and Fréchet differentiable at `x ∈ s`, its subdifferential
-is `g + ∂[ℝ, s, x](0)` (the derivative plus the normal cone to `s` at `x`). -/
-lemma HasFDerivAt.subdifferentialWithin_eq_add_zero
-    (hderiv : HasFDerivAt f g x) (hf : ConvexOn ℝ s f) (hx : x ∈ s) :
+/-- When `f` is convex on `s` and Fréchet differentiable within `s` at `x ∈ s`, its
+subdifferential is `g + ∂[ℝ, s, x](0)` (the derivative plus the normal cone to `s` at `x`). -/
+lemma HasFDerivWithinAt.subdifferentialWithin_eq_add_zero
+    (hderiv : HasFDerivWithinAt f g s x) (hf : ConvexOn ℝ s f) (hx : x ∈ s) :
     ∂[ℝ, s, x](f) = {g} + ∂[ℝ, s, x](fun _ : E ↦ (0 : F)) := by
   rw [← add_zero f]
   exact hderiv.subdifferentialWithin_add hf (convexOn_const (0 : F) hf.1) hx

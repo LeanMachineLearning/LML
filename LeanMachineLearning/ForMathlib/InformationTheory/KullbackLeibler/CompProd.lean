@@ -5,9 +5,26 @@ Authors: Rémy Degenne
 -/
 module
 
+public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.DataProcessing
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Measure.WithDensity
+public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.Lemmas
 public import Mathlib.InformationTheory.KullbackLeibler.Basic
 
-/-! # Lemmas about the Kullback-Leibler divergence of the images of two measures by a measurable map
+/-! # The Kullback–Leibler divergence of composition-products with kernels factoring through a map
+
+If two kernels `κ.comap f` and `η.comap f` depend on the conditioning variable only through a
+measurable statistic `f`, then the divergence of their composition-products with `μ` equals the
+divergence of the composition-products of `κ` and `η` with the image measure `μ.map f`.
+
+## Main statements
+
+* `klDiv_map_of_eq_withDensity_comp`: if `μ` has a density `f ∘ g` with respect to `ν`, then
+  `klDiv (μ.map g) (ν.map g) = klDiv μ ν`, that is, `g` is a sufficient statistic.
+* `klDiv_compProd_comap`:
+  `klDiv (μ ⊗ₘ κ.comap f hf) (μ ⊗ₘ η.comap f hf) = klDiv (μ.map f ⊗ₘ κ) (μ.map f ⊗ₘ η)`.
+* `klDiv_compProd_compProd_prodMkLeft_eq_klDiv_comp_compProd`:
+  `klDiv (μ ⊗ₘ (π ⊗ₖ κ.prodMkLeft α)) (μ ⊗ₘ (π ⊗ₖ η.prodMkLeft α))
+    = klDiv ((π ∘ₘ μ) ⊗ₘ κ) ((π ∘ₘ μ) ⊗ₘ η)`.
 -/
 
 @[expose] public section
@@ -20,30 +37,14 @@ namespace InformationTheory
 variable {α β γ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
   {mγ : MeasurableSpace γ} {μ ν : Measure α} [IsFiniteMeasure μ] [IsFiniteMeasure ν]
 
-/-- Transporting `μ ⊗ₘ η.comap f` along `f` in the first coordinate gives `μ.map f ⊗ₘ η`. -/
-lemma _root_.MeasureTheory.Measure.map_compProd_comap (μ : Measure α) [SFinite μ]
-    (η : Kernel β γ) [IsSFiniteKernel η] {f : α → β} (hf : Measurable f) :
-    (μ ⊗ₘ η.comap f hf).map (fun p : α × γ ↦ (f p.1, p.2)) = μ.map f ⊗ₘ η := by
-  ext s hs
-  rw [Measure.map_apply (by fun_prop) hs, Measure.compProd_apply (hs.preimage (by fun_prop)),
-    Measure.compProd_apply hs, lintegral_map (Kernel.measurable_kernel_prodMk_left hs) hf]
-  rfl
-
-omit [IsFiniteMeasure ν] in
-lemma _root_.MeasureTheory.Measure.map_withDensity_comp
-    {f : β → ℝ≥0∞} (hf : Measurable f) {g : α → β} (hg : Measurable g) :
-    (ν.withDensity (f ∘ g)).map g = (ν.map g).withDensity f := by
-  ext s hs
-  rw [Measure.map_apply hg hs, withDensity_apply _ (hg hs), withDensity_apply _ hs,
-    ← lintegral_indicator hs, ← lintegral_indicator (hg hs), lintegral_map (hf.indicator hs) hg]
-  rfl
-
+/-- If `ν.withDensity (f ∘ g)` is finite, the divergence of the images by `g` of
+`ν.withDensity (f ∘ g)` and `ν` is the divergence of those measures. -/
 lemma klDiv_withDensity_comp_map {f : β → ℝ≥0∞} (hf : Measurable f) {g : α → β} (hg : Measurable g)
     [IsFiniteMeasure (ν.withDensity (f ∘ g))] :
     klDiv ((ν.withDensity (f ∘ g)).map g) (ν.map g) = klDiv (ν.withDensity (f ∘ g)) ν := by
   have hac : ν.withDensity (f ∘ g) ≪ ν := withDensity_absolutelyContinuous ν (f ∘ g)
   have h_rnDeriv : ((ν.withDensity (f ∘ g)).map g).rnDeriv (ν.map g) =ᵐ[ν.map g] f := by
-    rw [Measure.map_withDensity_comp hf hg]
+    rw [map_withDensity_comp hg hf]
     exact Measure.rnDeriv_withDensity _ hf
   have hmeas : Measurable fun x : β ↦
       ENNReal.ofReal (klFun (((ν.withDensity (f ∘ g)).map g).rnDeriv (ν.map g) x).toReal) :=
@@ -109,5 +110,39 @@ lemma klDiv_compProd_comap (μ : Measure α) [IsFiniteMeasure μ] (κ η : Kerne
     · simpa using h_rect Set.univ Set.univ MeasurableSet.univ MeasurableSet.univ
   rw [← Measure.map_compProd_comap μ κ hf, ← Measure.map_compProd_comap μ η hf,
     klDiv_map_of_eq_withDensity_comp hD hg key]
+
+section
+
+variable {δ : Type*} {mδ : MeasurableSpace δ}
+
+/-- The divergence of one step of a policy/reward decomposition, in composition-product form:
+the policy `π` is shared and the reward kernels `κ`, `η` (which ignore the history) differ, so
+the divergence is the conditional divergence of the reward kernels given the played action,
+whose law is `π ∘ₘ μ`. -/
+lemma klDiv_compProd_compProd_prodMkLeft_eq_klDiv_comp_compProd (μ : Measure α)
+    [IsFiniteMeasure μ] (π : Kernel α β) [IsFiniteKernel π] (κ η : Kernel β γ) [IsFiniteKernel κ]
+    [IsFiniteKernel η] :
+    klDiv (μ ⊗ₘ (π ⊗ₖ κ.prodMkLeft α)) (μ ⊗ₘ (π ⊗ₖ η.prodMkLeft α)) =
+      klDiv ((π ∘ₘ μ) ⊗ₘ κ) ((π ∘ₘ μ) ⊗ₘ η) := by
+  rw [← klDiv_map_measurableEquiv _ _ MeasurableEquiv.prodAssoc.symm, Measure.compProd_assoc,
+    Measure.compProd_assoc, ← Measure.snd_compProd, Measure.snd]
+  exact klDiv_compProd_comap _ _ _ measurable_snd
+
+/-- The divergence of one step of an observation/policy/reward decomposition, in
+composition-product form: the observation kernel `o` and the policy `π` are shared and the reward
+kernels `κ`, `η` (which ignore the history and the observation) differ, so the divergence is the
+conditional divergence of the reward kernels given the played action, whose law is
+`π ∘ₘ (μ ⊗ₘ o)`. -/
+lemma klDiv_compProd_compProd_compProd_prodMkLeft_eq_klDiv_comp_compProd (μ : Measure α)
+    [IsFiniteMeasure μ] (o : Kernel α β) [IsFiniteKernel o] (π : Kernel (α × β) γ)
+    [IsFiniteKernel π] (κ η : Kernel γ δ) [IsFiniteKernel κ] [IsFiniteKernel η] :
+    klDiv (μ ⊗ₘ (o ⊗ₖ (π ⊗ₖ κ.prodMkLeft (α × β))))
+        (μ ⊗ₘ (o ⊗ₖ (π ⊗ₖ η.prodMkLeft (α × β)))) =
+      klDiv ((π ∘ₘ (μ ⊗ₘ o)) ⊗ₘ κ) ((π ∘ₘ (μ ⊗ₘ o)) ⊗ₘ η) := by
+  rw [← klDiv_map_measurableEquiv _ _ MeasurableEquiv.prodAssoc.symm, Measure.compProd_assoc,
+    Measure.compProd_assoc]
+  exact klDiv_compProd_compProd_prodMkLeft_eq_klDiv_comp_compProd _ _ _ _
+
+end
 
 end InformationTheory

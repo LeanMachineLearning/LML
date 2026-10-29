@@ -14,19 +14,20 @@ public import LeanMachineLearning.SequentialLearning.BayesStationaryEnv
 This file provides results about `Algorithm.density` for the Bayesian stationary environment
 setting.
 
-## Main results
+## Main statements
 
 Let `h : IsBayesAlgEnvSeq Q κ alg E A Y P`, `h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ Y₀ P₀`, and
 `hc : alg ≪ₐ alg₀`.
 
-* `hasLaw_hist_withDensity h h₀ hc n`: the law of the history at time `n` under `P` is the law of
-  the history at time `n` under `P₀` with density `alg.density alg₀ n`. Intuitively, the law of the
-  history under `alg` can be obtained from the law of the history under `alg₀` when they are
-  interacting with underlying stationary environments drawn from the same distribution.
-* `hasCondDistrib_env_history h h₀ hc n`: the conditional distribution of `E` given the history
-  at time `n` under `P` is almost everywhere equal to the conditional distribution of `E₀` given
-  the history at time `n` under `P₀`. Intuitively, the posterior is independent of the algorithm
-  used to observe the history.
+* `IsBayesAlgEnvSeq.hasLaw_history_withDensity h h₀ hc n`: the law of the history at time `n`
+  under `P` is the law of the history at time `n` under `P₀` with density `alg.density alg₀ n`.
+  Intuitively, the law of the history under `alg` can be obtained from the law of the history
+  under `alg₀` when they are interacting with underlying stationary environments drawn from the
+  same distribution.
+* `IsBayesAlgEnvSeq.hasCondDistrib_env_history h h₀ hc n`: the conditional distribution of `E`
+  given the history at time `n` under `P` is almost everywhere equal to the conditional
+  distribution of `E₀` given the history at time `n` under `P₀`. Intuitively, the posterior is
+  independent of the algorithm used to observe the history.
 
 -/
 
@@ -56,16 +57,22 @@ variable {E₀ : Ω₀ → 𝓔} {A₀ : ℕ → Ω₀ → 𝓐} {Y₀ : ℕ →
 variable {alg₀ : Algorithm Unit 𝓐 𝓨}
 variable {P₀ : Measure Ω₀} [IsProbabilityMeasure P₀]
 
-lemma condDistrib_history_eq_condDistrib_hist_withDensity (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
+/-- The conditional law of the history given the parameter under `alg` is, for almost all
+parameters, the conditional law of the history given the parameter under `alg₀` with density
+`alg.density alg₀ n`. -/
+lemma condDistrib_history_ae_eq_withDensity (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
     (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ Y₀ P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) :
     condDistrib (history (noObs Ω) A Y n) E P =ᵐ[Q]
       ((condDistrib (history (noObs Ω₀) A₀ Y₀ n) E₀ P₀).withDensity
         (fun _ ↦ alg.density alg₀ n)) := by
-    filter_upwards [h.ae_IsAlgEnvSeq, h₀.ae_IsAlgEnvSeq, h.hasLaw_IT_hist n, h₀.hasLaw_IT_hist n]
-      with _ hae hae₀ he he₀
-    rw [Kernel.withDensity_apply _ (by fun_prop), ← he.map_eq, ← he₀.map_eq]
-    exact (hae.hasLaw_history_withDensity hae₀ hc n).map_eq
+  filter_upwards [h.ae_isAlgEnvSeq, h₀.ae_isAlgEnvSeq, h.hasLaw_IT_hist n, h₀.hasLaw_IT_hist n]
+    with _ hae hae₀ he he₀
+  rw [Kernel.withDensity_apply _ (by fun_prop), ← he.map_eq, ← he₀.map_eq]
+  exact (hae.hasLaw_history_withDensity hae₀ hc n).map_eq
 
+/-- The law of the history under `alg` is the law of the history under `alg₀` with density
+`alg.density alg₀ n`, when the two algorithms interact with Bayesian stationary environments with
+the same prior. -/
 lemma hasLaw_history_withDensity (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
     (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ Y₀ P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) :
     HasLaw (history (noObs Ω) A Y n)
@@ -82,12 +89,15 @@ lemma hasLaw_history_withDensity (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
     have hE := h.measurable_param
     have hE₀ := h₀.measurable_param
     rw [← condDistrib_comp_map hE.aemeasurable (by fun_prop), h.hasLaw_env.map_eq,
-          Measure.bind_congr_right (h.condDistrib_history_eq_condDistrib_hist_withDensity h₀ hc n),
-          ← Measure.withDensity_comp (by fun_prop),
-          ← h₀.hasLaw_env.map_eq, condDistrib_comp_map hE₀.aemeasurable (by fun_prop)]
+      Measure.bind_congr_right (h.condDistrib_history_ae_eq_withDensity h₀ hc n),
+      ← Measure.withDensity_comp (by fun_prop),
+      ← h₀.hasLaw_env.map_eq, condDistrib_comp_map hE₀.aemeasurable (by fun_prop)]
 
 variable [StandardBorelSpace 𝓔] [Nonempty 𝓔]
 
+/-- The posterior distribution of the parameter given the history does not depend on the
+algorithm: the conditional law of `E` given the history under `alg` is the conditional law of `E₀`
+given the history under `alg₀`. -/
 lemma hasCondDistrib_env_history (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
     (h₀ : IsBayesAlgEnvSeq Q κ alg₀ E₀ A₀ Y₀ P₀) (hc : alg ≪ₐ alg₀) (n : ℕ) :
     HasCondDistrib E (history (noObs Ω) A Y n)
@@ -105,7 +115,7 @@ lemma hasCondDistrib_env_history (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
     have hE₀ := h₀.measurable_param
     rw [← map_swap_compProd_map_condDistrib (by fun_prop) (by fun_prop), h.hasLaw_env.map_eq,
       Measure.compProd_eq_compProd_withDensity_comp_snd (by fun_prop)
-        (h.condDistrib_history_eq_condDistrib_hist_withDensity h₀ hc n),
+        (h.condDistrib_history_ae_eq_withDensity h₀ hc n),
       map_swap_withDensity_comp_snd (by fun_prop),
       ← h₀.hasLaw_env.map_eq, map_swap_compProd_map_condDistrib (by fun_prop) (by fun_prop),
       ← compProd_map_condDistrib (by fun_prop) (by fun_prop),

@@ -5,6 +5,7 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
+public import LeanMachineLearning.ForMathlib.Probability.Independence.Conditional
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.MapComap
 public import LeanMachineLearning.SequentialLearning.Algorithm
 
@@ -28,10 +29,10 @@ observation. We say that `alg` is a *Markov algorithm* if there exists a sequenc
 
 ## Main statements
 
-* `Algorithm.IsMarkov.hasCondDistrib_action`: in a run of a Markov algorithm, the conditional
+* `IsAlgEnvSeq.hasCondDistrib_action_policyCondObs`: in a run of a Markov algorithm, the conditional
   distribution of the action at time `n` given the observation at time `n` is
   `alg.policyCondObs n`.
-* `Algorithm.IsMarkov.condIndepFun_action_history`: in a run of a Markov algorithm, the action at
+* `IsAlgEnvSeq.condIndepFun_action_history`: in a run of a Markov algorithm, the action at
   time `n` is conditionally independent of the history before time `n` given the observation at
   time `n`.
 
@@ -91,96 +92,6 @@ lemma policyCondObs_eq_of_policy_eq [Nonempty 𝓨] (alg : Algorithm 𝓞 𝓐 �
   rw [policy_eq_prodMkLeft_policyCondObs, Kernel.prodMkLeft_inj] at h
   exact h
 
-namespace IsMarkov
-
-variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
-  {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨} {P : Measure Ω} [IsFiniteMeasure P]
-  {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {n N : ℕ}
-
-lemma hasCondDistrib_action_history_obs [alg.IsMarkov] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
-    HasCondDistrib (A n) (fun ω ↦ (history O A Y n ω, O n ω))
-      ((alg.policyCondObs n).prodMkLeft (Hist 𝓞 𝓐 𝓨 n)) P := by
-  rw [← alg.policy_eq_prodMkLeft_policyCondObs]
-  exact h.hasCondDistrib_action n
-
-lemma hasCondDistrib_action_history_obs_of_isAlgEnvSeqUntil [alg.IsMarkov]
-    (h : IsAlgEnvSeqUntil O A Y alg env P N) (hn : n < N) :
-    HasCondDistrib (A n) (fun ω ↦ (history O A Y n ω, O n ω))
-      ((alg.policyCondObs n).prodMkLeft (Hist 𝓞 𝓐 𝓨 n)) P := by
-  rw [← alg.policy_eq_prodMkLeft_policyCondObs]
-  exact h.hasCondDistrib_action n hn
-
-/-- The conditional distribution of the action at time `n` given the observation at time `n` is
-`alg.policyCondObs n`. -/
-lemma hasCondDistrib_action [alg.IsMarkov] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
-    HasCondDistrib (A n) (O n) (alg.policyCondObs n) P :=
-  (hasCondDistrib_action_history_obs h n).comp_right
-
-/-- The conditional distribution of the action at time `n < N` given the observation at time `n`
-is `alg.policyCondObs n`. -/
-lemma hasCondDistrib_action_of_isAlgEnvSeqUntil [alg.IsMarkov]
-    (h : IsAlgEnvSeqUntil O A Y alg env P N) (hn : n < N) :
-    HasCondDistrib (A n) (O n) (alg.policyCondObs n) P :=
-  (hasCondDistrib_action_history_obs_of_isAlgEnvSeqUntil h hn).comp_right
-
-/-- The law of the action at time `n` is the law of the observation at time `n` composed with
-`alg.policyCondObs n`. -/
-lemma hasLaw_action_comp [alg.IsMarkov] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
-    HasLaw (A n) (alg.policyCondObs n ∘ₘ (P.map (O n))) P :=
-  (hasCondDistrib_action h n).hasLaw_comp
-
-/-- Conditionally on an event determined by the history before time `n` and the observation at
-time `n`, on which that observation is equal to `b`, the action at time `n` has law
-`alg.policyCondObs n b`. -/
-lemma hasLaw_action_cond [alg.IsMarkov] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ)
-    {s : Set (Hist 𝓞 𝓐 𝓨 n × 𝓞)} (hs : MeasurableSet s) {b : 𝓞} (hsb : ∀ u ∈ s, u.2 = b)
-    (hP : P ((fun ω ↦ (history O A Y n ω, O n ω)) ⁻¹' s) ≠ 0) :
-    HasLaw (A n) (alg.policyCondObs n b) P[|(fun ω ↦ (history O A Y n ω, O n ω)) ⁻¹' s] := by
-  refine (hasCondDistrib_action_history_obs h n).hasLaw_cond (h.measurable_action _) hs
-    (fun u hu ↦ ?_) hP
-  rw [Kernel.prodMkLeft_apply, hsb u hu]
-
-/-- Conditionally on an event determined by the history before time `n` and the observation at
-time `n`, on which that observation is constant, the action at time `n` is independent of the
-history before time `n` and of the observation at time `n`. -/
-lemma indepFun_history_obs_action_cond [alg.IsMarkov] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ)
-    {s : Set (Hist 𝓞 𝓐 𝓨 n × 𝓞)} (hs : MeasurableSet s) {b : 𝓞} (hsb : ∀ u ∈ s, u.2 = b) :
-    (fun ω ↦ (history O A Y n ω, O n ω))
-      ⟂ᵢ[P[|(fun ω ↦ (history O A Y n ω, O n ω)) ⁻¹' s]] A n := by
-  have hO := h.measurable_obs
-  have hA := h.measurable_action
-  have hY := h.measurable_feedback
-  refine (hasCondDistrib_action_history_obs h n).indepFun_cond (by fun_prop) hs
-    (η := alg.policyCondObs n b) fun u hu ↦ ?_
-  rw [Kernel.prodMkLeft_apply, hsb u hu]
-
-variable [StandardBorelSpace 𝓞] [Nonempty 𝓞] [StandardBorelSpace 𝓐] [Nonempty 𝓐]
-  [StandardBorelSpace 𝓨] [Nonempty 𝓨]
-
-/-- The action at time `n` is conditionally independent of the history before time `n`, given the
-observation at time `n`. -/
-lemma condIndepFun_action_history [StandardBorelSpace Ω] [alg.IsMarkov]
-    (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
-    A n ⟂ᵢ[O n, h.measurable_obs n; P] history O A Y n := by
-  have hO := h.measurable_obs
-  have hA := h.measurable_action
-  have hY := h.measurable_feedback
-  refine condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkLeft (η := alg.policyCondObs n)
-    (by fun_prop) (by fun_prop) (by fun_prop) ?_
-  exact HasCondDistrib.condDistrib_eq (hasCondDistrib_action_history_obs h n)
-
-/-- The action at time `n` is conditionally independent of the history before time `n` and the
-observation at time `n`, given the observation at time `n`. -/
-lemma condIndepFun_action_history_obs [StandardBorelSpace Ω] [alg.IsMarkov]
-    (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
-    A n ⟂ᵢ[O n, h.measurable_obs n; P] (fun ω ↦ (history O A Y n ω, O n ω)) := by
-  have hO := h.measurable_obs
-  have hA := h.measurable_action
-  have hY := h.measurable_feedback
-  exact (condIndepFun_action_history h n).prod_right (by fun_prop) (by fun_prop) (by fun_prop)
-
-end IsMarkov
-
 section Markov
 
 variable {κ : ℕ → Kernel 𝓞 𝓐} [∀ n, IsMarkovKernel (κ n)]
@@ -211,11 +122,108 @@ end Markov
 
 end Algorithm
 
+section IsMarkov
+
+/-! ### Runs of a Markov algorithm -/
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
+  {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨} {P : Measure Ω}
+  {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {n N : ℕ}
+
+lemma IsAlgEnvSeq.hasCondDistrib_action_history_obs_policyCondObs [alg.IsMarkov]
+    (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
+    HasCondDistrib (A n) (fun ω ↦ (history O A Y n ω, O n ω))
+      ((alg.policyCondObs n).prodMkLeft (Hist 𝓞 𝓐 𝓨 n)) P := by
+  rw [← alg.policy_eq_prodMkLeft_policyCondObs]
+  exact h.hasCondDistrib_action n
+
+lemma IsAlgEnvSeqUntil.hasCondDistrib_action_history_obs_policyCondObs [alg.IsMarkov]
+    (h : IsAlgEnvSeqUntil O A Y alg env P N) (hn : n < N) :
+    HasCondDistrib (A n) (fun ω ↦ (history O A Y n ω, O n ω))
+      ((alg.policyCondObs n).prodMkLeft (Hist 𝓞 𝓐 𝓨 n)) P := by
+  rw [← alg.policy_eq_prodMkLeft_policyCondObs]
+  exact h.hasCondDistrib_action n hn
+
+/-- The conditional distribution of the action at time `n` given the observation at time `n` is
+`alg.policyCondObs n`. -/
+lemma IsAlgEnvSeq.hasCondDistrib_action_policyCondObs [SFinite P] [alg.IsMarkov]
+    (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
+    HasCondDistrib (A n) (O n) (alg.policyCondObs n) P :=
+  (h.hasCondDistrib_action_history_obs_policyCondObs n).comp_right
+
+/-- The conditional distribution of the action at time `n < N` given the observation at time `n`
+is `alg.policyCondObs n`. -/
+lemma IsAlgEnvSeqUntil.hasCondDistrib_action_policyCondObs [SFinite P] [alg.IsMarkov]
+    (h : IsAlgEnvSeqUntil O A Y alg env P N) (hn : n < N) :
+    HasCondDistrib (A n) (O n) (alg.policyCondObs n) P :=
+  (h.hasCondDistrib_action_history_obs_policyCondObs hn).comp_right
+
+/-- The law of the action at time `n` is the law of the observation at time `n` composed with
+`alg.policyCondObs n`. -/
+lemma IsAlgEnvSeq.hasLaw_action_comp_policyCondObs [SFinite P] [alg.IsMarkov]
+    (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
+    HasLaw (A n) (alg.policyCondObs n ∘ₘ (P.map (O n))) P :=
+  (h.hasCondDistrib_action_policyCondObs n).hasLaw_comp
+
+/-- Conditionally on an event determined by the history before time `n` and the observation at
+time `n`, on which that observation is equal to `b`, the action at time `n` has law
+`alg.policyCondObs n b`. -/
+lemma IsAlgEnvSeq.hasLaw_action_cond_policyCondObs [IsFiniteMeasure P] [alg.IsMarkov]
+    (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ)
+    {s : Set (Hist 𝓞 𝓐 𝓨 n × 𝓞)} (hs : MeasurableSet s) {b : 𝓞} (hsb : ∀ u ∈ s, u.2 = b)
+    (hP : P ((fun ω ↦ (history O A Y n ω, O n ω)) ⁻¹' s) ≠ 0) :
+    HasLaw (A n) (alg.policyCondObs n b) P[|(fun ω ↦ (history O A Y n ω, O n ω)) ⁻¹' s] := by
+  refine (h.hasCondDistrib_action_history_obs_policyCondObs n).hasLaw_cond hs
+    (fun u hu ↦ ?_) hP
+  rw [Kernel.prodMkLeft_apply, hsb u hu]
+
+/-- Conditionally on an event determined by the history before time `n` and the observation at
+time `n`, on which that observation is constant, the action at time `n` is independent of the
+history before time `n` and of the observation at time `n`. -/
+lemma IsAlgEnvSeq.indepFun_history_obs_action_cond [IsFiniteMeasure P] [alg.IsMarkov]
+    (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ)
+    {s : Set (Hist 𝓞 𝓐 𝓨 n × 𝓞)} (hs : MeasurableSet s) {b : 𝓞} (hsb : ∀ u ∈ s, u.2 = b) :
+    (fun ω ↦ (history O A Y n ω, O n ω))
+      ⟂ᵢ[P[|(fun ω ↦ (history O A Y n ω, O n ω)) ⁻¹' s]] A n := by
+  have hO := h.measurable_obs
+  have hA := h.measurable_action
+  have hY := h.measurable_feedback
+  refine (h.hasCondDistrib_action_history_obs_policyCondObs n).indepFun_cond (by fun_prop) hs
+    (η := alg.policyCondObs n b) fun u hu ↦ ?_
+  rw [Kernel.prodMkLeft_apply, hsb u hu]
+
+variable [StandardBorelSpace 𝓞] [Nonempty 𝓞] [StandardBorelSpace 𝓐] [Nonempty 𝓐]
+  [StandardBorelSpace 𝓨] [Nonempty 𝓨]
+
+/-- The action at time `n` is conditionally independent of the history before time `n`, given the
+observation at time `n`. -/
+lemma IsAlgEnvSeq.condIndepFun_action_history [IsFiniteMeasure P] [StandardBorelSpace Ω]
+    [alg.IsMarkov] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
+    A n ⟂ᵢ[O n, h.measurable_obs n; P] history O A Y n := by
+  have hO := h.measurable_obs
+  have hA := h.measurable_action
+  have hY := h.measurable_feedback
+  refine condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkLeft (η := alg.policyCondObs n)
+    (by fun_prop) (by fun_prop) (by fun_prop) ?_
+  exact HasCondDistrib.condDistrib_ae_eq (h.hasCondDistrib_action_history_obs_policyCondObs n)
+
+/-- The action at time `n` is conditionally independent of the history before time `n` and the
+observation at time `n`, given the observation at time `n`. -/
+lemma IsAlgEnvSeq.condIndepFun_action_history_obs [IsFiniteMeasure P] [StandardBorelSpace Ω]
+    [alg.IsMarkov] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
+    A n ⟂ᵢ[O n, h.measurable_obs n; P] (fun ω ↦ (history O A Y n ω, O n ω)) := by
+  have hO := h.measurable_obs
+  have hA := h.measurable_action
+  have hY := h.measurable_feedback
+  exact (h.condIndepFun_action_history n).prod_right (by fun_prop) (by fun_prop) (by fun_prop)
+
+end IsMarkov
+
 namespace IsAlgEnvSeq
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {κ : ℕ → Kernel 𝓞 𝓐} [∀ n, IsMarkovKernel (κ n)] {env : Environment 𝓞 𝓐 𝓨}
-  {P : Measure Ω} [IsFiniteMeasure P]
+  {P : Measure Ω}
   {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 
 lemma hasCondDistrib_action_history_obs_markov
@@ -225,45 +233,47 @@ lemma hasCondDistrib_action_history_obs_markov
 
 /-- The conditional distribution of the action at time `n` given the observation at time `n`
 is `κ n`. -/
-lemma hasCondDistrib_action_markov (h : IsAlgEnvSeq O A Y (Algorithm.markov κ) env P) (n : ℕ) :
+lemma hasCondDistrib_action_markov [SFinite P] (h : IsAlgEnvSeq O A Y (Algorithm.markov κ) env P)
+    (n : ℕ) :
     HasCondDistrib (A n) (O n) (κ n) P :=
   (hasCondDistrib_action_history_obs_markov h n).comp_right
 
 /-- The conditional distribution of the action at time `n` given the observation at time `n`
 is `κ n`. -/
-lemma condDistrib_action_markov [StandardBorelSpace 𝓐] [Nonempty 𝓐]
+lemma condDistrib_action_markov [IsFiniteMeasure P] [StandardBorelSpace 𝓐] [Nonempty 𝓐]
     (h : IsAlgEnvSeq O A Y (Algorithm.markov κ) env P) (n : ℕ) :
     condDistrib (A n) (O n) P =ᵐ[P.map (O n)] κ n :=
-  (hasCondDistrib_action_markov h n).condDistrib_eq
+  (hasCondDistrib_action_markov h n).condDistrib_ae_eq
 
 /-- Conditionally on an event determined by the history before time `n` and the observation at
 time `n`, on which that observation is equal to `b`, the action at time `n` has law `κ n b`. -/
-lemma hasLaw_action_cond_markov (h : IsAlgEnvSeq O A Y (Algorithm.markov κ) env P) (n : ℕ)
+lemma hasLaw_action_cond_markov [IsFiniteMeasure P]
+    (h : IsAlgEnvSeq O A Y (Algorithm.markov κ) env P) (n : ℕ)
     {s : Set (Hist 𝓞 𝓐 𝓨 n × 𝓞)} (hs : MeasurableSet s) {b : 𝓞} (hsb : ∀ u ∈ s, u.2 = b)
     (hP : P ((fun ω ↦ (history O A Y n ω, O n ω)) ⁻¹' s) ≠ 0) :
     HasLaw (A n) (κ n b) P[|(fun ω ↦ (history O A Y n ω, O n ω)) ⁻¹' s] := by
-  refine (hasCondDistrib_action_history_obs_markov h n).hasLaw_cond (h.measurable_action _) hs
+  refine (hasCondDistrib_action_history_obs_markov h n).hasLaw_cond hs
     (fun u hu ↦ ?_) hP
   rw [Kernel.prodMkLeft_apply, hsb u hu]
 
 /-- Conditionally on an event determined by the history before time `n` and the observation at
 time `n`, on which that observation is constant, the action at time `n` is independent of the
 history before time `n` and of the observation at time `n`. -/
-lemma indepFun_history_obs_action_cond_markov
+lemma indepFun_history_obs_action_cond_markov [IsFiniteMeasure P]
     (h : IsAlgEnvSeq O A Y (Algorithm.markov κ) env P) (n : ℕ)
     {s : Set (Hist 𝓞 𝓐 𝓨 n × 𝓞)} (hs : MeasurableSet s) {b : 𝓞} (hsb : ∀ u ∈ s, u.2 = b) :
     (fun ω ↦ (history O A Y n ω, O n ω))
       ⟂ᵢ[P[|(fun ω ↦ (history O A Y n ω, O n ω)) ⁻¹' s]] A n :=
-  Algorithm.IsMarkov.indepFun_history_obs_action_cond h n hs hsb
+  h.indepFun_history_obs_action_cond n hs hsb
 
 /-- The action at time `n` is conditionally independent of the history before time `n`, given the
 observation at time `n`. -/
-lemma condIndepFun_action_history_markov [StandardBorelSpace Ω]
+lemma condIndepFun_action_history_markov [IsFiniteMeasure P] [StandardBorelSpace Ω]
     [StandardBorelSpace 𝓞] [Nonempty 𝓞] [StandardBorelSpace 𝓐] [Nonempty 𝓐]
     [StandardBorelSpace 𝓨] [Nonempty 𝓨]
     (h : IsAlgEnvSeq O A Y (Algorithm.markov κ) env P) (n : ℕ) :
     A n ⟂ᵢ[O n, h.measurable_obs n; P] history O A Y n :=
-  Algorithm.IsMarkov.condIndepFun_action_history h n
+  h.condIndepFun_action_history n
 
 end IsAlgEnvSeq
 

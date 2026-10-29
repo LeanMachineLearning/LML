@@ -6,21 +6,37 @@ Authors: Rémy Degenne, Paulo Rauber
 module
 
 public import LeanMachineLearning.SequentialLearning.FiniteActions
+public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
 
 /-!
-# Sums of rewards
+# Sums of rewards and empirical means
+
+## Main definitions
+
+* `sumRewards A R a t ω`: sum of the rewards obtained when choosing action `a` before time `t`.
+  `sumRewards'` is the same quantity, as a function of the history.
+* `empMean A R a t ω`: empirical mean of the rewards obtained when choosing action `a` before
+  time `t`. `empMean'` is the same quantity, as a function of the history.
+
+## Main statements
+
+* `sum_rewardByCount_eq_sumRewards`: the sum of rewards is the sum of the rewards by count.
+* `IsAlgEnvSeq.isStronglyPredictable_sumRewards`, `IsAlgEnvSeq.isStronglyPredictable_empMean`:
+  the sums of rewards and the empirical means are predictable processes.
+* `IsAlgEnvSeq.identDistrib_pullCount_sumRewards`: the joint law of the numbers of pulls and of the
+  sums of rewards does not depend on the probability space.
 -/
 
 @[expose] public section
 
-open MeasureTheory Finset Learning
+open MeasureTheory ProbabilityTheory Finset Learning
 
 namespace Learning
 
 variable {𝓞 𝓐 𝓨 Ω : Type*} {m𝓞 : MeasurableSpace 𝓞} {m𝓐 : MeasurableSpace 𝓐}
   {m𝓨 : MeasurableSpace 𝓨} {mΩ : MeasurableSpace Ω}
-  [DecidableEq 𝓐] [AddCommGroup 𝓨]
-  {P : Measure Ω} [IsProbabilityMeasure P]
+  [DecidableEq 𝓐] [AddCommMonoid 𝓨]
+  {P : Measure Ω}
   {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {R : ℕ → Ω → 𝓨}
   {a : 𝓐} {m n t : ℕ} {ω : Ω}
 
@@ -30,7 +46,7 @@ noncomputable def sumRewards (A : ℕ → Ω → 𝓐) (R : ℕ → Ω → 𝓨)
 
 /-- Sum of rewards of arm `a` in the history before time `n`. -/
 noncomputable
-def sumRewards' (n : ℕ) (h : Hist 𝓞 𝓐 𝓨 n) (a : 𝓐) :=
+def sumRewards' (n : ℕ) (h : Hist 𝓞 𝓐 𝓨 n) (a : 𝓐) : 𝓨 :=
   ∑ s, if (h s).action = a then (h s).feedback else 0
 
 /-- Empirical mean reward obtained when pulling action `a` up to time `t` (exclusive). -/
@@ -40,7 +56,7 @@ def empMean (A : ℕ → Ω → 𝓐) (R : ℕ → Ω → ℝ) (a : 𝓐) (t : �
 
 /-- Empirical mean of arm `a` in the history before time `n`. -/
 noncomputable
-def empMean' (n : ℕ) (h : Hist 𝓞 𝓐 ℝ n) (a : 𝓐) :=
+def empMean' (n : ℕ) (h : Hist 𝓞 𝓐 ℝ n) (a : 𝓐) : ℝ :=
   sumRewards' n h a / pullCount' n h a
 
 @[simp]
@@ -96,6 +112,13 @@ lemma sumRewards_eq_comp_history {R : ℕ → Ω → 𝓨} (a : 𝓐) (n : ℕ) 
   ext ω
   exact sumRewards_eq_sumRewards'
 
+/-- `sumRewards A R a n` is a function of the trajectory. -/
+lemma sumRewards_eq_comp_trajectory {R : ℕ → Ω → 𝓨} (a : 𝓐) (n : ℕ) :
+    sumRewards A R a n =
+      (fun p : ℕ → Round 𝓞 𝓐 𝓨 ↦ ∑ i ∈ range n, if (p i).action = a then (p i).feedback else 0) ∘
+        trajectory O A R :=
+  rfl
+
 lemma empMean_eq_empMean' {R : ℕ → Ω → ℝ} {n : ℕ} {ω : Ω} :
     empMean A R a n ω = empMean' n (history O A R n ω) a := by
   unfold empMean empMean'
@@ -107,7 +130,8 @@ lemma empMean_eq_comp_history {R : ℕ → Ω → ℝ} (a : 𝓐) (n : ℕ) :
   ext ω
   exact empMean_eq_empMean'
 
-lemma sumRewards_sub_pullCount_smul_eq_sum {R : ℕ → Ω → 𝓨} (c : 𝓐 → 𝓨) :
+lemma sumRewards_sub_pullCount_smul_eq_sum {𝓨 : Type*} [AddCommGroup 𝓨] {R : ℕ → Ω → 𝓨}
+    (c : 𝓐 → 𝓨) :
     sumRewards A R a (n + 1) ω - pullCount A a (n + 1) ω • c a =
       ∑ i ∈ range (n + 1), (if A i ω = a then R i ω - c a else 0) := by
   induction n with
@@ -139,12 +163,11 @@ lemma measurable_uncurry_sumRewards_comp [Countable 𝓐] [MeasurableSingletonCl
     {R : ℕ → Ω → 𝓨} (hA : ∀ n, Measurable (A n)) (hR : ∀ n, Measurable (R n)) {f : Ω → 𝓐}
     (hf : Measurable f) {g : Ω → ℕ} (hg : Measurable g) :
     Measurable (fun ω ↦ sumRewards A R (f ω) (g ω) ω) := by
-  change Measurable ((fun aω ↦ sumRewards A R aω.1 (g aω.2) aω.2) ∘ fun ω ↦ (f ω, ω))
-  apply Measurable.comp _ (by fun_prop)
-  refine measurable_from_prod_countable_right fun a ↦ ?_
-  change Measurable ((fun tω ↦ sumRewards A R a tω.1 tω.2) ∘ fun ω ↦ (g ω, ω))
-  apply Measurable.comp _ (by fun_prop)
-  exact measurable_from_prod_countable_right (fun t ↦ measurable_sumRewards hA hR a t)
+  have h_meas a : Measurable (fun ω ↦ sumRewards A R a (g ω) ω) :=
+    (measurable_from_prod_countable_right (f := fun p : ℕ × Ω ↦ sumRewards A R a p.1 p.2)
+      (measurable_sumRewards hA hR a)).comp (hg.prodMk measurable_id)
+  exact (measurable_from_prod_countable_right
+    (f := fun p : 𝓐 × Ω ↦ sumRewards A R p.1 (g p.2) p.2) h_meas).comp (hf.prodMk measurable_id)
 
 @[fun_prop]
 lemma measurable_empMean [MeasurableSingletonClass 𝓐] {R : ℕ → Ω → ℝ} (hA : ∀ n, Measurable (A n))
@@ -215,13 +238,14 @@ lemma IsAlgEnvSeq.stronglyAdapted_sumRewards_add_one {𝓨 : Type*} {_ : Measura
   rw [IsStronglyPredictable.iff_measurable_add_one] at h_predictable
   exact h_predictable.2
 
--- TODO: give a direct proof, without a topology
-lemma IsAlgEnvSeq.adapted_sumRewards_add_one {𝓨 : Type*} {_ : MeasurableSpace 𝓨}
-    [NormedAddCommGroup 𝓨] [BorelSpace 𝓨] [SecondCountableTopology 𝓨]
+lemma IsAlgEnvSeq.adapted_sumRewards_add_one [MeasurableAdd₂ 𝓨]
     {R : ℕ → Ω → 𝓨} {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨}
     (h : IsAlgEnvSeq O A R alg env P) (a : 𝓐) :
-    Adapted h.filtration (fun n ↦ sumRewards A R a (n + 1)) :=
-  (h.stronglyAdapted_sumRewards_add_one a).adapted
+    Adapted h.filtration (fun n ↦ sumRewards A R a (n + 1)) := by
+  intro n
+  beta_reduce
+  rw [h.filtration_eq_comap, sumRewards_eq_comp_history (O := O)]
+  exact measurable_comp_comap _ (measurable_sumRewards' (n + 1) a)
 
 lemma IsAlgEnvSeq.isStronglyPredictable_empMean {R' : ℕ → Ω → ℝ}
     {alg : Algorithm 𝓞 𝓐 ℝ} {env : Environment 𝓞 𝓐 ℝ}
@@ -230,7 +254,7 @@ lemma IsAlgEnvSeq.isStronglyPredictable_empMean {R' : ℕ → Ω → ℝ}
   unfold empMean
   refine StronglyMeasurable.div ?_ ?_
   · exact h.isStronglyPredictable_sumRewards a
-  · have h_meas := (isStronglyPredictable_pullCount h a).measurable
+  · have h_meas := (h.isStronglyPredictable_pullCount a).measurable
     fun_prop
 
 lemma IsAlgEnvSeq.stronglyAdapted_empMean_add_one
@@ -248,3 +272,68 @@ lemma IsAlgEnvSeq.adapted_empMean_add_one {R' : ℕ → Ω → ℝ}
   (h.stronglyAdapted_empMean_add_one a).adapted
 
 end Learning
+
+/-! ### Uniqueness of the laws of the numbers of pulls and of the sums of rewards -/
+
+namespace Learning.IsAlgEnvSeq
+
+variable {𝓞 𝓐 Ω Ω' : Type*} {m𝓞 : MeasurableSpace 𝓞} {m𝓐 : MeasurableSpace 𝓐}
+  {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} [DecidableEq 𝓐] [MeasurableSingletonClass 𝓐]
+  {alg : Algorithm 𝓞 𝓐 ℝ} {env : Environment 𝓞 𝓐 ℝ}
+  {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'} [IsProbabilityMeasure P']
+  {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {R : ℕ → Ω → ℝ}
+  {O₂ : ℕ → Ω' → 𝓞} {A₂ : ℕ → Ω' → 𝓐} {R₂ : ℕ → Ω' → ℝ}
+
+/-- The joint law of the numbers of pulls and of the sums of rewards of all actions at all times is
+the same for all algorithm-environment sequences with the same algorithm and environment. -/
+lemma identDistrib_pullCount_sumRewards
+    (h1 : IsAlgEnvSeq O A R alg env P) (h2 : IsAlgEnvSeq O₂ A₂ R₂ alg env P') :
+    IdentDistrib (fun ω n a ↦ (pullCount A a n ω, sumRewards A R a n ω))
+      (fun ω' n a ↦ (pullCount A₂ a n ω', sumRewards A₂ R₂ a n ω')) P P' := by
+  let f (τ : ℕ → Round 𝓞 𝓐 ℝ) (n : ℕ) (a : 𝓐) : ℕ × ℝ :=
+    (∑ i ∈ range n, if (τ i).action = a then 1 else 0,
+     ∑ i ∈ range n, if (τ i).action = a then (τ i).feedback else 0)
+  have hc1 : (fun ω n a ↦ (pullCount A a n ω, sumRewards A R a n ω)) =
+      f ∘ (trajectory O A R) := by
+    ext ω n a : 3
+    simp_rw [Function.comp, f, pullCount, card_filter, sumRewards, trajectory]
+    rfl
+  have hc2 : (fun ω' n a ↦ (pullCount A₂ a n ω', sumRewards A₂ R₂ a n ω')) =
+      f ∘ (trajectory O₂ A₂ R₂) := by
+    ext ω' n a : 3
+    simp_rw [Function.comp, f, pullCount, card_filter, sumRewards, trajectory]
+    rfl
+  have hf : Measurable f := by
+    simp_rw [f, measurable_pi_iff]
+    intro n a
+    apply Measurable.prod
+    · dsimp only
+      exact measurable_sum _
+        (fun _ _ ↦ Measurable.ite (by measurability) (by fun_prop) (by fun_prop))
+    · dsimp only
+      exact measurable_sum _
+        (fun _ _ ↦ Measurable.ite (by measurability) (by fun_prop) (by fun_prop))
+  rw [hc1, hc2]
+  exact (h1.identDistrib_trajectory h2).comp hf
+
+lemma identDistrib_pi_pullCount_sumRewards
+    (h1 : IsAlgEnvSeq O A R alg env P) (h2 : IsAlgEnvSeq O₂ A₂ R₂ alg env P') (n : ℕ) :
+    IdentDistrib (fun ω a ↦ (pullCount A a n ω, sumRewards A R a n ω))
+      (fun ω a ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω)) P P' :=
+  (h1.identDistrib_pullCount_sumRewards h2).comp (u := fun f : ℕ → 𝓐 → ℕ × ℝ ↦ f n)
+    (by fun_prop)
+
+lemma identDistrib_prodMk_pullCount_sumRewards
+    (h1 : IsAlgEnvSeq O A R alg env P) (h2 : IsAlgEnvSeq O₂ A₂ R₂ alg env P') (a : 𝓐) (n : ℕ) :
+    IdentDistrib (fun ω ↦ (pullCount A a n ω, sumRewards A R a n ω))
+      (fun ω ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω)) P P' :=
+  (h1.identDistrib_pullCount_sumRewards h2).comp (u := fun f : ℕ → 𝓐 → ℕ × ℝ ↦ f n a)
+    (by fun_prop)
+
+lemma identDistrib_sumRewards
+    (h1 : IsAlgEnvSeq O A R alg env P) (h2 : IsAlgEnvSeq O₂ A₂ R₂ alg env P') (a : 𝓐) (n : ℕ) :
+    IdentDistrib (sumRewards A R a n) (sumRewards A₂ R₂ a n) P P' :=
+  (h1.identDistrib_pullCount_sumRewards h2).comp (u := fun f : ℕ → 𝓐 → ℕ × ℝ ↦ (f n a).2)
+    (by fun_prop)
+
+end Learning.IsAlgEnvSeq

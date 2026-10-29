@@ -1,16 +1,29 @@
 /-
 Copyright (c) 2025 Rémy Degenne. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Rémy Degenne
+Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
-public import Mathlib.MeasureTheory.Measure.SubFinite
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Measure.Decomposition.Lebesgue
 public import Mathlib.Probability.Kernel.RadonNikodym
 
 /-!
-# Kernel substraction
+# Consequences of the Radon-Nikodym theorem for kernels
 
+For s-finite kernels `κ η : Kernel α β`, we define the subtraction `κ - η` as
+`η.withDensity (κ.rnDeriv η - 1) + κ.singularPart η`, and set it to `0` otherwise. For finite
+kernels, `(κ - η) a = κ a - η a` (`Kernel.sub_apply`). We deduce that the set of points at which
+two finite kernels agree is measurable.
+
+## Main statements
+
+* `Kernel.sub_apply`: for finite kernels, `(κ - η) a = κ a - η a`.
+* `Kernel.measurableSet_eq`: the set of points at which two finite kernels agree is measurable.
+* `Kernel.prodMkLeft_ae_eq_iff`, `Kernel.prodMkRight_ae_eq_iff`: `κ.prodMkLeft γ` and
+  `η.prodMkLeft γ` are a.e. equal iff `κ` and `η` are a.e. equal for the marginal measure.
+* `Kernel.withDensity_rnDeriv_eq'`: if `κ a ≪ η a` for all `a`, then
+  `η.withDensity (κ.rnDeriv η) = κ`.
 -/
 
 @[expose] public section
@@ -18,31 +31,10 @@ public import Mathlib.Probability.Kernel.RadonNikodym
 open MeasureTheory MeasurableSpace
 open scoped ENNReal
 
-namespace MeasureTheory.Measure
-
-variable {α β : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β} {μ ν ξ : Measure α}
-
-lemma sub_apply_eq_rnDeriv_add_singularPart [IsFiniteMeasure μ] [IsFiniteMeasure ν] (s : Set α) :
-    (μ - ν) s = ν.withDensity (fun a ↦ μ.rnDeriv ν a - 1) s + μ.singularPart ν s := by
-  have hμ : μ = ν.withDensity (fun a ↦ μ.rnDeriv ν a) + μ.singularPart ν := by
-    rw [rnDeriv_add_singularPart]
-  have hν : ν = ν.withDensity 1 := by rw [withDensity_one]
-  conv_lhs => rw [hν, hμ, add_comm _ (μ.singularPart ν)]
-  rw [← add_sub_of_mutuallySingular]
-  swap
-  · simp only [withDensity_one]
-    exact mutuallySingular_singularPart μ ν
-  simp only [coe_add, Pi.add_apply]
-  have : IsFiniteMeasure (ν.withDensity 1) := by simp only [withDensity_one]; infer_instance
-  rw [add_comm, ← withDensity_sub (by fun_prop) (by fun_prop)]
-  congr
-
-end MeasureTheory.Measure
-
 namespace ProbabilityTheory.Kernel
 
-variable {α β : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
-  [CountableOrCountablyGenerated α β] {κ η : Kernel α β}
+variable {α β γ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
+  {mγ : MeasurableSpace γ} [CountableOrCountablyGenerated α β] {κ η : Kernel α β}
 
 noncomputable
 instance [∀ η : Kernel α β, Decidable (IsSFiniteKernel η)] :
@@ -77,7 +69,6 @@ lemma sub_of_isSFiniteKernel [IsSFiniteKernel κ] [IsSFiniteKernel η]
   rw [sub_def, dite_eq_left]
   exact ⟨inferInstance, inferInstance⟩
 
--- todo name
 lemma sub_apply_eq_rnDeriv_add_singularPart [∀ η : Kernel α β, Decidable (IsSFiniteKernel η)]
     [IsSFiniteKernel κ] [IsSFiniteKernel η] (a : α) :
     (κ - η) a = η.withDensity (fun a ↦ κ.rnDeriv η a - 1) a + κ.singularPart η a := by
@@ -155,5 +146,23 @@ lemma measurableSet_eq (κ η : Kernel α β) [IsFiniteKernel κ] [IsFiniteKerne
   refine MeasurableSet.inter ?_ ?_
   · exact measurableSet_eq_zero _
   · exact measurableSet_eq_zero _
+
+lemma prodMkLeft_ae_eq_iff [IsFiniteKernel κ] [IsFiniteKernel η] {μ : Measure (γ × α)} :
+    κ.prodMkLeft γ =ᵐ[μ] η.prodMkLeft γ ↔ κ =ᵐ[μ.snd] η := by
+  rw [Measure.snd, Filter.EventuallyEq, Filter.EventuallyEq, ae_map_iff (by fun_prop)]
+  · simp
+  · classical
+    exact Kernel.measurableSet_eq κ η
+
+lemma prodMkRight_ae_eq_iff [IsFiniteKernel κ] [IsFiniteKernel η] {μ : Measure (α × γ)} :
+    κ.prodMkRight γ =ᵐ[μ] η.prodMkRight γ ↔ κ =ᵐ[μ.fst] η := by
+  rw [Measure.fst, Filter.EventuallyEq, Filter.EventuallyEq, ae_map_iff (by fun_prop)]
+  · simp
+  · classical
+    exact Kernel.measurableSet_eq κ η
+
+lemma withDensity_rnDeriv_eq' [IsFiniteKernel κ] [IsFiniteKernel η] (h : ∀ a, κ a ≪ η a) :
+    η.withDensity (κ.rnDeriv η) = κ :=
+  Kernel.ext fun a ↦ withDensity_rnDeriv_eq (h a)
 
 end ProbabilityTheory.Kernel

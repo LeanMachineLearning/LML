@@ -16,11 +16,11 @@ An algorithm that chooses actions uniformly at random in every situation.
 
 ## Main definitions
 
-* `uniformAlgorithm`: a uniform algorithm with actions in a finite non-empty type `𝓐`.
+* `Algorithm.uniform`: a uniform algorithm with actions in a finite non-empty type `𝓐`.
 
-## Main results
+## Main statements
 
-* `absolutelyContinuous_uniformAlgorithm`: every algorithm with actions in `𝓐` is absolutely
+* `Algorithm.absolutelyContinuous_uniform`: every algorithm with actions in `𝓐` is absolutely
   continuous with respect to the uniform algorithm with the same type of feedback.
 -/
 
@@ -37,15 +37,15 @@ variable {𝓞 𝓐 𝓨 : Type*} {m𝓞 : MeasurableSpace 𝓞} {m𝓐 : Measur
 
 /-- The Uniform algorithm: actions are chosen uniformly at random. -/
 noncomputable
-def uniformAlgorithm [Finite 𝓐] [Nonempty 𝓐] : Algorithm 𝓞 𝓐 𝓨 :=
+def Algorithm.uniform [Finite 𝓐] [Nonempty 𝓐] : Algorithm 𝓞 𝓐 𝓨 :=
   Algorithm.const (uniformOn Set.univ)
 
-instance [Finite 𝓐] [Nonempty 𝓐] : (uniformAlgorithm : Algorithm 𝓞 𝓐 𝓨).IsMarkov :=
+instance [Finite 𝓐] [Nonempty 𝓐] : (Algorithm.uniform : Algorithm 𝓞 𝓐 𝓨).IsMarkov :=
   inferInstanceAs (Algorithm.const (uniformOn Set.univ) : Algorithm 𝓞 𝓐 𝓨).IsMarkov
 
-lemma absolutelyContinuous_uniformAlgorithm [Finite 𝓐] [Nonempty 𝓐] {alg : Algorithm 𝓞 𝓐 𝓨} :
-    alg ≪ₐ uniformAlgorithm where
+lemma Algorithm.absolutelyContinuous_uniform [Finite 𝓐] [Nonempty 𝓐] (alg : Algorithm 𝓞 𝓐 𝓨) :
+    alg ≪ₐ Algorithm.uniform where
   policy n h := Measure.absolutelyContinuous_of_measure_singleton_ne_zero
-    (by simp [uniformAlgorithm, uniformOn, ← pos_iff_ne_zero, cond_pos_of_inter_ne_zero])
+    (by simp [Algorithm.uniform, uniformOn, ← pos_iff_ne_zero, cond_pos_of_inter_ne_zero])
 
 end Learning

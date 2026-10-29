@@ -5,10 +5,10 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
-public import LeanMachineLearning.ForMathlib.Probability.Independence.CondIndepFun
-public import LeanMachineLearning.ForMathlib.Probability.Independence.IndepFun
-public import LeanMachineLearning.ForMathlib.Probability.Independence.IndepInfinitePi
-public import LeanMachineLearning.ForMathlib.Probability.Integrable
+public import LeanMachineLearning.ForMathlib.Probability.Independence.Basic
+public import LeanMachineLearning.ForMathlib.Probability.Independence.Conditional
+public import LeanMachineLearning.ForMathlib.Probability.Independence.InfinitePi
+public import LeanMachineLearning.ForMathlib.Probability.HasLaw
 public import LeanMachineLearning.SequentialLearning.SumRewards
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
 public import Mathlib.Probability.Kernel.Representation
@@ -28,10 +28,24 @@ arms and rewards specified in the bandit model determine their laws uniquely.
 
 * `streamMeasure ν`: probability measure on the space of infinite arrays of rewards,
   where the rewards in each row are i.i.d. according to `ν`.
-* `probSpace 𝓐 𝓡`: probability space for the array model of stochastic bandits with action space `𝓐`
-  and reward space `𝓡`.
-* `arrayMeasure ν`: probability measure on `probSpace 𝓐 𝓡` for the array model of stochastic bandits
-  with reward kernel `ν`.
+* `ProbSpace 𝓐 𝓡`: probability space for the array model of stochastic bandits with action
+  space `𝓐` and reward space `𝓡`.
+* `arrayMeasure ν`: probability measure on `ProbSpace 𝓐 𝓡` for the array model of stochastic
+  bandits with reward kernel `ν`.
+* `action alg n`, `reward alg n`, `hist alg · n`: action, reward and history at time `n` in the
+  array model, for the algorithm `alg`.
+
+## Main statements
+
+* `isAlgEnvSeq_arrayMeasure`: the actions and rewards of the array model form an
+  algorithm-environment sequence for `alg` and the stochastic bandit `Environment.bandit ν`.
+* `hasCondDistrib_reward_hist_action_pullCount`: the conditional distribution of the reward at time
+  `n` given the history, the action at time `n` and its number of pulls is `ν` (of that action).
+
+## References
+
+* T. Lattimore and C. Szepesvári, *Bandit Algorithms*, Cambridge University Press, 2020,
+  Section 4.6 (the "stack of rewards" model).
 
 -/
 
@@ -85,7 +99,7 @@ lemma identDistrib_eval_eval_id_streamMeasure (ν : Kernel 𝓐 𝓡) [IsMarkovK
 lemma integrable_eval_streamMeasure (ν : Kernel 𝓐 ℝ) [IsMarkovKernel ν] (n : ℕ) (a : 𝓐)
     (h_int : Integrable id (ν a)) :
     Integrable (fun h : ℕ → 𝓐 → ℝ ↦ h n a) (streamMeasure ν) :=
-  Integrable.congr_identDistrib h_int (identDistrib_eval_eval_id_streamMeasure ν n a).symm
+  (identDistrib_eval_eval_id_streamMeasure ν n a).symm.integrable_snd h_int
 
 lemma integral_eval_streamMeasure (ν : Kernel 𝓐 ℝ) [IsMarkovKernel ν] (n : ℕ) (a : 𝓐) :
     ∫ h, h n a ∂(streamMeasure ν) = (ν a)[id] := by
@@ -105,10 +119,8 @@ lemma iIndepFun_eval_streamMeasure (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] :
 
 lemma indepFun_eval_streamMeasure (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] {n m : ℕ} {a b : 𝓐}
     (h : n ≠ m ∨ a ≠ b) :
-    IndepFun (fun ω ↦ ω n a) (fun ω ↦ ω m b) (streamMeasure ν) := by
-  change IndepFun (fun ω ↦ ω (n, a).1 (n, a).2) (fun ω ↦ ω (m, b).1 (m, b).2)
-    (streamMeasure ν)
-  exact (iIndepFun_eval_streamMeasure ν).indepFun (by grind)
+    IndepFun (fun ω ↦ ω n a) (fun ω ↦ ω m b) (streamMeasure ν) :=
+  (iIndepFun_eval_streamMeasure ν).indepFun (i := (n, a)) (j := (m, b)) (by grind)
 
 lemma indepFun_eval_streamMeasure' (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] {a b : 𝓐} (h : a ≠ b) :
     IndepFun (fun ω n ↦ ω n a) (fun ω n ↦ ω n b) (streamMeasure ν) :=
@@ -175,22 +187,22 @@ section ProbabilitySpace
 
 variable (𝓐 𝓡) in
 /-- Probability space for the array model of stochastic bandits. -/
-abbrev probSpace : Type _ := (ℕ → I) × (ℕ → 𝓐 → 𝓡)
+abbrev ProbSpace : Type _ := (ℕ → I) × (ℕ → 𝓐 → 𝓡)
 
 /-- Probability measure for the array model of stochastic bandits. -/
 noncomputable
-def arrayMeasure (ν : Kernel 𝓐 𝓡) : Measure (probSpace 𝓐 𝓡) :=
+def arrayMeasure (ν : Kernel 𝓐 𝓡) : Measure (ProbSpace 𝓐 𝓡) :=
   (Measure.infinitePi fun _ ↦ volume).prod (streamMeasure ν)
 
 instance (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] : IsProbabilityMeasure (arrayMeasure ν) :=
   Measure.prod.instIsProbabilityMeasure _ _
 
 lemma hasLaw_fst_apply_arrayMeasure (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] (n : ℕ) :
-    HasLaw (fun ω : probSpace 𝓐 𝓡 ↦ ω.1 n) volume (arrayMeasure ν) :=
+    HasLaw (fun ω : ProbSpace 𝓐 𝓡 ↦ ω.1 n) volume (arrayMeasure ν) :=
   (hasLaw_eval_infinitePi (fun _ ↦ volume) n).comp (hasLaw_fst_prod _ _)
 
 lemma hasLaw_snd_apply_arrayMeasure (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] (n : ℕ) (a : 𝓐) :
-    HasLaw (fun ω : probSpace 𝓐 𝓡 ↦ ω.2 n a) (ν a) (arrayMeasure ν) :=
+    HasLaw (fun ω : ProbSpace 𝓐 𝓡 ↦ ω.2 n a) (ν a) (arrayMeasure ν) :=
   hasLaw_snd_apply_prod_streamMeasure _ ν n a
 
 lemma map_snd_apply_arrayMeasure {ν : Kernel 𝓐 𝓡} [IsMarkovKernel ν] (n : ℕ) (a : 𝓐) :
@@ -201,12 +213,12 @@ lemma map_snd_apply_arrayMeasure {ν : Kernel 𝓐 𝓡} [IsMarkovKernel ν] (n 
 in row `a` of the reward array, the entry at index `i` is kept if `i < m` and replaced by the entry
 at index `m + 1 + i` otherwise. The result does not depend on the coordinate `(m, a)` of the
 array. -/
-def truncRow [DecidableEq 𝓐] (a : 𝓐) (m : ℕ) (ω : probSpace 𝓐 𝓡) : probSpace 𝓐 𝓡 :=
+def truncRow [DecidableEq 𝓐] (a : 𝓐) (m : ℕ) (ω : ProbSpace 𝓐 𝓡) : ProbSpace 𝓐 𝓡 :=
   (ω.1, fun i b ↦ if b = a then ω.2 (if i < m then i else m + 1 + i) b else ω.2 i b)
 
 @[fun_prop]
 lemma measurable_truncRow [DecidableEq 𝓐] (a : 𝓐) (m : ℕ) :
-    Measurable (truncRow a m : probSpace 𝓐 𝓡 → probSpace 𝓐 𝓡) := by
+    Measurable (truncRow a m : ProbSpace 𝓐 𝓡 → ProbSpace 𝓐 𝓡) := by
   refine Measurable.prodMk measurable_fst
     (.of_eval fun i ↦ .of_eval fun b ↦ ?_)
   by_cases hb : b = a <;> simp only [hb, ↓reduceIte] <;> fun_prop
@@ -241,7 +253,7 @@ section HistoryActionReward
 
 /-- History of actions and rewards before time `n` in the array model. -/
 noncomputable
-def hist [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (ω : probSpace 𝓐 𝓡) :
+def hist [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (ω : ProbSpace 𝓐 𝓡) :
     (n : ℕ) → Hist Unit 𝓐 𝓡 n
 | 0 => default
 | n + 1 =>
@@ -250,17 +262,17 @@ def hist [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (ω : probSpace �
   Fin.snoc hn ((), a, ω.2 (pullCount' n hn a) a)
 
 @[simp]
-lemma hist_zero [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (ω : probSpace 𝓐 𝓡) :
+lemma hist_zero [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (ω : ProbSpace 𝓐 𝓡) :
     hist alg ω 0 = default := rfl
 
-lemma hist_add_one [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (ω : probSpace 𝓐 𝓡) (n : ℕ) :
+lemma hist_add_one [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (ω : ProbSpace 𝓐 𝓡) (n : ℕ) :
     hist alg ω (n + 1) =
       Fin.snoc (hist alg ω n) ((), algFunction alg n (hist alg ω n) (ω.1 n),
         ω.2 (pullCount' n (hist alg ω n) (algFunction alg n (hist alg ω n) (ω.1 n)))
           (algFunction alg n (hist alg ω n) (ω.1 n))) := rfl
 
 lemma hist_add_one_eq_finSuccProd' [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡)
-    (ω : probSpace 𝓐 𝓡) (n : ℕ) :
+    (ω : ProbSpace 𝓐 𝓡) (n : ℕ) :
     hist alg ω (n + 1) =
       (MeasurableEquiv.finSuccProd (Round Unit 𝓐 𝓡) n).symm
         (hist alg ω n, ((), algFunction alg n (hist alg ω n) (ω.1 n),
@@ -271,7 +283,7 @@ lemma hist_add_one_eq_finSuccProd' [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐
 
 /-- Action taken at time `n` in the array model. -/
 noncomputable
-def action [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (n : ℕ) (ω : probSpace 𝓐 𝓡) : 𝓐 :=
+def action [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (n : ℕ) (ω : ProbSpace 𝓐 𝓡) : 𝓐 :=
   algFunction alg n (hist alg ω n) (ω.1 n)
 
 lemma action_eq [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (n : ℕ) :
@@ -282,32 +294,31 @@ lemma action_zero [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) :
 
 /-- Reward received at time `n` in the array model. -/
 noncomputable
-def reward [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (n : ℕ) (ω : probSpace 𝓐 𝓡) : 𝓡 :=
+def reward [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (n : ℕ) (ω : ProbSpace 𝓐 𝓡) : 𝓡 :=
   (hist alg ω (n + 1) (Fin.last n)).feedback
 
-lemma reward_eq' [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (n : ℕ) (ω : probSpace 𝓐 𝓡) :
+lemma reward_eq' [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (n : ℕ) (ω : ProbSpace 𝓐 𝓡) :
     reward alg n ω = ω.2 (pullCount' n (hist alg ω n) (action alg n ω)) (action alg n ω) := by
-  change (hist alg ω (n + 1) (Fin.last n)).feedback = _
-  rw [hist_add_one, Fin.snoc_last]
+  rw [reward, hist_add_one, Fin.snoc_last]
   rfl
 
-lemma hist_succ [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (ω : probSpace 𝓐 𝓡) (n : ℕ) :
+lemma hist_succ [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (ω : ProbSpace 𝓐 𝓡) (n : ℕ) :
     hist alg ω (n + 1) = Fin.snoc (hist alg ω n) ((), action alg n ω, reward alg n ω) := by
   rw [hist_add_one, reward_eq']
   rfl
 
-lemma hist_succ_eq_finSuccProd [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (ω : probSpace 𝓐 𝓡)
+lemma hist_succ_eq_finSuccProd [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (ω : ProbSpace 𝓐 𝓡)
     (n : ℕ) :
     hist alg ω (n + 1) =
       (MeasurableEquiv.finSuccProd (Round Unit 𝓐 𝓡) n).symm
         (hist alg ω n, ((), action alg n ω, reward alg n ω)) := by
   rw [MeasurableEquiv.finSuccProd_symm_apply, hist_succ]
 
-lemma hist_apply_last [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (ω : probSpace 𝓐 𝓡) (n : ℕ) :
+lemma hist_apply_last [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (ω : ProbSpace 𝓐 𝓡) (n : ℕ) :
     hist alg ω (n + 1) (Fin.last n) = ((), action alg n ω, reward alg n ω) := by
   rw [hist_succ, Fin.snoc_last]
 
-lemma hist_eq [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (ω : probSpace 𝓐 𝓡) (n : ℕ) :
+lemma hist_eq [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (ω : ProbSpace 𝓐 𝓡) (n : ℕ) :
     hist alg ω n = fun i : Fin n ↦ ((), action alg i ω, reward alg i ω) := by
   induction n with
   | zero => exact Subsingleton.elim _ _
@@ -320,11 +331,11 @@ lemma hist_eq [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (ω : probSpac
       simp
 
 /-- The history in the array model is the history of the action and reward processes. -/
-lemma hist_eq_history [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (ω : probSpace 𝓐 𝓡) (n : ℕ) :
+lemma hist_eq_history [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (ω : ProbSpace 𝓐 𝓡) (n : ℕ) :
     hist alg ω n = history (noObs _) (action alg) (reward alg) n ω := hist_eq alg ω n
 
 lemma pullCount_action_eq [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (a : 𝓐) (n : ℕ)
-    (ω : probSpace 𝓐 𝓡) :
+    (ω : ProbSpace 𝓐 𝓡) :
     pullCount (action alg) a n ω = pullCount' n (hist alg ω n) a := by
   rw [pullCount_eq_pullCount' (O := noObs _) (R' := reward alg), hist_eq]
   rfl
@@ -340,7 +351,7 @@ lemma reward_eq [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (n : ℕ) :
   rw [reward_eq', pullCount_action_eq]
 
 lemma sumRewards_eq [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 ℝ) (a : 𝓐) (n : ℕ)
-    (ω : probSpace 𝓐 ℝ) :
+    (ω : ProbSpace 𝓐 ℝ) :
     sumRewards (action alg) (reward alg) a n ω =
       ∑ i ∈ range (pullCount (action alg) a n ω), ω.2 i a := by
   induction n with
@@ -352,11 +363,11 @@ lemma sumRewards_eq [DecidableEq 𝓐] (alg : Algorithm Unit 𝓐 ℝ) (a : 𝓐
 
 section Measurability
 
-lemma measurable_action' [DecidableEq 𝓐] {alg : Algorithm Unit 𝓐 𝓡}
+private lemma measurable_action' [DecidableEq 𝓐] {alg : Algorithm Unit 𝓐 𝓡}
     (n : ℕ) (h : Measurable (hist alg · n)) :
     Measurable (fun x ↦ algFunction alg n (hist alg x n) (x.1 n)) := by fun_prop
 
-lemma measurable_pullCount'_action [DecidableEq 𝓐] {alg : Algorithm Unit 𝓐 𝓡}
+private lemma measurable_pullCount'_action [DecidableEq 𝓐] {alg : Algorithm Unit 𝓐 𝓡}
     (n : ℕ) (h_hist : Measurable (hist alg · n)) :
     Measurable (fun x ↦
       pullCount' n (hist alg x n) (algFunction alg n (hist alg x n) (x.1 n))) := by
@@ -382,6 +393,7 @@ lemma measurable_hist [DecidableEq 𝓐] [Countable 𝓐] (alg : Algorithm Unit 
     rw [h_eq]
     refine (MeasurableEquiv.measurable _).comp (hn.prodMk ?_)
     refine Measurable.prodMk measurable_const (Measurable.prodMk (measurable_action' n hn) ?_)
+    -- write the reward as the evaluation of the array at a measurable index
     change Measurable ((fun (x : (ℕ → 𝓐 → 𝓡) × ℕ × 𝓐) ↦ x.1 x.2.1 x.2.2) ∘
       (fun x ↦ (x.2, pullCount' n (hist alg x n) (algFunction alg n (hist alg x n) (x.1 n)),
         (algFunction alg n (hist alg x n) (x.1 n)))))
@@ -402,8 +414,9 @@ lemma measurable_reward [DecidableEq 𝓐] [Countable 𝓐] (alg : Algorithm Uni
 lemma measurable_pullCount_action [DecidableEq 𝓐] [Countable 𝓐] (alg : Algorithm Unit 𝓐 𝓡)
     (n : ℕ) :
     Measurable (fun ω ↦ pullCount (action alg) (action alg n ω) n ω) := by
-  change Measurable ((fun p : (probSpace 𝓐 𝓡) × 𝓐 ↦ pullCount (action alg) p.2 n p.1) ∘
-    (fun ω : probSpace 𝓐 𝓡 ↦ (ω, action alg n ω)))
+  -- write the function as a composition with `fun ω ↦ (ω, action alg n ω)`
+  change Measurable ((fun p : (ProbSpace 𝓐 𝓡) × 𝓐 ↦ pullCount (action alg) p.2 n p.1) ∘
+    (fun ω : ProbSpace 𝓐 𝓡 ↦ (ω, action alg n ω)))
   exact (measurable_uncurry_pullCount (by fun_prop) _).comp (by fun_prop)
 
 end Measurability
@@ -415,7 +428,7 @@ variable [DecidableEq 𝓐]
 section Congruence
 
 -- very useful to prove measurability
-lemma hist_congr (alg : Algorithm Unit 𝓐 𝓡) (n : ℕ) {ω ω' : probSpace 𝓐 𝓡}
+lemma hist_congr (alg : Algorithm Unit 𝓐 𝓡) (n : ℕ) {ω ω' : ProbSpace 𝓐 𝓡}
     (hω1 : ∀ i < n, ω.1 i = ω'.1 i)
     (hω2 : ∀ i a, i < pullCount (action alg) a n ω → ω.2 i a = ω'.2 i a) :
     hist alg ω n = hist alg ω' n := by
@@ -434,8 +447,8 @@ lemma hist_congr (alg : Algorithm Unit 𝓐 𝓡) (n : ℕ) {ω ω' : probSpace 
       exact Nat.lt_succ_self _
     rw [hist_succ, hist_succ, h_hist, h_action, h_reward]
 
-lemma action_eq_and_pullCount_eq_congr_aux (alg : Algorithm Unit 𝓐 𝓡)
-    (a : 𝓐) (m n : ℕ) {ω ω' : probSpace 𝓐 𝓡}
+private lemma action_eq_and_pullCount_eq_congr_aux (alg : Algorithm Unit 𝓐 𝓡)
+    (a : 𝓐) (m n : ℕ) {ω ω' : ProbSpace 𝓐 𝓡}
     (hω1 : ∀ i, ω.1 i = ω'.1 i) (hω2_ne : ∀ i b, b ≠ a → ω.2 i b = ω'.2 i b)
     (hω2_eq : ∀ i, i + 1 ≤ m → ω.2 i a = ω'.2 i a)
     (h_eq : action alg n ω = a ∧ pullCount (action alg) a n ω = m) :
@@ -453,7 +466,7 @@ lemma action_eq_and_pullCount_eq_congr_aux (alg : Algorithm Unit 𝓐 𝓡)
   · rw [← h_pc, pullCount_action_eq, pullCount_action_eq, h_hist]
 
 lemma action_eq_and_pullCount_eq_congr (alg : Algorithm Unit 𝓐 𝓡) (a : 𝓐) (m n : ℕ)
-    {ω ω' : probSpace 𝓐 𝓡}
+    {ω ω' : ProbSpace 𝓐 𝓡}
     (hω1 : ∀ i, ω.1 i = ω'.1 i) (hω2_ne : ∀ i b, b ≠ a → ω.2 i b = ω'.2 i b)
     (hω2_eq : ∀ i, i + 1 ≤ m → ω.2 i a = ω'.2 i a) :
     (action alg n ω = a ∧ pullCount (action alg) a n ω = m) ↔
@@ -462,7 +475,7 @@ lemma action_eq_and_pullCount_eq_congr (alg : Algorithm Unit 𝓐 𝓡) (a : �
     action_eq_and_pullCount_eq_congr_aux alg a m n (by grind) (by grind) (by grind)⟩
 
 lemma indicator_action_eq_and_pullCount_eq_congr (alg : Algorithm Unit 𝓐 𝓡) (a : 𝓐) (m n : ℕ)
-    {ω ω' : probSpace 𝓐 𝓡}
+    {ω ω' : ProbSpace 𝓐 𝓡}
     (hω1 : ∀ i, ω.1 i = ω'.1 i) (hω2_ne : ∀ i b, b ≠ a → ω.2 i b = ω'.2 i b)
     (hω2_eq : ∀ i, i + 1 ≤ m → ω.2 i a = ω'.2 i a) :
     {ω | action alg n ω = a ∧ pullCount (action alg) a n ω = m}.indicator (fun _ ↦ 1) ω =
@@ -498,8 +511,8 @@ not been observed before time `n` are replaced. The history before time `n` is m
 respect to this function (see `measurable_hist_truncRowPullCount`), and on the event
 `pullCount (action alg) a n = m` it coincides with `truncRow a m`. -/
 noncomputable
-def truncRowPullCount (alg : Algorithm Unit 𝓐 𝓡) (a : 𝓐) (n : ℕ) (ω : probSpace 𝓐 𝓡) :
-    probSpace 𝓐 𝓡 :=
+def truncRowPullCount (alg : Algorithm Unit 𝓐 𝓡) (a : 𝓐) (n : ℕ) (ω : ProbSpace 𝓐 𝓡) :
+    ProbSpace 𝓐 𝓡 :=
   truncRow a (pullCount (action alg) a n ω) ω
 
 lemma measurable_hist_truncRowPullCount [Countable 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (a : 𝓐)
@@ -514,12 +527,6 @@ lemma measurable_hist_truncRowPullCount [Countable 𝓐] (alg : Algorithm Unit �
     · simp [truncRowPullCount, truncRow, hb]
   rw [h_eq]
   exact (measurable_hist alg n).comp (Measurable.of_comap_le le_rfl)
-
-lemma measurableSet_action_eq_and_pullCount_eq [Countable 𝓐] (alg : Algorithm Unit 𝓐 𝓡) (a : 𝓐)
-    (n m : ℕ) :
-    MeasurableSet {ω | action alg n ω = a ∧ pullCount (action alg) a n ω = m} :=
-  MeasurableSet.inter ((measurableSet_singleton _).preimage (by fun_prop))
-    ((measurableSet_singleton _).preimage (by fun_prop))
 
 lemma preimage_action_pullCount_eq (alg : Algorithm Unit 𝓐 𝓡) (a : 𝓐) (n m : ℕ) :
     (fun ω ↦ (action alg n ω, pullCount (action alg) (action alg n ω) n ω)) ⁻¹' {(a, m)} =
@@ -541,15 +548,18 @@ lemma measurable_indicator_action_eq_and_pullCount_eq [Countable 𝓐] (alg : Al
     ext ω
     exact indicator_action_eq_and_pullCount_eq_congr alg a m n (fun _ ↦ rfl)
       (fun _ _ hb ↦ by simp [truncRow, hb]) (fun i hi ↦ by simp [truncRow, show i < m by omega])
+  -- fold `f`
   change Measurable[MeasurableSpace.comap (truncRow a m) inferInstance] f
   rw [h_eq]
   exact (Measurable.indicator (by fun_prop)
-    (measurableSet_action_eq_and_pullCount_eq alg a n m)).comp (Measurable.of_comap_le le_rfl)
+    (measurableSet_action_eq_and_pullCount_eq (measurable_action alg) n a m)).comp
+    (Measurable.of_comap_le le_rfl)
 
 lemma measurable_pullCount_action_hist (alg : Algorithm Unit 𝓐 𝓡) (n : ℕ) :
     Measurable[MeasurableSpace.comap (fun ω ↦ (hist alg ω n, action alg n ω)) inferInstance]
       (fun ω ↦ pullCount (action alg) (action alg n ω) n ω) := by
   simp_rw [pullCount_action_eq]
+  -- write the function as a composition with `fun ω ↦ (hist alg ω n, action alg n ω)`
   change Measurable[MeasurableSpace.comap (fun ω ↦ (hist alg ω n, action alg n ω)) inferInstance]
     ((fun p : Hist Unit 𝓐 𝓡 n × 𝓐 ↦ pullCount' n p.1 p.2) ∘
       (fun ω ↦ (hist alg ω n, action alg n ω)))
@@ -571,7 +581,7 @@ lemma indepFun_fst_zero_snd_zero_action (ν : Kernel 𝓐 𝓡) [IsMarkovKernel 
     (by fun_prop) (by fun_prop)
 
 omit [Nonempty 𝓐] [StandardBorelSpace 𝓐] [DecidableEq 𝓐] in
-lemma indepFun_fst_aux (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] (n : ℕ) :
+private lemma indepFun_fst_aux (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] (n : ℕ) :
     (fun ω ↦ ω.1 n) ⟂ᵢ[arrayMeasure ν] (fun ω ↦ (fun (i : Fin n) ↦ ω.1 i, ω.2)) := by
   have h : IndepFun (fun ω : ℕ → I ↦ ω n) (fun ω (i : Fin n) ↦ ω i)
       (Measure.infinitePi fun _ ↦ volume) := by
@@ -581,14 +591,12 @@ lemma indepFun_fst_aux (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] (n : ℕ) :
     exact iSup_le fun i ↦ le_iSup₂_of_le (i : ℕ) (Set.mem_Iio.2 i.2) le_rfl
   exact h.fst_prod (ν := streamMeasure ν) (by fun_prop) (by fun_prop)
 
-variable [StandardBorelSpace 𝓡] [Nonempty 𝓡]
-
 lemma indepFun_fst_hist [Countable 𝓐] (alg : Algorithm Unit 𝓐 𝓡)
     (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] (n : ℕ) :
     IndepFun (fun ω ↦ ω.1 n) (hist alg · n) (arrayMeasure ν) :=
   (indepFun_fst_aux ν n).of_measurable_right (measurable_hist_comap alg n)
 
-omit [Nonempty 𝓐] [StandardBorelSpace 𝓐] [StandardBorelSpace 𝓡] [Nonempty 𝓡] in
+omit [Nonempty 𝓐] [StandardBorelSpace 𝓐] in
 /-- The reward `ω.2 m a` is independent of `truncRow a m`, which reads only other coordinates. -/
 lemma indepFun_snd_apply_truncRow (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] (a : 𝓐) (m : ℕ) :
     (fun ω ↦ ω.2 m a) ⟂ᵢ[arrayMeasure ν] (truncRow a m) := by
@@ -613,7 +621,6 @@ lemma indepFun_snd_apply_truncRow (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] (a
     (fun _ ↦ by fun_prop) (i := (m, a)) (by simp) hT
   exact h.snd_prod (μ := Measure.infinitePi fun _ ↦ volume) (by fun_prop) hTm
 
-omit [StandardBorelSpace 𝓡] [Nonempty 𝓡] in
 lemma indepFun_snd_apply_pullCount_action [Countable 𝓐] (alg : Algorithm Unit 𝓐 𝓡)
     (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] (a : 𝓐) (m n : ℕ) :
     (fun ω ↦ ω.2 m a) ⟂ᵢ[arrayMeasure ν]
@@ -650,6 +657,7 @@ section Laws
 
 variable [Countable 𝓐] [StandardBorelSpace 𝓡] [Nonempty 𝓡]
 
+omit [StandardBorelSpace 𝓡] [Nonempty 𝓡] in
 lemma hasCondDistrib_action' (alg : Algorithm Unit 𝓐 𝓡) (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν]
     (n : ℕ) :
     HasCondDistrib (action alg n) (hist alg · n) ((alg.policy n).sectL ()) (arrayMeasure ν) := by
@@ -657,7 +665,7 @@ lemma hasCondDistrib_action' (alg : Algorithm Unit 𝓐 𝓡) (ν : Kernel 𝓐 
       (Kernel.const _ volume) (arrayMeasure ν) :=
     ((indepFun_fst_hist alg ν n).symm.comp (measurable_id.prodMk measurable_id)
       measurable_id).hasCondDistrib_const (by fun_prop) (hasLaw_fst_apply_arrayMeasure ν n)
-  have h := ((hasCondDistrib_self (X := (hist alg · n)) (by fun_prop)).prod hU).comp_left
+  have h := ((hasCondDistrib_self (X := (hist alg · n)) (by fun_prop)).compProd hU).comp_left
     (measurable_algFunction alg n)
   have h_ker : (alg.policy n).sectL () = (Kernel.id ⊗ₖ Kernel.const _ volume).map
       (Function.uncurry (algFunction alg n)) := by
@@ -690,19 +698,21 @@ lemma hasCondDistrib_reward_hist_action_pullCount
     HasCondDistrib (reward alg n)
       (fun ω ↦ (hist alg ω n, action alg n ω, pullCount (action alg) (action alg n ω) n ω))
       ((ν.prodMkRight _).prodMkLeft _) (arrayMeasure ν) := by
-  refine hasCondDistrib_of_condDistrib_eq (by fun_prop) (by fun_prop) ?_
+  refine hasCondDistrib_of_condDistrib_ae_eq (by fun_prop) (by fun_prop) ?_
   refine condDistrib_prod_of_forall_condDistrib_cond (by fun_prop) (by fun_prop) (by fun_prop) _ ?_
   intro (a, m) ham
   have h_eq : ((ν.prodMkRight _).prodMkLeft _).comap (fun ω : Hist Unit 𝓐 𝓡 n ↦ (ω, a, m))
         (by fun_prop) =
       Kernel.const _ (ν a) := by ext; simp
   rw [h_eq, condDistrib_congr_left (reward_ae_eq_cond alg ν a n m)]
-  refine (condDistrib_of_indepFun ?_ (by fun_prop) (by fun_prop)).trans (ae_of_all _ fun ω ↦ ?_)
+  refine (condDistrib_ae_eq_of_indepFun ?_ (by fun_prop) (by fun_prop)).trans
+    (ae_of_all _ fun ω ↦ ?_)
   · exact (indepFun_snd_hist_cond alg ν a n m).symm
   · simp only [Kernel.const_apply]
     rw [preimage_action_pullCount_eq, cond_of_indepFun, map_snd_apply_arrayMeasure m a]
     · exact (indepFun_snd_apply_pullCount_action alg ν a m n).symm
-    · exact Measurable.indicator (by fun_prop) (measurableSet_action_eq_and_pullCount_eq alg a n m)
+    · exact Measurable.indicator (by fun_prop)
+        (measurableSet_action_eq_and_pullCount_eq (measurable_action alg) n a m)
     · fun_prop
     · simp
     · rwa [preimage_action_pullCount_eq] at ham
@@ -718,7 +728,7 @@ lemma condIndepFun_reward_hist (alg : Algorithm Unit 𝓐 𝓡) (ν : Kernel �
       (hist alg · n) := by
   have h_cond := hasCondDistrib_reward_hist_action_pullCount alg ν n
   refine condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkLeft (by fun_prop) (by fun_prop) ?_
-    h_cond.condDistrib_eq
+    h_cond.condDistrib_ae_eq
   exact Measurable.prodMk (by fun_prop) (measurable_pullCount_action alg n)
 
 /-- The conditional distribution of the reward at time `n`, given the history before time `n`
@@ -743,6 +753,7 @@ lemma hasCondDistrib_reward' (alg : Algorithm Unit 𝓐 𝓡) (ν : Kernel 𝓐 
   rw [h_eq, h_ker] at h
   exact (hasCondDistrib_prod_right_iff _ _ hf).1 h
 
+omit [StandardBorelSpace 𝓡] [Nonempty 𝓡] in
 lemma hasCondDistrib_action (alg : Algorithm Unit 𝓐 𝓡) (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν]
     (n : ℕ) :
     HasCondDistrib (action alg n)
@@ -779,7 +790,7 @@ lemma isAlgEnvSeq_arrayMeasure (alg : Algorithm Unit 𝓐 𝓡) (ν : Kernel �
 
 lemma hasLaw_action_zero (alg : Algorithm Unit 𝓐 𝓡) (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] :
     HasLaw (action alg 0) (alg.policyZero ()) (arrayMeasure ν) := by
-  have h : HasCondDistrib (action alg 0) (fun _ : probSpace 𝓐 𝓡 ↦ ()) alg.policyZero
+  have h : HasCondDistrib (action alg 0) (fun _ : ProbSpace 𝓐 𝓡 ↦ ()) alg.policyZero
       (arrayMeasure ν) :=
     (isAlgEnvSeq_arrayMeasure alg ν).hasCondDistrib_action_zero
   exact h.hasLaw_of_const'

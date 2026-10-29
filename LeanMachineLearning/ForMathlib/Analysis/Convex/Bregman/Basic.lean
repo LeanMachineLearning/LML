@@ -157,8 +157,9 @@ section Order
 variable {F' : Type*} [AddCommGroup F'] [Module R F'] [TopologicalSpace F']
   [Preorder F'] [AddRightMono F']
 
-lemma bregDiv_le_of_le_of_eq {f₁ f₂ : E → F'} {x y : E} {J_y : E →L[R] F'}
-    (h_le : f₁ x ≤ f₂ x) (h_eq : f₁ y = f₂ y) :
+/-- If `f₁ ≤ f₂` at `x` and `f₁ = f₂` at `y`, then `D_[f₁](x, y, J) ≤ D_[f₂](x, y, J)`. -/
+lemma bregDiv_le_of_le_of_eq {f₁ f₂ : E → F'} {x y : E}
+    (h_le : f₁ x ≤ f₂ x) (h_eq : f₁ y = f₂ y) (J_y : E →L[R] F') :
     D_[f₁](x, y, J_y) ≤ D_[f₂](x, y, J_y) := by
   simp [bregDiv, h_eq, h_le]
 

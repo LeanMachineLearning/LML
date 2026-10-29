@@ -5,10 +5,24 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
-public import Mathlib.Probability.IdentDistrib
-public import Mathlib.Probability.Independence.InfinitePi
+public import LeanMachineLearning.ForMathlib.Probability.HasLaw
+public import Mathlib.Probability.Independence.Basic
 
 /-! # Lemmas about independence
+
+## Main statements
+
+* `indepFun_cond_of_indepFun`: if `X` and `Y` are independent, they are still independent under
+  the measure conditioned on an event about `Y`.
+* `iIndepFun_nat_iff_forall_indepFun`: a sequence of random variables is independent iff each
+  of them is independent of the previous ones.
+* `indepFun_map_iff`: independence under an image measure.
+* `IndepFun.comp_hasLaw`: independence is preserved by composition with a random variable with
+  the right law.
+* `IndepFun.of_measurable`: if `Y` and `Z` are independent, then so are any `Y'` measurable with
+  respect to `σ(Y)` and any `Z'` measurable with respect to `σ(Z)`.
+* `cond_of_indepFun`: if `X` and `T` are independent, conditioning on an event about `X` does not
+  change the law of `T`.
 -/
 
 @[expose] public section
@@ -17,7 +31,7 @@ open MeasureTheory Finset
 
 namespace ProbabilityTheory
 
-variable {α Ω Ω' E ι : Type*} [Countable ι] {mα : MeasurableSpace α}
+variable {α Ω Ω' E : Type*} {mα : MeasurableSpace α}
   {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
   {mE : MeasurableSpace E} {μ ν : Measure Ω}
 
@@ -117,8 +131,9 @@ lemma iIndepFun_nat_iff_forall_indepFun [IsProbabilityMeasure μ] {X : ℕ → �
           ih _ (erase_ssubset (max'_mem _ hs)) fun i hi => hsets i (erase_subset _ _ hi),
           prod_insert (notMem_erase _ _)]
 
--- todo: kernel version?
-lemma IndepFun_map_iff [IsFiniteMeasure μ] {X : Ω' → E} {Y : Ω' → E} {f : Ω → Ω'}
+-- TODO: kernel version?
+lemma indepFun_map_iff {F : Type*} {mF : MeasurableSpace F} [IsFiniteMeasure μ] {X : Ω' → E}
+    {Y : Ω' → F} {f : Ω → Ω'}
     (hf : AEMeasurable f μ) (hX : AEMeasurable X (μ.map f)) (hY : AEMeasurable Y (μ.map f)) :
     X ⟂ᵢ[μ.map f] Y ↔ (X ∘ f) ⟂ᵢ[μ] (Y ∘ f) := by
   rw [indepFun_iff_map_prod_eq_prod_map_map hX hY,
@@ -127,37 +142,14 @@ lemma IndepFun_map_iff [IsFiniteMeasure μ] {X : Ω' → E} {Y : Ω' → E} {f :
     AEMeasurable.map_map_of_aemeasurable (by fun_prop) (by fun_prop)]
   rfl
 
-lemma iIndepFun_map_iff [IsProbabilityMeasure μ] {X : ι → Ω' → E} {f : Ω → Ω'}
-    (hf : AEMeasurable f μ) (hX : ∀ n, AEMeasurable (X n) (μ.map f)) :
-    iIndepFun X (μ.map f) ↔ iIndepFun (fun n ↦ X n ∘ f) μ := by
-  rw [iIndepFun_iff_map_fun_eq_infinitePi_map₀' hX,
-    iIndepFun_iff_map_fun_eq_infinitePi_map₀' (by fun_prop)]
-  rw [AEMeasurable.map_map_of_aemeasurable (by fun_prop) hf]
-  congr! 3
-  rw [AEMeasurable.map_map_of_aemeasurable (hX _) hf]
-
-lemma identDistrib_map_right_iff {X : Ω → E} {Y : Ω' → E} {f : Ω → Ω'}
-    (hf : AEMeasurable f ν) (hX : AEMeasurable X μ) (hY : AEMeasurable Y (ν.map f)) :
-    IdentDistrib X Y μ (ν.map f) ↔ IdentDistrib X (Y ∘ f) μ ν := by
-  refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
-  · constructor
-    · exact hX
-    · fun_prop
-    · rw [h.map_eq, AEMeasurable.map_map_of_aemeasurable (by fun_prop) hf]
-  · constructor
-    · exact hX
-    · fun_prop
-    · rw [h.map_eq, AEMeasurable.map_map_of_aemeasurable hY hf]
-
-lemma identDistrib_comm (X : Ω → E) (Y : Ω' → E) {ν : Measure Ω'} :
-    IdentDistrib X Y μ ν ↔ IdentDistrib Y X ν μ :=
-  ⟨fun h ↦ h.symm, fun h ↦ h.symm⟩
-
-lemma identDistrib_map_left_iff {X : Ω → E} {Y : Ω' → E} {f : Ω → Ω'}
-    (hf : AEMeasurable f ν) (hX : AEMeasurable X μ) (hY : AEMeasurable Y (ν.map f)) :
-    IdentDistrib Y X (ν.map f) μ ↔ IdentDistrib (Y ∘ f) X ν μ := by
-  rw [identDistrib_comm Y, identDistrib_comm _ X]
-  exact identDistrib_map_right_iff hf hX hY
+/-- If `X` and `Y` are independent under `μ'` and `f` has law `μ'` under `μ`, then `X ∘ f` and
+`Y ∘ f` are independent under `μ`. -/
+lemma IndepFun.comp_hasLaw {F : Type*} {mF : MeasurableSpace F} [IsFiniteMeasure μ]
+    {μ' : Measure Ω'} {X : Ω' → E} {Y : Ω' → F} {f : Ω → Ω'} (h : X ⟂ᵢ[μ'] Y)
+    (hf : HasLaw f μ' μ) (hX : AEMeasurable X μ') (hY : AEMeasurable Y μ') :
+    (X ∘ f) ⟂ᵢ[μ] (Y ∘ f) := by
+  rw [← hf.map_eq] at h hX hY
+  exact (indepFun_map_iff hf.aemeasurable hX hY).1 h
 
 end ProbabilityTheory
 
@@ -168,13 +160,17 @@ section Prod
 variable {α β γ δ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
   {mγ : MeasurableSpace γ} {mδ : MeasurableSpace δ}
 
-lemma hasLaw_fst_prod (μ : Measure α) (ν : Measure β) [IsProbabilityMeasure ν] :
-    HasLaw Prod.fst μ (μ.prod ν) where
-  map_eq := Measure.fst_prod
+lemma indepFun_fst_prod {μ : Measure α} [IsFiniteMeasure μ] {X : α → γ} {Y : α → δ}
+    (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) (h_indep : IndepFun X Y μ)
+    (ν : Measure β) [IsProbabilityMeasure ν] :
+    IndepFun (fun ω ↦ X ω.1) (fun ω ↦ Y ω.1) (μ.prod ν) :=
+  h_indep.comp_hasLaw (hasLaw_fst_prod μ ν) hX hY
 
-lemma hasLaw_snd_prod (μ : Measure α) [IsProbabilityMeasure μ] (ν : Measure β) [SFinite ν] :
-    HasLaw Prod.snd ν (μ.prod ν) where
-  map_eq := Measure.snd_prod
+lemma indepFun_snd_prod {μ : Measure α} [IsFiniteMeasure μ] {X : α → γ} {Y : α → δ}
+    (hX : AEMeasurable X μ) (hY : AEMeasurable Y μ) (h_indep : IndepFun X Y μ)
+    (ν : Measure β) [IsProbabilityMeasure ν] :
+    IndepFun (fun ω ↦ X ω.2) (fun ω ↦ Y ω.2) (ν.prod μ) :=
+  h_indep.comp_hasLaw (hasLaw_snd_prod ν μ) hX hY
 
 /-- If `X` and `T` are independent under `ν`, then under `μ.prod ν` the function `X ∘ Prod.snd`
 is independent of `(Prod.fst, T ∘ Prod.snd)`. -/
@@ -243,5 +239,49 @@ lemma iIndepFun.indepFun_of_measurable_iSup_comap {ι Ω β : Type*} {𝓧 : ι 
   have h := indep_iSup_of_disjoint (fun j ↦ (hXm j).comap_le) hX.iIndep (S := {i}) (T := S)
     (Set.disjoint_singleton_left.2 hi)
   simpa using h
+
+section OfMeasurable
+
+variable {α γ δ γ' δ' : Type*} {mα : MeasurableSpace α} {mγ : MeasurableSpace γ}
+  {mδ : MeasurableSpace δ} {mγ' : MeasurableSpace γ'} {mδ' : MeasurableSpace δ'}
+  {μ : Measure α} {Y : α → γ} {Z : α → δ} {Y' : α → γ'} {Z' : α → δ'}
+
+lemma IndepFun.of_measurable_left
+    (h_indep : Y ⟂ᵢ[μ] Z) (hY_meas : Measurable[mγ.comap Y] Y') :
+    Y' ⟂ᵢ[μ] Z := by
+  rw [IndepFun_iff_Indep] at h_indep ⊢
+  exact indep_of_indep_of_le_left h_indep hY_meas.comap_le
+
+lemma IndepFun.of_measurable_right
+    (h_indep : Y ⟂ᵢ[μ] Z) (hZ_meas : Measurable[mδ.comap Z] Z') :
+    Y ⟂ᵢ[μ] Z' := by
+  rw [IndepFun_iff_Indep] at h_indep ⊢
+  exact indep_of_indep_of_le_right h_indep hZ_meas.comap_le
+
+lemma IndepFun.of_measurable (h_indep : Y ⟂ᵢ[μ] Z)
+    (hY_meas : Measurable[mγ.comap Y] Y') (hZ_meas : Measurable[mδ.comap Z] Z') :
+    Y' ⟂ᵢ[μ] Z' :=
+  (h_indep.of_measurable_left hY_meas).of_measurable_right hZ_meas
+
+end OfMeasurable
+
+section Cond
+
+variable {α β γ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
+  {mγ : MeasurableSpace γ} {μ : Measure α} {X : α → β} {T : α → γ}
+
+lemma cond_of_indepFun [IsZeroOrProbabilityMeasure μ] (h : IndepFun X T μ)
+    (hX : Measurable X) (hT : Measurable T) {s : Set β} (hs : MeasurableSet s)
+    (hμs : μ (X ⁻¹' s) ≠ 0) :
+    (μ[|X ⁻¹' s]).map T = μ.map T := by
+  ext t ht
+  rw [Measure.map_apply (by fun_prop) ht, Measure.map_apply (by fun_prop) ht, cond_apply (hX hs),
+    IndepSet.measure_inter_eq_mul, ← mul_assoc, ENNReal.inv_mul_cancel, one_mul]
+  · exact hμs
+  · simp
+  · rw [indepFun_iff_indepSet_preimage hX hT] at h
+    exact h s t hs ht
+
+end Cond
 
 end ProbabilityTheory

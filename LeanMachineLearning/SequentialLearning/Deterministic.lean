@@ -107,58 +107,56 @@ lemma policyZero_eq_deterministic (alg : Algorithm 𝓞 𝓐 𝓨) [alg.IsDeterm
 
 end Algorithm
 
-namespace Algorithm.IsDeterministic
+section IsDeterministic
+
+/-! ### Runs of a deterministic algorithm -/
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
-  {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨} {P : Measure Ω} [IsFiniteMeasure P]
+  {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨} {P : Measure Ω} [SFinite P]
   {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {n N : ℕ}
 
-lemma action_ae_eq_of_IsAlgEnvSeqUntil [MeasurableEq 𝓐]
+lemma IsAlgEnvSeqUntil.action_ae_eq_nextAction [MeasurableEq 𝓐]
     [h_det : alg.IsDeterministic] (h : IsAlgEnvSeqUntil O A Y alg env P N) (hn : n < N) :
     A n =ᵐ[P] fun ω ↦ alg.nextAction n (history O A Y n ω, O n ω) := by
   have h_eq := (h.hasCondDistrib_action n hn)
   rw [alg.policy_eq_deterministic n] at h_eq
-  have hO := h.measurable_obs
-  have hA := h.measurable_action
-  have hY := h.measurable_feedback
-  exact ae_eq_of_hasCondDistrib_deterministic (measurable_nextAction _ _) (by fun_prop)
-    (by fun_prop) h_eq
+  exact h_eq.ae_eq_of_deterministic
 
-lemma action_zero_of_IsAlgEnvSeqUntil [MeasurableEq 𝓐] [h_det : alg.IsDeterministic]
-    (h : IsAlgEnvSeqUntil O A Y alg env P N) (hN : 0 < N) :
+lemma IsAlgEnvSeqUntil.action_zero_ae_eq_actionZero [MeasurableEq 𝓐]
+    [h_det : alg.IsDeterministic] (h : IsAlgEnvSeqUntil O A Y alg env P N) (hN : 0 < N) :
     A 0 =ᵐ[P] fun ω ↦ alg.actionZero (O 0 ω) := by
-  filter_upwards [action_ae_eq_of_IsAlgEnvSeqUntil h hN] with ω hω
-  rw [hω, nextAction_zero]
+  filter_upwards [h.action_ae_eq_nextAction hN] with ω hω
+  rw [hω, Algorithm.nextAction_zero]
 
-lemma hasCondDistrib_action_zero_of_IsAlgEnvSeqUntil [h_det : alg.IsDeterministic]
-    (h : IsAlgEnvSeqUntil O A Y alg env P N) (hN : 0 < N) :
+lemma IsAlgEnvSeqUntil.hasCondDistrib_action_zero_actionZero
+    [h_det : alg.IsDeterministic] (h : IsAlgEnvSeqUntil O A Y alg env P N) (hN : 0 < N) :
     HasCondDistrib (A 0) (O 0)
       (Kernel.deterministic alg.actionZero alg.measurable_actionZero) P := by
-  rw [← policyZero_eq_deterministic]
+  rw [← Algorithm.policyZero_eq_deterministic]
   exact h.hasCondDistrib_action_zero hN
 
-lemma hasCondDistrib_action_zero [h_det : alg.IsDeterministic]
+lemma IsAlgEnvSeq.hasCondDistrib_action_zero_actionZero [h_det : alg.IsDeterministic]
     (h : IsAlgEnvSeq O A Y alg env P) :
     HasCondDistrib (A 0) (O 0)
       (Kernel.deterministic alg.actionZero alg.measurable_actionZero) P :=
-  hasCondDistrib_action_zero_of_IsAlgEnvSeqUntil (h.isAlgEnvSeqUntil 1) zero_lt_one
+  (h.isAlgEnvSeqUntil 1).hasCondDistrib_action_zero_actionZero zero_lt_one
 
-lemma action_ae_eq [MeasurableEq 𝓐] [h_det : alg.IsDeterministic]
-    (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
+lemma IsAlgEnvSeq.action_ae_eq_nextAction [MeasurableEq 𝓐]
+    [h_det : alg.IsDeterministic] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     A n =ᵐ[P] fun ω ↦ alg.nextAction n (history O A Y n ω, O n ω) :=
-  action_ae_eq_of_IsAlgEnvSeqUntil (h.isAlgEnvSeqUntil (n + 1)) n.lt_succ_self
+  (h.isAlgEnvSeqUntil (n + 1)).action_ae_eq_nextAction n.lt_succ_self
 
-lemma action_zero_ae_eq [MeasurableEq 𝓐] [h_det : alg.IsDeterministic]
-    (h : IsAlgEnvSeq O A Y alg env P) :
+lemma IsAlgEnvSeq.action_zero_ae_eq_actionZero [MeasurableEq 𝓐]
+    [h_det : alg.IsDeterministic] (h : IsAlgEnvSeq O A Y alg env P) :
     A 0 =ᵐ[P] fun ω ↦ alg.actionZero (O 0 ω) :=
-  action_zero_of_IsAlgEnvSeqUntil (h.isAlgEnvSeqUntil 1) zero_lt_one
+  (h.isAlgEnvSeqUntil 1).action_zero_ae_eq_actionZero zero_lt_one
 
-lemma action_ae_all_eq [MeasurableEq 𝓐] [h_det : alg.IsDeterministic]
-    (h : IsAlgEnvSeq O A Y alg env P) :
+lemma IsAlgEnvSeq.action_ae_all_eq_nextAction [MeasurableEq 𝓐]
+    [h_det : alg.IsDeterministic] (h : IsAlgEnvSeq O A Y alg env P) :
     ∀ᵐ ω ∂P, ∀ n, A n ω = alg.nextAction n (history O A Y n ω, O n ω) :=
-  ae_all_iff.mpr (action_ae_eq h)
+  ae_all_iff.mpr h.action_ae_eq_nextAction
 
-end Algorithm.IsDeterministic
+end IsDeterministic
 
 /-- An environment has deterministic feedback if its feedbacks are determined by measurable
 functions of the history, the observation and the action (and not possibly random kernels). -/
@@ -210,36 +208,34 @@ lemma feedbackZero_eq_deterministic (env : Environment 𝓞 𝓐 𝓨) [env.HasD
 
 end Environment
 
-namespace Environment.HasDeterministicFeedback
+section HasDeterministicFeedback
+
+/-! ### Runs in an environment with deterministic feedback -/
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
-  {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨} {P : Measure Ω} [IsFiniteMeasure P]
+  {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨} {P : Measure Ω}
   {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 
-lemma hasCondDistrib_feedback [h_det : env.HasDeterministicFeedback]
+lemma IsAlgEnvSeq.hasCondDistrib_feedback_feedbackFun [h_det : env.HasDeterministicFeedback]
     (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     HasCondDistrib (Y n) (fun ω ↦ ((history O A Y n ω, O n ω), A n ω))
       (Kernel.deterministic (env.feedbackFun n) (env.measurable_feedbackFun n)) P := by
-  rw [← feedback_eq_deterministic]
+  rw [← Environment.feedback_eq_deterministic]
   exact h.hasCondDistrib_feedback n
 
-lemma hasCondDistrib_feedback_zero [h_det : env.HasDeterministicFeedback]
-    (h : IsAlgEnvSeq O A Y alg env P) :
+lemma IsAlgEnvSeq.hasCondDistrib_feedback_zero_feedbackFunZero [SFinite P]
+    [h_det : env.HasDeterministicFeedback] (h : IsAlgEnvSeq O A Y alg env P) :
     HasCondDistrib (Y 0) (fun ω ↦ (O 0 ω, A 0 ω))
       (Kernel.deterministic env.feedbackFunZero env.measurable_feedbackFunZero) P := by
-  rw [← feedbackZero_eq_deterministic]
+  rw [← Environment.feedbackZero_eq_deterministic]
   exact h.hasCondDistrib_feedback_zero
 
-lemma feedback_ae_eq [MeasurableEq 𝓨] [h_det : env.HasDeterministicFeedback]
-    (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
-    Y n =ᵐ[P] fun ω ↦ env.feedbackFun n ((history O A Y n ω, O n ω), A n ω) := by
-  have hO := h.measurable_obs
-  have hA := h.measurable_action
-  have hY := h.measurable_feedback
-  exact ae_eq_of_hasCondDistrib_deterministic (measurable_feedbackFun _ _) (by fun_prop)
-    (by fun_prop) (hasCondDistrib_feedback h n)
+lemma IsAlgEnvSeq.feedback_ae_eq_feedbackFun [SFinite P] [MeasurableEq 𝓨]
+    [h_det : env.HasDeterministicFeedback] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
+    Y n =ᵐ[P] fun ω ↦ env.feedbackFun n ((history O A Y n ω, O n ω), A n ω) :=
+  (h.hasCondDistrib_feedback_feedbackFun n).ae_eq_of_deterministic
 
-end Environment.HasDeterministicFeedback
+end HasDeterministicFeedback
 
 variable {nextA : (n : ℕ) → (Hist 𝓞 𝓐 𝓨 n × 𝓞) → 𝓐} {h_next : ∀ n, Measurable (nextA n)}
   {env : Environment 𝓞 𝓐 𝓨}
@@ -312,9 +308,7 @@ lemma feedbackFunZero_detFeedback [MeasurableSpace.SeparatesPoints 𝓨] :
 
 namespace IsAlgEnvSeq
 
-variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
-  {alg : Algorithm 𝓞 𝓐 𝓨} {ν : Kernel (𝓞 × 𝓐) 𝓨} [IsMarkovKernel ν]
-  {P : Measure Ω} [IsProbabilityMeasure P]
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [SFinite P]
   {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 
 lemma hasCondDistrib_action_zero_deterministic
@@ -325,28 +319,26 @@ lemma hasCondDistrib_action_zero_deterministic
   rw [← policyZero_deterministic]
   exact h.hasCondDistrib_action_zero
 
-lemma action_deterministic_ae_eq [MeasurableEq 𝓐]
+lemma action_ae_eq_deterministic [MeasurableEq 𝓐]
     (h : IsAlgEnvSeq O A Y (Algorithm.deterministic nextA h_next) env P) (n : ℕ) :
     A n =ᵐ[P] fun ω ↦ nextA n (history O A Y n ω, O n ω) :=
-  (Algorithm.IsDeterministic.action_ae_eq h n).trans (by simp)
+  (h.action_ae_eq_nextAction n).trans (by simp)
 
-lemma action_zero_deterministic [MeasurableEq 𝓐]
+lemma action_zero_ae_eq_deterministic [MeasurableEq 𝓐]
     (h : IsAlgEnvSeq O A Y (Algorithm.deterministic nextA h_next) env P) :
     A 0 =ᵐ[P] fun ω ↦ nextA 0 (default, O 0 ω) :=
-  (Algorithm.IsDeterministic.action_zero_ae_eq h).trans (by simp)
+  h.action_zero_ae_eq_actionZero.trans (by simp)
 
-lemma action_deterministic_ae_all_eq [MeasurableEq 𝓐]
+lemma action_ae_all_eq_deterministic [MeasurableEq 𝓐]
     (h : IsAlgEnvSeq O A Y (Algorithm.deterministic nextA h_next) env P) :
     ∀ᵐ ω ∂P, ∀ n, A n ω = nextA n (history O A Y n ω, O n ω) :=
-  ae_all_iff.mpr (action_deterministic_ae_eq h)
+  ae_all_iff.mpr h.action_ae_eq_deterministic
 
 end IsAlgEnvSeq
 
 namespace IsAlgEnvSeqUntil
 
-variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
-  {alg : Algorithm 𝓞 𝓐 𝓨} {ν : Kernel (𝓞 × 𝓐) 𝓨} [IsMarkovKernel ν]
-  {P : Measure Ω} [IsProbabilityMeasure P]
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [SFinite P]
   {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {N n : ℕ}
 
 lemma hasCondDistrib_action_zero_deterministic
@@ -357,15 +349,15 @@ lemma hasCondDistrib_action_zero_deterministic
   rw [← policyZero_deterministic]
   exact h.hasCondDistrib_action_zero hN
 
-lemma action_deterministic_ae_eq [MeasurableEq 𝓐]
+lemma action_ae_eq_deterministic [MeasurableEq 𝓐]
     (h : IsAlgEnvSeqUntil O A Y (Algorithm.deterministic nextA h_next) env P N) (hn : n < N) :
     A n =ᵐ[P] fun ω ↦ nextA n (history O A Y n ω, O n ω) :=
-  (Algorithm.IsDeterministic.action_ae_eq_of_IsAlgEnvSeqUntil h hn).trans (by simp)
+  (h.action_ae_eq_nextAction hn).trans (by simp)
 
-lemma action_zero_deterministic [MeasurableEq 𝓐]
+lemma action_zero_ae_eq_deterministic [MeasurableEq 𝓐]
     (h : IsAlgEnvSeqUntil O A Y (Algorithm.deterministic nextA h_next) env P N) (hN : 0 < N) :
     A 0 =ᵐ[P] fun ω ↦ nextA 0 (default, O 0 ω) :=
-  (Algorithm.IsDeterministic.action_zero_of_IsAlgEnvSeqUntil h hN).trans (by simp)
+  (h.action_zero_ae_eq_actionZero hN).trans (by simp)
 
 end IsAlgEnvSeqUntil
 

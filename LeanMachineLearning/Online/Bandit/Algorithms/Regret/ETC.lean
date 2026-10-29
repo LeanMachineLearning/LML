@@ -6,9 +6,20 @@ Authors: Rémy Degenne
 module
 
 public import LeanMachineLearning.Online.Bandit.Algorithms.ETC
-public import LeanMachineLearning.Online.Bandit.SumRewards
+public import LeanMachineLearning.Online.Bandit.Concentration
 
 /-! # Regret bound for the Explore-Then-Commit algorithm
+
+## Main statements
+
+* `ETC.regret_le`: for `σ2`-sub-Gaussian rewards and `K * m ≤ n`, the expected regret of ETC with
+  parameter `m` at time `n` is at most
+  `∑ a, Δₐ * (m + (n - K * m) * exp (- m * Δₐ ^ 2 / (4 * σ2)))`, where `Δₐ = gap ν a`.
+
+## References
+
+* T. Lattimore and C. Szepesvári, *Bandit Algorithms*, Cambridge University Press, 2020,
+  Theorem 6.1.
 
 -/
 
@@ -30,7 +41,7 @@ lemma probReal_sumRewards_le_sumRewards_le
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (a : Fin K) :
     P.real {ω | sumRewards A R (bestArm ν) (K * m) ω ≤ sumRewards A R a (K * m) ω} ≤
       Real.exp (-↑m * gap ν a ^ 2 / (4 * σ2)) := by
-  have h1 := Bandits.probReal_sumRewards_le_sumRewards_le h a (K * m) m m
+  have h1 := Bandits.probReal_sumRewards_le_sumRewards_le h (bestArm ν) a (K * m) m m
   have h2 := probReal_sum_le_sum_streamMeasure hν a m
   refine le_trans (le_of_eq ?_) (h1.trans h2)
   simp_rw [measureReal_def]
@@ -43,23 +54,21 @@ lemma probReal_sumRewards_le_sumRewards_le
 /-- The probability that at time `K * m` the ETC algorithm chooses arm `a` is at most
 `exp(- m * Δ_a^2 / (4 * σ2))`. -/
 lemma prob_arm_mul_eq_le (h : IsAlgEnvSeq O A R (etcAlgorithm K m) (Environment.bandit ν) P)
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (a : Fin K)
-    (hm : m ≠ 0) :
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (a : Fin K) :
     P.real {ω | A (K * m) ω = a} ≤ Real.exp (- (m : ℝ) * gap ν a ^ 2 / (4 * σ2)) := by
-  have h_pos : 0 < K * m := Nat.mul_pos (Nat.pos_of_neZero K) hm.bot_lt
   have h_le : P.real {ω | A (K * m) ω = a}
       ≤ P.real {ω | sumRewards A R (bestArm ν) (K * m) ω ≤ sumRewards A R a (K * m) ω} := by
     simp_rw [measureReal_def]
     gcongr 1
     · simp
     refine measure_mono_ae ?_
-    exact sumRewards_bestArm_le_of_arm_mul_eq h a hm
+    exact sumRewards_bestArm_le_of_arm_mul_eq h a
   exact h_le.trans (probReal_sumRewards_le_sumRewards_le h hν a)
 
 /-- Bound on the expectation of the number of pulls of each arm by the ETC algorithm. -/
-lemma expectation_pullCount_le (h : IsAlgEnvSeq O A R (etcAlgorithm K m) (Environment.bandit ν) P)
+lemma integral_pullCount_le (h : IsAlgEnvSeq O A R (etcAlgorithm K m) (Environment.bandit ν) P)
     (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
-    (a : Fin K) (hm : m ≠ 0) {n : ℕ} (hn : K * m ≤ n) :
+    (a : Fin K) {n : ℕ} (hn : K * m ≤ n) :
     P[fun ω ↦ (pullCount A a n ω : ℝ)]
       ≤ m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / (4 * σ2)) := by
   have hA := h.measurable_action
@@ -81,16 +90,17 @@ lemma expectation_pullCount_le (h : IsAlgEnvSeq O A R (etcAlgorithm K m) (Enviro
     simp
   rw [integral_indicator_one]
   · rw [← neg_mul]
-    exact prob_arm_mul_eq_le h hν a hm
+    exact prob_arm_mul_eq_le h hν a
   · exact (measurableSet_singleton _).preimage (by fun_prop)
 
-/-- Regret bound for the ETC algorithm. -/
+/-- Regret bound for the ETC algorithm with parameter `m`, for `σ2`-sub-Gaussian rewards and
+`K * m ≤ n`. -/
 theorem regret_le (h : IsAlgEnvSeq O A R (etcAlgorithm K m) (Environment.bandit ν) P)
-    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (hm : m ≠ 0)
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
     (n : ℕ) (hn : K * m ≤ n) :
     P[regret ν A n] ≤
       ∑ a, gap ν a * (m + (n - K * m) * Real.exp (- (m : ℝ) * gap ν a ^ 2 / (4 * σ2))) :=
-  integral_regret_le_of_forall_integral_pullCount_le h
-    (fun a _ ↦ expectation_pullCount_le h hν a hm hn)
+  integral_regret_le_of_forall_integral_pullCount_le h.measurable_action
+    (fun a _ ↦ integral_pullCount_le h hν a hn)
 
 end Bandits.ETC

@@ -17,7 +17,13 @@ Let `μ, ν` be finite measures on `α` and `g n : α → β n` be measurable ma
 `comap (g n)` increase to the σ-algebra of `α` (for instance the projections of a sequence space
 on its first `n` coordinates). Then the divergence of `μ` and `ν` is the supremum of the
 divergences of their images by the `g n`:
-`klDiv μ ν = ⨆ n, klDiv (μ.map (g n)) (ν.map (g n))` (`klDiv_eq_iSup_map`).
+`klDiv μ ν = ⨆ n, klDiv (μ.map (g n)) (ν.map (g n))`.
+
+## Main statements
+
+* `klDiv_eq_iSup_map`: the divergence along a generating sequence of maps.
+
+## Implementation notes
 
 The inequality `≥` is the data-processing inequality. For `≤`, if `μ ≪ ν` the divergences of
 the images are the integrals of `klFun` of the conditional expectations of the density `∂μ/∂ν`
@@ -27,9 +33,6 @@ continuous with respect to `ν`, a set `A` with `ν A = 0 < μ A` is approximate
 `comap (g n)`-measurable sets `B n` (again by Lévy's upward theorem, applied to the indicator of
 `A` under `μ + ν`), and the lower bound `μ B * log (μ B / ν B) + ν B - μ B ≤ klDiv` on `B n`
 shows that the divergences of the images tend to infinity.
-
-The sequence space case is `MeasurableSpace.iSup_comap_restrictFin`: the σ-algebras of the
-projections on the first `n` coordinates generate the product σ-algebra of `ℕ → E`.
 -/
 
 @[expose] public section
@@ -177,21 +180,3 @@ lemma klDiv_eq_iSup_map {β : ℕ → Type*} [mβ : ∀ n, MeasurableSpace (β n
         measureReal_nonneg (μ := ν) (s := B n)]
 
 end InformationTheory
-
-namespace MeasurableSpace
-
-/-- The σ-algebras of the projections of `ℕ → E` on the first `n` coordinates generate the
-product σ-algebra. -/
-lemma iSup_comap_restrictFin {E : Type*} [mE : MeasurableSpace E] :
-    ⨆ n : ℕ, MeasurableSpace.comap (fun f : ℕ → E ↦ fun i : Fin n ↦ f i)
-      MeasurableSpace.pi = MeasurableSpace.pi := by
-  refine le_antisymm
-    (iSup_le fun n ↦ (Measurable.of_eval fun _ ↦ measurable_pi_apply _).comap_le)
-    (iSup_le fun i ↦ le_iSup_of_le (i + 1) ?_)
-  have : (fun f : ℕ → E ↦ f i) =
-      (fun h : Fin (i + 1) → E ↦ h ⟨i, i.lt_succ_self⟩) ∘
-        fun f : ℕ → E ↦ fun j : Fin (i + 1) ↦ f j := rfl
-  rw [this, ← MeasurableSpace.comap_comp]
-  exact MeasurableSpace.comap_mono (measurable_pi_apply _).comap_le
-
-end MeasurableSpace

@@ -8,6 +8,13 @@ module
 public import Mathlib.Probability.Moments.SubGaussian
 
 /-! # Lemmas about sub-Gaussian random variables
+
+## Main statements
+
+* `HasSubgaussianMGF.measure_le_le`, `HasSubgaussianMGF.measure_sum_le_le_of_iIndepFun`: lower
+  tail bounds (**Hoeffding's inequality** for the lower tail).
+* `HasSubgaussianMGF.measure_sum_le_sum_le`: bound on the probability that a sum of independent
+  sub-Gaussian variables is smaller than another one, when its mean is larger.
 -/
 
 @[expose] public section
@@ -96,7 +103,7 @@ section Sum
 variable {ι ι' : Type*} {X : ι → Ω → ℝ} {cX : ι → ℝ≥0} {s : Finset ι}
   {Y : ι' → Ω → ℝ} {cY : ι' → ℝ≥0} {t : Finset ι'}
 
-lemma measure_sum_le_sum_le [IsFiniteMeasure μ]
+lemma measure_sum_le_sum_le
     (hX_indep : iIndepFun X μ) (hY_indep : iIndepFun Y μ)
     (hX_subG : ∀ i ∈ s, HasSubgaussianMGF (fun ω ↦ X i ω - μ[X i]) (cX i) μ)
     (hY_subG : ∀ j ∈ t, HasSubgaussianMGF (fun ω ↦ Y j ω - μ[Y j]) (cY j) μ)
@@ -105,6 +112,7 @@ lemma measure_sum_le_sum_le [IsFiniteMeasure μ]
     μ.real {ω | ∑ i ∈ s, X i ω ≤ ∑ j ∈ t, Y j ω}
       ≤ exp (- (∑ j ∈ t, μ[Y j] - ∑ i ∈ s, μ[X i]) ^ 2
         / (2 * (∑ i ∈ s, cX i + ∑ j ∈ t, cY j))) := by
+  have := hX_indep.isProbabilityMeasure
   have hX_int i (his : i ∈ s) : Integrable (X i) μ := by
     have h_int := (hX_subG i his).integrable
     simp_rw [sub_eq_add_neg, integrable_add_const_iff] at h_int
@@ -130,7 +138,7 @@ lemma measure_sum_le_sum_le [IsFiniteMeasure μ]
     · rw [integral_finsetSum _ hY_int]
     · rw [integral_finsetSum _ hX_int]
 
-lemma measure_sum_le_sum_le' [IsFiniteMeasure μ]
+lemma measure_sum_le_sum_le'
     (hX_indep : iIndepFun X μ) (hY_indep : iIndepFun Y μ)
     (hX_subG : ∀ i ∈ s, HasSubgaussianMGF (fun ω ↦ X i ω - μ[X i]) (cX i) μ)
     (hY_subG : ∀ j ∈ t, HasSubgaussianMGF (fun ω ↦ Y j ω - μ[Y j]) (cY j) μ)
