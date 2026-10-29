@@ -80,8 +80,8 @@ lemma measurable_hittingAfter_sigmaHistory (hS : MeasurableSet S) :
       · infer_instance
     simp only [ENat.some_eq_natCast, this, Set.preimage_compl]
     exact (measurable_sigmaHistory hO hX hY n hS).inter
-      (MeasurableSet.biInter (Set.to_countable _) fun j _ ↦
-        measurable_sigmaHistory hO hX hY j hS.compl)
+      (MeasurableSet.iInter fun j ↦ MeasurableSet.iInter fun _ ↦
+        (measurable_sigmaHistory hO hX hY j hS).compl)
 
 @[fun_prop]
 lemma measurable_stoppedValue_sigmaHistory (hτ : Measurable τ) :

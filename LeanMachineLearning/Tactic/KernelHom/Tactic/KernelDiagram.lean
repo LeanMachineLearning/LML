@@ -59,7 +59,6 @@ def Node.toPenroseVar_kernel (n : Node) : MetaM PenroseVar := do
       pure n.e
   return ⟨"E", [n.vPos, n.hPosSrc, n.hPosTar], expr⟩
 
-open scoped Jsx in
 /-- Construct a kernelized string diagram from a Penrose `sub`stance program and
 expressions `embeds` to display as labels in the diagram. -/
 def mkKernelDiagram (nodes : List (List Node)) (strands : List (List Strand)) :
@@ -90,7 +89,6 @@ end Mathlib.Tactic.Widget.StringDiagram
 
 namespace KernelDiagram
 
-open scoped Jsx in
 /-- Given a kernel expression, return a string diagram. Otherwise `none`. -/
 def KernelM? (e : Expr) : MetaM (Option Html) := do
   let e ← instantiateMVars e
@@ -118,24 +116,23 @@ def KernelM? (e : Expr) : MetaM (Option Html) := do
         trace[string_diagram] "Penrose substance: \n{(← get).sub}"
         match ← DiagramBuilderM.buildDiagram StringDiagram.dsl StringDiagram.sty with
         | some html => return html
-        | none => return <span>No non-structural morphisms found.</span>
+        | none => return jsx%{<span>No non-structural morphisms found.</span>}
   catch _ => return none
 
-open scoped Jsx in
 /-- Help function for displaying two string diagrams in an equality. -/
 def mkEqHtml (lhs rhs : Html) : Html :=
-  <div className="flex">
+  jsx%{<div className="flex">
     <div className="w-50">
-      <details «open»={true}>
-        <summary className="mv2 pointer">Kernel diagram for LHS</summary> {lhs}
+      <details open={true}>
+        <summary className="mv2 pointer">Kernel diagram for LHS</summary>{lhs}
       </details>
     </div>
     <div className="w-50">
-      <details «open»={true}>
-        <summary className="mv2 pointer">Kernel diagram for RHS</summary> {rhs}
+      <details open={true}>
+        <summary className="mv2 pointer">Kernel diagram for RHS</summary>{rhs}
       </details>
     </div>
-  </div>
+  </div>}
 
 /-- Given an equality between kernels, return a string diagram of the LHS and RHS.
 Otherwise `none`. -/
@@ -155,7 +152,6 @@ def kernelEqMReduce? (e : Expr) : MetaM (Option Html) := do
   forallTelescopeReducing (← whnfR <| ← inferType e) fun _ expr => do
     kernelEqM? expr
 
-open scoped Jsx in
 /-- The RPC method for displaying kernel diagrams. -/
 @[server_rpc_method]
 def rpc (props : PanelWidgetProps) : RequestM (RequestTask Html) :=
@@ -169,7 +165,7 @@ def rpc (props : PanelWidgetProps) : RequestM (RequestTask Html) :=
           let type ← g.mvarId.getType
           kernelEqM? type)
     match html with
-    | none => return <span>No Kernel Diagram.</span>
+    | none => return jsx%{<span>No Kernel Diagram.</span>}
     | some inner => return inner
 
 end KernelDiagram

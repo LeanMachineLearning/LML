@@ -160,8 +160,9 @@ lemma finSuccProd_apply {X : Type*} [MeasurableSpace X] (n : ℕ)
 lemma finSuccProd_symm_apply {X : Type*} [MeasurableSpace X] (n : ℕ)
     (p : (Fin n → X) × X) :
     (finSuccProd X n).symm p = Fin.snoc p.1 p.2 := by
-  simp [finSuccProd]
-  rfl
+  simp only [finSuccProd, trans_symm, trans_apply, piFinSuccAbove_symm_apply,
+    Fin.insertNthEquiv_last, Fin.snocEquiv_apply, Fin.snoc_inj]
+  exact ⟨rfl, rfl⟩
 
 end Fin
 

@@ -13,6 +13,7 @@ set_option linter.style.header false
 set_option linter.style.setOption false
 set_option linter.hashCommand false
 set_option linter.style.longLine false
+set_option linter.style.emptyLine false
 set_option pp.rawOnError true
 set_option verso.code.warnLineLength 100
 
