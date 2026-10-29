@@ -54,6 +54,7 @@ public import LeanMachineLearning.SequentialLearning.ActionIndicator
 public import LeanMachineLearning.SequentialLearning.Algorithm
 public import LeanMachineLearning.SequentialLearning.AlgorithmDensity
 public import LeanMachineLearning.SequentialLearning.AlgorithmDensityBayes
+public import LeanMachineLearning.SequentialLearning.Algorithms.Markov
 public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling.Basic
 public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling.Tendsto
 public import LeanMachineLearning.SequentialLearning.Algorithms.RoundRobin

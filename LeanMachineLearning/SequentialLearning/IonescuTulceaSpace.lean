@@ -345,19 +345,20 @@ lemma isAlgEnvSeq_trajMeasure (alg : Algorithm 𝓞 𝓐 𝓨) (env : Environmen
   hasCondDistrib_feedback n := hasCondDistrib_feedback alg env n
 
 lemma hasLaw_step_zero (alg : Algorithm 𝓞 𝓐 𝓨) (env : Environment 𝓞 𝓐 𝓨) :
-    HasLaw (step 0) (env.obs0 ⊗ₘ (alg.p0 ⊗ₖ env.ν0)) (trajMeasure alg env) :=
+    HasLaw (step 0) (env.obsZero ⊗ₘ (alg.policyZero ⊗ₖ env.feedbackZero)) (trajMeasure alg env) :=
   (isAlgEnvSeq_trajMeasure alg env).hasLaw_step_zero
 
 lemma hasLaw_obs_zero (alg : Algorithm 𝓞 𝓐 𝓨) (env : Environment 𝓞 𝓐 𝓨) :
-    HasLaw (obs 0) env.obs0 (trajMeasure alg env) :=
+    HasLaw (obs 0) env.obsZero (trajMeasure alg env) :=
   (isAlgEnvSeq_trajMeasure alg env).hasLaw_obs_zero
 
 lemma hasCondDistrib_action_zero (alg : Algorithm 𝓞 𝓐 𝓨) (env : Environment 𝓞 𝓐 𝓨) :
-    HasCondDistrib (action 0) (obs 0) alg.p0 (trajMeasure alg env) :=
+    HasCondDistrib (action 0) (obs 0) alg.policyZero (trajMeasure alg env) :=
   (isAlgEnvSeq_trajMeasure alg env).hasCondDistrib_action_zero
 
 lemma hasCondDistrib_feedback_zero (alg : Algorithm 𝓞 𝓐 𝓨) (env : Environment 𝓞 𝓐 𝓨) :
-    HasCondDistrib (feedback 0) (fun ω ↦ (obs 0 ω, action 0 ω)) env.ν0 (trajMeasure alg env) :=
+    HasCondDistrib (feedback 0) (fun ω ↦ (obs 0 ω, action 0 ω)) env.feedbackZero
+      (trajMeasure alg env) :=
   (isAlgEnvSeq_trajMeasure alg env).hasCondDistrib_feedback_zero
 
 end Laws

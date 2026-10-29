@@ -157,8 +157,8 @@ lemma pullCount_eq_comp :
 
 -- todo: write those lemmas with IdentDistrib instead of equality of maps
 lemma _root_.Learning.IsAlgEnvSeq.law_sumRewards_unique [MeasurableSingletonClass 𝓐]
-    (h1 : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
-    (h2 : IsAlgEnvSeq O₂ A₂ R₂ alg (stationaryEnv ν) P') :
+    (h1 : IsAlgEnvSeq O A R alg (Environment.bandit ν) P)
+    (h2 : IsAlgEnvSeq O₂ A₂ R₂ alg (Environment.bandit ν) P') :
     P.map (sumRewards A R a n) = P'.map (sumRewards A₂ R₂ a n) := by
   have hA := h1.measurable_action
   have hR := h1.measurable_feedback
@@ -175,8 +175,8 @@ lemma _root_.Learning.IsAlgEnvSeq.law_sumRewards_unique [MeasurableSingletonClas
   · fun_prop
 
 lemma _root_.Learning.IsAlgEnvSeq.law_pullCount_sumRewards_unique' [MeasurableSingletonClass 𝓐]
-    (h1 : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
-    (h2 : IsAlgEnvSeq O₂ A₂ R₂ alg (stationaryEnv ν) P') :
+    (h1 : IsAlgEnvSeq O A R alg (Environment.bandit ν) P)
+    (h2 : IsAlgEnvSeq O₂ A₂ R₂ alg (Environment.bandit ν) P') :
     IdentDistrib (fun ω a ↦ (pullCount A a n ω, sumRewards A R a n ω))
       (fun ω a ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω)) P P' := by
   have hO := h1.measurable_obs
@@ -222,15 +222,15 @@ lemma _root_.Learning.IsAlgEnvSeq.law_pullCount_sumRewards_unique' [MeasurableSi
   · fun_prop
 
 lemma _root_.Learning.IsAlgEnvSeq.law_pullCount_sumRewards_unique [MeasurableSingletonClass 𝓐]
-    (h1 : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
-    (h2 : IsAlgEnvSeq O₂ A₂ R₂ alg (stationaryEnv ν) P') :
+    (h1 : IsAlgEnvSeq O A R alg (Environment.bandit ν) P)
+    (h2 : IsAlgEnvSeq O₂ A₂ R₂ alg (Environment.bandit ν) P') :
     P.map (fun ω ↦ (pullCount A a n ω, sumRewards A R a n ω)) =
       P'.map (fun ω ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω)) :=
   ((h1.law_pullCount_sumRewards_unique' h2 (n := n)).comp (u := fun f ↦ f a) (by fun_prop)).map_eq
 
 lemma _root_.Learning.IsAlgEnvSeq.identDistrib_pullCount_sumRewards [MeasurableSingletonClass 𝓐]
-    (h1 : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
-    (h2 : IsAlgEnvSeq O₂ A₂ R₂ alg (stationaryEnv ν) P') :
+    (h1 : IsAlgEnvSeq O A R alg (Environment.bandit ν) P)
+    (h2 : IsAlgEnvSeq O₂ A₂ R₂ alg (Environment.bandit ν) P') :
     IdentDistrib (fun ω n a ↦ (pullCount A a n ω, sumRewards A R a n ω))
       (fun ω' n a ↦ (pullCount A₂ a n ω', sumRewards A₂ R₂ a n ω')) P P' := by
   let f (τ : ℕ → Round Unit 𝓐 ℝ) (n : ℕ) (a : 𝓐) : ℕ × ℝ :=
@@ -263,7 +263,7 @@ variable [Nonempty 𝓐]
 
 -- this is what we will use for UCB
 lemma prob_pullCount_prod_sumRewards_mem_le [Countable 𝓐] [MeasurableSingletonClass 𝓐]
-    (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
+    (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P)
     {s : Set (ℕ × ℝ)} [DecidablePred (· ∈ Prod.fst '' s)] (hs : MeasurableSet s) :
     P {ω | (pullCount A a n ω, sumRewards A R a n ω) ∈ s} ≤
       ∑ k ∈ (range (n + 1)).filter (· ∈ Prod.fst '' s),
@@ -289,7 +289,7 @@ property `p` holds for the number of pulls and the sum of rewards of action `a` 
 least one pull, is at most `n` times a uniform bound on the probability of that property for the
 sums of `k ∈ [1, n]` i.i.d. rewards. -/
 lemma prob_pullCount_pos_and_le [Countable 𝓐] [MeasurableSingletonClass 𝓐]
-    (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P) (a : 𝓐) (n : ℕ)
+    (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P) (a : 𝓐) (n : ℕ)
     {p : ℕ → ℝ → Prop} (hp : Measurable fun q : ℕ × ℝ ↦ p q.1 q.2) {B : ℝ≥0∞}
     (hB : ∀ k, k ≠ 0 → streamMeasure ν {ω | p k (∑ i ∈ range k, ω i a)} ≤ B) :
     P {ω | 0 < pullCount A a n ω ∧ p (pullCount A a n ω) (sumRewards A R a n ω)} ≤ n * B := by
@@ -313,7 +313,7 @@ lemma prob_pullCount_pos_and_le [Countable 𝓐] [MeasurableSingletonClass 𝓐]
   _ = n * B := by simp
 
 lemma prob_pullCount_mem_and_sumRewards_mem_le [Countable 𝓐] [MeasurableSingletonClass 𝓐]
-    (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
+    (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P)
     {s : Set ℕ} [DecidablePred (· ∈ s)] (hs : MeasurableSet s) {B : Set ℝ} (hB : MeasurableSet B) :
     P {ω | pullCount A a n ω ∈ s ∧ sumRewards A R a n ω ∈ B} ≤
       ∑ k ∈ (range (n + 1)).filter (· ∈ s),
@@ -332,7 +332,7 @@ lemma prob_pullCount_mem_and_sumRewards_mem_le [Countable 𝓐] [MeasurableSingl
     simp [hk.2.1]
 
 lemma prob_sumRewards_mem_le [Countable 𝓐] [MeasurableSingletonClass 𝓐]
-    (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
+    (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P)
     {B : Set ℝ} (hB : MeasurableSet B) :
     P (sumRewards A R a n ⁻¹' B) ≤
       ∑ k ∈ range (n + 1), streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ B} := by
@@ -343,7 +343,7 @@ lemma prob_sumRewards_mem_le [Countable 𝓐] [MeasurableSingletonClass 𝓐]
   rfl
 
 lemma prob_pullCount_eq_and_sumRewards_mem_le [Countable 𝓐] [MeasurableSingletonClass 𝓐]
-    (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
+    (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P)
     {m : ℕ} (hm : m ≤ n) {B : Set ℝ} (hB : MeasurableSet B) :
     P {ω | pullCount A a n ω = m ∧ sumRewards A R a n ω ∈ B} ≤
       streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B} := by
@@ -352,7 +352,7 @@ lemma prob_pullCount_eq_and_sumRewards_mem_le [Countable 𝓐] [MeasurableSingle
   simpa [hm'] using h_le
 
 lemma prob_exists_pullCount_eq_and_sumRewards_mem_le [Countable 𝓐] [MeasurableSingletonClass 𝓐]
-    (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P) (a : 𝓐) (m : ℕ) {B : Set ℝ}
+    (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P) (a : 𝓐) (m : ℕ) {B : Set ℝ}
     (hB : MeasurableSet B) :
     P {ω | ∃ n, pullCount A a n ω = m ∧ sumRewards A R a n ω ∈ B} ≤
       streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B} :=
@@ -369,7 +369,7 @@ lemma prob_exists_pullCount_eq_and_sumRewards_mem_le [Countable 𝓐] [Measurabl
     _ ≤ _ := ArrayModel.prob_exists_pullCount_eq_and_sumRewards_mem_le a m hB
 
 lemma probReal_sumRewards_le_sumRewards_le [Fintype 𝓐] [MeasurableSingletonClass 𝓐]
-    (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P)
+    (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P)
     (a : 𝓐) (n m₁ m₂ : ℕ) :
     P.real {ω | pullCount A (bestArm ν) n ω = m₁ ∧ pullCount A a n ω = m₂ ∧
         sumRewards A R (bestArm ν) n ω ≤ sumRewards A R a n ω} ≤
@@ -468,7 +468,7 @@ end StreamMeasure
 
 lemma prob_sumRewards_sub_pullCount_mul_ge_le [Countable 𝓐] [MeasurableSingletonClass 𝓐]
     {σ2 : ℝ≥0} (hσ2 : 0 < σ2) (ha : HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
-    (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P) {δ : ℝ} (hδ : 0 < δ) :
+    (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P) {δ : ℝ} (hδ : 0 < δ) :
     P {ω | ∃ t < n, pullCount A a t ω ≠ 0 ∧ √(2 * pullCount A a t ω * σ2 * Real.log (1 / δ)) ≤
       sumRewards A R a t ω - pullCount A a t ω * (ν a)[id]} ≤ ENNReal.ofReal ((n - 1) * δ) :=
   let B (m : ℕ) := {x : ℝ | √(2 * m * σ2 * Real.log (1 / δ)) ≤ x - m * (ν a)[id]}
@@ -502,7 +502,7 @@ lemma prob_sumRewards_sub_pullCount_mul_ge_le [Countable 𝓐] [MeasurableSingle
 
 lemma prob_sumRewards_sub_pullCount_mul_le_le [Countable 𝓐] [MeasurableSingletonClass 𝓐]
     {σ2 : ℝ≥0} (hσ2 : 0 < σ2) (ha : HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
-    (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P) {δ : ℝ} (hδ : 0 < δ) :
+    (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P) {δ : ℝ} (hδ : 0 < δ) :
     P {ω | ∃ t < n, pullCount A a t ω ≠ 0 ∧
       sumRewards A R a t ω - pullCount A a t ω * (ν a)[id] ≤
         -√(2 * pullCount A a t ω * σ2 * Real.log (1 / δ))} ≤ ENNReal.ofReal ((n - 1) * δ) :=
@@ -537,7 +537,7 @@ lemma prob_sumRewards_sub_pullCount_mul_le_le [Countable 𝓐] [MeasurableSingle
 
 lemma prob_sumRewards_sub_pullCount_mul_ge_le_of_Fintype [Fintype 𝓐] [MeasurableSingletonClass 𝓐]
     {σ2 : ℝ≥0} (hσ2 : 0 < σ2) (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
-    (h : IsAlgEnvSeq O A R alg (stationaryEnv ν) P) {δ : ℝ} (hδ : 0 < δ) :
+    (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P) {δ : ℝ} (hδ : 0 < δ) :
     P {ω | ∃ a, ∃ t < n, pullCount A a t ω ≠ 0 ∧
         √(2 * pullCount A a t ω * σ2 * Real.log (1 / δ)) ≤
           sumRewards A R a t ω - pullCount A a t ω * (ν a)[id]} ≤

@@ -61,14 +61,14 @@ The `policy` field contains for each time `n` a kernel from that history togethe
 That is, it maps every possible history and current observation to a random action at time `n` (and that map is measurable).
 The `isMarkovKernel_policy` field records that the measure describing the action is a probability measure (and it is in square brackets to tell Lean to infer it automatically whenever possible).
 At time `0` the history is empty: `Hist 𝓞 𝓐 𝓨 0` has a unique element, and the distribution of the first action given the first observation is `policy 0` applied to that element.
-That kernel is called `Algorithm.p0`.
+That kernel is called `Algorithm.policyZero`.
 
 Many settings have no observations at all: the algorithm sees only the past rounds. Those are described by taking `𝓞 = Unit`, and we write `noObs Ω` for the corresponding (constant) observation process.
 
-If the algorithms actions are not random, we can use the `detAlgorithm` definition to build an algorithm from the data of a measurable function for the action at each time, as a function of the history before that time and of the current observation.
+If the algorithms actions are not random, we can use the `Algorithm.deterministic` definition to build an algorithm from the data of a measurable function for the action at each time, as a function of the history before that time and of the current observation.
 The first action is the value of that function at time `0` on the empty history.
 
-{docstring detAlgorithm}
+{docstring Algorithm.deterministic}
 
 We can see here that we did not need to prove that the kernels are `IsMarkovKernel`.
 Lean knows that deterministic kernels are Markov.
@@ -79,19 +79,21 @@ The `Environment` structure is the mirror of the `Algorithm` structure, with a k
 
 `obs n` gives the distribution of the observation at time `n` given the history before `n`.
 `feedback n` gives the distribution of the feedback at time `n` given the history before `n`, the observation and the action at time `n`.
-The distribution of the first observation is `obs 0` applied to the empty history; it is called `Environment.obs0`.
-The distribution of the first feedback given the first observation and action is `feedback 0` applied to the empty history; it is called `Environment.ν0`.
+The distribution of the first observation is `obs 0` applied to the empty history; it is called `Environment.obsZero`.
+The distribution of the first feedback given the first observation and action is `feedback 0` applied to the empty history; it is called `Environment.feedbackZero`.
 
-In many applications there is no observation and the feedback depends only on the last action, not on the prior history.
-We provide an `obliviousEnv` definition that builds an environment for those cases.
+In many applications neither the observation nor the feedback depends on the prior history: the observation at time `n` has a fixed law, and the feedback depends only on the current observation and action.
+We provide an `Environment.oblivious` definition that builds an environment for those cases from a sequence of observation laws and a sequence of feedback kernels.
 
-{docstring obliviousEnv}
+{docstring Environment.oblivious}
 
-`(ν n).prodMkLeft _` is the kernel `ν n` seen as a `Kernel ((Hist Unit 𝓐 𝓨 n × Unit) × 𝓐) 𝓨` by ignoring the history and the observation.
+If furthermore those sequences do not change with time, we can use the `Environment.stationary` definition to build the environment.
 
-If furthermore the feedback kernel does not change with time, we can use the `stationaryEnv` definition to build the environment.
+{docstring Environment.stationary}
 
-{docstring stationaryEnv}
+When there is no observation (`𝓞 = Unit`), the feedback depends only on the last action. `Environment.banditSeq` builds such an environment from a sequence of kernels `ν : ℕ → Kernel 𝓐 𝓨`, and `Environment.bandit` from a single kernel `ν : Kernel 𝓐 𝓨` used at every time.
+
+{docstring Environment.bandit}
 
 
 # Sequences of actions and feedback, probability space
@@ -120,14 +122,14 @@ We now illustrate the use of `Algorithm`, `Environment`, and `IsAlgEnvSeq` by de
 
 In a stochastic bandit, an algorithm chooses at each time an action from a finite set (here `Fin K`, the type of natural numbers less than `K`) and receives a reward drawn from a distribution that depends only on the action, not on the prior history.
 
-The environment is thus simply `stationaryEnv ν` for some kernel `ν : Kernel (Fin K) ℝ`.
+The environment is thus simply `Environment.bandit ν` for some kernel `ν : Kernel (Fin K) ℝ`.
 
 ## Algorithm
 
 The UCB algorithm chooses at time `n` the action that maximizes the sum of the empirical mean reward and an exploration bonus.
 It starts by choosing each action once and then chooses $`\arg\max_a (\hat{\mu}_{n,a} + \sqrt{\frac{2c \log (n + 1)}{N_{n,a}}})`, in which $`\hat{\mu}_{n,a}` is the empirical mean reward of action `a` before time `n` (`empMean'` in the code), $`N_{n,a}` is the number of times action `a` has been chosen before time `n` (`pullCount'` in the code), and `c` is a parameter of the algorithm.
 
-To define the algorithm, we first define the exploration bonus and the next action function, and then we use `detAlgorithm` to build the algorithm.
+To define the algorithm, we first define the exploration bonus and the next action function, and then we use `Algorithm.deterministic` to build the algorithm.
 We also need to prove that the next action function is measurable, which is done by the `measurable_nextArm` lemma.
 Note that we are careful to use a measurable version of the argmax function, `argmax`.
 
@@ -139,7 +141,7 @@ Note that we are careful to use a measurable version of the argmax function, `ar
 
 {docstring Bandits.ucbAlgorithm}
 
-The last line builds the algorithm using `detAlgorithm` and the function `UCB.nextArm`.
+The last line builds the algorithm using `Algorithm.deterministic` and the function `UCB.nextArm`.
 Its measurability is proved by the `fun_prop` tactic, which proves measurability of functions by using lemmas tagged with `@[fun_prop]`.
 The first action of the algorithm is `UCB.nextArm K c 0` applied to the empty history, which is 0 as an element of `Fin K`.
 
