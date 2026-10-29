@@ -6,11 +6,24 @@ Authors: Rémy Degenne, Paulo Rauber
 module
 
 public import LeanMachineLearning.ForMathlib.MeasureTheory.MeasurableSpace.Embedding
+public import LeanMachineLearning.ForMathlib.Order.Interval.Finset.Nat
 public import LeanMachineLearning.ForMathlib.Probability.HasCondDistrib
 public import Mathlib.Probability.Kernel.IonescuTulcea.Traj
 public import Mathlib.Probability.Process.FiniteDimensionalLaws
 
 /-! # Lemmas about `traj` and `trajMeasure`
+
+## Main definitions
+
+* `Kernel.trajMeasureFin κ'`: the measure on trajectories `Π n, X n` built from kernels
+  `κ' n : Kernel (Π i : Fin n, X i) (X n)` giving the law of each coordinate given the previous
+  ones.
+
+## Main statements
+
+* `Kernel.hasLaw_trajMeasure`, `Kernel.hasLaw_trajMeasureFin`: uniqueness of `trajMeasure` and
+  `trajMeasureFin`: a process with the right initial law and conditional distributions has law
+  `trajMeasure μ₀ κ` (resp. `trajMeasureFin κ'`).
 -/
 
 @[expose] public section
@@ -35,7 +48,6 @@ lemma traj_zero_map_eval_zero :
   rw [← Kernel.traj_map_frestrictLe, ← Kernel.map_comp_right _ (by fun_prop) (by fun_prop)]
   rfl
 
-set_option backward.isDefEq.respectTransparency false in
 lemma hasLaw_Iic_of_forall_hasCondDistrib'
     {Y : (n : ℕ) → Ω → X n} (h0 : HasLaw (Y 0) μ₀ P) {N n : ℕ}
     (h_condDistrib : ∀ n < N, HasCondDistrib (Y (n + 1)) (fun ω ↦ fun i : Iic n ↦ Y i ω) (κ n) P)
@@ -66,7 +78,7 @@ lemma hasLaw_Iic_of_forall_hasCondDistrib'
     intro hn_le
     specialize h_condDistrib n (by grind)
     specialize hn (by grind)
-    have h_law := hn.prod_of_hasCondDistrib h_condDistrib
+    have h_law := hn.prodMk_of_hasCondDistrib h_condDistrib
     have : (fun ω (i : Iic (n + 1)) ↦ Y i ω) =
         (MeasurableEquiv.IicSuccProd X n).symm ∘
           (fun ω ↦ (fun i : Iic n ↦ Y i ω, Y (n + 1) ω)) := by
@@ -83,7 +95,7 @@ lemma hasLaw_Iic_of_forall_hasCondDistrib'
     congr 1
     rw [← Kernel.comp_assoc]
     congr
-    rw [Kernel.deterministic_comp_eq_map, partialTraj_succ_self, symm_IicSuccProd]
+    rw [Kernel.deterministic_comp_eq_map, partialTraj_succ_self, IicSuccProd_symm]
     rw [MeasurableEquiv.coe_trans, MeasurableEquiv.coe_prodCongr]
     rw [Kernel.map_comp_right _ (by fun_prop) (by fun_prop),
       ← Kernel.map_prod_map _ _ (by fun_prop) (by fun_prop)]
@@ -110,14 +122,16 @@ lemma eq_trajMeasure_map_frestrictLe {Y : (n : ℕ) → Ω → X n} (h0 : HasLaw
   rw [(hasLaw_Iic_of_forall_hasCondDistrib' h0 h_condDistrib le_rfl).map_eq,
     trajMeasure_map_frestrictLe]
 
-/-- Uniqueness of `trajMeasure`. -/
-lemma hasLaw_trajMeasure [IsFiniteMeasure P]
+/-- Uniqueness of `trajMeasure`: a process whose initial law is `μ₀` and whose conditional
+distribution at time `n + 1` given the past is `κ n` has law `trajMeasure μ₀ κ`. -/
+lemma hasLaw_trajMeasure
     {Y : (n : ℕ) → Ω → X n} (hY_meas : ∀ n, Measurable (Y n))
     (h0 : HasLaw (Y 0) μ₀ P)
     (h_condDistrib : ∀ n, HasCondDistrib (Y (n + 1)) (fun ω ↦ fun i : Iic n ↦ Y i ω) (κ n) P) :
     HasLaw (fun ω n ↦ Y n ω) (trajMeasure μ₀ κ) P where
   aemeasurable := by fun_prop
   map_eq := by
+    have := h0.isProbabilityMeasure
     refine IsProjectiveLimit.unique (P := fun (J : Finset ℕ) ↦ P.map (fun ω (i : J) ↦ Y i ω)) ?_ ?_
     · exact isProjectiveLimit_map (by fun_prop)
     rw [isProjectiveLimit_nat_iff]

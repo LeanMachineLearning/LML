@@ -274,7 +274,7 @@ lemma Environment.feedbackZero_comap (env : Environment 𝓞 𝓐 𝓨) (hF : �
 lemma Environment.comap_id (env : Environment 𝓞 𝓐 𝓨) :
     env.comap (fun _ ↦ id) (fun _ ↦ measurable_id) id measurable_id = env := rfl
 
-lemma Environment.comap_comp (env : Environment 𝓞 𝓐 𝓨) (hF : ∀ n, Measurable (F n))
+lemma Environment.comap_comap (env : Environment 𝓞 𝓐 𝓨) (hF : ∀ n, Measurable (F n))
     (hf : Measurable f)
     {G : (n : ℕ) → Hist 𝓞 𝓐'' 𝓨 n → Hist 𝓞 𝓐' 𝓨 n} (hG : ∀ n, Measurable (G n))
     {g : 𝓐'' → 𝓐'} (hg : Measurable g) :
@@ -317,8 +317,8 @@ lemma Environment.feedbackZero_comapAction (env : Environment 𝓞 𝓐 𝓨) (h
 lemma Environment.comapAction_id (env : Environment 𝓞 𝓐 𝓨) :
     env.comapAction id measurable_id = env := rfl
 
-lemma Environment.comapAction_comp (env : Environment 𝓞 𝓐 𝓨) (hf : Measurable f)
-    (g : 𝓐'' → 𝓐') (hg : Measurable g) :
+lemma Environment.comapAction_comapAction (env : Environment 𝓞 𝓐 𝓨) (hf : Measurable f)
+    {g : 𝓐'' → 𝓐'} (hg : Measurable g) :
     (env.comapAction f hf).comapAction g hg = env.comapAction (f ∘ g) (hf.comp hg) := rfl
 
 end ComapAction
@@ -457,7 +457,7 @@ end Congr
 
 section Runs
 
-variable {alg : Algorithm 𝓞 𝓐 𝓨} {P : Measure Ω} [IsFiniteMeasure P]
+variable {alg : Algorithm 𝓞 𝓐 𝓨} {P : Measure Ω} [SFinite P]
   {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 
 namespace IsAlgEnvSeq

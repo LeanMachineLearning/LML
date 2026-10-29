@@ -5,8 +5,10 @@ Authors: Paulo Rauber
 -/
 module
 
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Measure.WithDensity
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.MeasureCompProd
-public import LeanMachineLearning.ForMathlib.Probability.WithDensity
+public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.WithDensity
+public import LeanMachineLearning.ForMathlib.Probability.Kernel.RadonNikodym
 public import LeanMachineLearning.SequentialLearning.Algorithm
 
 /-!
@@ -19,22 +21,22 @@ concept that we also introduce here.
 
 ## Main definitions
 
-* `AbsolutelyContinuous alg alg₀`: `alg` is absolutely continuous with respect to `alg₀` (also
-  denoted `alg ≪ₐ alg₀`) when, in every situation, a set of actions with probability zero under
-  `alg₀` also has probability zero under `alg`. Intuitively, `alg` never acts in a way that `alg₀`
-  would never act.
-* `density alg alg₀ n`: a density function that allows obtaining the law of the history at time `n`
-  under `alg` from the law of the history at time `n` under `alg₀` when they are interacting with
-  the same environment and `alg ≪ₐ alg₀`.
+* `Algorithm.AbsolutelyContinuous alg alg₀`: `alg` is absolutely continuous with respect to `alg₀`
+  (also denoted `alg ≪ₐ alg₀`) when, in every situation, a set of actions with probability zero
+  under `alg₀` also has probability zero under `alg`. Intuitively, `alg` never acts in a way that
+  `alg₀` would never act.
+* `Algorithm.density alg alg₀ n`: a density function that allows obtaining the law of the history
+  at time `n` under `alg` from the law of the history at time `n` under `alg₀` when they are
+  interacting with the same environment and `alg ≪ₐ alg₀`.
 
-## Main results
+## Main statements
 
-* `absolutelyContinuous_map_hist`: the law of the history at time `n` under `alg` is absolutely
-  continuous with respect to the law of the history at time `n` under `alg₀` when they
-  are interacting with the same environment and `alg ≪ₐ alg₀`.
-* `hasLaw_history_withDensity`: the law of the history at time `n` under `alg` is the law of the
-  history at time `n` under `alg₀` with density `alg.density alg₀ n` when they are interacting
-  with the same environment and `alg ≪ₐ alg₀`.
+* `IsAlgEnvSeq.absolutelyContinuous_map_history`: the law of the history at time `n` under `alg`
+  is absolutely continuous with respect to the law of the history at time `n` under `alg₀` when
+  they are interacting with the same environment and `alg ≪ₐ alg₀`.
+* `IsAlgEnvSeq.hasLaw_history_withDensity`: the law of the history at time `n` under `alg` is the
+  law of the history at time `n` under `alg₀` with density `alg.density alg₀ n` when they are
+  interacting with the same environment and `alg ≪ₐ alg₀`.
 
 -/
 
@@ -62,9 +64,21 @@ lemma AbsolutelyContinuous.policyZero {alg alg₀ : Algorithm 𝓞 𝓐 𝓨} (h
     alg.policyZero o ≪ alg₀.policyZero o :=
   h.policy 0 (default, o)
 
-/-- If the algorithm `alg` is absolutely continuous with respect to the algorithm `alg₀` and they
-are both interacting with the same environment, then the law of the history before time `n` under
-`alg` is the law of the history before time `n` under `alg₀` with density `alg.density alg₀ n`. -/
+@[refl]
+lemma AbsolutelyContinuous.refl (alg : Algorithm 𝓞 𝓐 𝓨) : alg ≪ₐ alg where
+  policy _ _ := Measure.AbsolutelyContinuous.rfl
+
+lemma AbsolutelyContinuous.trans {alg₁ alg₂ alg₃ : Algorithm 𝓞 𝓐 𝓨} (h₁₂ : alg₁ ≪ₐ alg₂)
+    (h₂₃ : alg₂ ≪ₐ alg₃) :
+    alg₁ ≪ₐ alg₃ where
+  policy n h := (h₁₂.policy n h).trans (h₂₃.policy n h)
+
+/-- The density of the law of the history before time `n` under the algorithm `alg` with respect
+to its law under the algorithm `alg₀`, in a common environment: the product over the rounds of the
+Radon-Nikodym derivatives of the policies at the actions taken.
+If `alg ≪ₐ alg₀`, the law of the history before time `n` under `alg` is the law of the history
+before time `n` under `alg₀` with density `alg.density alg₀ n`
+(`IsAlgEnvSeq.hasLaw_history_withDensity`). -/
 noncomputable
 def density [MeasurableSpace.CountablyGenerated 𝓐] (alg alg₀ : Algorithm 𝓞 𝓐 𝓨) :
     (n : ℕ) → Hist 𝓞 𝓐 𝓨 n → ℝ≥0∞
@@ -135,7 +149,7 @@ lemma hasLaw_history_withDensity (h : IsAlgEnvSeq O A Y alg env P)
     induction n with
     | zero =>
       rw [(hasLaw_history_zero O A Y).map_eq, (hasLaw_history_zero O₀ A₀ Y₀).map_eq,
-        show alg.density alg₀ 0 = 1 from rfl, withDensity_one]
+        show alg.density alg₀ 0 = 1 from funext (Algorithm.density_zero alg alg₀), withDensity_one]
     | succ n ih =>
       let ρ h' (r : Round 𝓞 𝓐 𝓨) :=
         Kernel.rnDeriv (alg.policy n) (alg₀.policy n) (h', r.obs) r.action

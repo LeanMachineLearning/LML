@@ -72,7 +72,7 @@ However, the measurability is important in non-discrete spaces.
 
 
 Kernels are fully specified by their action on measurable functions.
-That is, if two kernels `κ η : Kernel 𝓧 𝓨` are such that for every measurable function `f : 𝓨 → ℝ≥0∞` and every `x : 𝓧`, `∫ y, f y ∂(κ x) = ∫ y, f y ∂(η x)`, then `κ = η`.
+That is, if two kernels `κ η : Kernel 𝓧 𝓨` are such that for every measurable function `f : 𝓨 → ℝ≥0∞` and every `x : 𝓧`, `∫⁻ y, f y ∂(κ x) = ∫⁻ y, f y ∂(η x)`, then `κ = η`.
 ```lean
 example (κ η : Kernel 𝓧 𝓨) :
     κ = η ↔ ∀ x f, Measurable f → ∫⁻ y, f y ∂(κ x) = ∫⁻ y, f y ∂(η x) :=
@@ -82,7 +82,7 @@ Another way to show that two kernels are equal is to show that their values `κ 
 
 # Classes of kernels
 
-A kernel `κ : 𝓧 ⟶ 𝓨` is a Markov kernel if `κ x` is a probability measure for every `x : 𝓧`.
+A kernel `κ : Kernel 𝓧 𝓨` is a Markov kernel if `κ x` is a probability measure for every `x : 𝓧`.
 If the supremum of `κ x univ` over `x : 𝓧` is finite, then `κ` is said to be a finite kernel.
 Finally, Mathlib also contains the class of s-finite kernels, which are kernels that can be expressed as a countable sum of finite kernels.
 Those three properties are denoted by typeclasses {InlineLean.module}`[IsMarkovKernel κ]`, `[IsFiniteKernel κ]` and `[IsSFiniteKernel κ]` respectively.
@@ -106,7 +106,7 @@ Among the deterministic kernels, a few play a special role.
 The identity kernel `Kernel.id : Kernel 𝓧 𝓧` is the deterministic kernel associated with the identity function: it maps `x` to the Dirac measure at `x`.
 The copy kernel `Kernel.copy : Kernel 𝓧 (𝓧 × 𝓧)` maps `x` to the Dirac measure at `(x, x)`.
 The discard kernel `Kernel.discard : Kernel 𝓧 Unit` maps `x` to the unique probability measure on the one-point space `Unit`.
-Another useful (not deterministic) kernel is the constant kernel `Kernel.const μ : Kernel Ω 𝓧` which maps every point of `Ω` to the same probability measure `μ` on `𝓧`.
+Another useful (not deterministic) kernel is the constant kernel `Kernel.const Ω μ : Kernel Ω 𝓧` which maps every point of `Ω` to the same measure `μ` on `𝓧`. It is a Markov kernel if `μ` is a probability measure.
 
 
 # Composition

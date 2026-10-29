@@ -10,10 +10,23 @@ public import Mathlib.CategoryTheory.Countable
 public import Mathlib.MeasureTheory.Constructions.Polish.Basic
 public import Mathlib.Order.CompletePartialOrder
 
-/-! # Argmax and argmin functions on finite sets
+/-! # Maximum, minimum, argmax and argmin of a function on a finite type
 
-We prove in particular that those functions are measurable.
+For `f : ι → α` with `ι` a nonempty finite type and `α` a linear order, we define the maximum
+`Function.max f` and the minimum `Function.min f` of `f`, as well as an index `argmax f` (resp.
+`argmin f`) at which `f` attains its maximum (resp. minimum).
 
+## Main definitions
+
+* `Function.max f`, `Function.min f`: the maximum and minimum values of `f`.
+* `argmax f`, `argmin f`: an index at which `f` attains its maximum, resp. minimum.
+
+## Main statements
+
+* `isMaxOn_argmax`, `isMinOn_argmin`: `f` attains its maximum at `argmax f` and its minimum at
+  `argmin f`.
+* `measurable_max`, `measurable_min`, `measurable_argmax`, `measurable_argmin`: the maximum,
+  minimum, argmax and argmin are measurable functions of `f`.
 -/
 
 @[expose] public section
@@ -28,7 +41,8 @@ namespace Function
 @[to_dual /-- The minimum value of a tuple. -/]
 abbrev max : α := univ.sup' univ_nonempty f
 
-@[to_dual min_le]
+/-- Every value of `f` is at most its maximum. -/
+@[to_dual min_le /-- The minimum of `f` is at most every value of `f`. -/]
 lemma le_max (x : ι) : f x ≤ max f := le_sup' _ (by simp)
 
 end Function
@@ -47,14 +61,18 @@ noncomputable def argmax := (exists_argmax f).choose
 @[to_dual]
 lemma argmax_spec : f (argmax f) = f.max := (exists_argmax f).choose_spec
 
-@[to_dual]
-lemma isMaxOn_argmax (x : ι) : f x ≤ f (argmax f) := by
-  rw [argmax_spec f]
-  exact f.le_max x
+/-- `f` attains its maximum at `argmax f`. -/
+lemma isMaxOn_argmax : IsMaxOn f Set.univ (argmax f) :=
+  isMaxOn_univ_iff.2 fun x ↦ argmax_spec f ▸ f.le_max x
+
+/-- `f` attains its minimum at `argmin f`. -/
+lemma isMinOn_argmin : IsMinOn f Set.univ (argmin f) :=
+  isMinOn_univ_iff.2 fun x ↦ argmin_spec f ▸ f.min_le x
 
 variable [MeasurableSpace α]
 
-@[to_dual (attr := fun_prop)]
+/-- The maximum of a tuple is a measurable function of the tuple. -/
+@[to_dual (attr := fun_prop) /-- The minimum of a tuple is a measurable function of the tuple. -/]
 lemma measurable_max [MeasurableSup₂ α] : Measurable (fun (t : ι → α) => t.max) := by
   suffices (fun f : ι → α ↦ f.max) = (univ.sup' univ_nonempty fun i f => f i) by
     rw [this]
@@ -62,7 +80,8 @@ lemma measurable_max [MeasurableSup₂ α] : Measurable (fun (t : ι → α) => 
   ext
   simp [Function.max]
 
-@[to_dual (attr := fun_prop)]
+/-- The argmax of a tuple is a measurable function of the tuple. -/
+@[to_dual (attr := fun_prop) /-- The argmin of a tuple is a measurable function of the tuple. -/]
 lemma measurable_argmax [MeasurableSpace ι] [MeasurableEq α] [MeasurableSup₂ α] :
     Measurable fun f : ι → α ↦ argmax f := by
   refine measurable_to_countable' fun i ↦ ?_
@@ -90,4 +109,4 @@ lemma neg_max_eq_min_neg [AddGroup α] [AddLeftMono α] [AddRightMono α] : -f.m
   · simp; grind
   · simp only [inf'_le_iff, mem_univ, Pi.neg_apply, neg_le_neg_iff, sup'_le_iff, forall_const,
       true_and]
-    exact ⟨argmax f, isMaxOn_argmax f⟩
+    exact ⟨argmax f, isMaxOn_univ_iff.1 (isMaxOn_argmax f)⟩

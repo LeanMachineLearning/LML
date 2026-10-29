@@ -19,16 +19,13 @@ import Mathlib.Probability.Kernel.Composition.AbsolutelyContinuous
 The chain rule `klDiv_compProd_eq_add` expresses the conditional divergence as
 `klDiv (μ ⊗ₘ κ) (μ ⊗ₘ η)`. When the target space of the kernels is countably generated (or the
 source is countable), the function `a ↦ klDiv (κ a) (η a)` is measurable
-(`measurable_klDiv_kernel`) and the conditional divergence is its integral:
+(`measurable_klDiv_kernel`) and the conditional divergence is its integral.
+
+## Main statements
 
 * `klDiv_compProd_right_eq_lintegral`: `klDiv (μ ⊗ₘ κ) (μ ⊗ₘ η) = ∫⁻ a, klDiv (κ a) (η a) ∂μ`.
 * `klDiv_compProd_eq_add_lintegral`:
   `klDiv (μ ⊗ₘ κ) (ν ⊗ₘ η) = klDiv μ ν + ∫⁻ a, klDiv (κ a) (η a) ∂μ`.
-
-We also record the data processing inequality for the two projections
-(`klDiv_le_compProd`, `klDiv_comp_le_compProd`) and the invariance of the divergence under
-measurable embeddings (`klDiv_map_measurableEmbedding`) and measurable equivalences
-(`klDiv_map_measurableEquiv`).
 -/
 
 @[expose] public section
@@ -40,47 +37,9 @@ namespace InformationTheory
 
 variable {α β γ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β} {mγ : MeasurableSpace γ}
 
-/-- The Kullback–Leibler divergence is invariant under measurable embeddings. -/
-lemma klDiv_map_measurableEmbedding (μ ν : Measure α) [IsFiniteMeasure μ] [IsFiniteMeasure ν]
-    {f : α → β} (hf : MeasurableEmbedding f) :
-    klDiv (μ.map f) (ν.map f) = klDiv μ ν := by
-  refine le_antisymm (klDiv_map_le μ ν hf.measurable) ?_
-  rcases isEmpty_or_nonempty α with hα | hα
-  · simp [μ.eq_zero_of_isEmpty, ν.eq_zero_of_isEmpty]
-  have h := klDiv_map_le (μ.map f) (ν.map f) hf.measurable_invFun
-  rwa [Measure.map_map hf.measurable_invFun hf.measurable,
-    Measure.map_map hf.measurable_invFun hf.measurable, hf.leftInverse_invFun.comp_eq_id,
-    Measure.map_id, Measure.map_id] at h
-
-/-- The Kullback–Leibler divergence is invariant under measurable equivalences. -/
-lemma klDiv_map_measurableEquiv (μ ν : Measure α) [IsFiniteMeasure μ] [IsFiniteMeasure ν]
-    (e : α ≃ᵐ β) :
-    klDiv (μ.map e) (ν.map e) = klDiv μ ν :=
-  klDiv_map_measurableEmbedding μ ν e.measurableEmbedding
-
-/-- **Data processing inequality** for the first projection: for Markov kernels `κ` and `η`,
-`μ` and `ν` are the images of `μ ⊗ₘ κ` and `ν ⊗ₘ η` under `Prod.fst`, hence
-`klDiv μ ν ≤ klDiv (μ ⊗ₘ κ) (ν ⊗ₘ η)`. -/
-lemma klDiv_le_compProd (μ ν : Measure α) [IsFiniteMeasure μ] [IsFiniteMeasure ν]
-    (κ η : Kernel α β) [IsMarkovKernel κ] [IsMarkovKernel η] :
-    klDiv μ ν ≤ klDiv (μ ⊗ₘ κ) (ν ⊗ₘ η) := by
-  conv_lhs => rw [← Measure.fst_compProd μ κ, ← Measure.fst_compProd ν η]
-  rw [Measure.fst, Measure.fst]
-  exact klDiv_map_le _ _ measurable_fst
-
-/-- **Data processing inequality** for the second projection: `κ ∘ₘ μ` and `η ∘ₘ ν` are the images
-of `μ ⊗ₘ κ` and `ν ⊗ₘ η` under `Prod.snd`, hence
-`klDiv (κ ∘ₘ μ) (η ∘ₘ ν) ≤ klDiv (μ ⊗ₘ κ) (ν ⊗ₘ η)`. -/
-lemma klDiv_comp_le_compProd (μ ν : Measure α) [IsFiniteMeasure μ] [IsFiniteMeasure ν]
-    (κ η : Kernel α β) [IsFiniteKernel κ] [IsFiniteKernel η] :
-    klDiv (κ ∘ₘ μ) (η ∘ₘ ν) ≤ klDiv (μ ⊗ₘ κ) (ν ⊗ₘ η) := by
-  rw [← Measure.snd_compProd μ κ, ← Measure.snd_compProd ν η, Measure.snd, Measure.snd]
-  exact klDiv_map_le _ _ measurable_snd
-
 section kernel
 
-variable [MeasurableSpace.CountableOrCountablyGenerated α β] {κ η : Kernel α β} [IsFiniteKernel κ]
-  [IsFiniteKernel η]
+variable [MeasurableSpace.CountableOrCountablyGenerated α β]
 
 /-- For finite kernels with countably generated target, `a ↦ klDiv (κ a) (η a)` is measurable. -/
 lemma measurable_klDiv_kernel (κ η : Kernel α β) [IsFiniteKernel κ] [IsFiniteKernel η] :
@@ -145,12 +104,18 @@ lemma klDiv_compProd_eq_add_lintegral (μ ν : Measure α) [IsFiniteMeasure μ] 
 omit [MeasurableSpace.CountableOrCountablyGenerated α β] in
 /-- `klDiv_compProd_left` for a kernel which is only a probability measure on a measurable set of
 full measure for both `μ` and `ν`. -/
-lemma klDiv_compProd_left_of_ae [Nonempty β] (μ ν : Measure α) [IsFiniteMeasure μ]
+lemma klDiv_compProd_left_of_ae (μ ν : Measure α) [IsFiniteMeasure μ]
     [IsFiniteMeasure ν] (κ : Kernel α β) [IsSFiniteKernel κ] {S : Set α} (hS : MeasurableSet S)
     (hκ : ∀ a ∈ S, IsProbabilityMeasure (κ a)) (hμ : ∀ᵐ a ∂μ, a ∈ S) (hν : ∀ᵐ a ∂ν, a ∈ S) :
     klDiv (μ ⊗ₘ κ) (ν ⊗ₘ κ) = klDiv μ ν := by
   classical
-  obtain ⟨b⟩ := ‹Nonempty β›
+  rcases isEmpty_or_nonempty β with hβ | ⟨⟨b⟩⟩
+  · -- if `β` is empty, then `S` is empty, hence `μ = ν = 0`
+    have hS_empty (a : α) (ha : a ∈ S) : False :=
+      have := hκ a ha; IsProbabilityMeasure.ne_zero (κ a) (κ a).eq_zero_of_isEmpty
+    have hμ0 : μ = 0 := ae_eq_bot.1 (Filter.eventually_false_iff_eq_bot.1 (hμ.mono hS_empty))
+    have hν0 : ν = 0 := ae_eq_bot.1 (Filter.eventually_false_iff_eq_bot.1 (hν.mono hS_empty))
+    simp [hμ0, hν0]
   let κ' : Kernel α β := Kernel.piecewise hS κ (Kernel.const α (Measure.dirac b))
   have hκ' : IsMarkovKernel κ' := ⟨fun a ↦ by
     by_cases ha : a ∈ S

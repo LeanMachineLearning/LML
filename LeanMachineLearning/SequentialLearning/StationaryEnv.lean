@@ -5,6 +5,7 @@ Authors: Rémy Degenne, Paulo Rauber
 -/
 module
 
+public import LeanMachineLearning.ForMathlib.Probability.Independence.Conditional
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.MapComap
 public import LeanMachineLearning.SequentialLearning.Algorithm
 
@@ -141,23 +142,23 @@ lemma feedbackCondObsAction_eq_of_feedback_eq (env : Environment 𝓞 𝓐 𝓨)
 
 end Environment
 
-namespace Environment.IsOblivious
+section IsOblivious
+
+/-! ### Runs in an oblivious environment -/
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨} {P : Measure Ω}
   {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {n N : ℕ}
 
 /-- The observation at time `n` has law `env.obsLaw n`. -/
-lemma hasLaw_obs [IsProbabilityMeasure P] [env.IsOblivious]
+lemma IsAlgEnvSeq.hasLaw_obs_obsLaw [IsProbabilityMeasure P] [env.IsOblivious]
     (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     HasLaw (O n) (env.obsLaw n) P := by
   have h' := h.hasCondDistrib_obs n
   rw [env.obs_eq_const_obsLaw] at h'
   exact h'.hasLaw_of_const
 
-variable [IsFiniteMeasure P]
-
-lemma hasCondDistrib_feedback_history_action [env.IsOblivious]
+lemma IsAlgEnvSeq.hasCondDistrib_feedback_history_action_feedbackCondObsAction [env.IsOblivious]
     (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     HasCondDistrib (Y n) (fun ω ↦ ((history O A Y n ω, O n ω), A n ω))
       ((env.feedbackCondObsAction n).comap (fun p ↦ (p.1.2, p.2)) (by fun_prop)
@@ -167,27 +168,29 @@ lemma hasCondDistrib_feedback_history_action [env.IsOblivious]
 
 /-- The conditional distribution of the feedback at time `n` given the observation and the action
 at time `n` is `env.feedbackCondObsAction n`. -/
-lemma hasCondDistrib_feedback [env.IsOblivious] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
+lemma IsAlgEnvSeq.hasCondDistrib_feedback_feedbackCondObsAction [SFinite P] [env.IsOblivious]
+    (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     HasCondDistrib (Y n) (fun ω ↦ (O n ω, A n ω)) (env.feedbackCondObsAction n) P :=
-  (hasCondDistrib_feedback_history_action h n).comp_right
+  (h.hasCondDistrib_feedback_history_action_feedbackCondObsAction n).comp_right
 
 /-- Conditionally on an event determined by the history before time `n`, the observation and the
 action at time `n`, on which the observation-action pair is equal to `b`, the feedback at time `n`
 has law `env.feedbackCondObsAction n b`. -/
-lemma hasLaw_feedback_cond [env.IsOblivious] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ)
+lemma IsAlgEnvSeq.hasLaw_feedback_cond_feedbackCondObsAction [IsFiniteMeasure P] [env.IsOblivious]
+    (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ)
     {s : Set ((Hist 𝓞 𝓐 𝓨 n × 𝓞) × 𝓐)} (hs : MeasurableSet s) {b : 𝓞 × 𝓐}
     (hsb : ∀ u ∈ s, (u.1.2, u.2) = b)
     (hP : P ((fun ω ↦ ((history O A Y n ω, O n ω), A n ω)) ⁻¹' s) ≠ 0) :
     HasLaw (Y n) (env.feedbackCondObsAction n b)
       P[|(fun ω ↦ ((history O A Y n ω, O n ω), A n ω)) ⁻¹' s] := by
-  refine (hasCondDistrib_feedback_history_action h n).hasLaw_cond (h.measurable_feedback _) hs
+  refine (h.hasCondDistrib_feedback_history_action_feedbackCondObsAction n).hasLaw_cond hs
     (fun u hu ↦ ?_) hP
   rw [Kernel.comap_apply, hsb u hu]
 
 /-- Conditionally on an event determined by the history before time `n`, the observation and the
 action at time `n`, on which the observation-action pair is constant, the feedback at time `n` is
 independent of the history before time `n`, the observation and the action at time `n`. -/
-lemma indepFun_history_action_feedback_cond [env.IsOblivious]
+lemma IsAlgEnvSeq.indepFun_history_action_feedback_cond [IsFiniteMeasure P] [env.IsOblivious]
     (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ)
     {s : Set ((Hist 𝓞 𝓐 𝓨 n × 𝓞) × 𝓐)} (hs : MeasurableSet s) {b : 𝓞 × 𝓐}
     (hsb : ∀ u ∈ s, (u.1.2, u.2) = b) :
@@ -196,8 +199,8 @@ lemma indepFun_history_action_feedback_cond [env.IsOblivious]
   have hO := h.measurable_obs
   have hA := h.measurable_action
   have hY := h.measurable_feedback
-  refine (hasCondDistrib_feedback_history_action h n).indepFun_cond (by fun_prop) hs
-    (η := env.feedbackCondObsAction n b) fun u hu ↦ ?_
+  refine (h.hasCondDistrib_feedback_history_action_feedbackCondObsAction n).indepFun_cond
+    (by fun_prop) hs (η := env.feedbackCondObsAction n b) fun u hu ↦ ?_
   rw [Kernel.comap_apply, hsb u hu]
 
 variable [StandardBorelSpace 𝓞] [Nonempty 𝓞] [StandardBorelSpace 𝓐] [Nonempty 𝓐]
@@ -205,7 +208,7 @@ variable [StandardBorelSpace 𝓞] [Nonempty 𝓞] [StandardBorelSpace 𝓐] [No
 
 /-- The feedback at time `n` is conditionally independent of the history before time `n`, given
 the observation and the action at time `n`. -/
-lemma condIndepFun_feedback_history [StandardBorelSpace Ω]
+lemma IsAlgEnvSeq.condIndepFun_feedback_history [IsFiniteMeasure P] [StandardBorelSpace Ω]
     [env.IsOblivious] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     Y n ⟂ᵢ[fun ω ↦ (O n ω, A n ω), (h.measurable_obs n).prodMk (h.measurable_action n); P]
       history O A Y n := by
@@ -214,8 +217,8 @@ lemma condIndepFun_feedback_history [StandardBorelSpace Ω]
   have hY := h.measurable_feedback
   refine condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkLeft
     (η := env.feedbackCondObsAction n) (by fun_prop) (by fun_prop) (by fun_prop) ?_
-  refine HasCondDistrib.condDistrib_eq ?_
-  have h' := hasCondDistrib_feedback_history_action h n
+  refine HasCondDistrib.condDistrib_ae_eq ?_
+  have h' := h.hasCondDistrib_feedback_history_action_feedbackCondObsAction n
   have hκ : ((env.feedbackCondObsAction n).comap (fun p ↦ (p.1.2, p.2)) (by fun_prop)
         : Kernel ((Hist 𝓞 𝓐 𝓨 n × 𝓞) × 𝓐) 𝓨)
       = ((env.feedbackCondObsAction n).prodMkLeft (Hist 𝓞 𝓐 𝓨 n)).comap
@@ -225,16 +228,16 @@ lemma condIndepFun_feedback_history [StandardBorelSpace Ω]
 
 /-- The feedback at time `n` is conditionally independent of the history before time `n`, the
 observation and the action at time `n`, given the observation and the action at time `n`. -/
-lemma condIndepFun_feedback_history_obs_action [StandardBorelSpace Ω]
-    [env.IsOblivious] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
+lemma IsAlgEnvSeq.condIndepFun_feedback_history_obs_action [IsFiniteMeasure P]
+    [StandardBorelSpace Ω] [env.IsOblivious] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     Y n ⟂ᵢ[fun ω ↦ (O n ω, A n ω), (h.measurable_obs n).prodMk (h.measurable_action n); P]
       (fun ω ↦ (history O A Y n ω, (O n ω, A n ω))) := by
   have hO := h.measurable_obs
   have hA := h.measurable_action
   have hY := h.measurable_feedback
-  exact (condIndepFun_feedback_history h n).prod_right (by fun_prop) (by fun_prop) (by fun_prop)
+  exact (h.condIndepFun_feedback_history n).prod_right (by fun_prop) (by fun_prop) (by fun_prop)
 
-end Environment.IsOblivious
+end IsOblivious
 
 /-- An environment is stationary if it is oblivious and its laws do not depend on time: the
 observations have a fixed law, and the feedback depends only on the current observation and action,
@@ -282,23 +285,23 @@ lemma feedbackCondObsAction_eq_feedbackZero (env : Environment 𝓞 𝓐 𝓨) [
 
 end Environment
 
-namespace Environment.IsStationary
+section IsStationary
+
+/-! ### Runs in a stationary environment -/
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨} {P : Measure Ω}
   {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 
 /-- The observation at time `n` has law `env.obsZero`. -/
-lemma hasLaw_obs [IsProbabilityMeasure P] [env.IsStationary]
+lemma IsAlgEnvSeq.hasLaw_obs_obsZero [IsProbabilityMeasure P] [env.IsStationary]
     (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     HasLaw (O n) env.obsZero P := by
   have h' := h.hasCondDistrib_obs n
   rw [env.obs_eq_const_obsZero] at h'
   exact h'.hasLaw_of_const
 
-variable [IsFiniteMeasure P]
-
-lemma hasCondDistrib_feedback_history_action [env.IsStationary]
+lemma IsAlgEnvSeq.hasCondDistrib_feedback_history_action_feedbackZero [env.IsStationary]
     (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     HasCondDistrib (Y n) (fun ω ↦ ((history O A Y n ω, O n ω), A n ω))
       (env.feedbackZero.comap (fun p ↦ (p.1.2, p.2)) (by fun_prop)
@@ -308,23 +311,25 @@ lemma hasCondDistrib_feedback_history_action [env.IsStationary]
 
 /-- The conditional distribution of the feedback at time `n` given the observation and the action
 at time `n` is `env.feedbackZero`. -/
-lemma hasCondDistrib_feedback [env.IsStationary] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
+lemma IsAlgEnvSeq.hasCondDistrib_feedback_feedbackZero [SFinite P] [env.IsStationary]
+    (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ) :
     HasCondDistrib (Y n) (fun ω ↦ (O n ω, A n ω)) env.feedbackZero P :=
-  (hasCondDistrib_feedback_history_action h n).comp_right
+  (h.hasCondDistrib_feedback_history_action_feedbackZero n).comp_right
 
 /-- Conditionally on an event determined by the history before time `n`, the observation and the
 action at time `n`, on which the observation-action pair is equal to `b`, the feedback at time `n`
 has law `env.feedbackZero b`. -/
-lemma hasLaw_feedback_cond [env.IsStationary] (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ)
+lemma IsAlgEnvSeq.hasLaw_feedback_cond_feedbackZero [IsFiniteMeasure P] [env.IsStationary]
+    (h : IsAlgEnvSeq O A Y alg env P) (n : ℕ)
     {s : Set ((Hist 𝓞 𝓐 𝓨 n × 𝓞) × 𝓐)} (hs : MeasurableSet s) {b : 𝓞 × 𝓐}
     (hsb : ∀ u ∈ s, (u.1.2, u.2) = b)
     (hP : P ((fun ω ↦ ((history O A Y n ω, O n ω), A n ω)) ⁻¹' s) ≠ 0) :
     HasLaw (Y n) (env.feedbackZero b)
       P[|(fun ω ↦ ((history O A Y n ω, O n ω), A n ω)) ⁻¹' s] := by
   rw [← env.feedbackCondObsAction_eq_feedbackZero n]
-  exact IsOblivious.hasLaw_feedback_cond h n hs hsb hP
+  exact h.hasLaw_feedback_cond_feedbackCondObsAction n hs hsb hP
 
-end Environment.IsStationary
+end IsStationary
 
 section Oblivious
 
@@ -466,7 +471,7 @@ instance : (Environment.banditSeq ν).IsOblivious :=
 
 @[simp]
 lemma obsLaw_banditSeq (n : ℕ) : (Environment.banditSeq ν).obsLaw n = Measure.dirac () :=
-  Measure.eq_dirac_unit _
+  Measure.eq_dirac_of_subsingleton _ ()
 
 @[simp]
 lemma feedbackCondObsAction_banditSeq (n : ℕ) :
@@ -517,7 +522,7 @@ instance : (Environment.bandit ν).IsOblivious :=
 
 @[simp]
 lemma obsLaw_bandit (n : ℕ) : (Environment.bandit ν).obsLaw n = Measure.dirac () :=
-  Measure.eq_dirac_unit _
+  Measure.eq_dirac_of_subsingleton _ ()
 
 @[simp]
 lemma feedbackCondObsAction_bandit (n : ℕ) :
@@ -530,12 +535,12 @@ namespace IsAlgEnvSeq
 
 section General
 
-variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {alg : Algorithm 𝓞 𝓐 𝓨}
-  {P : Measure Ω} [IsProbabilityMeasure P]
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {alg : Algorithm 𝓞 𝓐 𝓨} {P : Measure Ω}
   {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 
 /-- The observation at time `n` has law `μ n`. -/
-lemma hasLaw_obs_oblivious {μ : ℕ → Measure 𝓞} [∀ n, IsProbabilityMeasure (μ n)]
+lemma hasLaw_obs_oblivious [IsProbabilityMeasure P]
+    {μ : ℕ → Measure 𝓞} [∀ n, IsProbabilityMeasure (μ n)]
     {ν : ℕ → Kernel (𝓞 × 𝓐) 𝓨} [∀ n, IsMarkovKernel (ν n)]
     (h : IsAlgEnvSeq O A Y alg (Environment.oblivious μ ν) P) (n : ℕ) :
     HasLaw (O n) (μ n) P := by
@@ -545,7 +550,8 @@ lemma hasLaw_obs_oblivious {μ : ℕ → Measure 𝓞} [∀ n, IsProbabilityMeas
 
 /-- The conditional distribution of the feedback at time `n` given the observation and the action
 at time `n` is `ν n`. -/
-lemma hasCondDistrib_feedback_oblivious {μ : ℕ → Measure 𝓞} [∀ n, IsProbabilityMeasure (μ n)]
+lemma hasCondDistrib_feedback_oblivious [SFinite P]
+    {μ : ℕ → Measure 𝓞} [∀ n, IsProbabilityMeasure (μ n)]
     {ν : ℕ → Kernel (𝓞 × 𝓐) 𝓨} [∀ n, IsMarkovKernel (ν n)]
     (h : IsAlgEnvSeq O A Y alg (Environment.oblivious μ ν) P) (n : ℕ) :
     HasCondDistrib (Y n) (fun ω ↦ (O n ω, A n ω)) (ν n) P := by
@@ -554,7 +560,7 @@ lemma hasCondDistrib_feedback_oblivious {μ : ℕ → Measure 𝓞} [∀ n, IsPr
   exact h'.comp_right
 
 /-- The observation at time `n` has law `μ`. -/
-lemma hasLaw_obs_stationary {μ : Measure 𝓞} [IsProbabilityMeasure μ]
+lemma hasLaw_obs_stationary [IsProbabilityMeasure P] {μ : Measure 𝓞} [IsProbabilityMeasure μ]
     {ν : Kernel (𝓞 × 𝓐) 𝓨} [IsMarkovKernel ν]
     (h : IsAlgEnvSeq O A Y alg (Environment.stationary μ ν) P) (n : ℕ) :
     HasLaw (O n) μ P :=
@@ -562,7 +568,8 @@ lemma hasLaw_obs_stationary {μ : Measure 𝓞} [IsProbabilityMeasure μ]
 
 /-- The conditional distribution of the feedback at time `n` given the observation and the action
 at time `n` is `ν`. -/
-lemma hasCondDistrib_feedback_stationary {μ : Measure 𝓞} [IsProbabilityMeasure μ]
+lemma hasCondDistrib_feedback_stationary [SFinite P]
+    {μ : Measure 𝓞} [IsProbabilityMeasure μ]
     {ν : Kernel (𝓞 × 𝓐) 𝓨} [IsMarkovKernel ν]
     (h : IsAlgEnvSeq O A Y alg (Environment.stationary μ ν) P) (n : ℕ) :
     HasCondDistrib (Y n) (fun ω ↦ (O n ω, A n ω)) ν P :=
@@ -574,12 +581,12 @@ section Bandit
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
   {alg : Algorithm Unit 𝓐 𝓨} {ν : Kernel 𝓐 𝓨} [IsMarkovKernel ν]
-  {P : Measure Ω} [IsProbabilityMeasure P]
+  {P : Measure Ω}
   {O : ℕ → Ω → Unit} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
 
 /-- The conditional distribution of the feedback at time `n` given the action at time `n`
 is `ν n`. -/
-lemma hasCondDistrib_feedback_banditSeq {ν : ℕ → Kernel 𝓐 𝓨} [∀ n, IsMarkovKernel (ν n)]
+lemma hasCondDistrib_feedback_banditSeq [SFinite P] {ν : ℕ → Kernel 𝓐 𝓨} [∀ n, IsMarkovKernel (ν n)]
     (h : IsAlgEnvSeq O A Y alg (Environment.banditSeq ν) P) (n : ℕ) :
     HasCondDistrib (Y n) (A n) (ν n) P := by
   have h' : HasCondDistrib (Y n) (fun ω ↦ (O n ω, A n ω)) ((ν n).prodMkLeft Unit) P :=
@@ -587,42 +594,43 @@ lemma hasCondDistrib_feedback_banditSeq {ν : ℕ → Kernel 𝓐 𝓨} [∀ n, 
   exact h'.comp_right
 
 /-- The conditional distribution of the feedback at time `n` given the action at time `n` is `ν`. -/
-lemma hasCondDistrib_feedback_bandit
+lemma hasCondDistrib_feedback_bandit [SFinite P]
     (h : IsAlgEnvSeq O A Y alg (Environment.bandit ν) P) (n : ℕ) :
     HasCondDistrib (Y n) (A n) ν P :=
   hasCondDistrib_feedback_banditSeq h n
 
 /-- The conditional distribution of the feedback at time `n` given the action at time `n` is `ν`. -/
-lemma condDistrib_feedback_bandit [StandardBorelSpace 𝓨] [Nonempty 𝓨]
+lemma condDistrib_feedback_bandit [IsFiniteMeasure P] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
     (h : IsAlgEnvSeq O A Y alg (Environment.bandit ν) P) (n : ℕ) :
     condDistrib (Y n) (A n) P =ᵐ[P.map (A n)] ν :=
-  (hasCondDistrib_feedback_bandit h n).condDistrib_eq
+  (hasCondDistrib_feedback_bandit h n).condDistrib_ae_eq
 
 /-- Conditionally on an event determined by the history before time `n` and the action at time
 `n`, on which that action is equal to `b`, the feedback at time `n` has law `ν b`. -/
-lemma hasLaw_feedback_cond_bandit (h : IsAlgEnvSeq O A Y alg (Environment.bandit ν) P) (n : ℕ)
+lemma hasLaw_feedback_cond_bandit [IsFiniteMeasure P]
+    (h : IsAlgEnvSeq O A Y alg (Environment.bandit ν) P) (n : ℕ)
     {s : Set ((Hist Unit 𝓐 𝓨 n × Unit) × 𝓐)} (hs : MeasurableSet s) {b : 𝓐}
     (hsb : ∀ u ∈ s, u.2 = b)
     (hP : P ((fun ω ↦ ((history O A Y n ω, O n ω), A n ω)) ⁻¹' s) ≠ 0) :
     HasLaw (Y n) (ν b) P[|(fun ω ↦ ((history O A Y n ω, O n ω), A n ω)) ⁻¹' s] := by
-  simpa using Environment.IsOblivious.hasLaw_feedback_cond h n hs (b := ((), b))
+  simpa using h.hasLaw_feedback_cond_feedbackCondObsAction n hs (b := ((), b))
     (fun u hu ↦ by simp [hsb u hu]) hP
 
 /-- Conditionally on an event determined by the history before time `n` and the action at time
 `n`, on which that action is constant, the feedback at time `n` is independent of the
 history before time `n` and of the action at time `n`. -/
-lemma indepFun_history_action_feedback_cond_bandit
+lemma indepFun_history_action_feedback_cond_bandit [IsFiniteMeasure P]
     (h : IsAlgEnvSeq O A Y alg (Environment.bandit ν) P) (n : ℕ)
     {s : Set ((Hist Unit 𝓐 𝓨 n × Unit) × 𝓐)} (hs : MeasurableSet s) {b : 𝓐}
     (hsb : ∀ u ∈ s, u.2 = b) :
     (fun ω ↦ ((history O A Y n ω, O n ω), A n ω))
       ⟂ᵢ[P[|(fun ω ↦ ((history O A Y n ω, O n ω), A n ω)) ⁻¹' s]] Y n :=
-  Environment.IsOblivious.indepFun_history_action_feedback_cond h n hs (b := ((), b))
+  h.indepFun_history_action_feedback_cond n hs (b := ((), b))
     fun u hu ↦ by simp [hsb u hu]
 
 /-- The feedback at time `n` is conditionally independent of the history before time `n`
 given the action at time `n`. -/
-lemma condIndepFun_feedback_history_action_bandit [StandardBorelSpace Ω]
+lemma condIndepFun_feedback_history_action_bandit [IsFiniteMeasure P] [StandardBorelSpace Ω]
     [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
     (h : IsAlgEnvSeq O A Y alg (Environment.bandit ν) P) (n : ℕ) :
     Y n ⟂ᵢ[A n, h.measurable_action _ ; P] (fun ω ↦ (history O A Y n ω, O n ω)) := by
@@ -631,11 +639,13 @@ lemma condIndepFun_feedback_history_action_bandit [StandardBorelSpace Ω]
   have hY := h.measurable_feedback
   refine condIndepFun_of_exists_condDistrib_prod_ae_eq_prodMkLeft (η := ν)
     (by fun_prop) (by fun_prop) (by fun_prop) ?_
-  refine HasCondDistrib.condDistrib_eq ?_
+  refine HasCondDistrib.condDistrib_ae_eq ?_
   have h' := h.hasCondDistrib_feedback n
   rwa [feedback_bandit] at h'
 
-lemma condIndepFun_feedback_history_action_action_bandit [StandardBorelSpace Ω]
+/-- The feedback at time `n` is conditionally independent of the history before time `n` and the
+action at time `n`, given the action at time `n`. -/
+lemma condIndepFun_feedback_history_action_action_bandit [IsFiniteMeasure P] [StandardBorelSpace Ω]
     [StandardBorelSpace 𝓐] [Nonempty 𝓐] [StandardBorelSpace 𝓨] [Nonempty 𝓨]
     (h : IsAlgEnvSeq O A Y alg (Environment.bandit ν) P) (n : ℕ) :
     Y n ⟂ᵢ[A n, h.measurable_action n; P]

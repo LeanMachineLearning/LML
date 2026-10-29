@@ -8,6 +8,7 @@ module
 public import Mathlib.InformationTheory.KullbackLeibler.Basic
 
 import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.ChainRule
+import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.DataProcessing
 
 /-!
 # Convexity of the Kullback–Leibler divergence for mixtures

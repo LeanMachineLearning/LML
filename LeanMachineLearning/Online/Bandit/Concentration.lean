@@ -7,10 +7,32 @@ module
 
 public import LeanMachineLearning.ForMathlib.Probability.Moments.SubGaussian
 public import LeanMachineLearning.Online.Bandit.ArrayProbSpace
-public import LeanMachineLearning.Online.Bandit.BayesRegret
-public import LeanMachineLearning.SequentialLearning.BayesStationaryEnv
+public import LeanMachineLearning.Online.Bandit.Regret
 
-/-! # Law of the sum of rewards
+/-! # Concentration of the sums of rewards
+
+For a stochastic bandit, we bound the probability of events involving the number of pulls
+`pullCount A a n` and the sum of rewards `sumRewards A R a n` of an action by probabilities of
+events about sums of i.i.d. rewards under `streamMeasure ν`. The bounds are first proved in the
+array model `ArrayModel.arrayMeasure ν`, in which the sum of rewards of action `a` after `k` pulls
+is the sum of the first `k` entries of row `a` of the reward array, then transferred to any
+algorithm-environment sequence since the joint law of the numbers of pulls and of the sums of
+rewards does not depend on the probability space (`IsAlgEnvSeq.identDistrib_pullCount_sumRewards`).
+
+We then specialize those bounds to sub-Gaussian rewards, for the analysis of the ETC, UCB and
+Thompson sampling algorithms.
+
+## Main statements
+
+* `prob_pullCount_prod_sumRewards_mem_le`, `prob_exists_pullCount_eq_and_sumRewards_mem_le`: bounds
+  on the probability of events about the number of pulls and the sum of rewards of an action.
+* `prob_sumRewards_sub_pullCount_mul_ge_le`, `prob_sumRewards_sub_pullCount_mul_le_le`: uniform in
+  time sub-Gaussian concentration of the sum of rewards of an action.
+
+## References
+
+* T. Lattimore and C. Szepesvári, *Bandit Algorithms*, Cambridge University Press, 2020,
+  Chapters 5 to 8.
 -/
 
 @[expose] public section
@@ -97,189 +119,56 @@ lemma prob_exists_pullCount_eq_and_sumRewards_mem_le (a : 𝓐) (m : ℕ) {B : S
     _ = streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B} :=
         (identDistrib_sum_range_snd a m).measure_mem_eq hB
 
-lemma prob_sumRewards_le_sumRewards_le [Fintype 𝓐] (a : 𝓐) (n m₁ m₂ : ℕ) :
-    (𝔓) {ω | pullCount A (bestArm ν) n ω = m₁ ∧ pullCount A a n ω = m₂ ∧
-        sumRewards A R (bestArm ν) n ω ≤ sumRewards A R a n ω} ≤
-      streamMeasure ν
-        {ω | ∑ i ∈ range m₁, ω i (bestArm ν) ≤ ∑ i ∈ range m₂, ω i a} := by
+lemma prob_sumRewards_le_sumRewards_le (a b : 𝓐) (n m₁ m₂ : ℕ) :
+    (𝔓) {ω | pullCount A a n ω = m₁ ∧ pullCount A b n ω = m₂ ∧
+        sumRewards A R a n ω ≤ sumRewards A R b n ω} ≤
+      streamMeasure ν {ω | ∑ i ∈ range m₁, ω i a ≤ ∑ i ∈ range m₂, ω i b} := by
   simp_rw [sumRewards_eq]
-  calc 𝔓 {ω | pullCount A (bestArm ν) n ω = m₁ ∧ pullCount A a n ω = m₂ ∧
-      ∑ i ∈ range (pullCount A (bestArm ν) n ω), ω.2 i (bestArm ν) ≤
-        ∑ i ∈ range (pullCount A a n ω), ω.2 i a}
-  _ ≤ 𝔓 ((fun ω ↦ (∑ i ∈ range m₁, ω.2 i (bestArm ν), ∑ i ∈ range m₂, ω.2 i a)) ⁻¹'
-        {p | p.1 ≤ p.2}) := by
+  calc 𝔓 {ω | pullCount A a n ω = m₁ ∧ pullCount A b n ω = m₂ ∧
+      ∑ i ∈ range (pullCount A a n ω), ω.2 i a ≤ ∑ i ∈ range (pullCount A b n ω), ω.2 i b}
+  _ ≤ 𝔓 ((fun ω ↦ (∑ i ∈ range m₁, ω.2 i a, ∑ i ∈ range m₂, ω.2 i b)) ⁻¹' {p | p.1 ≤ p.2}) := by
       refine measure_mono fun ω hω ↦ ?_
       simp only [Set.preimage_ofPred_eq, Set.mem_ofPred_eq] at hω ⊢
       grind
-  _ = streamMeasure ν
-      {ω | ∑ i ∈ range m₁, ω i (bestArm ν) ≤ ∑ i ∈ range m₂, ω i a} := by
+  _ = streamMeasure ν {ω | ∑ i ∈ range m₁, ω i a ≤ ∑ i ∈ range m₂, ω i b} := by
     rw [← Measure.snd_prod (μ := (Measure.infinitePi fun (_ : ℕ) ↦ (volume : Measure unitInterval)))
       (ν := streamMeasure ν), Measure.snd, Measure.map_apply (by fun_prop)]
     · rfl
     simp only [measurableSet_setOfPred]
     fun_prop
 
-lemma probReal_sumRewards_le_sumRewards_le [Fintype 𝓐] (a : 𝓐) (n m₁ m₂ : ℕ) :
-    (𝔓).real {ω | pullCount A (bestArm ν) n ω = m₁ ∧ pullCount A a n ω = m₂ ∧
-        sumRewards A R (bestArm ν) n ω ≤ sumRewards A R a n ω} ≤
-      (streamMeasure ν).real
-        {ω | ∑ i ∈ range m₁, ω i (bestArm ν) ≤ ∑ i ∈ range m₂, ω i a} := by
+lemma probReal_sumRewards_le_sumRewards_le (a b : 𝓐) (n m₁ m₂ : ℕ) :
+    (𝔓).real {ω | pullCount A a n ω = m₁ ∧ pullCount A b n ω = m₂ ∧
+        sumRewards A R a n ω ≤ sumRewards A R b n ω} ≤
+      (streamMeasure ν).real {ω | ∑ i ∈ range m₁, ω i a ≤ ∑ i ∈ range m₂, ω i b} := by
   simp_rw [measureReal_def]
   gcongr
   · finiteness
-  · exact prob_sumRewards_le_sumRewards_le a n m₁ m₂
+  · exact prob_sumRewards_le_sumRewards_le a b n m₁ m₂
 
 end ArrayModel
 
-variable {𝓐 Ω Ω' : Type*} [DecidableEq 𝓐] {m𝓐 : MeasurableSpace 𝓐} {mΩ : MeasurableSpace Ω}
-  {mΩ' : MeasurableSpace Ω'}
-  {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'} [IsProbabilityMeasure P']
+variable {𝓐 Ω : Type*} [DecidableEq 𝓐] {m𝓐 : MeasurableSpace 𝓐} {mΩ : MeasurableSpace Ω}
+  {P : Measure Ω} [IsProbabilityMeasure P]
   {alg : Algorithm Unit 𝓐 ℝ} {ν : Kernel 𝓐 ℝ} [IsMarkovKernel ν]
-  {O : ℕ → Ω → Unit} {A : ℕ → Ω → 𝓐} {R : ℕ → Ω → ℝ}
-  {O₂ : ℕ → Ω' → Unit} {A₂ : ℕ → Ω' → 𝓐} {R₂ : ℕ → Ω' → ℝ}
-  {ω : Ω} {m n t : ℕ} {a : 𝓐}
-
-lemma sumRewards_eq_comp :
-    sumRewards A R a n =
-     (fun p : ℕ → Round Unit 𝓐 ℝ ↦
-        ∑ i ∈ range n, if (p i).action = a then (p i).feedback else 0) ∘ (trajectory O A R) := by
-  ext
-  simp [sumRewards, trajectory]
-  grind
-
-lemma pullCount_eq_comp :
-    pullCount A a n =
-      (fun p : ℕ → Round Unit 𝓐 ℝ ↦ ∑ i ∈ range n, if (p i).action = a then 1 else 0) ∘
-        (trajectory O A R) := by
-  ext
-  simp [pullCount, trajectory]
-  rfl
-
--- todo: write those lemmas with IdentDistrib instead of equality of maps
-lemma _root_.Learning.IsAlgEnvSeq.law_sumRewards_unique [MeasurableSingletonClass 𝓐]
-    (h1 : IsAlgEnvSeq O A R alg (Environment.bandit ν) P)
-    (h2 : IsAlgEnvSeq O₂ A₂ R₂ alg (Environment.bandit ν) P') :
-    P.map (sumRewards A R a n) = P'.map (sumRewards A₂ R₂ a n) := by
-  have hA := h1.measurable_action
-  have hR := h1.measurable_feedback
-  have hA2 := h2.measurable_action
-  have hR2 := h2.measurable_feedback
-  have h_unique := isAlgEnvSeq_unique h1 h2
-  rw [sumRewards_eq_comp (O := O), sumRewards_eq_comp (O := O₂), ← Measure.map_map, h_unique,
-    Measure.map_map, ← sumRewards_eq_comp (O := O₂)]
-  · refine measurable_sum _ fun i hi ↦ Measurable.ite ?_ (by fun_prop) (by fun_prop)
-    exact (measurableSet_singleton _).preimage (by fun_prop)
-  · fun_prop
-  · refine measurable_sum _ fun i hi ↦ Measurable.ite ?_ (by fun_prop) (by fun_prop)
-    exact (measurableSet_singleton _).preimage (by fun_prop)
-  · fun_prop
-
-lemma _root_.Learning.IsAlgEnvSeq.law_pullCount_sumRewards_unique' [MeasurableSingletonClass 𝓐]
-    (h1 : IsAlgEnvSeq O A R alg (Environment.bandit ν) P)
-    (h2 : IsAlgEnvSeq O₂ A₂ R₂ alg (Environment.bandit ν) P') :
-    IdentDistrib (fun ω a ↦ (pullCount A a n ω, sumRewards A R a n ω))
-      (fun ω a ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω)) P P' := by
-  have hO := h1.measurable_obs
-  have hA := h1.measurable_action
-  have hR := h1.measurable_feedback
-  have hO2 := h2.measurable_obs
-  have hA2 := h2.measurable_action
-  have hR2 := h2.measurable_feedback
-  constructor
-  · refine Measurable.aemeasurable ?_
-    rw [measurable_pi_iff]
-    exact fun a ↦ Measurable.prod (by fun_prop) (measurable_sumRewards hA hR _ _)
-  · refine Measurable.aemeasurable ?_
-    rw [measurable_pi_iff]
-    exact fun a ↦ Measurable.prod (by fun_prop) (measurable_sumRewards hA2 hR2 _ _)
-  have h_unique := isAlgEnvSeq_unique h1 h2
-  let f := fun (p : ℕ → Round Unit 𝓐 ℝ) (a : 𝓐) ↦
-    (∑ i ∈ range n, if (p i).action = a then 1 else 0,
-      ∑ i ∈ range n, if (p i).action = a then (p i).feedback else 0)
-  have hf : Measurable f := by
-    rw [measurable_pi_iff]
-    intro a
-    refine Measurable.prod ?_ ?_
-    · simp only [f]
-      refine measurable_sum _ fun i hi ↦ Measurable.ite ?_ (by fun_prop) (by fun_prop)
-      exact (measurableSet_singleton _).preimage (by fun_prop)
-    · simp only [f]
-      refine measurable_sum _ fun i hi ↦ Measurable.ite ?_ (by fun_prop) (by fun_prop)
-      exact (measurableSet_singleton _).preimage (by fun_prop)
-  have h_eq_comp : (fun ω a ↦ (pullCount A a n ω, sumRewards A R a n ω))
-      = f ∘ (trajectory O A R) := by
-    ext ω a : 2
-    rw [pullCount_eq_comp (O := O) (R := R), sumRewards_eq_comp (O := O)]
-    grind
-  have h_eq_comp2 : (fun ω a ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω))
-      = f ∘ (trajectory O₂ A₂ R₂) := by
-    ext ω a : 2
-    rw [pullCount_eq_comp (O := O₂) (R := R₂), sumRewards_eq_comp (O := O₂)]
-    grind
-  rw [h_eq_comp, h_eq_comp2, ← Measure.map_map hf, h_unique, Measure.map_map hf,
-    ← h_eq_comp2]
-  · fun_prop
-  · fun_prop
-
-lemma _root_.Learning.IsAlgEnvSeq.law_pullCount_sumRewards_unique [MeasurableSingletonClass 𝓐]
-    (h1 : IsAlgEnvSeq O A R alg (Environment.bandit ν) P)
-    (h2 : IsAlgEnvSeq O₂ A₂ R₂ alg (Environment.bandit ν) P') :
-    P.map (fun ω ↦ (pullCount A a n ω, sumRewards A R a n ω)) =
-      P'.map (fun ω ↦ (pullCount A₂ a n ω, sumRewards A₂ R₂ a n ω)) :=
-  ((h1.law_pullCount_sumRewards_unique' h2 (n := n)).comp (u := fun f ↦ f a) (by fun_prop)).map_eq
-
-lemma _root_.Learning.IsAlgEnvSeq.identDistrib_pullCount_sumRewards [MeasurableSingletonClass 𝓐]
-    (h1 : IsAlgEnvSeq O A R alg (Environment.bandit ν) P)
-    (h2 : IsAlgEnvSeq O₂ A₂ R₂ alg (Environment.bandit ν) P') :
-    IdentDistrib (fun ω n a ↦ (pullCount A a n ω, sumRewards A R a n ω))
-      (fun ω' n a ↦ (pullCount A₂ a n ω', sumRewards A₂ R₂ a n ω')) P P' := by
-  let f (τ : ℕ → Round Unit 𝓐 ℝ) (n : ℕ) (a : 𝓐) : ℕ × ℝ :=
-    (∑ i ∈ range n, if (τ i).action = a then 1 else 0,
-     ∑ i ∈ range n, if (τ i).action = a then (τ i).feedback else 0)
-  have hc1 : (fun ω n a ↦ (pullCount A a n ω, sumRewards A R a n ω)) =
-      f ∘ (trajectory O A R) := by
-    ext ω n a : 3
-    simp_rw [Function.comp, f, pullCount, card_filter, sumRewards, trajectory]
-    rfl
-  have hc2 : (fun ω' n a ↦ (pullCount A₂ a n ω', sumRewards A₂ R₂ a n ω')) =
-      f ∘ (trajectory O₂ A₂ R₂) := by
-    ext ω' n a : 3
-    simp_rw [Function.comp, f, pullCount, card_filter, sumRewards, trajectory]
-    rfl
-  have hf : Measurable f := by
-    simp_rw [f, measurable_pi_iff]
-    intro n a
-    apply Measurable.prod
-    · dsimp only
-      exact measurable_sum _
-        (fun _ _ ↦ Measurable.ite (by measurability) (by fun_prop) (by fun_prop))
-    · dsimp only
-      exact measurable_sum _
-        (fun _ _ ↦ Measurable.ite (by measurability) (by fun_prop) (by fun_prop))
-  rw [hc1, hc2]
-  exact (h1.identDistrib_trajectory h2).comp hf
+  {O : ℕ → Ω → Unit} {A : ℕ → Ω → 𝓐} {R : ℕ → Ω → ℝ} {n : ℕ} {a : 𝓐}
 
 variable [Nonempty 𝓐]
 
--- this is what we will use for UCB
+/-- Union bound over the possible values of the number of pulls: the probability that the number of
+pulls and the sum of rewards of `a` at time `n` lie in `s` is at most a sum over `k ≤ n` of the
+probabilities that `k` and the sum of `k` i.i.d. rewards of `a` lie in `s`. -/
 lemma prob_pullCount_prod_sumRewards_mem_le [Countable 𝓐] [MeasurableSingletonClass 𝓐]
     (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P)
     {s : Set (ℕ × ℝ)} [DecidablePred (· ∈ Prod.fst '' s)] (hs : MeasurableSet s) :
     P {ω | (pullCount A a n ω, sumRewards A R a n ω) ∈ s} ≤
       ∑ k ∈ (range (n + 1)).filter (· ∈ Prod.fst '' s),
         streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} := by
-  have hA := h.measurable_action
-  have hR := h.measurable_feedback
   calc P {ω | (pullCount A a n ω, sumRewards A R a n ω) ∈ s}
-  _ = (P.map (fun ω ↦ (pullCount A a n ω, sumRewards A R a n ω))) s := by
-      rw [Measure.map_apply (by fun_prop) hs]; rfl
-  _ = ((ArrayModel.arrayMeasure ν).map
-      (fun ω ↦ (pullCount (ArrayModel.action alg) a n ω,
-        sumRewards (ArrayModel.action alg) (ArrayModel.reward alg) a n ω))) s := by
-    rw [h.law_pullCount_sumRewards_unique (ArrayModel.isAlgEnvSeq_arrayMeasure alg ν)]
   _ = (ArrayModel.arrayMeasure ν) {ω | (pullCount (ArrayModel.action alg) a n ω,
-      sumRewards (ArrayModel.action alg) (ArrayModel.reward alg) a n ω) ∈ s} := by
-    rw [Measure.map_apply (by fun_prop) hs]; rfl
+      sumRewards (ArrayModel.action alg) (ArrayModel.reward alg) a n ω) ∈ s} :=
+    (h.identDistrib_prodMk_pullCount_sumRewards (ArrayModel.isAlgEnvSeq_arrayMeasure alg ν) a
+      n).measure_mem_eq hs
   _ ≤ ∑ k ∈ (range (n + 1)).filter (· ∈ Prod.fst '' s),
       streamMeasure ν {ω | ∑ i ∈ range k, ω i a ∈ Prod.mk k ⁻¹' s} :=
     ArrayModel.prob_pullCount_prod_sumRewards_mem_le a n hs
@@ -368,38 +257,19 @@ lemma prob_exists_pullCount_eq_and_sumRewards_mem_le [Countable 𝓐] [Measurabl
           (ArrayModel.isAlgEnvSeq_arrayMeasure alg ν)).measure_mem_eq hs
     _ ≤ _ := ArrayModel.prob_exists_pullCount_eq_and_sumRewards_mem_le a m hB
 
-lemma probReal_sumRewards_le_sumRewards_le [Fintype 𝓐] [MeasurableSingletonClass 𝓐]
-    (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P)
-    (a : 𝓐) (n m₁ m₂ : ℕ) :
-    P.real {ω | pullCount A (bestArm ν) n ω = m₁ ∧ pullCount A a n ω = m₂ ∧
-        sumRewards A R (bestArm ν) n ω ≤ sumRewards A R a n ω} ≤
-      (streamMeasure ν).real
-        {ω | ∑ i ∈ range m₁, ω i (bestArm ν) ≤ ∑ i ∈ range m₂, ω i a} := by
-  have hA := h.measurable_action
-  have hR := h.measurable_feedback
+lemma probReal_sumRewards_le_sumRewards_le [Countable 𝓐] [MeasurableSingletonClass 𝓐]
+    (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P) (a b : 𝓐) (n m₁ m₂ : ℕ) :
+    P.real {ω | pullCount A a n ω = m₁ ∧ pullCount A b n ω = m₂ ∧
+        sumRewards A R a n ω ≤ sumRewards A R b n ω} ≤
+      (streamMeasure ν).real {ω | ∑ i ∈ range m₁, ω i a ≤ ∑ i ∈ range m₂, ω i b} := by
   refine le_trans (le_of_eq ?_)
-    (ArrayModel.probReal_sumRewards_le_sumRewards_le (alg := alg) a n m₁ m₂)
+    (ArrayModel.probReal_sumRewards_le_sumRewards_le (alg := alg) a b n m₁ m₂)
   let s := {p : ℕ × ℕ × ℝ × ℝ | p.1 = m₁ ∧ p.2.1 = m₂ ∧ p.2.2.1 ≤ p.2.2.2}
   have hs : MeasurableSet s := by simp only [measurableSet_setOfPred, s]; fun_prop
-  change P.real ((fun ω ↦ (pullCount A (bestArm ν) n ω,
-      pullCount A a n ω, sumRewards A R (bestArm ν) n ω, sumRewards A R a n ω)) ⁻¹' s) =
-    (ArrayModel.arrayMeasure ν).real
-      ((fun ω ↦ (pullCount (ArrayModel.action alg) (bestArm ν) n ω,
-        pullCount (ArrayModel.action alg) a n ω,
-        sumRewards (ArrayModel.action alg) (ArrayModel.reward alg) (bestArm ν) n ω,
-        sumRewards (ArrayModel.action alg) (ArrayModel.reward alg) a n ω)) ⁻¹' s)
   simp_rw [measureReal_def]
   congr 1
-  rw [← Measure.map_apply ?_ hs, ← Measure.map_apply (by fun_prop) hs]
-  swap
-  · refine Measurable.prod (by fun_prop) (Measurable.prod (by fun_prop) ?_)
-    exact (measurable_sumRewards hA hR _ _).prod (measurable_sumRewards hA hR _ _)
-  congr 1
-  refine IdentDistrib.map_eq ?_
-  have h_eq := h.law_pullCount_sumRewards_unique' (ArrayModel.isAlgEnvSeq_arrayMeasure alg ν)
-    (n := n)
-  exact h_eq.comp (u := fun p ↦ ((p (bestArm ν)).1, (p a).1, (p (bestArm ν)).2, (p a).2))
-    (by fun_prop)
+  exact ((h.identDistrib_pi_pullCount_sumRewards (ArrayModel.isAlgEnvSeq_arrayMeasure alg ν) n).comp
+    (u := fun p ↦ ((p a).1, (p b).1, (p a).2, (p b).2)) (by fun_prop)).measure_mem_eq hs
 
 section Subgaussian
 
@@ -407,7 +277,7 @@ namespace StreamMeasure
 
 omit [DecidableEq 𝓐] [Nonempty 𝓐]
 
-lemma prob_sum_range_sub_ge_le_of_HasSubgaussianMGF {σ2 : ℝ≥0}
+lemma prob_sum_range_sub_ge_le_of_hasSubgaussianMGF {σ2 : ℝ≥0}
     (h : HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) {ε : ℝ} (hε : 0 ≤ ε) (n : ℕ) :
     streamMeasure ν {ω | ε ≤ ∑ k ∈ range n, (ω k a - (ν a)[id])} ≤
       ENNReal.ofReal (Real.exp (-ε ^ 2 / (2 * n * σ2))) := by
@@ -418,7 +288,7 @@ lemma prob_sum_range_sub_ge_le_of_HasSubgaussianMGF {σ2 : ℝ≥0}
   · intro _ _
     exact h.congr_identDistrib ((identDistrib_eval_eval_id_streamMeasure _ _ _).symm.sub_const _)
 
-lemma prob_sum_range_sub_le_le_of_HasSubgaussianMGF {σ2 : ℝ≥0}
+lemma prob_sum_range_sub_le_le_of_hasSubgaussianMGF {σ2 : ℝ≥0}
     (h : HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) {ε : ℝ} (hε : 0 ≤ ε) (n : ℕ) :
     streamMeasure ν {ω | ∑ k ∈ range n, (ω k a - (ν a)[id]) ≤ -ε} ≤
       ENNReal.ofReal (Real.exp (-ε ^ 2 / (2 * n * σ2))) := by
@@ -429,8 +299,8 @@ lemma prob_sum_range_sub_le_le_of_HasSubgaussianMGF {σ2 : ℝ≥0}
   · intro _ _
     exact h.congr_identDistrib ((identDistrib_eval_eval_id_streamMeasure _ _ _).symm.sub_const _)
 
-/-- Auxiliary lemma for `prob_sum_range_sub_*_le_of_HasSubgaussianMGF'`. -/
-private lemma exp_neg_sqrt_sq_div_le {σ2 : ℝ≥0} (hσ2 : 0 < σ2) {δ : ℝ} (hδ : 0 < δ) (hn : 0 < n) :
+/-- Auxiliary lemma for `prob_sum_range_sub_*_le_of_hasSubgaussianMGF'`. -/
+private lemma exp_neg_sqrt_sq_div_le {σ2 : ℝ≥0} (hσ2 : σ2 ≠ 0) {δ : ℝ} (hδ : 0 < δ) (hn : 0 < n) :
     Real.exp (-√(2 * n * σ2 * Real.log (1 / δ)) ^ 2 / (2 * n * σ2)) ≤ δ := by
   by_cases hd : δ < 1
   · have hl : 0 < Real.log (1 / δ) := Real.log_pos ((one_lt_div hδ).2 hd)
@@ -442,36 +312,42 @@ private lemma exp_neg_sqrt_sq_div_le {σ2 : ℝ≥0} (hσ2 : 0 < σ2) {δ : ℝ}
     rw [Real.sqrt_eq_zero_of_nonpos (mul_nonpos_of_nonneg_of_nonpos (by positivity) hl)]
     simp [hd]
 
-lemma prob_sum_range_sub_ge_le_of_HasSubgaussianMGF' {σ2 : ℝ≥0} (hσ2 : 0 < σ2)
-    (h : HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) {δ : ℝ} (hδ : 0 < δ) (hn : 0 < n) :
+lemma prob_sum_range_sub_ge_le_of_hasSubgaussianMGF' {σ2 : ℝ≥0}
+    (h : HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (hσ2 : σ2 ≠ 0) {δ : ℝ} (hδ : 0 < δ)
+    (hn : 0 < n) :
     streamMeasure ν {ω | √(2 * n * σ2 * Real.log (1 / δ)) ≤
       ∑ k ∈ range n, (ω k a - (ν a)[id])} ≤ ENNReal.ofReal δ :=
   calc
   _ ≤ ENNReal.ofReal (Real.exp (-√(2 * n * σ2 * Real.log (1 / δ)) ^ 2 / (2 * n * σ2))) :=
-    prob_sum_range_sub_ge_le_of_HasSubgaussianMGF h (by positivity) n
+    prob_sum_range_sub_ge_le_of_hasSubgaussianMGF h (by positivity) n
   _ ≤ ENNReal.ofReal δ := by
     gcongr
     exact exp_neg_sqrt_sq_div_le hσ2 hδ hn
 
-lemma prob_sum_range_sub_le_le_of_HasSubgaussianMGF' {σ2 : ℝ≥0} (hσ2 : 0 < σ2)
-    (h : HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) {δ : ℝ} (hδ : 0 < δ) (hn : 0 < n) :
+lemma prob_sum_range_sub_le_le_of_hasSubgaussianMGF' {σ2 : ℝ≥0}
+    (h : HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (hσ2 : σ2 ≠ 0) {δ : ℝ} (hδ : 0 < δ)
+    (hn : 0 < n) :
     streamMeasure ν {ω | ∑ k ∈ range n, (ω k a - (ν a)[id]) ≤
       -√(2 * n * σ2 * Real.log (1 / δ))} ≤ ENNReal.ofReal δ :=
   calc
   _ ≤ ENNReal.ofReal (Real.exp (-√(2 * n * σ2 * Real.log (1 / δ)) ^ 2 / (2 * n * σ2))) :=
-    prob_sum_range_sub_le_le_of_HasSubgaussianMGF h (by positivity) n
+    prob_sum_range_sub_le_le_of_hasSubgaussianMGF h (by positivity) n
   _ ≤ ENNReal.ofReal δ := by
     gcongr
     exact exp_neg_sqrt_sq_div_le hσ2 hδ hn
 
 end StreamMeasure
 
-lemma prob_sumRewards_sub_pullCount_mul_ge_le [Countable 𝓐] [MeasurableSingletonClass 𝓐]
-    {σ2 : ℝ≥0} (hσ2 : 0 < σ2) (ha : HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
-    (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P) {δ : ℝ} (hδ : 0 < δ) :
-    P {ω | ∃ t < n, pullCount A a t ω ≠ 0 ∧ √(2 * pullCount A a t ω * σ2 * Real.log (1 / δ)) ≤
-      sumRewards A R a t ω - pullCount A a t ω * (ν a)[id]} ≤ ENNReal.ofReal ((n - 1) * δ) :=
-  let B (m : ℕ) := {x : ℝ | √(2 * m * σ2 * Real.log (1 / δ)) ≤ x - m * (ν a)[id]}
+/-- Union bound over the number of pulls: if, for all `m ≠ 0`, the sum of `m` i.i.d. rewards of
+action `a` (under `streamMeasure ν`) lies in `B m` with probability at most `δ`, then the
+probability that there is a time `t < n` at which `a` has been pulled and the sum of its rewards
+lies in `B (pullCount A a t ω)` is at most `(n - 1) * δ`. -/
+lemma prob_exists_sumRewards_mem_le [Countable 𝓐] [MeasurableSingletonClass 𝓐]
+    (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P) {B : ℕ → Set ℝ}
+    (hB : ∀ m, MeasurableSet (B m)) {δ : ℝ} (hδ : 0 ≤ δ)
+    (h_le : ∀ m, m ≠ 0 → streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B m} ≤ ENNReal.ofReal δ) :
+    P {ω | ∃ t < n, pullCount A a t ω ≠ 0 ∧ sumRewards A R a t ω ∈ B (pullCount A a t ω)} ≤
+      ENNReal.ofReal ((n - 1) * δ) :=
   calc
     _ ≤ P (⋃ m ∈ Icc 1 (n - 1), {ω | ∃ t, t < n ∧ pullCount A a t ω = m ∧
             sumRewards A R a t ω ∈ B m}) := by
@@ -485,59 +361,45 @@ lemma prob_sumRewards_sub_pullCount_mul_ge_le [Countable 𝓐] [MeasurableSingle
         measure_biUnion_finset_le _ _
     _ ≤ ∑ m ∈ Icc 1 (n - 1), P {ω | ∃ t, pullCount A a t ω = m ∧ sumRewards A R a t ω ∈ B m} :=
         sum_le_sum (fun _ _ ↦ measure_mono (fun _ ⟨t, _, hps⟩ ↦ ⟨t, hps⟩))
-    _ ≤ ∑ m ∈ Icc 1 (n - 1), streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B m} := by
-        apply sum_le_sum
-        exact (fun m _ ↦ prob_exists_pullCount_eq_and_sumRewards_mem_le h a m (by measurability))
-    _ ≤ ∑ m ∈ Icc 1 (n - 1), ENNReal.ofReal δ := by
-      apply sum_le_sum
-      intro m hm
-      exact le_of_eq_of_le (by simp [B])
-        (StreamMeasure.prob_sum_range_sub_ge_le_of_HasSubgaussianMGF' hσ2 ha hδ (mem_Icc.mp hm).1)
+    _ ≤ ∑ m ∈ Icc 1 (n - 1), streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B m} :=
+        sum_le_sum fun m _ ↦ prob_exists_pullCount_eq_and_sumRewards_mem_le h a m (hB m)
+    _ ≤ ∑ m ∈ Icc 1 (n - 1), ENNReal.ofReal δ :=
+        sum_le_sum fun m hm ↦ h_le m (Nat.one_le_iff_ne_zero.mp (mem_Icc.mp hm).1)
     _ = ENNReal.ofReal ((n - 1) * δ) := by
       by_cases hn : n = 0
-      · simp [hn, hδ.le]
+      · simp [hn, hδ]
       · rw [sum_const, Nat.card_Icc, add_tsub_cancel_right, ← ENNReal.ofReal_nsmul, nsmul_eq_mul,
           Nat.cast_sub (Nat.one_le_iff_ne_zero.mpr hn)]
         ring_nf
 
+lemma prob_sumRewards_sub_pullCount_mul_ge_le [Countable 𝓐] [MeasurableSingletonClass 𝓐]
+    (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P) {σ2 : ℝ≥0}
+    (ha : HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (hσ2 : σ2 ≠ 0) {δ : ℝ} (hδ : 0 < δ) :
+    P {ω | ∃ t < n, pullCount A a t ω ≠ 0 ∧ √(2 * pullCount A a t ω * σ2 * Real.log (1 / δ)) ≤
+      sumRewards A R a t ω - pullCount A a t ω * (ν a)[id]} ≤ ENNReal.ofReal ((n - 1) * δ) :=
+  prob_exists_sumRewards_mem_le h
+    (B := fun m ↦ {x | √(2 * m * σ2 * Real.log (1 / δ)) ≤ x - m * (ν a)[id]})
+    (fun _ ↦ measurableSet_le (by fun_prop) (by fun_prop)) hδ.le fun m hm ↦
+    le_of_eq_of_le (by simp) (StreamMeasure.prob_sum_range_sub_ge_le_of_hasSubgaussianMGF' ha hσ2 hδ
+      (Nat.pos_of_ne_zero hm))
+
 lemma prob_sumRewards_sub_pullCount_mul_le_le [Countable 𝓐] [MeasurableSingletonClass 𝓐]
-    {σ2 : ℝ≥0} (hσ2 : 0 < σ2) (ha : HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
-    (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P) {δ : ℝ} (hδ : 0 < δ) :
+    (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P) {σ2 : ℝ≥0}
+    (ha : HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (hσ2 : σ2 ≠ 0) {δ : ℝ} (hδ : 0 < δ) :
     P {ω | ∃ t < n, pullCount A a t ω ≠ 0 ∧
       sumRewards A R a t ω - pullCount A a t ω * (ν a)[id] ≤
         -√(2 * pullCount A a t ω * σ2 * Real.log (1 / δ))} ≤ ENNReal.ofReal ((n - 1) * δ) :=
-  let B (m : ℕ) := {x : ℝ | x - m * (ν a)[id] ≤ -√(2 * m * σ2 * Real.log (1 / δ))}
-  calc
-    _ ≤ P (⋃ m ∈ Icc 1 (n - 1), {ω | ∃ t, t < n ∧ pullCount A a t ω = m ∧
-            sumRewards A R a t ω ∈ B m}) := by
-        apply measure_mono
-        intro ω ⟨t, ht, hp, hb⟩
-        have hm : pullCount A a t ω ∈ Icc 1 (n - 1) := mem_Icc.mpr ⟨Nat.one_le_iff_ne_zero.mpr hp,
-          (pullCount_le a t ω).trans (Nat.le_sub_one_of_lt ht)⟩
-        exact Set.mem_biUnion hm ⟨t, ht, rfl, hb⟩
-    _ ≤ ∑ m ∈ Icc 1 (n - 1), P {ω | ∃ t, t < n ∧ pullCount A a t ω = m ∧
-          sumRewards A R a t ω ∈ B m} :=
-        measure_biUnion_finset_le _ _
-    _ ≤ ∑ m ∈ Icc 1 (n - 1), P {ω | ∃ t, pullCount A a t ω = m ∧ sumRewards A R a t ω ∈ B m} :=
-        sum_le_sum (fun _ _ ↦ measure_mono (fun _ ⟨t, _, hps⟩ ↦ ⟨t, hps⟩))
-    _ ≤ ∑ m ∈ Icc 1 (n - 1), streamMeasure ν {ω | ∑ i ∈ range m, ω i a ∈ B m} := by
-        apply sum_le_sum
-        exact (fun m _ ↦ prob_exists_pullCount_eq_and_sumRewards_mem_le h a m (by measurability))
-    _ ≤ ∑ m ∈ Icc 1 (n - 1), ENNReal.ofReal δ := by
-      apply sum_le_sum
-      intro m hm
-      exact le_of_eq_of_le (by simp [B])
-        (StreamMeasure.prob_sum_range_sub_le_le_of_HasSubgaussianMGF' hσ2 ha hδ (mem_Icc.mp hm).1)
-    _ = ENNReal.ofReal ((n - 1) * δ) := by
-      by_cases hn : n = 0
-      · simp [hn, hδ.le]
-      · rw [sum_const, Nat.card_Icc, add_tsub_cancel_right, ← ENNReal.ofReal_nsmul, nsmul_eq_mul,
-          Nat.cast_sub (Nat.one_le_iff_ne_zero.mpr hn)]
-        ring_nf
+  prob_exists_sumRewards_mem_le h
+    (B := fun m ↦ {x | x - m * (ν a)[id] ≤ -√(2 * m * σ2 * Real.log (1 / δ))})
+    (fun _ ↦ measurableSet_le (by fun_prop) (by fun_prop)) hδ.le fun m hm ↦
+    le_of_eq_of_le (by simp) (StreamMeasure.prob_sum_range_sub_le_le_of_hasSubgaussianMGF' ha hσ2 hδ
+      (Nat.pos_of_ne_zero hm))
 
-lemma prob_sumRewards_sub_pullCount_mul_ge_le_of_Fintype [Fintype 𝓐] [MeasurableSingletonClass 𝓐]
-    {σ2 : ℝ≥0} (hσ2 : 0 < σ2) (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a))
-    (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P) {δ : ℝ} (hδ : 0 < δ) :
+/-- Union bound over the actions in `prob_sumRewards_sub_pullCount_mul_ge_le`. -/
+lemma prob_exists_sumRewards_sub_pullCount_mul_ge_le [Fintype 𝓐] [MeasurableSingletonClass 𝓐]
+    (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P) {σ2 : ℝ≥0}
+    (hν : ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)) (hσ2 : σ2 ≠ 0) {δ : ℝ}
+    (hδ : 0 < δ) :
     P {ω | ∃ a, ∃ t < n, pullCount A a t ω ≠ 0 ∧
         √(2 * pullCount A a t ω * σ2 * Real.log (1 / δ)) ≤
           sumRewards A R a t ω - pullCount A a t ω * (ν a)[id]} ≤
@@ -549,7 +411,7 @@ lemma prob_sumRewards_sub_pullCount_mul_ge_le_of_Fintype [Fintype 𝓐] [Measura
         rw [Set.ofPred_exists]
         exact measure_iUnion_fintype_le _ _
     _ ≤ ∑ a, ENNReal.ofReal ((n - 1) * δ) :=
-        sum_le_sum fun a _ ↦ prob_sumRewards_sub_pullCount_mul_ge_le hσ2 (hν a) h hδ
+        sum_le_sum fun a _ ↦ prob_sumRewards_sub_pullCount_mul_ge_le h (hν a) hσ2 hδ
     _ = ENNReal.ofReal (Fintype.card 𝓐 * (n - 1) * δ) := by
       rw [sum_const, Finset.card_univ, ← ENNReal.ofReal_nsmul, nsmul_eq_mul]
       ring_nf
@@ -595,15 +457,8 @@ lemma prob_sum_le_sqrt_log {σ2 : ℝ≥0}
   calc
     streamMeasure ν
       {ω | (∑ s ∈ range k, (ω s a - (ν a)[id])) ≤ - √(2 * c * k * σ2 * Real.log (n + 1))}
-  _ ≤ ENNReal.ofReal (Real.exp (-(√(2 * c * k * σ2 * Real.log (n + 1))) ^ 2 / (2 * k * σ2))) := by
-    rw [← ofReal_measureReal]
-    gcongr
-    refine (HasSubgaussianMGF.measure_sum_range_le_le_of_iIndepFun (c := σ2) ?_ ?_ (by positivity))
-    · exact (iIndepFun_eval_streamMeasure'' ν a).comp (fun i ω ↦ ω - (ν a)[id])
-        (fun _ ↦ by fun_prop)
-    · intro i him
-      refine (hν a).congr_identDistrib ?_
-      exact (identDistrib_eval_eval_id_streamMeasure _ _ _).symm.sub_const _
+  _ ≤ ENNReal.ofReal (Real.exp (-(√(2 * c * k * σ2 * Real.log (n + 1))) ^ 2 / (2 * k * σ2))) :=
+    StreamMeasure.prob_sum_range_sub_le_le_of_hasSubgaussianMGF (hν a) (by positivity) k
   _ = 1 / (n + 1) ^ c := by
     rw [Real.sq_sqrt]
     swap; · exact mul_nonneg (by positivity) (Real.log_nonneg (by simp))
@@ -623,15 +478,8 @@ lemma prob_sum_ge_sqrt_log {σ2 : ℝ≥0}
   calc
     streamMeasure ν
       {ω | √(2 * c * k * σ2 * Real.log (n + 1)) ≤ (∑ s ∈ range k, (ω s a - (ν a)[id]))}
-  _ ≤ ENNReal.ofReal (Real.exp (-(√(2 * c * k * σ2 * Real.log (n + 1))) ^ 2 / (2 * k * σ2))) := by
-    rw [← ofReal_measureReal]
-    gcongr
-    refine (HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun (c := σ2) ?_ ?_ (by positivity))
-    · exact (iIndepFun_eval_streamMeasure'' ν a).comp (fun i ω ↦ ω - (ν a)[id])
-        (fun _ ↦ by fun_prop)
-    · intro i him
-      refine (hν a).congr_identDistrib ?_
-      exact (identDistrib_eval_eval_id_streamMeasure _ _ _).symm.sub_const _
+  _ ≤ ENNReal.ofReal (Real.exp (-(√(2 * c * k * σ2 * Real.log (n + 1))) ^ 2 / (2 * k * σ2))) :=
+    StreamMeasure.prob_sum_range_sub_ge_le_of_hasSubgaussianMGF (hν a) (by positivity) k
   _ = 1 / (n + 1) ^ c := by
     rw [Real.sq_sqrt]
     swap; · exact mul_nonneg (by positivity) (Real.log_nonneg (by simp))
@@ -698,102 +546,3 @@ lemma prob_avg_sub_sqrt_log_ge {σ2 : ℝ≥0} {c : ℝ}
 end Subgaussian
 
 end Bandits
-
-namespace Learning.IsBayesAlgEnvSeq
-
-variable {𝓔 Ω : Type*} [MeasurableSpace 𝓔] [MeasurableSpace Ω]
-variable {K : ℕ} [Nonempty (Fin K)]
-variable {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × Fin K) ℝ} [IsMarkovKernel κ]
-variable {alg : Algorithm Unit (Fin K) ℝ}
-variable {E : Ω → 𝓔} {A : ℕ → Ω → (Fin K)} {R : ℕ → Ω → ℝ}
-variable {P : Measure Ω} [IsProbabilityMeasure P]
-
-/-- Auxiliary lemma for `prob_empMean_sub_actionMean_ge_le`. -/
-private lemma sqrt_two_mul_le_sub {k : ℕ} (hk : k ≠ 0) {s μ σ l : ℝ}
-    (h : √(2 * σ * l / k) ≤ s / k - μ) : √(2 * k * σ * l) ≤ s - k * μ := by
-  have hkp : (0 : ℝ) < k := by positivity
-  calc √(2 * k * σ * l)
-    _ = √(2 * σ * l / k * k ^ 2) := by
-      field_simp
-    _ = √(2 * σ * l / k) * k := by
-      rw [Real.sqrt_mul' _ (sq_nonneg _), Real.sqrt_sq hkp.le]
-    _ ≤ (s / k - μ) * k := by
-      nlinarith
-    _ = s - k * μ := by
-      field_simp
-
-lemma prob_empMean_sub_actionMean_ge_le (h : IsBayesAlgEnvSeq Q κ alg E A R P) {σ2 : ℝ≥0}
-    (hσ2 : 0 < σ2) (hs : ∀ e a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
-    {δ : ℝ} (hδ : 0 < δ) (n : ℕ) :
-    P {ω | ∃ t < n, ∃ a, pullCount A a t ω ≠ 0 ∧
-      √(2 * σ2 * Real.log (1 / δ) / pullCount A a t ω) ≤ empMean A R a t ω - actionMean κ E a ω}
-      ≤ ENNReal.ofReal (K * (n - 1) * δ) := by
-  have := h.measurable_param
-  have := h.measurable_action
-  have := h.measurable_feedback
-  let S : Set (𝓔 × (ℕ → Round Unit (Fin K) ℝ)) :=
-    {(e, τ) | ∃ a, ∃ t < n, pullCount IT.action a t τ ≠ 0 ∧
-    √(2 * pullCount IT.action a t τ * σ2 * Real.log (1 / δ)) ≤
-      sumRewards IT.action IT.feedback a t τ - pullCount IT.action a t τ * actionMean κ id a e}
-  calc
-    _ ≤ (P.map (fun ω ↦ (E ω, trajectory (noObs Ω) A R ω))) S := by
-        rw [Measure.map_apply (by fun_prop) (by measurability)]
-        apply measure_mono
-        intro ω ⟨t, ht, a, hpc, hle⟩
-        rw [empMean] at hle
-        exact ⟨a, t, ht, hpc, sqrt_two_mul_le_sub hpc hle⟩
-    _ = (P.map E ⊗ₘ condDistrib (trajectory (noObs Ω) A R) E P) S := by
-        rw [← compProd_map_condDistrib (by fun_prop) (by fun_prop)]
-    _ = ∫⁻ e, condDistrib (trajectory (noObs Ω) A R) E P e (Prod.mk e ⁻¹' S) ∂(P.map E) :=
-        Measure.compProd_apply (by measurability)
-    _ ≤ ∫⁻ e, ENNReal.ofReal (Fintype.card (Fin K) * (n - 1) * δ) ∂(P.map E) := by
-        apply lintegral_mono_ae
-        rw [h.hasLaw_env.map_eq]
-        filter_upwards [h.ae_IsAlgEnvSeq] with e he
-        exact Bandits.prob_sumRewards_sub_pullCount_mul_ge_le_of_Fintype hσ2 (hs e) he hδ
-    _ = ENNReal.ofReal (K * (n - 1) * δ) := by
-      simp [Measure.map_apply h.measurable_param]
-
-/-- Auxiliary lemma for `prob_empMean_bestAction_sub_actionMean_le_le`. -/
-private lemma sub_le_neg_sqrt_two_mul {k : ℕ} (hk : k ≠ 0) {s μ σ l : ℝ}
-    (h : s / k - μ ≤ -√(2 * σ * l / k)) : s - k * μ ≤ -√(2 * k * σ * l) := by
-  have : √(2 * k * σ * l) ≤ -s - k * -μ := sqrt_two_mul_le_sub hk (by grind)
-  linarith
-
-lemma prob_empMean_bestAction_sub_actionMean_le_le (h : IsBayesAlgEnvSeq Q κ alg E A R P)
-    {σ2 : ℝ≥0} (hσ2 : 0 < σ2)
-    (hs : ∀ e a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
-    {δ : ℝ} (hδ : 0 < δ) (n : ℕ) :
-    P {ω | ∃ t < n, pullCount A (bestAction κ E ω) t ω ≠ 0 ∧
-        empMean A R (bestAction κ E ω) t ω - actionMean κ E (bestAction κ E ω) ω ≤
-          -√(2 * σ2 * Real.log (1 / δ) / (pullCount A (bestAction κ E ω) t ω))}
-      ≤ ENNReal.ofReal ((n - 1) * δ) := by
-  have := h.measurable_param
-  have := h.measurable_action
-  have := h.measurable_feedback
-  let S : Set (𝓔 × (ℕ → Round Unit (Fin K) ℝ)) :=
-    {(e, τ) | ∃ t < n, pullCount IT.action (bestAction κ id e) t τ ≠ 0 ∧
-    sumRewards IT.action IT.feedback (bestAction κ id e) t τ -
-        pullCount IT.action (bestAction κ id e) t τ * actionMean κ id (bestAction κ id e) e ≤
-          -√(2 * pullCount IT.action (bestAction κ id e) t τ * σ2 * Real.log (1 / δ))}
-  calc
-    _ ≤ (P.map (fun ω ↦ (E ω, trajectory (noObs Ω) A R ω))) S := by
-        rw [Measure.map_apply (by fun_prop) (by measurability)]
-        apply measure_mono
-        intro ω ⟨t, ht, hpc, hle⟩
-        rw [empMean] at hle
-        exact ⟨t, ht, hpc, sub_le_neg_sqrt_two_mul hpc hle⟩
-    _ = (P.map E ⊗ₘ condDistrib (trajectory (noObs Ω) A R) E P) S := by
-        rw [← compProd_map_condDistrib (by fun_prop) (by fun_prop)]
-    _ = ∫⁻ e, condDistrib (trajectory (noObs Ω) A R) E P e (Prod.mk e ⁻¹' S) ∂(P.map E) :=
-        Measure.compProd_apply (by measurability)
-    _ ≤ ∫⁻ e, ENNReal.ofReal ((n - 1) * δ) ∂(P.map E) := by
-        apply lintegral_mono_ae
-        rw [h.hasLaw_env.map_eq]
-        filter_upwards [h.ae_IsAlgEnvSeq] with e he
-        exact Bandits.prob_sumRewards_sub_pullCount_mul_le_le (ν := κ.sectR e) hσ2 (hs e _) he
-          hδ
-    _ = ENNReal.ofReal ((n - 1) * δ) := by
-      simp [Measure.map_apply h.measurable_param]
-
-end Learning.IsBayesAlgEnvSeq

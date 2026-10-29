@@ -22,7 +22,7 @@ while supporting constrained convex analysis.
 * `HasSubgradientWithinAt f g s x`: `g : E →L[R] F` is a subgradient of `f` at `x` on `s`.
 * `subdifferentialWithin R f s x`: The subdifferential set `∂[R, s, x](f)`.
 
-## Main results
+## Main statements
 
 * Monotonicity in the domain: `HasSubgradientWithinAt.mono`.
 * Chain rules: `HasSubgradientWithinAt.comp_affine` and `HasSubgradientWithinAt.comp`.
@@ -161,7 +161,7 @@ lemma HasSubgradientWithinAt.of_le_of_eq [AddRightMono F] {f₁ f₂ : E → F} 
     (h_sub : HasSubgradientWithinAt f₁ g s x) (h_le : ∀ y ∈ s, f₁ y ≤ f₂ y) (h_eq : f₁ x = f₂ x) :
     HasSubgradientWithinAt f₂ g s x :=
   fun y hy ↦ le_trans (h_sub y hy)
-    (bregDiv_le_of_le_of_eq (h_le y hy) h_eq)
+    (bregDiv_le_of_le_of_eq (h_le y hy) h_eq g)
 
 section ModuleBasic
 

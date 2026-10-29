@@ -9,6 +9,7 @@ public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.C
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.CompProd
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.MapSequence
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.Restrict
+public import LeanMachineLearning.ForMathlib.MeasureTheory.MeasurableSpace.Constructions
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
 
 /-!
@@ -24,10 +25,10 @@ so that term measures only how the two step kernels differ.
 The same identity holds for the whole trajectory `trajectory O A Y : Ω → (ℕ → Round 𝓞 𝓐 𝓨)`, with
 a series in place of the finite sum.
 
-For a single algorithm run against two stationary environments with reward kernels `κ` and
-`κ'`, the two step kernels share the observation kernel and the policy and differ only in the
-reward kernel, so the conditional divergence of a step is the conditional divergence of the reward
-given the played action.
+For a single algorithm run against two stationary bandit environments `Environment.bandit κ` and
+`Environment.bandit κ'`, the two step kernels share the observation kernel and the policy and
+differ only in the reward kernel, so the conditional divergence of a step is the conditional
+divergence of the reward given the played action.
 This is the *divergence decomposition* of bandit lower bounds.
 
 ## Main statements
@@ -35,17 +36,18 @@ This is the *divergence decomposition* of bandit lower bounds.
 * `IsAlgEnvSeq.klDiv_map_history_stepKernel`, `IsAlgEnvSeq.klDiv_map_trajectory_stepKernel`:
   the chain rule for the law of the history of the first `M` rounds and for the law of the
   trajectory.
-* `IsAlgEnvSeq.klDiv_map_history_compProd`, `IsAlgEnvSeq.klDiv_map_history`: the divergence
-  decomposition for two stationary environments, in composition-product and in integral form.
-* `IsAlgEnvSeq.klDiv_map_trajectory_compProd`, `IsAlgEnvSeq.klDiv_map_trajectory`: the same two
-  forms for the trajectory.
+* `IsAlgEnvSeq.klDiv_map_history_compProd_bandit`, `IsAlgEnvSeq.klDiv_map_history_bandit`: the
+  divergence decomposition for two stationary bandit environments, in composition-product and in
+  integral form.
+* `IsAlgEnvSeq.klDiv_map_trajectory_compProd_bandit`, `IsAlgEnvSeq.klDiv_map_trajectory_bandit`:
+  the same two forms for the trajectory.
 
 -/
 
 @[expose] public section
 
 open MeasureTheory ProbabilityTheory InformationTheory Finset
-open scoped ENNReal RealInnerProductSpace ENat
+open scoped ENNReal
 
 namespace Learning
 
@@ -56,41 +58,6 @@ variable {𝓞 𝓐 𝓨 : Type*} {m𝓞 : MeasurableSpace 𝓞} {m𝓐 : Measur
   {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨}
   {O' : ℕ → Ω' → 𝓞} {A' : ℕ → Ω' → 𝓐} {Y' : ℕ → Ω' → 𝓨}
   {alg alg' : Algorithm 𝓞 𝓐 𝓨} {env env' : Environment 𝓞 𝓐 𝓨}
-
-section
-
-variable {α β γ δ : Type*} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
-  {mγ : MeasurableSpace γ} {mδ : MeasurableSpace δ} {μ : Measure α} [IsFiniteMeasure μ]
-
-/-- The divergence of one step of a policy/reward decomposition, in composition-product form:
-the policy `π` is shared and the reward kernels `κ`, `η` (which ignore the history) differ, so
-the divergence is the conditional divergence of the reward kernels given the played action,
-whose law is `π ∘ₘ μ`. -/
-lemma klDiv_compProd_compProd_prodMkLeft_eq_klDiv_comp_compProd (μ : Measure α)
-    [IsFiniteMeasure μ] (π : Kernel α β) [IsMarkovKernel π] (κ η : Kernel β γ) [IsFiniteKernel κ]
-    [IsFiniteKernel η] :
-    klDiv (μ ⊗ₘ (π ⊗ₖ κ.prodMkLeft α)) (μ ⊗ₘ (π ⊗ₖ η.prodMkLeft α)) =
-      klDiv ((π ∘ₘ μ) ⊗ₘ κ) ((π ∘ₘ μ) ⊗ₘ η) := by
-  rw [← klDiv_map_measurableEquiv _ _ MeasurableEquiv.prodAssoc.symm, Measure.compProd_assoc,
-    Measure.compProd_assoc, ← Measure.snd_compProd, Measure.snd]
-  exact klDiv_compProd_comap _ _ _ measurable_snd
-
-/-- The divergence of one step of an observation/policy/reward decomposition, in
-composition-product form: the observation kernel `o` and the policy `π` are shared and the reward
-kernels `κ`, `η` (which ignore the history and the observation) differ, so the divergence is the
-conditional divergence of the reward kernels given the played action, whose law is
-`π ∘ₘ (μ ⊗ₘ o)`. -/
-lemma klDiv_compProd_compProd_compProd_prodMkLeft_eq_klDiv_comp_compProd (μ : Measure α)
-    [IsFiniteMeasure μ] (o : Kernel α β) [IsMarkovKernel o] (π : Kernel (α × β) γ)
-    [IsMarkovKernel π] (κ η : Kernel γ δ) [IsFiniteKernel κ] [IsFiniteKernel η] :
-    klDiv (μ ⊗ₘ (o ⊗ₖ (π ⊗ₖ κ.prodMkLeft (α × β))))
-        (μ ⊗ₘ (o ⊗ₖ (π ⊗ₖ η.prodMkLeft (α × β)))) =
-      klDiv ((π ∘ₘ (μ ⊗ₘ o)) ⊗ₘ κ) ((π ∘ₘ (μ ⊗ₘ o)) ⊗ₘ η) := by
-  rw [← klDiv_map_measurableEquiv _ _ MeasurableEquiv.prodAssoc.symm, Measure.compProd_assoc,
-    Measure.compProd_assoc]
-  exact klDiv_compProd_compProd_prodMkLeft_eq_klDiv_comp_compProd _ _ _ _
-
-end
 
 /-- **Chain rule for histories.** For two algorithms `alg`, `alg'` run against two environments
 `env`, `env'`, the divergence between the laws of the histories of the first `M` rounds is
@@ -152,13 +119,15 @@ lemma IsAlgEnvSeq.klDiv_map_trajectory_stepKernel (h : IsAlgEnvSeq O A Y alg env
     h'.measurable_obs h'.measurable_action h'.measurable_feedback, ENNReal.tsum_eq_iSup_nat]
   exact iSup_congr fun n ↦ h.klDiv_map_history_stepKernel h' n
 
-section StationaryEnv
+section Bandit
 
 variable {O : ℕ → Ω → Unit} {O' : ℕ → Ω' → Unit} {alg : Algorithm Unit 𝓐 𝓨}
   {κ κ' : Kernel 𝓐 𝓨} [IsMarkovKernel κ] [IsMarkovKernel κ']
 
-/-- Chain rule for histories of a single algorithm versus two stationary environments. -/
-lemma IsAlgEnvSeq.klDiv_map_history_compProd (h : IsAlgEnvSeq O A Y alg (Environment.bandit κ) P)
+/-- **Divergence decomposition** for histories of a single algorithm against two stationary bandit
+environments. -/
+lemma IsAlgEnvSeq.klDiv_map_history_compProd_bandit
+    (h : IsAlgEnvSeq O A Y alg (Environment.bandit κ) P)
     (h' : IsAlgEnvSeq O' A' Y' alg (Environment.bandit κ') P') (M : ℕ) :
     klDiv (P.map (history O A Y M)) (P'.map (history O' A' Y' M)) =
       ∑ t ∈ range M, klDiv (P.map (A t) ⊗ₘ κ) (P.map (A t) ⊗ₘ κ') := by
@@ -170,37 +139,41 @@ lemma IsAlgEnvSeq.klDiv_map_history_compProd (h : IsAlgEnvSeq O A Y alg (Environ
     klDiv_compProd_compProd_compProd_prodMkLeft_eq_klDiv_comp_compProd, ← h_obs,
     ← (h.hasCondDistrib_action t).hasLaw_comp.map_eq]
 
-/-- Chain rule for histories of a single algorithm versus two stationary environments. -/
-lemma IsAlgEnvSeq.klDiv_map_history [MeasurableSpace.CountablyGenerated 𝓨]
+/-- **Divergence decomposition** for histories of a single algorithm against two stationary bandit
+environments. -/
+lemma IsAlgEnvSeq.klDiv_map_history_bandit [MeasurableSpace.CountablyGenerated 𝓨]
     (h : IsAlgEnvSeq O A Y alg (Environment.bandit κ) P)
     (h' : IsAlgEnvSeq O' A' Y' alg (Environment.bandit κ') P') (M : ℕ) :
     klDiv (P.map (history O A Y M)) (P'.map (history O' A' Y' M)) =
       ∑ t ∈ range M, ∫⁻ ω, klDiv (κ (A t ω)) (κ' (A t ω)) ∂P := by
-  rw [h.klDiv_map_history_compProd h']
+  rw [h.klDiv_map_history_compProd_bandit h']
   refine sum_congr rfl fun t _ ↦ ?_
   rw [klDiv_compProd_right_eq_lintegral,
     lintegral_map (measurable_klDiv_kernel κ κ') (h.measurable_action t)]
 
-/-- Chain rule for trajectories of a single algorithm versus two stationary environments. -/
-lemma IsAlgEnvSeq.klDiv_map_trajectory_compProd (h : IsAlgEnvSeq O A Y alg (Environment.bandit κ) P)
+/-- **Divergence decomposition** for trajectories of a single algorithm against two stationary
+bandit environments. -/
+lemma IsAlgEnvSeq.klDiv_map_trajectory_compProd_bandit
+    (h : IsAlgEnvSeq O A Y alg (Environment.bandit κ) P)
     (h' : IsAlgEnvSeq O' A' Y' alg (Environment.bandit κ') P') :
     klDiv (P.map (trajectory O A Y)) (P'.map (trajectory O' A' Y')) =
       ∑' t : ℕ, klDiv (P.map (A t) ⊗ₘ κ) (P.map (A t) ⊗ₘ κ') := by
   rw [klDiv_map_trajectory_eq_iSup h.measurable_obs h.measurable_action h.measurable_feedback
     h'.measurable_obs h'.measurable_action h'.measurable_feedback, ENNReal.tsum_eq_iSup_nat]
-  exact iSup_congr fun n ↦ h.klDiv_map_history_compProd h' n
+  exact iSup_congr fun n ↦ h.klDiv_map_history_compProd_bandit h' n
 
-/-- Chain rule for trajectories of a single algorithm versus two stationary environments. -/
-lemma IsAlgEnvSeq.klDiv_map_trajectory [MeasurableSpace.CountablyGenerated 𝓨]
+/-- **Divergence decomposition** for trajectories of a single algorithm against two stationary
+bandit environments. -/
+lemma IsAlgEnvSeq.klDiv_map_trajectory_bandit [MeasurableSpace.CountablyGenerated 𝓨]
     (h : IsAlgEnvSeq O A Y alg (Environment.bandit κ) P)
     (h' : IsAlgEnvSeq O' A' Y' alg (Environment.bandit κ') P') :
     klDiv (P.map (trajectory O A Y)) (P'.map (trajectory O' A' Y')) =
       ∑' t : ℕ, ∫⁻ ω, klDiv (κ (A t ω)) (κ' (A t ω)) ∂P := by
-  rw [h.klDiv_map_trajectory_compProd h']
+  rw [h.klDiv_map_trajectory_compProd_bandit h']
   refine tsum_congr fun t ↦ ?_
   rw [klDiv_compProd_right_eq_lintegral,
     lintegral_map (measurable_klDiv_kernel κ κ') (h.measurable_action t)]
 
-end StationaryEnv
+end Bandit
 
 end Learning

@@ -20,13 +20,22 @@ probability of being optimal under the posterior over environments given the his
 * `tsAlgorithm Q κ`: a Thompson sampling algorithm with actions in `Fin K` (for `K ≠ 0`), given
   a prior distribution over parameters `Q : Measure 𝓔` and a Markov kernel
   `κ : Kernel (𝓔 × Fin K) ℝ`. This kernel defines how a parameter `e : 𝓔` gives rise to
-  a stationary environment: `Environment.bandit (κ.sectR e) : Environment (Fin K) ℝ`.
+  a stationary environment: `Environment.bandit (κ.sectR e) : Environment Unit (Fin K) ℝ`.
 
-## Main results
+## Main statements
 
-* `hasCondDistrib_action` : if Thompson sampling has the correct prior over environments, then
+* `TS.hasCondDistrib_action`: if Thompson sampling has the correct prior over environments, then
   the conditional distribution of the next action given the history so far is equal to the
   conditional distribution of the best action given the history so far.
+
+## References
+
+* W. R. Thompson, *On the likelihood that one unknown probability exceeds another in view of the
+  evidence of two samples*, Biometrika, 1933.
+* D. Russo and B. Van Roy, *Learning to optimize via posterior sampling*, Mathematics of
+  Operations Research, 2014.
+* T. Lattimore and C. Szepesvári, *Bandit Algorithms*, Cambridge University Press, 2020,
+  Chapter 36.
 
 -/
 
@@ -48,23 +57,23 @@ The posterior under a uniform algorithm is used to avoid a circular definition. 
 noncomputable
 def TS.policy [NeZero K] (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × Fin K) ℝ)
     [IsMarkovKernel κ] (n : ℕ) : Kernel (Hist Unit (Fin K) ℝ n × Unit) (Fin K) :=
-  (((IT.bayesTrajMeasurePosterior Q κ uniformAlgorithm n).map
+  (((IT.bayesTrajMeasurePosterior Q κ Algorithm.uniform n).map
     (bestAction κ id)).prodMkRight Unit)
 
 instance [NeZero K] {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × Fin K) ℝ}
     [IsMarkovKernel κ] {n : ℕ} : IsMarkovKernel (TS.policy Q κ n) := by
-  have : IsMarkovKernel ((IT.bayesTrajMeasurePosterior Q κ uniformAlgorithm n).map
+  have : IsMarkovKernel ((IT.bayesTrajMeasurePosterior Q κ Algorithm.uniform n).map
       (bestAction κ id)) := Kernel.IsMarkovKernel.map _ (by fun_prop)
   unfold TS.policy
   infer_instance
 
 /-- The Thompson sampling algorithm with actions in `Fin K`, where `Q : Measure 𝓔` is a prior
-  distribution over parameters, and `κ : Kernel (𝓔 × Fin K) ℝ` is a Markov kernel that defines the
-  stationary environment `Environment.bandit (κ.sectR e)` that corresponds to a parameter `e : 𝓔`.
+distribution over parameters, and `κ : Kernel (𝓔 × Fin K) ℝ` is a Markov kernel that defines the
+stationary environment `Environment.bandit (κ.sectR e)` that corresponds to a parameter `e : 𝓔`.
 
-  At every time `n`, the Thompson sampling policy uses the posterior over the parameters given the
-  history up to time `n` to derive the probability of each action being optimal. The action for time
-  `n` is sampled according to these probabilities. -/
+At every time `n`, the Thompson sampling policy uses the posterior over the parameters given the
+history up to time `n` to derive the probability of each action being optimal. The action for time
+`n` is sampled according to these probabilities. -/
 noncomputable
 def tsAlgorithm [NeZero K] (Q : Measure 𝓔) [IsProbabilityMeasure Q] (κ : Kernel (𝓔 × Fin K) ℝ)
     [IsMarkovKernel κ] : Algorithm Unit (Fin K) ℝ where
@@ -105,12 +114,12 @@ lemma TS.hasCondDistrib_action (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ) E A
     refine Measure.compProd_congr ?_
     calc
       _ =ᵐ[P.map (history (noObs Ω) A R n)]
-          (IT.bayesTrajMeasurePosterior Q κ uniformAlgorithm n).map (bestAction κ id) := by rfl
+          (IT.bayesTrajMeasurePosterior Q κ Algorithm.uniform n).map (bestAction κ id) := by rfl
       _ =ᵐ[P.map (history (noObs Ω) A R n)]
           (condDistrib E (history (noObs Ω) A R n) P).map (bestAction κ id) := by
           filter_upwards [(h.hasCondDistrib_env_history
-            (IT.isBayesAlgEnvSeq_bayesTrajMeasure Q κ uniformAlgorithm)
-            absolutelyContinuous_uniformAlgorithm n).condDistrib_eq] with _ hc
+            (IT.isBayesAlgEnvSeq_bayesTrajMeasure Q κ Algorithm.uniform)
+            (Algorithm.absolutelyContinuous_uniform _) n).condDistrib_ae_eq] with _ hc
           simp_rw [Kernel.map_apply _ hm, IT.bayesTrajMeasurePosterior, hc]
       _ =ᵐ[P.map (history (noObs Ω) A R n)]
           condDistrib (bestAction κ E) (history (noObs Ω) A R n) P :=

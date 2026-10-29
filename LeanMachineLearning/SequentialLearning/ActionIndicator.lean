@@ -12,19 +12,18 @@ public import LeanMachineLearning.SequentialLearning.SumRewards
 
 `actionIndicator A k n ω = 𝟙{A n ω = k}` is the `{0,1}`-valued indicator that action `k` was chosen
 at round `n`. It is the increment weight of every per-action sum attached to an action process:
-`pullCount A k n` is its partial sum (`sum_range_actionIndicator_eq_pullCount`) and
-`sumRewards A Y k n` is its reward-weighted partial sum (`sum_actionIndicator_mul`).
-
+`pullCount A k n` is its partial sum (`sum_actionIndicator_eq_pullCount`) and
+`sumRewards A Y k n` is its reward-weighted partial sum (`sum_actionIndicator_smul`).
 
 ## Main definitions
 
 * `Learning.actionIndicator`
 
-## Main results
+## Main statements
 
-* `Learning.sum_range_actionIndicator_eq_pullCount`, `Learning.sum_actionIndicator_mul` — the two
+* `Learning.sum_actionIndicator_eq_pullCount`, `Learning.sum_actionIndicator_smul` — the two
   partial-sum identities.
-* `Learning.adapted_actionIndicator`, `Learning.integrable_actionIndicator`.
+* `Learning.IsAlgEnvSeq.adapted_actionIndicator`, `Learning.integrable_actionIndicator`.
 -/
 
 @[expose] public section
@@ -64,7 +63,6 @@ lemma sum_actionIndicator [Fintype 𝓐] (A : ℕ → Ω → 𝓐) (j : ℕ) (ω
 lemma sum_actionIndicator_eq_pullCount [DecidableEq 𝓐] (A : ℕ → Ω → 𝓐) (k : 𝓐) (n : ℕ)
     (ω : Ω) :
     ∑ j ∈ range n, actionIndicator A k j ω = (pullCount A k n ω : ℝ) := by
-  classical
   rw [pullCount_eq_sum]
   push_cast
   refine Finset.sum_congr rfl fun j _ ↦ ?_
@@ -95,7 +93,7 @@ lemma integrable_actionIndicator (P : Measure Ω) [IsFiniteMeasure P]
 /-- The action indicator is adapted to the history filtration: whether action `k` was chosen at `n`
 is known at time `n`. -/
 lemma IsAlgEnvSeq.adapted_actionIndicator {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨}
-    [IsFiniteMeasure P] (h : IsAlgEnvSeq O A Y alg env P) (k : 𝓐) :
+    (h : IsAlgEnvSeq O A Y alg env P) (k : 𝓐) :
     Adapted h.filtration (actionIndicator A k) :=
   fun _ ↦ Measurable.indicator measurable_const (h.adapted_action _ (measurableSet_singleton k))
 
@@ -103,7 +101,7 @@ lemma IsAlgEnvSeq.adapted_actionIndicator {alg : Algorithm 𝓞 𝓐 𝓨} {env 
 at `n` is known once we know the action at `n`. -/
 lemma IsAlgEnvSeq.adapted_actionIndicator_filtrationAction
     {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨}
-    [IsFiniteMeasure P] (h : IsAlgEnvSeq O A Y alg env P) (k : 𝓐) :
+    (h : IsAlgEnvSeq O A Y alg env P) (k : 𝓐) :
     Adapted h.filtrationAction (actionIndicator A k) :=
   fun _ ↦ Measurable.indicator measurable_const
     (h.adapted_action_filtrationAction _ (measurableSet_singleton k))

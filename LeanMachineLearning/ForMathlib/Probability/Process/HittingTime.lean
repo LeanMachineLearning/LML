@@ -9,6 +9,8 @@ public import Mathlib.Probability.Process.HittingTime
 
 /-!
 # Hitting times
+
+Characterization of the event `hittingAfter u s n ω = i`.
 -/
 
 @[expose] public section

@@ -5,6 +5,7 @@ Authors: Rémy Degenne
 -/
 module
 
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Measure.Decomposition.Lebesgue
 public import Mathlib.InformationTheory.KullbackLeibler.Basic
 
 /-!
@@ -30,21 +31,6 @@ divergences of the restrictions to an increasing sequence of measurable sets cov
 
 open MeasureTheory
 open scoped ENNReal
-
-namespace MeasureTheory.Measure
-
-variable {α : Type*} {mα : MeasurableSpace α} {μ ν : Measure α}
-
-/-- The Radon–Nikodym derivative of `μ.restrict s` with respect to `ν.restrict s` is the
-Radon–Nikodym derivative of `μ` with respect to `ν`, `ν.restrict s`-almost everywhere. -/
-lemma rnDeriv_restrict_restrict (μ ν : Measure α) [μ.HaveLebesgueDecomposition ν] [SigmaFinite ν]
-    {s : Set α} (hs : MeasurableSet s) :
-    (μ.restrict s).rnDeriv (ν.restrict s) =ᵐ[ν.restrict s] μ.rnDeriv ν := by
-  refine (eq_rnDeriv (s := (μ.singularPart ν).restrict s) (measurable_rnDeriv μ ν)
-    (((mutuallySingular_singularPart μ ν).restrict s).mono le_rfl restrict_le_self) ?_).symm
-  rw [← restrict_withDensity hs, ← restrict_add, ← haveLebesgueDecomposition_add μ ν]
-
-end MeasureTheory.Measure
 
 namespace InformationTheory
 

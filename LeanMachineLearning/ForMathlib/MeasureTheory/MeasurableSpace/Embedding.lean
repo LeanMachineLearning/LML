@@ -15,6 +15,8 @@ public import Mathlib.Probability.Kernel.IonescuTulcea.Maps
 Measurable equivalences between product and pi types, used to manipulate histories of sequential
 learning algorithms (elements of `Fin n → 𝓐 × 𝓨` or `Iic n → 𝓐 × 𝓨`).
 
+## Main definitions
+
 * `MeasurableEquiv.uniqueProd`, `MeasurableEquiv.prodUnique`: drop a component that lives in a type
   with a unique element.
 * `MeasurableEquiv.IicSuccProd`: `(Π i : Iic (n + 1), X i) ≃ᵐ (Π i : Iic n, X i) × X (n + 1)`.
@@ -37,8 +39,6 @@ lemma measurableEmbedding_prodMk_left_of_measurableSet {α β : Type*} [Measurab
     convert! hx.prod hs
     ext p
     simp [Prod.ext_iff, eq_comm, and_left_comm]
-
-lemma coe_default_Iic_zero : ((default : Iic 0) : ℕ) = 0 := rfl
 
 namespace MeasurableEquiv
 
@@ -97,7 +97,7 @@ def IicSuccProd (X : ℕ → Type*) [∀ n, MeasurableSpace (X n)] (n : ℕ) :
   (IicProdIoc (Nat.le_succ n)).symm.trans
     (prodCongr (refl _) (piSingleton n).symm)
 
-lemma symm_IicSuccProd (n : ℕ) :
+lemma IicSuccProd_symm (n : ℕ) :
     (IicSuccProd X n).symm =
       (prodCongr (refl _) (piSingleton n)).trans
         (IicProdIoc (Nat.le_succ n)) := rfl

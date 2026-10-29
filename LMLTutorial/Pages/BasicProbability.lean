@@ -98,7 +98,8 @@ If we define a measure `P` on `Ω`, we can talk about the law or distribution of
 The law of `X` is a measure on `E`, with value `P (X ⁻¹' s)` on any measurable set `s` of `E`.
 This is how we define the map of the measure `P` by `X`, `Measure.map X P` or more succinctly `P.map X`.
 There is no specific notation for that law.
-To say that `X` is Gaussian with mean 0 and variance 1, write `P.map X = gaussianReal 0 1`.
+To say that `X` is Gaussian with mean 0 and variance 1, write `HasLaw X (gaussianReal 0 1) P`.
+`HasLaw X μ P` states that `X` is almost everywhere measurable and that `P.map X = μ`; it is the preferred way to state the law of a random variable.
 
 The expectation of `X` is the integral of that function against the measure `P`, written `∫ ω, X ω ∂P`.
 The notation `P[X]` is shorthand for that expectation. In a `MeasureSpace`, we can further use the notation `𝔼[X]`.
@@ -119,7 +120,7 @@ Any countable type with measurable singletons is a `DiscreteMeasurableSpace`, fo
 A way to define a probability measure on a discrete space `Ω` is to use the type `PMF Ω`, which stands for probability mass function.
 `PMF Ω` is the subtype of functions `Ω → ℝ≥0∞` that sum to 1.
 One can get a `Measure Ω` from `p : PMF Ω` with `p.toMeasure`.
-When writing a theorem about probability on finite spaces, it preferable to write it for a `Measure` in a `DiscreteMeasurableSpace` than for a `PMF` for better integration with the library.
+When writing a theorem about probability on finite spaces, it is preferable to write it for a `Measure` in a `DiscreteMeasurableSpace` than for a `PMF` for better integration with the library.
 
 
 # Additional typeclasses on measurable spaces

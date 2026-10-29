@@ -20,12 +20,12 @@ length: the interaction stops after `n` rounds if the history of these `n` round
 
 * `Learning.sigmaHistory O X Y n : Ω → Σ n, Hist 𝓞 𝓐 𝓨 n`: the history of the first `n`
   rounds, as a history of variable length;
-* `stoppedHistMeasure alg env S`: the law of the history stopped by `S`.
+* `Learning.stoppedHistMeasure alg env S`: the law of the history stopped by `S`.
 
-## Main results
+## Main statements
 
-* `IsAlgEnvSeq.hasLaw_stoppedHist_stoppingTime`: the law of the
-  history stopped by `S` is determined by the algorithm and the environment.
+* `IsAlgEnvSeq.hasLaw_stoppedValue_sigmaHistory`: the law of the history stopped by `S` is
+  `stoppedHistMeasure alg env S`, hence it is determined by the algorithm and the environment.
 -/
 
 @[expose] public section
@@ -38,7 +38,7 @@ variable {𝓞 𝓐 𝓨 Ω : Type*} {m𝓞 : MeasurableSpace 𝓞} {m𝓐 : Mea
   {m𝓨 : MeasurableSpace 𝓨} {mΩ : MeasurableSpace Ω}
   {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨}
   {O : ℕ → Ω → 𝓞} {X : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} {S : Set (Σ n : ℕ, Hist 𝓞 𝓐 𝓨 n)}
-  {τ : Ω → WithTop ℕ} {ω : Ω} {n M : ℕ}
+  {τ : Ω → WithTop ℕ}
 
 /-- The history of the first `n` rounds, as a history of variable length in the sigma type
 `Σ n : ℕ, Hist 𝓞 𝓐 𝓨 n`. -/
@@ -57,7 +57,7 @@ include hO hX hY
 
 @[fun_prop]
 lemma measurable_sigmaHistory (n : ℕ) : Measurable (sigmaHistory O X Y n) :=
-  (measurable_sigma_mk n).comp (measurable_history hO hX hY n)
+  (measurable_sigmaMk n).comp (measurable_history hO hX hY n)
 
 @[fun_prop]
 lemma measurable_hittingAfter_sigmaHistory (hS : MeasurableSet S) :
@@ -70,18 +70,14 @@ lemma measurable_hittingAfter_sigmaHistory (hS : MeasurableSet S) :
     rw [this]
     exact MeasurableSet.iInter fun n ↦ measurable_sigmaHistory hO hX hY n hS.compl
   | coe n =>
-    have : hittingAfter (sigmaHistory O X Y) S 0 ⁻¹' {((n : ℕ) : WithTop ℕ)} =
+    have : hittingAfter (sigmaHistory O X Y) S 0 ⁻¹' {WithTop.some n} =
         sigmaHistory O X Y n ⁻¹' S ∩ ⋂ j < n, sigmaHistory O X Y j ⁻¹' Sᶜ := by
       ext ω
-      simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.preimage_compl, Set.mem_inter_iff,
-        Set.mem_iInter, Set.mem_compl_iff]
-      convert hittingAfter_eq_coe_iff using 1
-      · simp only [Nat.cast_id, zero_le, Set.mem_Ico, true_and]
-      · infer_instance
-    simp only [ENat.some_eq_natCast, this, Set.preimage_compl]
+      rw [Set.mem_preimage, Set.mem_singleton_iff, hittingAfter_eq_coe_iff]
+      simp
+    rw [this]
     exact (measurable_sigmaHistory hO hX hY n hS).inter
-      (MeasurableSet.iInter fun j ↦ MeasurableSet.iInter fun _ ↦
-        (measurable_sigmaHistory hO hX hY j hS).compl)
+      (.iInter fun j ↦ .iInter fun _ ↦ (measurable_sigmaHistory hO hX hY j hS).compl)
 
 @[fun_prop]
 lemma measurable_stoppedValue_sigmaHistory (hτ : Measurable τ) :
@@ -92,12 +88,12 @@ end Measurability
 
 section Filtration
 
-variable {alg : Algorithm 𝓞 𝓐 𝓨} {env : Environment 𝓞 𝓐 𝓨} {P : Measure Ω} [IsFiniteMeasure P]
+variable {P : Measure Ω}
 
 -- TODO: it is also adapted for the filtration at the time before?
 lemma IsAlgEnvSeq.adapted_sigmaHistory (h : IsAlgEnvSeq O X Y alg env P) :
     Adapted h.filtration (sigmaHistory O X Y) :=
-  fun n ↦ (measurable_sigma_mk n).comp (h.adapted_history n)
+  fun n ↦ (measurable_sigmaMk n).comp (h.adapted_history n)
 
 end Filtration
 
@@ -128,10 +124,10 @@ lemma IsAlgEnvSeq.hasLaw_stoppedValue_sigmaHistory {P : Measure Ω} [IsProbabili
     (h : IsAlgEnvSeq O X Y alg env P) (hS : MeasurableSet S) :
     HasLaw (stoppedValue (sigmaHistory O X Y) (hittingAfter (sigmaHistory O X Y) S 0))
       (stoppedHistMeasure alg env S) P :=
-  ((measurable_stoppedValue_sigmaHistory IT.measurable_obs IT.measurable_action
+  (hasLaw_map (measurable_stoppedValue_sigmaHistory IT.measurable_obs IT.measurable_action
     IT.measurable_feedback
       (measurable_hittingAfter_sigmaHistory IT.measurable_obs IT.measurable_action
-        IT.measurable_feedback hS)).hasLaw_map _).comp h.hasLaw_trajectory
+        IT.measurable_feedback hS)).aemeasurable).comp h.hasLaw_trajectory
 
 end StoppedHistMeasure
 

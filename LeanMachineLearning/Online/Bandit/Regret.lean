@@ -18,6 +18,25 @@ public import LeanMachineLearning.SequentialLearning.FiniteActions
   kernel `ν : Kernel 𝓐 ℝ` and the outcome `ω : Ω`.
 * `bestArm ν` is an action with the highest mean.
 
+## Main statements
+
+* `regret_eq_sum_pullCount_mul_gap`: the regret is `∑ a, pullCount A a t ω * gap ν a`
+  (regret decomposition).
+* `integral_regret_le_of_forall_integral_pullCount_le`: to bound the expected regret, it suffices
+  to bound the expected number of pulls of each action with positive gap.
+* `pullCount_rate_tendsto_of_sublinear_regret`: if the regret is sublinear, the fraction of pulls
+  of an action with positive gap tends to zero.
+
+## Implementation notes
+
+The highest mean is `⨆ a, (ν a)[id]`. If the means are not bounded above (which is only possible if
+`𝓐` is infinite), this supremum takes the junk value `0`.
+
+## References
+
+* T. Lattimore and C. Szepesvári, *Bandit Algorithms*, Cambridge University Press, 2020,
+  Chapter 4.
+
 -/
 
 @[expose] public section
@@ -28,11 +47,8 @@ open scoped ENNReal NNReal
 
 namespace Bandits
 
-variable {𝓞 𝓐 Ω : Type*} [DecidableEq 𝓐] {m𝓞 : MeasurableSpace 𝓞} {m𝓐 : MeasurableSpace 𝓐}
-  {mΩ : MeasurableSpace Ω}
-  {ν : Kernel 𝓐 ℝ}
-  {O : ℕ → Ω → 𝓞} {A : ℕ → Ω → 𝓐} {R : ℕ → Ω → ℝ}
-  {ω : Ω} {m n t : ℕ} {a : 𝓐}
+variable {𝓐 Ω : Type*} [DecidableEq 𝓐] {m𝓐 : MeasurableSpace 𝓐} {mΩ : MeasurableSpace Ω}
+  {ν : Kernel 𝓐 ℝ} {A : ℕ → Ω → 𝓐} {ω : Ω} {n t : ℕ} {a : 𝓐}
 
 /-- Gap of an action `a`: difference between the highest mean of the actions and the mean of `a`. -/
 noncomputable
@@ -50,11 +66,14 @@ lemma gap_nonneg_of_le {u : ℝ} (h : ∀ a, (ν a)[id] ≤ u) : 0 ≤ gap ν a 
   exact le_ciSup ⟨u, Set.forall_mem_range.2 h⟩ a
 
 omit [DecidableEq 𝓐] in
-lemma gap_le_of_mem_Icc [Nonempty 𝓐] {l u : ℝ} (h : ∀ a, (ν a)[id] ∈ Set.Icc l u) :
+lemma gap_le_of_mem_Icc {l u : ℝ} (h : ∀ a, (ν a)[id] ∈ Set.Icc l u) :
     gap ν a ≤ u - l := by
+  have : Nonempty 𝓐 := ⟨a⟩
   grind [gap, ciSup_le (fun i ↦ (h i).2)]
 
-/-- Regret of a sequence of pulls `k : ℕ → 𝓐` at time `t` for the reward kernel `ν ; Kernel 𝓐 ℝ`. -/
+/-- Regret of a sequence of pulls `A : ℕ → Ω → 𝓐` at time `t` for the reward kernel
+`ν : Kernel 𝓐 ℝ`: difference between `t` times the highest mean and the sum of the means of the
+actions pulled before time `t`. -/
 noncomputable
 def regret (ν : Kernel 𝓐 ℝ) (A : ℕ → Ω → 𝓐) (t : ℕ) (ω : Ω) : ℝ :=
   t * (⨆ a, (ν a)[id]) - ∑ s ∈ range t, (ν (A s ω))[id]
@@ -79,7 +98,7 @@ lemma regret_eq_sum_pullCount_mul_gap [Fintype 𝓐] :
   simp_rw [regret_eq_sum_gap, sum_pullCount_mul]
 
 lemma integral_regret_eq_sum_gap_mul_integral_pullCount
-    [StandardBorelSpace 𝓐] [Fintype 𝓐] {P : Measure Ω} [IsProbabilityMeasure P]
+    [MeasurableSingletonClass 𝓐] [Fintype 𝓐] {P : Measure Ω} [IsFiniteMeasure P]
     (hA : ∀ n, Measurable (A n)) :
     P[regret ν A n] = ∑ a, gap ν a * P[fun ω ↦ (pullCount A a n ω : ℝ)] := by
   simp_rw [regret_eq_sum_pullCount_mul_gap]
@@ -91,12 +110,10 @@ lemma integral_regret_eq_sum_gap_mul_integral_pullCount
 /-- To bound the expected regret, it suffices to bound the expected number of pulls for each action
 with positive gap. -/
 lemma integral_regret_le_of_forall_integral_pullCount_le
-    [StandardBorelSpace 𝓐] [Fintype 𝓐] {P : Measure Ω} [IsProbabilityMeasure P]
-    {alg : Algorithm 𝓞 𝓐 ℝ} {env : Environment 𝓞 𝓐 ℝ} {B : 𝓐 → ℝ}
-    (h : IsAlgEnvSeq O A R alg env P)
+    [MeasurableSingletonClass 𝓐] [Fintype 𝓐] {P : Measure Ω} [IsFiniteMeasure P] {B : 𝓐 → ℝ}
+    (hA : ∀ n, Measurable (A n))
     (h_le : ∀ a, gap ν a ≠ 0 → ∫ ω, (pullCount A a n ω : ℝ) ∂P ≤ B a) :
     P[regret ν A n] ≤ ∑ a, gap ν a * B a := by
-  have hA := h.measurable_action
   rw [integral_regret_eq_sum_gap_mul_integral_pullCount hA]
   gcongr 1 with a
   by_cases h_gap : gap ν a = 0
@@ -109,7 +126,7 @@ section bestArm
 
 variable [Fintype 𝓐] [Nonempty 𝓐]
 
-/-- action with the highest mean. -/
+/-- An action with the highest mean. -/
 noncomputable def bestArm (ν : Kernel 𝓐 ℝ) : 𝓐 :=
   (exists_max_image univ (fun a ↦ (ν a)[id]) (univ_nonempty_iff.mpr inferInstance)).choose
 

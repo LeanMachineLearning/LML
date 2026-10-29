@@ -38,7 +38,7 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
 
 # Stochastic processes, filtrations, and martingales
 
-We define a measure space {lean}`Ω`, with a probability mesure {lean}`(P : Measure Ω)`.
+We define a measurable space {lean}`Ω`, with a probability measure {lean}`(P : Measure Ω)`.
 
 ```lean
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω}
@@ -86,29 +86,14 @@ example {Y : ℕ → Ω → ℝ} (hX : Submartingale Y 𝓕 P) {i j : ℕ} (hij 
 ```
 
 *Almost everywhere martingale convergence theorem*: An L¹-bounded submartingale converges
-almost everywhere to a `⨆ n, ℱ n`-measurable function.
+almost everywhere to a `⨆ n, 𝓕 n`-measurable function, its limit process `𝓕.limitProcess Y P`.
+This is the Mathlib lemma `Submartingale.ae_tendsto_limitProcess`.
 
 ```lean
 example {Y : ℕ → Ω → ℝ} (hY : Submartingale Y 𝓕 P)
     {R : ℝ≥0} (hbdd : ∀ n, eLpNorm (Y n) 1 P ≤ R) :
-    ∀ᵐ ω ∂P, Tendsto (Y · ω) atTop (𝓝 (𝓕.limitProcess Y P ω)) := by
-  classical
-  suffices ∃ g, StronglyMeasurable[⨆ n, 𝓕 n] g ∧ ∀ᵐ ω ∂P, Tendsto (Y · ω) atTop (𝓝 (g ω)) by
-    exact Filtration.HasLimitProcess.ae_tendsto_limitProcess this
-  set g' : Ω → ℝ := fun ω ↦ if h : ∃ c, Tendsto (Y · ω) atTop (𝓝 c) then h.choose else 0
-  have hle : ⨆ n, 𝓕 n ≤ mΩ := sSup_le fun m ⟨n, hn⟩ ↦ hn ▸ 𝓕.le _
-  have hg' : ∀ᵐ ω ∂P.trim hle, Tendsto (Y · ω) atTop (𝓝 (g' ω)) := by
-    filter_upwards [hY.exists_ae_trim_tendsto_of_bdd hbdd] with ω hω
-    simp_rw [g', dif_pos hω]
-    exact hω.choose_spec
-  have hg'm : AEStronglyMeasurable[⨆ n, 𝓕 n] g' (P.trim hle) :=
-    (@aemeasurable_of_tendsto_metrizable_ae' _ _ (⨆ n, 𝓕 n) _ _ _ _ _ _ _
-      (fun n ↦ ((hY.stronglyMeasurable n).measurable.mono (le_sSup ⟨n, rfl⟩ : 𝓕 n ≤ ⨆ n, 𝓕 n)
-        le_rfl).aemeasurable) hg').aestronglyMeasurable
-  obtain ⟨g, hgm, hae⟩ := hg'm
-  have hg : ∀ᵐ ω ∂P.trim hle, Tendsto (Y · ω) atTop (𝓝 (g ω)) := by
-    filter_upwards [hae, hg'] with ω hω hg'ω using hω ▸ hg'ω
-  exact ⟨g, hgm, measure_eq_zero_of_trim_eq_zero hle hg⟩
+    ∀ᵐ ω ∂P, Tendsto (Y · ω) atTop (𝓝 (𝓕.limitProcess Y P ω)) :=
+  hY.ae_tendsto_limitProcess hbdd
 ```
 
 # Stopping times
@@ -124,7 +109,8 @@ example (i : ℕ) : MeasurableSet[𝓕 i] {ω | τ ω ≤ i} := hτ.measurableSe
 
 *The optional stopping theorem* (fair game theorem): an adapted integrable process `Y`
 is a submartingale if and only if for all bounded stopping times `τ` and `π` such that `τ ≤ π`, the
-stopped value of `Y` at `τ` has expectation smaller than its stopped value at `π`.
+stopped value of `Y` at `τ` has expectation smaller than or equal to that of its stopped value at
+`π`.
 ```lean
 example {Y : ℕ → Ω → ℝ} (hadp : StronglyAdapted 𝓕 Y)
     (hint : ∀ i, Integrable (Y i) P) :

@@ -60,6 +60,14 @@ name = "LeanMachineLearning"
 git = "https://github.com/LeanMachineLearning/LML"
 ```
 
+Your project must use the same version of Lean as the library: copy the `lean-toolchain` file of the library into your project.
+Then run
+```
+lake update LeanMachineLearning
+lake exe cache get
+```
+to download the library and its dependencies, and to get the precompiled Mathlib cache.
+
 # Testing the installation
 
 Create a new Lean file in your project and add the following code:
