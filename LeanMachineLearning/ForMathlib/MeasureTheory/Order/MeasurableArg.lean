@@ -78,7 +78,8 @@ lemma measurable_argmax [MeasurableSpace ι] [MeasurableEq α] [MeasurableSup₂
   constructor
   · intro hf x hx
     rw [← hf]
-    exact Classical.choose.congr_simp hx (exists_argmax x)
+    exact Classical.choose.congr_simp (funext fun j ↦ propext (Set.ext_iff.mp hx j))
+      (exists_argmax x)
   · intro h
     exact h f rfl
 

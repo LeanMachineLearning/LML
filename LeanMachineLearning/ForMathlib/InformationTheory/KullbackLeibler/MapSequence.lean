@@ -89,8 +89,10 @@ lemma klDiv_eq_iSup_map {β : ℕ → Type*} [mβ : ∀ n, MeasurableSpace (β n
       (measurable_const.indicator hA).stronglyMeasurable.mono hℱ_sup.symm.le
     have hlim := hφ_int.tendsto_ae_condExp (ℱ := ℱ) hφ_meas
     set B : ℕ → Set α := fun n ↦ {x | (2⁻¹ : ℝ) < (ρ[φ | ℱ n]) x} with hB
-    have hB_meas : ∀ n, MeasurableSet[ℱ n] (B n) := fun n ↦
-      (stronglyMeasurable_condExp (m := ℱ n)).measurable measurableSet_Ioi
+    have hB_meas : ∀ n, MeasurableSet[ℱ n] (B n) := fun n ↦ by
+      have : B n = (ρ[φ | ℱ n]) ⁻¹' Set.Ioi 2⁻¹ := by ext; simp [hB]
+      rw [this]
+      exact (stronglyMeasurable_condExp (m := ℱ n)).measurable measurableSet_Ioi
     have hB_meas0 : ∀ n, MeasurableSet (B n) := fun n ↦ ℱ.le n _ (hB_meas n)
     have hB_lim : ∀ᵐ x ∂ρ, ∀ᶠ n in atTop, x ∈ B n ↔ x ∈ A := by
       filter_upwards [hlim] with x hx
