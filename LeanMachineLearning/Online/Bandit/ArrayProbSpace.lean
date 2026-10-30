@@ -209,12 +209,11 @@ lemma map_snd_apply_arrayMeasure {ν : Kernel 𝓐 𝓡} [IsMarkovKernel ν] (n 
     (arrayMeasure ν).map (fun ω ↦ ω.2 n a) = ν a :=
   (hasLaw_snd_apply_arrayMeasure ν n a).map_eq
 
-/-- Modification of `ω` in which the rewards of action `a` are read only up to index `m - 1`:
-in row `a` of the reward array, the entry at index `i` is kept if `i < m` and replaced by the entry
-at index `m + 1 + i` otherwise. The result does not depend on the coordinate `(m, a)` of the
-array. -/
+/-- Modification of `ω` in which the entry at index `m` of row `a` of the reward array is
+removed: in row `a`, the entry at index `i` is kept if `i < m` and replaced by the entry at index
+`i + 1` otherwise. The result does not depend on the coordinate `(m, a)` of the array. -/
 def truncRow [DecidableEq 𝓐] (a : 𝓐) (m : ℕ) (ω : ProbSpace 𝓐 𝓡) : ProbSpace 𝓐 𝓡 :=
-  (ω.1, fun i b ↦ if b = a then ω.2 (if i < m then i else m + 1 + i) b else ω.2 i b)
+  (ω.1, fun i b ↦ if b = a then ω.2 (if i < m then i else i + 1) b else ω.2 i b)
 
 @[fun_prop]
 lemma measurable_truncRow [DecidableEq 𝓐] (a : 𝓐) (m : ℕ) :
@@ -601,7 +600,7 @@ omit [Nonempty 𝓐] [StandardBorelSpace 𝓐] in
 lemma indepFun_snd_apply_truncRow (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] (a : 𝓐) (m : ℕ) :
     (fun ω ↦ ω.2 m a) ⟂ᵢ[arrayMeasure ν] (truncRow a m) := by
   let T : (ℕ → 𝓐 → 𝓡) → (ℕ → 𝓐 → 𝓡) :=
-    fun ω k b ↦ if b = a then ω (if k < m then k else m + 1 + k) b else ω k b
+    fun ω k b ↦ if b = a then ω (if k < m then k else k + 1) b else ω k b
   have hT : Measurable[⨆ p ∈ {p : ℕ × 𝓐 | p ≠ (m, a)},
       MeasurableSpace.comap (fun ω : ℕ → 𝓐 → 𝓡 ↦ ω p.1 p.2) inferInstance] T := by
     rw [measurable_iff_comap_le, MeasurableSpace.comap_pi]
@@ -610,7 +609,7 @@ lemma indepFun_snd_apply_truncRow (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] (a
     refine iSup_le fun b ↦ ?_
     by_cases hb : b = a
     · simp only [T, hb, ↓reduceIte]
-      refine le_iSup₂_of_le (if k < m then k else m + 1 + k, a) ?_ (le_of_eq rfl)
+      refine le_iSup₂_of_le (if k < m then k else k + 1, a) ?_ (le_of_eq rfl)
       simp only [Set.mem_ofPred_eq, ne_eq, Prod.mk.injEq, and_true]
       split_ifs <;> omega
     · simp only [T, hb, ↓reduceIte]
