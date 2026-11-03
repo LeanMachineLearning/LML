@@ -63,7 +63,7 @@ instance (κ : Kernel α β) [IsDeterministic κ] : IsSFiniteKernel κ := by
   replace h := DFunLike.congr_fun h Set.univ
   rw [comp_apply'] at h
   · simp_rw [copy_apply, Measure.dirac_apply' _ MeasurableSet.univ, indicator_univ] at h
-    simp only [Measure.coe_zero, Pi.zero_apply, Pi.one_apply, MeasureTheory.lintegral_const,
+    simp only [FunLike.coe_zero, Pi.zero_apply, Pi.one_apply, MeasureTheory.lintegral_const,
       one_mul] at h
     exact ha.ne h
   exact MeasurableSet.univ

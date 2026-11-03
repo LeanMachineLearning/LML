@@ -46,7 +46,7 @@ lemma sub_apply_eq_rnDeriv_add_singularPart [IsFiniteMeasure μ] [IsFiniteMeasur
   swap
   · simp only [withDensity_one]
     exact mutuallySingular_singularPart μ ν
-  simp only [coe_add, Pi.add_apply]
+  simp only [FunLike.coe_add, Pi.add_apply]
   have : IsFiniteMeasure (ν.withDensity 1) := by simp only [withDensity_one]; infer_instance
   rw [add_comm, ← withDensity_sub (by fun_prop) (by fun_prop)]
   congr

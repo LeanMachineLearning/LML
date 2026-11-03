@@ -72,7 +72,7 @@ lemma hasLaw_of_forall_hasLaw_cond [IsProbabilityMeasure P] {g : Ω → ι} (hg 
     rw [← Measure.sum_meas_smul_cond_fiber hg P] at hX ⊢
     simp_rw [Measure.map_sum hX, h_eq]
     ext s hs
-    simp_rw [Measure.sum_apply _ hs, Measure.smul_apply, smul_eq_mul, ENNReal.tsum_mul_right,
+    simp_rw [Measure.sum_apply _ hs, smul_apply, smul_eq_mul, ENNReal.tsum_mul_right,
       h_univ, one_mul]
 
 end Cond

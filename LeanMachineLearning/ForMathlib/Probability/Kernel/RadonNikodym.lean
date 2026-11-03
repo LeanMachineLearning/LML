@@ -81,7 +81,7 @@ lemma sub_apply [∀ η : Kernel α β, Decidable (IsSFiniteKernel η)] [IsFinit
   ext s hs
   rw [sub_apply_eq_rnDeriv_add_singularPart, Kernel.withDensity_apply _ (by fun_prop),
     Kernel.singularPart_eq_singularPart_measure, Measure.sub_apply_eq_rnDeriv_add_singularPart _]
-  simp only [Measure.coe_add, Pi.add_apply]
+  simp only [FunLike.coe_add, Pi.add_apply]
   congr 2
   refine MeasureTheory.withDensity_congr_ae ?_
   filter_upwards [Kernel.rnDeriv_eq_rnDeriv_measure (κ := κ) (η := η) (a := a)] with b hb
