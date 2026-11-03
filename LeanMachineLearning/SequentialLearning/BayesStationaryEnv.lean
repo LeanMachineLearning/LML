@@ -49,6 +49,10 @@ an `alg : Algorithm Unit 𝓐 𝓨`, an algorithm that does not use the observat
   `Environment.bandit (κ.sectR e)` under `condDistrib (trajectory (noObs Ω) A Y) E P e`, the
   conditional law of the observable trajectory given `E = e`. This allows transferring results
   from the `IsAlgEnvSeq` structure to the `IsBayesAlgEnvSeq` structure.
+* `IsBayesAlgEnvSeq.measure_mem_le_of_forall_isAlgEnvSeq h`: a bound on the probability of an event
+  about the parameter and the observable trajectory follows from a bound, for `Q`-almost every `e`,
+  that holds for every algorithm-environment sequence for `alg` and
+  `Environment.bandit (κ.sectR e)`.
 
 -/
 
@@ -261,6 +265,32 @@ lemma ae_isAlgEnvSeq (h : IsBayesAlgEnvSeq Q κ alg E A Y P) :
     ae_all_iff.2 (hasCondDistrib_IT_feedback h)] with _ hA hY
   exact ⟨IT.measurable_obs, IT.measurable_action, IT.measurable_feedback,
     fun n ↦ hasCondDistrib_unit (IT.measurable_hist n).aemeasurable _ _, hA, hY⟩
+
+/-- To bound the probability that the parameter and the observable trajectory lie in a measurable
+set `S`, it suffices to bound, for `Q`-almost every `e`, the probability of the section of `S` at
+`e` under the law of any algorithm-environment sequence for `alg` and the stationary environment
+`Environment.bandit (κ.sectR e)`. -/
+lemma measure_mem_le_of_forall_isAlgEnvSeq (h : IsBayesAlgEnvSeq Q κ alg E A Y P)
+    {S : Set (𝓔 × (ℕ → Round Unit 𝓐 𝓨))} (hS : MeasurableSet S) {b : ℝ≥0∞}
+    (hb : ∀ᵐ e ∂Q, ∀ (P' : Measure (ℕ → Round Unit 𝓐 𝓨)) [IsProbabilityMeasure P'],
+      IsAlgEnvSeq IT.obs IT.action IT.feedback alg (Environment.bandit (κ.sectR e)) P' →
+        P' (Prod.mk e ⁻¹' S) ≤ b) :
+    P {ω | (E ω, trajectory (noObs Ω) A Y ω) ∈ S} ≤ b := by
+  have hτ : Measurable (trajectory (noObs Ω) A Y) :=
+    measurable_trajectory (fun _ ↦ measurable_const) h.measurable_action h.measurable_feedback
+  calc P {ω | (E ω, trajectory (noObs Ω) A Y ω) ∈ S}
+    _ = (P.map E ⊗ₘ condDistrib (trajectory (noObs Ω) A Y) E P) S := by
+        rw [compProd_map_condDistrib h.measurable_param.aemeasurable hτ.aemeasurable,
+          Measure.map_apply (h.measurable_param.prodMk hτ) hS]
+        rfl
+    _ = ∫⁻ e, condDistrib (trajectory (noObs Ω) A Y) E P e (Prod.mk e ⁻¹' S) ∂(P.map E) :=
+        Measure.compProd_apply hS
+    _ ≤ ∫⁻ _, b ∂Q := by
+        rw [h.hasLaw_env.map_eq]
+        refine lintegral_mono_ae ?_
+        filter_upwards [h.ae_isAlgEnvSeq, hb] with e he hbe
+        exact hbe _ he
+    _ = b := by simp
 
 end IsBayesAlgEnvSeq
 
