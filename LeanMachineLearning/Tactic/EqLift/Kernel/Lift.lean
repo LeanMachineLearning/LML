@@ -64,7 +64,7 @@ lemma isSFinite_lift (κ : Kernel X Y) :
     · simp only [κs']
       ext a s hs
       replace h := DFunLike.congr (x := ey.symm '' s) (DFunLike.congr (x := ex.symm a) h rfl) rfl
-      rw [sum_apply, Measure.sum_apply] at h ⊢
+      rw [Kernel.sum_apply, Measure.sum_apply] at h ⊢
       · rw [lift_apply'] at h
         · convert h with x
           · simp
@@ -72,7 +72,7 @@ lemma isSFinite_lift (κ : Kernel X Y) :
             simp
           · simp only [coe_comap, Function.comp_apply]
             rw [map_apply' _ ey.measurable _ hs, image_symm]
-        all_goals measurability
+        measurability
       all_goals measurability
 
 instance (κ : Kernel X Y) [IsSFiniteKernel κ] : IsSFiniteKernel (lift (ex := ex) (ey := ey) κ) :=
@@ -137,7 +137,7 @@ lemma id_lift : Kernel.id (α := X') = Kernel.id.lift (ex := ex) (ey := ex) := b
   simp only [id_apply]
   rw [Measure.dirac_apply' _ hs, Measure.dirac_apply']
   · exact Set.indicator_eq_indicator (by simp) rfl
-  all_goals measurability
+  measurability
 
 lemma discard_lift : discard.{_, w} X' = (discard X).lift (ex := ex) (ey := punit) := by
   ext _ _ hs
@@ -195,19 +195,21 @@ lemma compProd_lift (κ : Kernel X Y) (η : Kernel (X × Y) Z) :
     swap
     · simp [hη, (isSFinite_lift (ex.prodCongr ey) ez η).not.mpr hη]
       simp [lift]
-    · simp only [compProd]
-      rw [← comp_lift (ex := ex.prodCongr ex) (ey := ey.prodCongr ez), ← copy_lift,
-        ← comp_lift (ex := ex.prodCongr ey), ← parallelComp_lift, ← id_lift,
-        ← comp_lift (ex := ex.prodCongr (ey.prodCongr ey)), ← parallelComp_lift, ← id_lift,
-        ← copy_lift,
-        ← comp_lift (ex := (ex.prodCongr ey).prodCongr ey),
-        ← comp_lift (ex := ez.prodCongr ey), ← parallelComp_lift, ← id_lift, ← swap_lift]
-      congr
-      simp only [lift]
-      rw [deterministic_map (MeasurableEquiv.measurable _) (MeasurableEquiv.measurable _)]
-      ext _ : 1
-      simp [comap_apply, deterministic_apply, MeasurableEquiv.prodCongr, prodAssoc]
-
+    · have := (isSFinite_lift ex ey κ).mpr hκ
+      have := (isSFinite_lift (ex.prodCongr ey) ez η).mpr hη
+      ext a s hs
+      rw [compProd_apply hs, lift_apply' _ _ _ _ hs,
+        compProd_apply ((ey.prodCongr ez).measurableSet_image.mpr hs), lift_apply,
+        map_apply _ ey.symm.measurable, lintegral_map_equiv]
+      refine lintegral_congr fun y ↦ ?_
+      rw [lift_apply' _ _ _ _ (measurable_prodMk_left hs)]
+      congr 1
+      · simp [MeasurableEquiv.prodCongr]
+      · ext z
+        simp only [image_eq_preimage_symm, Set.mem_preimage, prodCongr, MeasurableEquiv.coe_mk,
+          Equiv.prodCongr_apply, coe_toEquiv, Set.mem_image, Prod.exists, Prod.map_apply,
+          Prod.mk.injEq]
+        exact ⟨fun h ↦ ⟨_, _, h, by simp, by simp⟩, by rintro ⟨_, _, h, rfl, rfl⟩; simpa using h⟩
 
 instance {κ : Kernel X Y} [IsDeterministic κ] :
     IsDeterministic (κ.lift (ex := ex) (ey := ey)) where

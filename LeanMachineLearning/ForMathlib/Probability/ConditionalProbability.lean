@@ -34,7 +34,7 @@ lemma sum_meas_smul_cond_fiber {X : Ω → α} (hX : Measurable X) (μ : Measure
     [IsFiniteMeasure μ] :
     Measure.sum (fun x ↦ μ (X ⁻¹' {x}) • μ[|X ⁻¹' {x}]) = μ := by
   ext s hs
-  simp_rw [Measure.sum_apply _ hs, Measure.smul_apply, smul_eq_mul, mul_comm (μ _),
+  simp_rw [Measure.sum_apply _ hs, smul_apply, smul_eq_mul, mul_comm (μ _),
     cond_mul_eq_inter (hX (.singleton _))]
   rw [← measure_iUnion (fun i j hij ↦ ((Set.disjoint_singleton.2 hij).preimage X).mono
       Set.inter_subset_left Set.inter_subset_left) fun i ↦ (hX (.singleton i)).inter hs,

@@ -86,9 +86,9 @@ lemma klDiv_finsetSum_smul_le [∀ i, IsFiniteMeasure (μ i)]
   have h_comp (ρ : Kernel s Ω) (ρ' : ι → Measure Ω) (hρ : ∀ i : s, ρ i = ρ' i) :
       ρ ∘ₘ β = ∑ i ∈ s, (c i : ℝ≥0∞) • ρ' i := by
     ext t ht
-    rw [Measure.bind_apply ht ρ.aemeasurable, hβ_lintegral, Measure.finsetSum_apply,
+    rw [Measure.bind_apply ht ρ.aemeasurable, hβ_lintegral, sum_apply,
       ← Finset.sum_coe_sort s]
-    exact Finset.sum_congr rfl fun i _ ↦ by rw [hρ i, Measure.smul_apply, smul_eq_mul]
+    exact Finset.sum_congr rfl fun i _ ↦ by rw [hρ i, smul_apply, smul_eq_mul]
   calc klDiv (∑ i ∈ s, (c i : ℝ≥0∞) • μ i) (∑ i ∈ s, (c i : ℝ≥0∞) • ν i)
   _ = klDiv (κ ∘ₘ β) (η ∘ₘ β) := by rw [h_comp κ μ hκ_apply, h_comp η ν hη_apply]
   -- data processing inequality for the second projection

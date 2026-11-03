@@ -280,7 +280,7 @@ lemma HasCondDistrib.hasLaw_cond (h : HasCondDistrib Y X κ μ)
   map_eq := by
     ext u hu
     rw [Measure.map_apply_of_aemeasurable (h.aemeasurable_snd.mono_ac cond_absolutelyContinuous) hu,
-      cond, Measure.smul_apply, smul_eq_mul,
+      cond, smul_apply, smul_eq_mul,
       Measure.restrict_apply₀ (h.aemeasurable_snd.restrict.nullMeasurableSet_preimage hu),
       Set.inter_comm, h.measure_inter_preimage_eq_mul_of_eqOn_const hs hκ hu, ← mul_assoc,
       ENNReal.inv_mul_cancel hμs (measure_ne_top _ _), one_mul]

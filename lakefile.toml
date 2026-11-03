@@ -17,7 +17,7 @@ rev = "v4.36.0-rc2"
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
-rev = "v4.36.0-rc2"
+rev = "1b1ccf4b088b32fa3f23f2de1127433254a81e1e"
 
 [[lean_lib]]
 name = "LeanMachineLearning"
