@@ -314,15 +314,6 @@ private lemma sqrt_le_div_sub_iff {k : ℕ} (hk : k ≠ 0) {s μ σ L : ℝ} :
     _ = √(2 * σ * L / k) * k := by rw [Real.sqrt_mul' _ (sq_nonneg _), Real.sqrt_sq hk'.le]
   rw [h_sqrt, show s - k * μ = (s / k - μ) * k by field_simp, mul_le_mul_iff_of_pos_right hk']
 
-/-- Auxiliary lemma for `prob_exists_empMean_sub_le_neg_sqrt_le`. -/
-private lemma div_sub_le_neg_sqrt_iff {k : ℕ} (hk : k ≠ 0) {s μ σ L : ℝ} :
-    s / k - μ ≤ -√(2 * σ * L / k) ↔ s - k * μ ≤ -√(2 * k * σ * L) := by
-  have h := sqrt_le_div_sub_iff hk (s := -s) (μ := -μ) (σ := σ) (L := L)
-  rw [neg_div] at h
-  constructor
-  · exact fun h' ↦ by linarith [h.1 (by linarith)]
-  · exact fun h' ↦ by linarith [h.2 (by linarith)]
-
 /-- Uniform in time concentration of the empirical mean of action `a`, for rewards that are
 sub-Gaussian with variance proxy `σ2`: the probability that at some time `t < n` the action `a`
 has been pulled and its empirical mean exceeds its mean by at least
@@ -355,6 +346,13 @@ lemma prob_exists_empMean_sub_le_neg_sqrt_le [Countable 𝓐] [MeasurableSinglet
     (fun _ ↦ measurableSet_le (by fun_prop) (by fun_prop)) fun m hm ↦
       le_of_eq_of_le (by simp) (StreamMeasure.prob_sum_range_sub_le_neg_sqrt_le ha hσ2 hm L))
   rintro ω ⟨t, ht, h0, hle⟩
+  have div_sub_le_neg_sqrt_iff {k : ℕ} (hk : k ≠ 0) {s μ σ L : ℝ} :
+      s / k - μ ≤ -√(2 * σ * L / k) ↔ s - k * μ ≤ -√(2 * k * σ * L) := by
+    have h := sqrt_le_div_sub_iff hk (s := -s) (μ := -μ) (σ := σ) (L := L)
+    rw [neg_div] at h
+    constructor
+    · exact fun h' ↦ by linarith [h.1 (by linarith)]
+    · exact fun h' ↦ by linarith [h.2 (by linarith)]
   exact ⟨t, ht, h0, (div_sub_le_neg_sqrt_iff h0).1 hle⟩
 
 /-- Union bound over the actions in `prob_exists_sqrt_le_empMean_sub_le`. -/
