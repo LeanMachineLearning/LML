@@ -29,10 +29,6 @@ and properties are also given in this file.
 
 ## Main statements
 
-* `IsBayesAlgEnvSeq.prob_empMean_sub_actionMean_ge_le`,
-  `IsBayesAlgEnvSeq.prob_empMean_bestAction_sub_actionMean_le_le`: for sub-Gaussian rewards, the
-  empirical means of the actions are close to their means with high probability, uniformly in
-  time.
 * `TS.integral_regret_le`: if Thompson sampling has the correct prior over environments, in every
   environment each of the `K` actions has a mean reward between `l` and `u`, and in almost every
   environment (under the prior) the reward distribution of each action is sub-Gaussian with
@@ -46,7 +42,9 @@ and the best action have the same conditional law given the history, the upper c
 of the two actions have the same expectation, and the Bayesian regret is the sum of the expected
 differences between the mean of the best action and its upper confidence bound, and between the
 upper confidence bound and the mean of the action played (`TS.integral_regret_eq_add`). The first
-sum is controlled by concentration, the second one by the widths of the confidence intervals.
+sum is controlled by concentration
+(`IsBayesAlgEnvSeq.prob_empMean_bestAction_sub_actionMean_le_le`), the second one by the widths of
+the confidence intervals.
 
 ## References
 
@@ -61,105 +59,6 @@ sum is controlled by concentration, the second one by the widths of the confiden
 
 open MeasureTheory ProbabilityTheory Finset Learning
 open scoped NNReal
-
-/-! ### Concentration of the empirical means in a Bayesian bandit -/
-
-namespace Learning.IsBayesAlgEnvSeq
-
-variable {𝓔 Ω : Type*} [MeasurableSpace 𝓔] [MeasurableSpace Ω]
-variable {K : ℕ} [Nonempty (Fin K)]
-variable {Q : Measure 𝓔} [IsProbabilityMeasure Q] {κ : Kernel (𝓔 × Fin K) ℝ} [IsMarkovKernel κ]
-variable {alg : Algorithm Unit (Fin K) ℝ}
-variable {E : Ω → 𝓔} {A : ℕ → Ω → (Fin K)} {R : ℕ → Ω → ℝ}
-variable {P : Measure Ω} [IsProbabilityMeasure P]
-
-/-- Auxiliary lemma for `prob_empMean_sub_actionMean_ge_le`. -/
-private lemma sqrt_two_mul_le_sub {k : ℕ} (hk : k ≠ 0) {s μ σ l : ℝ}
-    (h : √(2 * σ * l / k) ≤ s / k - μ) : √(2 * k * σ * l) ≤ s - k * μ := by
-  have hkp : (0 : ℝ) < k := by positivity
-  calc √(2 * k * σ * l)
-    _ = √(2 * σ * l / k * k ^ 2) := by
-      field_simp
-    _ = √(2 * σ * l / k) * k := by
-      rw [Real.sqrt_mul' _ (sq_nonneg _), Real.sqrt_sq hkp.le]
-    _ ≤ (s / k - μ) * k := by
-      nlinarith
-    _ = s - k * μ := by
-      field_simp
-
-lemma prob_empMean_sub_actionMean_ge_le (h : IsBayesAlgEnvSeq Q κ alg E A R P) {σ2 : ℝ≥0}
-    (hs : ∀ᵐ e ∂Q, ∀ a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
-    (hσ2 : σ2 ≠ 0) {δ : ℝ} (hδ : 0 < δ) (n : ℕ) :
-    P {ω | ∃ t < n, ∃ a, pullCount A a t ω ≠ 0 ∧
-      √(2 * σ2 * Real.log (1 / δ) / pullCount A a t ω) ≤ empMean A R a t ω - actionMean κ E a ω}
-      ≤ ENNReal.ofReal (K * (n - 1) * δ) := by
-  have := h.measurable_param
-  have := h.measurable_action
-  have := h.measurable_feedback
-  let S : Set (𝓔 × (ℕ → Round Unit (Fin K) ℝ)) :=
-    {(e, τ) | ∃ a, ∃ t < n, pullCount IT.action a t τ ≠ 0 ∧
-    √(2 * pullCount IT.action a t τ * σ2 * Real.log (1 / δ)) ≤
-      sumRewards IT.action IT.feedback a t τ - pullCount IT.action a t τ * actionMean κ id a e}
-  calc
-    _ ≤ (P.map (fun ω ↦ (E ω, trajectory (noObs Ω) A R ω))) S := by
-        rw [Measure.map_apply (by fun_prop) (by measurability)]
-        apply measure_mono
-        intro ω ⟨t, ht, a, hpc, hle⟩
-        rw [empMean] at hle
-        exact ⟨a, t, ht, hpc, sqrt_two_mul_le_sub hpc hle⟩
-    _ = (P.map E ⊗ₘ condDistrib (trajectory (noObs Ω) A R) E P) S := by
-        rw [← compProd_map_condDistrib (by fun_prop) (by fun_prop)]
-    _ = ∫⁻ e, condDistrib (trajectory (noObs Ω) A R) E P e (Prod.mk e ⁻¹' S) ∂(P.map E) :=
-        Measure.compProd_apply (by measurability)
-    _ ≤ ∫⁻ e, ENNReal.ofReal (Fintype.card (Fin K) * (n - 1) * δ) ∂(P.map E) := by
-        apply lintegral_mono_ae
-        rw [h.hasLaw_env.map_eq]
-        filter_upwards [h.ae_isAlgEnvSeq, hs] with e he hse
-        exact Bandits.prob_exists_sumRewards_sub_pullCount_mul_ge_le he hse hσ2 hδ
-    _ = ENNReal.ofReal (K * (n - 1) * δ) := by
-      simp [Measure.map_apply h.measurable_param]
-
-/-- Auxiliary lemma for `prob_empMean_bestAction_sub_actionMean_le_le`. -/
-private lemma sub_le_neg_sqrt_two_mul {k : ℕ} (hk : k ≠ 0) {s μ σ l : ℝ}
-    (h : s / k - μ ≤ -√(2 * σ * l / k)) : s - k * μ ≤ -√(2 * k * σ * l) := by
-  have : √(2 * k * σ * l) ≤ -s - k * -μ := sqrt_two_mul_le_sub hk (by grind)
-  linarith
-
-lemma prob_empMean_bestAction_sub_actionMean_le_le (h : IsBayesAlgEnvSeq Q κ alg E A R P)
-    {σ2 : ℝ≥0} (hs : ∀ᵐ e ∂Q, ∀ a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
-    (hσ2 : σ2 ≠ 0) {δ : ℝ} (hδ : 0 < δ) (n : ℕ) :
-    P {ω | ∃ t < n, pullCount A (bestAction κ E ω) t ω ≠ 0 ∧
-        empMean A R (bestAction κ E ω) t ω - actionMean κ E (bestAction κ E ω) ω ≤
-          -√(2 * σ2 * Real.log (1 / δ) / (pullCount A (bestAction κ E ω) t ω))}
-      ≤ ENNReal.ofReal ((n - 1) * δ) := by
-  have := h.measurable_param
-  have := h.measurable_action
-  have := h.measurable_feedback
-  let S : Set (𝓔 × (ℕ → Round Unit (Fin K) ℝ)) :=
-    {(e, τ) | ∃ t < n, pullCount IT.action (bestAction κ id e) t τ ≠ 0 ∧
-    sumRewards IT.action IT.feedback (bestAction κ id e) t τ -
-        pullCount IT.action (bestAction κ id e) t τ * actionMean κ id (bestAction κ id e) e ≤
-          -√(2 * pullCount IT.action (bestAction κ id e) t τ * σ2 * Real.log (1 / δ))}
-  calc
-    _ ≤ (P.map (fun ω ↦ (E ω, trajectory (noObs Ω) A R ω))) S := by
-        rw [Measure.map_apply (by fun_prop) (by measurability)]
-        apply measure_mono
-        intro ω ⟨t, ht, hpc, hle⟩
-        rw [empMean] at hle
-        exact ⟨t, ht, hpc, sub_le_neg_sqrt_two_mul hpc hle⟩
-    _ = (P.map E ⊗ₘ condDistrib (trajectory (noObs Ω) A R) E P) S := by
-        rw [← compProd_map_condDistrib (by fun_prop) (by fun_prop)]
-    _ = ∫⁻ e, condDistrib (trajectory (noObs Ω) A R) E P e (Prod.mk e ⁻¹' S) ∂(P.map E) :=
-        Measure.compProd_apply (by measurability)
-    _ ≤ ∫⁻ e, ENNReal.ofReal ((n - 1) * δ) ∂(P.map E) := by
-        apply lintegral_mono_ae
-        rw [h.hasLaw_env.map_eq]
-        filter_upwards [h.ae_isAlgEnvSeq, hs] with e he hse
-        exact Bandits.prob_sumRewards_sub_pullCount_mul_le_le (ν := κ.sectR e) he (hse _) hσ2 hδ
-    _ = ENNReal.ofReal ((n - 1) * δ) := by
-      simp [Measure.map_apply h.measurable_param]
-
-end Learning.IsBayesAlgEnvSeq
 
 open IsBayesAlgEnvSeq (bestAction actionMean)
 
@@ -437,7 +336,8 @@ lemma integral_sum_range_ucb_action_sub_actionMean_action_le {alg : Algorithm Un
         gcongr
         · have : (0 : ℝ) ≤ n - 1 := by simp [Nat.one_le_iff_ne_zero, hn]
           apply ENNReal.toReal_le_of_le_ofReal (by positivity)
-          exact h.prob_empMean_sub_actionMean_ge_le hs hσ2 hδ n
+          exact (h.prob_empMean_sub_actionMean_ge_le hs hσ2 hδ n).trans_eq
+            (by rw [Fintype.card_fin])
         · exact measureReal_le_one
     _ = _ := by
         ring
@@ -516,12 +416,8 @@ lemma integral_regret_eq_add (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ) E A R
     _ = _ := by
         rw [← integral_finsetSum _ (by fun_prop), ← integral_finsetSum _ (by fun_prop)]
 
-/-- **Bayesian regret of Thompson sampling.** If Thompson sampling has the correct prior over
-environments, in every environment each of the `K` actions has a mean reward between `l` and `u`,
-and in almost every environment (under the prior) the reward distribution of each action is
-sub-Gaussian with variance proxy `σ2` after its mean is subtracted, then the Bayesian regret at
-time `n` is at most `(2 * K + 1) * (u - l) + 8 * √(σ2 * K * n * Real.log n)`. -/
-theorem integral_regret_le (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ) E A R P)
+/-- The bound of `integral_regret_le` for a nonzero variance proxy `σ2`. -/
+private lemma integral_regret_le_of_ne_zero (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ) E A R P)
     (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u))
     (hs : ∀ᵐ e ∂Q, ∀ a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
     (hσ2 : σ2 ≠ 0) (n : ℕ) :
@@ -554,6 +450,27 @@ theorem integral_regret_le (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ) E A R P
         linarith
     _ = _ := by
         ring
+
+open Filter Topology in
+/-- **Bayesian regret of Thompson sampling.** If Thompson sampling has the correct prior over
+environments, in every environment each of the `K` actions has a mean reward between `l` and `u`,
+and in almost every environment (under the prior) the reward distribution of each action is
+sub-Gaussian with variance proxy `σ2` after its mean is subtracted, then the Bayesian regret at
+time `n` is at most `(2 * K + 1) * (u - l) + 8 * √(σ2 * K * n * Real.log n)`. -/
+theorem integral_regret_le (h : IsBayesAlgEnvSeq Q κ (tsAlgorithm Q κ) E A R P)
+    (hm : ∀ e a, (κ (e, a))[id] ∈ (Set.Icc l u))
+    (hs : ∀ᵐ e ∂Q, ∀ a, HasSubgaussianMGF (fun x ↦ x - (κ (e, a))[id]) σ2 (κ (e, a)))
+    (n : ℕ) :
+    P[IsBayesAlgEnvSeq.regret κ E A n]
+      ≤ (2 * K + 1) * (u - l) + 8 * √(σ2 * K * n * Real.log n) := by
+  -- The bound holds for every variance proxy `σ2' > σ2`, which is nonzero, and is continuous in
+  -- the variance proxy: let `σ2'` tend to `σ2`.
+  have h_cont : Continuous fun σ2' : ℝ≥0 ↦
+      (2 * K + 1) * (u - l) + 8 * √(σ2' * K * n * Real.log n) := by fun_prop
+  refine ge_of_tendsto (x := 𝓝[>] σ2) ((h_cont.tendsto σ2).mono_left nhdsWithin_le_nhds) ?_
+  filter_upwards [self_mem_nhdsWithin] with σ2' hσ2'
+  exact integral_regret_le_of_ne_zero h hm (hs.mono fun e he a ↦ (he a).mono hσ2'.le)
+    (pos_of_gt (show σ2 < σ2' from hσ2')).ne' n
 
 end TS
 
