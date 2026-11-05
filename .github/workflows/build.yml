@@ -24,7 +24,9 @@ permissions:
 
 jobs:
   build_project:
-    runs-on: ubuntu-latest
+    # Pinned: on ubuntu-26.04 (`ubuntu-latest` since 2026-10-19), the API documentation step runs
+    # out of memory.
+    runs-on: ubuntu-24.04
     name: Build project
     steps:
       - name: Cleanup to free disk space
