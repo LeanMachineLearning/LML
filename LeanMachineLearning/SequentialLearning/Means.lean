@@ -5,6 +5,7 @@ Authors: Rémy Degenne
 -/
 module
 
+public import LeanMachineLearning.SequentialLearning.Deterministic
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
 public import LeanMachineLearning.ForMathlib.Analysis.Convex.Integral
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.IntegralCompProd
@@ -86,6 +87,34 @@ lemma means_banditSeq (ν : ℕ → Kernel 𝓐 𝓨) [∀ n, IsMarkovKernel (ν
 lemma means_bandit (ν : Kernel 𝓐 𝓨) [IsMarkovKernel ν]
     {O : ℕ → Ω → Unit} {A : ℕ → Ω → 𝓐} {Y : ℕ → Ω → 𝓨} (k : 𝓐) (n : ℕ) (ω : Ω) :
     (Environment.bandit ν).means O A Y k n ω = (ν k)[id] := by simp
+
+section Deterministic
+
+variable {obs : (n : ℕ) → Kernel (Hist 𝓞 𝓐 𝓨 n) 𝓞} [∀ n, IsMarkovKernel (obs n)]
+  {f : (n : ℕ) → (Hist 𝓞 𝓐 𝓨 n × 𝓞) × 𝓐 → 𝓨} {hf : ∀ n, Measurable (f n)}
+  {o : (n : ℕ) → Hist 𝓞 𝓐 𝓨 n → 𝓞} {ho : ∀ n, Measurable (o n)}
+
+/-- The conditional mean of the feedback of `Environment.detFeedback obs f hf` at the action `a` of
+round `n` is `f n ((h, o), a)`, for the history `h` and the observation `o` of the run. -/
+@[simp]
+lemma means_detFeedback [CompleteSpace 𝓨]
+    [MeasurableSingletonClass 𝓨]
+    (a : 𝓐) (n : ℕ) (ω : Ω) :
+    (Environment.detFeedback obs f hf).means O A Y a n ω =
+      f n ((history O A Y n ω, O n ω), a) := by
+  simp [Environment.means, Environment.feedbackKernel, Kernel.deterministic_apply]
+
+/-- The conditional mean of the feedback of `Environment.deterministic o ho f hf` at the action `a`
+of round `n` is `f n ((h, o), a)`, for the history `h` and the observation `o` of the run. -/
+@[simp]
+lemma means_deterministic [CompleteSpace 𝓨]
+    [MeasurableSingletonClass 𝓨]
+    (a : 𝓐) (n : ℕ) (ω : Ω) :
+    (Environment.deterministic o ho f hf).means O A Y a n ω =
+      f n ((history O A Y n ω, O n ω), a) := by
+  rw [Environment.deterministic_def, means_detFeedback]
+
+end Deterministic
 
 @[fun_prop]
 lemma IsAlgEnvSeq.stronglyMeasurable_means [SecondCountableTopology 𝓨] [OpensMeasurableSpace 𝓨]

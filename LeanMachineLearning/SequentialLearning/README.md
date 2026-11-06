@@ -48,8 +48,8 @@ No observation: `Algorithm.IgnoresObs` (MISSING), `Algorithm.comapObs fun _ ↦ 
 
 No history: `Algorithm.IsMarkov`, `Algorithm.markov` (accessor `Algorithm.policyCondObs`)
 
-No history, no observation: `Algorithm.IsOpenLoop` (MISSING), `Algorithm.openLoop` (MISSING), `Algorithm.ofSeq` (MISSING) (det version).
-Example: `Algorithm.roundRobin K`, which plays action `n % K` at time `n` (defined with `Algorithm.deterministic` while `Algorithm.ofSeq` is missing).
+No history, no observation: `Algorithm.IsOpenLoop` (MISSING), `Algorithm.openLoop` (MISSING), `Algorithm.ofSeq` (det version).
+Example: `Algorithm.roundRobin K`, which plays action `n % K` at time `n` (defined with `Algorithm.ofSeq`).
 
 Not time-dependent, no history: `Algorithm.IsStationary` (MISSING), `Algorithm.stationary` (MISSING)
 
@@ -71,12 +71,13 @@ In general, the dependence on history is the same for both kernels.
 All for obs, no action for feedback: `Environment.FeedbackIgnoresAction` (MISSING), `Environment.adversary` (MISSING).
 
 No history for obs and feedback: `Environment.IsOblivious`, `Environment.oblivious` (accessors `Environment.obsLaw`, `Environment.feedbackCondObsAction`).
+Its deterministic version is `Environment.evalSeqObs o g hg`: observation `o n`, feedback `g n` evaluated at the action (with Obs = Unit, this is `Environment.evalSeq`, below).
 
 No time, no history for obs and feedback: `Environment.IsStationary`, `Environment.stationary` (laws `Environment.obsZero`, `Environment.feedbackZero`).
 
 No time, last round of history for obs, not history for feedback: `Environment.IsMarkov` (MISSING), `Environment.markov` (MISSING).
 
-Determinism: `Environment.HasDeterministicObs` (MISSING), `Environment.HasDeterministicFeedback`, `Environment.detFeedback` (any observation kernels, deterministic feedback) (accessors `Environment.feedbackFun`, `Environment.feedbackFunZero`).
+Determinism: `Environment.HasDeterministicObs` (MISSING), `Environment.HasDeterministicFeedback`, `Environment.detFeedback` (any observation kernels, deterministic feedback) (accessors `Environment.feedbackFun`, `Environment.feedbackFunZero`), `Environment.deterministic` (deterministic observations and feedback).
 
 Bayesian: `Environment.bayesBandit Q κ` draws a parameter `e` from the prior `Q` before the first round and announces it as the observation of every round; the feedback to action `a` is drawn from `κ (e, a)`.
 The algorithm ignores the announced parameter: it runs through `Algorithm.comapObs fun _ ↦ ()`.
@@ -110,5 +111,7 @@ Quantities that depend on a run are namespaced by the environment or algorithm t
 ## Examples
 
 Oblivious adversarial bandit environment: Obs = Unit, feedback depends on time and action, deterministic. Use `Environment.evalSeq`.
+
+Bandit with expert advice against an oblivious adversary: the observation is the advice of the experts, the feedback depends on time and action, both fixed in advance. Use `Environment.evalSeqObs`.
 
 Stochastic optimization: Obs = Unit, feedback depends on time and action, stochastic. Use `Environment.banditSeq`.

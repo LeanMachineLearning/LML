@@ -44,6 +44,10 @@ measurable functions.
 * `Environment.detFeedback obs f hf`: an environment with observation kernels `obs`, that gives
   deterministic feedback according to the measurable function `f` (with proof of measurability
   `hf`).
+* `Environment.deterministic o ho f hf`: the environment of a deterministic adaptive adversary,
+  whose observation `o n h` and feedback `f n ((h, o), a)` are measurable functions of the history
+  `h`, the observation `o` and the action `a`. It is `Environment.detFeedback` with deterministic
+  observation kernels.
 
 -/
 
@@ -306,6 +310,37 @@ lemma feedbackFunZero_detFeedback [MeasurableSpace.SeparatesPoints 𝓨] :
   unfold Environment.feedbackFunZero
   rw [feedbackFun_detFeedback]
 
+variable {o : (n : ℕ) → Hist 𝓞 𝓐 𝓨 n → 𝓞} {ho : ∀ n, Measurable (o n)}
+
+/-- The environment of a **deterministic adaptive adversary**: the observation of round `n` is
+`o n h` and the feedback of round `n` is `f n ((h, o), a)`, for the history `h` of the first `n`
+rounds, the observation `o` and the action `a` of round `n`. -/
+noncomputable def Environment.deterministic (o : (n : ℕ) → Hist 𝓞 𝓐 𝓨 n → 𝓞)
+    (ho : ∀ n, Measurable (o n)) (f : (n : ℕ) → (Hist 𝓞 𝓐 𝓨 n × 𝓞) × 𝓐 → 𝓨)
+    (hf : ∀ n, Measurable (f n)) : Environment 𝓞 𝓐 𝓨 :=
+  Environment.detFeedback (fun n ↦ Kernel.deterministic (o n) (ho n)) f hf
+
+/-- `Environment.deterministic o ho f hf` is `Environment.detFeedback` with the deterministic
+observation kernels of `o`. -/
+lemma Environment.deterministic_def :
+    Environment.deterministic o ho f hf =
+      Environment.detFeedback (fun n ↦ Kernel.deterministic (o n) (ho n)) f hf :=
+  (rfl)
+
+@[simp]
+lemma obs_deterministic (n : ℕ) :
+    (Environment.deterministic o ho f hf).obs n = Kernel.deterministic (o n) (ho n) :=
+  (rfl)
+
+@[simp]
+lemma feedback_deterministic (n : ℕ) :
+    (Environment.deterministic o ho f hf).feedback n = Kernel.deterministic (f n) (hf n) :=
+  (rfl)
+
+instance : (Environment.deterministic o ho f hf).HasDeterministicFeedback := by
+  rw [Environment.deterministic_def]
+  infer_instance
+
 namespace IsAlgEnvSeq
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [SFinite P]
@@ -333,6 +368,30 @@ lemma action_ae_all_eq_deterministic [MeasurableEq 𝓐]
     (h : IsAlgEnvSeq O A Y (Algorithm.deterministic nextA h_next) env P) :
     ∀ᵐ ω ∂P, ∀ n, A n ω = nextA n (history O A Y n ω, O n ω) :=
   ae_all_iff.mpr h.action_ae_eq_deterministic
+
+variable {alg : Algorithm 𝓞 𝓐 𝓨}
+
+/-- Along a run against `Environment.detFeedback obs f hf`, the feedback of round `n` is almost
+surely `f n` of the history, the observation and the action of round `n`. -/
+lemma feedback_ae_eq_detFeedback [MeasurableEq 𝓨]
+    (h : IsAlgEnvSeq O A Y alg (Environment.detFeedback obs f hf) P) (n : ℕ) :
+    Y n =ᵐ[P] fun ω ↦ f n ((history O A Y n ω, O n ω), A n ω) :=
+  (h.hasCondDistrib_feedback n).ae_eq_of_deterministic (hf := hf n)
+
+/-- Along a run against `Environment.deterministic o ho f hf`, the feedback of round `n` is almost
+surely `f n` of the history, the observation and the action of round `n`. -/
+lemma feedback_ae_eq_deterministic [MeasurableEq 𝓨]
+    (h : IsAlgEnvSeq O A Y alg (Environment.deterministic o ho f hf) P) (n : ℕ) :
+    Y n =ᵐ[P] fun ω ↦ f n ((history O A Y n ω, O n ω), A n ω) := by
+  rw [Environment.deterministic_def] at h
+  exact h.feedback_ae_eq_detFeedback n
+
+/-- Along a run against `Environment.deterministic o ho f hf`, the observation of round `n` is
+almost surely `o n` of the history of the first `n` rounds. -/
+lemma obs_ae_eq_deterministic [MeasurableEq 𝓞]
+    (h : IsAlgEnvSeq O A Y alg (Environment.deterministic o ho f hf) P) (n : ℕ) :
+    O n =ᵐ[P] fun ω ↦ o n (history O A Y n ω) :=
+  (h.hasCondDistrib_obs n).ae_eq_of_deterministic (hf := ho n)
 
 end IsAlgEnvSeq
 

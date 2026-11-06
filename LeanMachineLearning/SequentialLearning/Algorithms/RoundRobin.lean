@@ -5,7 +5,7 @@ Authors: Rémy Degenne
 -/
 module
 
-public import LeanMachineLearning.SequentialLearning.Deterministic
+public import LeanMachineLearning.SequentialLearning.Algorithms.OfSeq
 public import LeanMachineLearning.SequentialLearning.FiniteActions
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
 
@@ -89,7 +89,7 @@ variable (K) in
 /-- The Round-Robin algorithm: deterministic algorithm that chooses action `n % K` at time `n`. -/
 noncomputable
 def Algorithm.roundRobin [NeZero K] : Algorithm 𝓞 (Fin K) 𝓨 :=
-  Algorithm.deterministic (fun n _ ↦ RoundRobin.nextAction K n) (by fun_prop)
+  Algorithm.ofSeq (RoundRobin.nextAction K)
 
 end AlgorithmDefinition
 
