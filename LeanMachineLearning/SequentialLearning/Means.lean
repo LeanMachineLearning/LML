@@ -23,6 +23,11 @@ public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.Inte
 * `IsAlgEnvSeq.condExp_feedback`: the conditional expectation of the feedback at time `n` given the
   history, the observation and the action at time `n` is the mean of the feedback at the chosen
   action.
+* `IsAlgEnvSeq.setLIntegral_comp_feedback`, `IsAlgEnvSeq.setIntegral_feedback`: on an event
+  determined by the history, the observation and the action at time `n`, the feedback at time `n`
+  can be replaced by its conditional law, and by its conditional mean.
+* `IsAlgEnvSeq.integrable_feedback`: the feedback at time `n` is integrable when its conditional
+  absolute mean has finite expectation.
 * `IsAlgEnvSeq.integrable_means_action`, `IsAlgEnvSeq.memLp_means_action`: integrability of the
   mean at the chosen action.
 -/
@@ -143,6 +148,45 @@ lemma IsAlgEnvSeq.condExp_feedback [IsFiniteMeasure P] [BorelSpace 𝓨] [Second
     (hint : Integrable (Y n) P) :
     P[Y n | h.filtrationAction n] =ᵐ[P] fun ω ↦ env.means O A Y (A n ω) n ω :=
   condExp_feedback_comp h n stronglyMeasurable_id hint
+
+omit [NormedAddCommGroup 𝓨] [NormedSpace ℝ 𝓨] in
+/-- On an event `s` of `h.filtrationAction n` (determined by the history before round `n`, the
+observation of round `n` and the action of round `n`), the expectation of `g(Y_n)` is that of
+`∫ g` against the law `env.feedbackKernel O A Y n ω (A n ω)` of the feedback given that
+information, for a measurable `g ≥ 0`. -/
+lemma IsAlgEnvSeq.setLIntegral_comp_feedback [SFinite P] (h : IsAlgEnvSeq O A Y alg env P) {n : ℕ}
+    {s : Set Ω} (hs : MeasurableSet[h.filtrationAction n] s) {g : 𝓨 → ℝ≥0∞} (hg : Measurable g) :
+    ∫⁻ ω in s, g (Y n ω) ∂P =
+      ∫⁻ ω in s, ∫⁻ y, g y ∂(env.feedbackKernel O A Y n ω (A n ω)) ∂P := by
+  rw [h.filtrationAction_eq_comap n] at hs
+  obtain ⟨t, ht, rfl⟩ := hs
+  simpa [Environment.feedbackKernel] using
+    (h.hasCondDistrib_feedback n).setLIntegral_comp_eq_setLIntegral_lintegral ht hg
+
+omit [NormedSpace ℝ 𝓨] in
+/-- The feedback of round `n` is integrable when the expected conditional absolute mean
+`𝔼[∫ ‖y‖ d(env.feedbackKernel O A Y n · (A n ·))]` is finite. -/
+lemma IsAlgEnvSeq.integrable_feedback [SFinite P] [OpensMeasurableSpace 𝓨]
+    [SecondCountableTopology 𝓨]
+    (h : IsAlgEnvSeq O A Y alg env P) {n : ℕ}
+    (hY : ∫⁻ ω, ∫⁻ y, ‖y‖ₑ ∂(env.feedbackKernel O A Y n ω (A n ω)) ∂P ≠ ∞) :
+    Integrable (Y n) P := by
+  refine ⟨(h.measurable_feedback n).aestronglyMeasurable, ?_⟩
+  have h_eq := h.setLIntegral_comp_feedback (n := n) MeasurableSet.univ measurable_enorm
+  simp only [Measure.restrict_univ] at h_eq
+  rw [hasFiniteIntegral_iff_enorm, h_eq]
+  exact hY.lt_top
+
+/-- On an event `s` of `h.filtrationAction n` (determined by the history before round `n`, the
+observation of round `n` and the action of round `n`), the expectation of the feedback `Y_n` is
+that of its conditional mean `env.means O A Y (A n) n`. -/
+lemma IsAlgEnvSeq.setIntegral_feedback [IsFiniteMeasure P] [BorelSpace 𝓨]
+    [SecondCountableTopology 𝓨] [CompleteSpace 𝓨] (h : IsAlgEnvSeq O A Y alg env P) {n : ℕ}
+    (hY : Integrable (Y n) P) {s : Set Ω} (hs : MeasurableSet[h.filtrationAction n] s) :
+    ∫ ω in s, Y n ω ∂P = ∫ ω in s, env.means O A Y (A n ω) n ω ∂P := by
+  rw [← setIntegral_condExp (h.filtrationAction.le n) hY hs]
+  exact setIntegral_congr_ae (h.filtrationAction.le n _ hs) <| by
+    filter_upwards [h.condExp_feedback n hY] with ω hω _ using hω
 
 lemma IsAlgEnvSeq.memLp_means_action [SFinite P] [SecondCountableTopology 𝓨] [BorelSpace 𝓨]
     (h : IsAlgEnvSeq O A Y alg env P) {n : ℕ} {p : ℝ≥0∞} (hp1 : 1 ≤ p) (hp_top : p ≠ ∞)

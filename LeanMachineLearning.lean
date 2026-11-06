@@ -13,6 +13,7 @@ public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.D
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.MapSequence
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.Restrict
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Group.Arithmetic
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Integral.Lebesgue.ENat
 public import LeanMachineLearning.ForMathlib.MeasureTheory.MeasurableSpace.Basic
 public import LeanMachineLearning.ForMathlib.MeasureTheory.MeasurableSpace.Constructions
 public import LeanMachineLearning.ForMathlib.MeasureTheory.MeasurableSpace.Embedding
@@ -52,6 +53,8 @@ public import LeanMachineLearning.ForMathlib.Probability.Kernel.Sigma
 public import LeanMachineLearning.ForMathlib.Probability.Moments.SubExponential
 public import LeanMachineLearning.ForMathlib.Probability.Moments.SubGaussian
 public import LeanMachineLearning.ForMathlib.Probability.Process.HittingTime
+public import LeanMachineLearning.ForMathlib.Probability.Process.Stopping
+public import LeanMachineLearning.ForMathlib.Topology.Algebra.InfiniteSum.NatInt
 public import LeanMachineLearning.Online.Bandit.Algorithms.ETC
 public import LeanMachineLearning.Online.Bandit.Algorithms.Regret.BayesRegretTS
 public import LeanMachineLearning.Online.Bandit.Algorithms.Regret.ETC
@@ -85,6 +88,7 @@ public import LeanMachineLearning.SequentialLearning.Means
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
 public import LeanMachineLearning.SequentialLearning.StoppedHistory
 public import LeanMachineLearning.SequentialLearning.SumRewards
+public import LeanMachineLearning.SequentialLearning.Wald
 public import LeanMachineLearning.Tactic.EqLift
 public import LeanMachineLearning.Tactic.EqLift.ForMathlib.Kernel
 public import LeanMachineLearning.Tactic.EqLift.ForMathlib.MeasurableEquiv

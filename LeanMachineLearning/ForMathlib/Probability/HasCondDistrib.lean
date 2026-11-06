@@ -21,6 +21,9 @@ the kernel `κ`. This file complements the API of Mathlib's `Mathlib.Probability
 ## Main statements
 
 * `HasCondDistrib.compProd`: chain rule, building the conditional distribution of a pair.
+* `HasCondDistrib.setLIntegral_comp_eq_setLIntegral_lintegral`: the integral of `g ∘ Y` over an
+  event of `X` is the integral over that event of the integral of `g` against the conditional
+  distribution.
 * `hasCondDistrib_measurableEmbedding_comp_right_iff`: conditioning on `f ∘ X` for a measurable
   embedding `f` is the same as conditioning on `X`.
 * `HasCondDistrib.hasLaw_cond`, `HasCondDistrib.indepFun_cond`: if the conditional distribution
@@ -35,6 +38,8 @@ the kernel `κ`. This file complements the API of Mathlib's `Mathlib.Probability
 @[expose] public section
 
 open MeasureTheory
+
+open scoped ENNReal
 
 namespace ProbabilityTheory
 
@@ -154,6 +159,26 @@ lemma hasCondDistrib_deterministic_iff [MeasurableEq Ω] [SFinite μ] {f : β �
     (hf : Measurable f) (hX : AEMeasurable X μ) :
     HasCondDistrib Y X (Kernel.deterministic f hf) μ ↔ Y =ᵐ[μ] f ∘ X :=
   ⟨fun h ↦ h.ae_eq_of_deterministic, fun h ↦ (hasCondDistrib_comp_self hf hX).congr .rfl h⟩
+
+/-- If `κ` is the conditional distribution of `Y` given `X`, then for a measurable set `s` and a
+measurable function `g ≥ 0`, `∫_{X ∈ s} g(Y) dμ = ∫_{X ∈ s} (∫ g dκ(X)) dμ`. -/
+lemma HasCondDistrib.setLIntegral_comp_eq_setLIntegral_lintegral [SFinite μ] [IsSFiniteKernel κ]
+    (h : HasCondDistrib Y X κ μ) {s : Set β} (hs : MeasurableSet s) {g : Ω → ℝ≥0∞}
+    (hg : Measurable g) :
+    ∫⁻ a in X ⁻¹' s, g (Y a) ∂μ = ∫⁻ a in X ⁻¹' s, ∫⁻ y, g y ∂(κ (X a)) ∂μ := by
+  have hg' : Measurable fun p : β × Ω ↦ g p.2 := hg.comp measurable_snd
+  calc ∫⁻ a in X ⁻¹' s, g (Y a) ∂μ
+      = ∫⁻ p in s ×ˢ Set.univ, g p.2 ∂(μ.map (fun a ↦ (X a, Y a))) := by
+        rw [Measure.restrict_map_of_aemeasurable h.aemeasurable (hs.prod .univ),
+          lintegral_map' hg'.aemeasurable h.aemeasurable.restrict,
+          Set.mk_preimage_prod, Set.preimage_univ, Set.inter_univ]
+    _ = ∫⁻ p in s ×ˢ Set.univ, g p.2 ∂(μ.map X ⊗ₘ κ) := by rw [h.map_eq]
+    _ = ∫⁻ x in s, ∫⁻ y, g y ∂(κ x) ∂(μ.map X) := by
+        rw [Measure.setLIntegral_compProd hg' hs .univ]
+        simp
+    _ = ∫⁻ a in X ⁻¹' s, ∫⁻ y, g y ∂(κ (X a)) ∂μ := by
+        rw [Measure.restrict_map_of_aemeasurable h.aemeasurable_fst hs,
+          lintegral_map' hg.lintegral_kernel.aemeasurable h.aemeasurable_fst.restrict]
 
 section CompRight
 
