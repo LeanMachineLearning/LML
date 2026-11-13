@@ -5,12 +5,12 @@ Authors: Rémy Degenne
 -/
 module
 
-public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.ChainRule
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.CompProd
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.MapSequence
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.Restrict
 public import LeanMachineLearning.ForMathlib.MeasureTheory.MeasurableSpace.Constructions
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
+public import Statlib.Divergence.KullbackLeibler.CondKL
 
 /-!
 # The divergence decomposition
@@ -148,8 +148,8 @@ lemma IsAlgEnvSeq.klDiv_map_history_bandit [MeasurableSpace.CountablyGenerated �
       ∑ t ∈ range M, ∫⁻ ω, klDiv (κ (A t ω)) (κ' (A t ω)) ∂P := by
   rw [h.klDiv_map_history_compProd_bandit h']
   refine sum_congr rfl fun t _ ↦ ?_
-  rw [klDiv_compProd_right_eq_lintegral,
-    lintegral_map (measurable_klDiv_kernel κ κ') (h.measurable_action t)]
+  rw [← condKL, condKL_eq_lintegral,
+    lintegral_map (measurable_klDiv κ κ') (h.measurable_action t)]
 
 /-- **Divergence decomposition** for trajectories of a single algorithm against two stationary
 bandit environments. -/
@@ -171,8 +171,8 @@ lemma IsAlgEnvSeq.klDiv_map_trajectory_bandit [MeasurableSpace.CountablyGenerate
       ∑' t : ℕ, ∫⁻ ω, klDiv (κ (A t ω)) (κ' (A t ω)) ∂P := by
   rw [h.klDiv_map_trajectory_compProd_bandit h']
   refine tsum_congr fun t ↦ ?_
-  rw [klDiv_compProd_right_eq_lintegral,
-    lintegral_map (measurable_klDiv_kernel κ κ') (h.measurable_action t)]
+  rw [← condKL, condKL_eq_lintegral,
+    lintegral_map (measurable_klDiv κ κ') (h.measurable_action t)]
 
 end Bandit
 

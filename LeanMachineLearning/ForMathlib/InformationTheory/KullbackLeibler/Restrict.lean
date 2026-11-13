@@ -9,6 +9,7 @@ public import LeanMachineLearning.ForMathlib.MeasureTheory.Measure.Decomposition
 public import Mathlib.InformationTheory.KullbackLeibler.Basic
 
 import Statlib.Divergence.KullbackLeibler.Basic
+import Statlib.ForMathlib.MeasureTheory.Measure.Decomposition.RadonNikodym
 
 /-!
 # The Kullback–Leibler divergence of restrictions of measures
@@ -47,7 +48,7 @@ lemma klDiv_restrict_of_ac (hμν : μ.restrict s ≪ ν.restrict s) (hs : Measu
       ∫⁻ x in s, ENNReal.ofReal (klFun (μ.rnDeriv ν x).toReal) ∂ν := by
   rw [klDiv_eq_lintegral_klFun_of_ac hμν]
   refine lintegral_congr_ae ?_
-  filter_upwards [Measure.rnDeriv_restrict_restrict' μ ν hs] with x hx
+  filter_upwards [Measure.rnDeriv_restrict_restrict μ ν hs] with x hx
   rw [hx]
 
 /-- The divergence is the sum of the divergences of the restrictions to a measurable set and to
