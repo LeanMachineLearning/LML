@@ -6,6 +6,7 @@ Authors: Rémy Degenne
 module
 
 public import Mathlib.InformationTheory.KullbackLeibler.Basic
+public import Statlib.Divergence.KullbackLeibler.Basic
 
 import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.ChainRule
 import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.DataProcessing
@@ -29,11 +30,12 @@ divergence `klDiv (β ⊗ₘ κ) (β ⊗ₘ η)`, which is `∫⁻ i, klDiv (κ 
 * `InformationTheory.klDiv_finsetSum_smul_le`,
   `InformationTheory.klDiv_sum_smul_le`: convexity of `klDiv` in the pair of measures,
   for mixtures indexed by a `Finset` and by a `Fintype`;
-* `InformationTheory.klDiv_smul_add_smul_le`: the same statement for two-point mixtures;
 * `InformationTheory.klDiv_finsetSum_smul_left_le`, `InformationTheory.klDiv_sum_smul_left_le`:
   convexity of `klDiv` in its first argument;
 * `InformationTheory.klDiv_finsetSum_smul_right_le`, `InformationTheory.klDiv_sum_smul_right_le`:
   convexity of `klDiv` in its second argument.
+
+The statement for two-point mixtures is Statlib's `ProbabilityTheory.klDiv_smul_add_smul_le`.
 -/
 
 @[expose] public section
@@ -108,21 +110,6 @@ lemma klDiv_sum_smul_le [Fintype ι] [∀ i, IsFiniteMeasure (μ i)]
     klDiv (∑ i, (c i : ℝ≥0∞) • μ i) (∑ i, (c i : ℝ≥0∞) • ν i)
       ≤ ∑ i, (c i : ℝ≥0∞) * klDiv (μ i) (ν i) :=
   klDiv_finsetSum_smul_le Finset.univ c
-
-/-- **Convexity of the Kullback–Leibler divergence in the pair of measures**, for a two-point
-mixture: for finite measures `μ₀, μ₁, ν₀, ν₁` and weights `a, b ≥ 0`,
-`klDiv (a • μ₀ + b • μ₁) (a • ν₀ + b • ν₁) ≤ a * klDiv μ₀ ν₀ + b * klDiv μ₁ ν₁`. -/
-lemma klDiv_smul_add_smul_le (μ₀ μ₁ ν₀ ν₁ : Measure Ω) [IsFiniteMeasure μ₀] [IsFiniteMeasure μ₁]
-    [IsFiniteMeasure ν₀] [IsFiniteMeasure ν₁] (a b : ℝ≥0) :
-    klDiv ((a : ℝ≥0∞) • μ₀ + (b : ℝ≥0∞) • μ₁) ((a : ℝ≥0∞) • ν₀ + (b : ℝ≥0∞) • ν₁)
-      ≤ (a : ℝ≥0∞) * klDiv μ₀ ν₀ + (b : ℝ≥0∞) * klDiv μ₁ ν₁ := by
-  have : ∀ x : Bool, IsFiniteMeasure (bif x then μ₁ else μ₀) := fun x ↦ by
-    cases x <;> assumption
-  have : ∀ x : Bool, IsFiniteMeasure (bif x then ν₁ else ν₀) := fun x ↦ by
-    cases x <;> assumption
-  have h := klDiv_sum_smul_le (μ := fun x ↦ bif x then μ₁ else μ₀)
-    (ν := fun x ↦ bif x then ν₁ else ν₀) (fun x ↦ bif x then b else a)
-  simpa [Fintype.sum_bool, add_comm] using h
 
 end pair
 

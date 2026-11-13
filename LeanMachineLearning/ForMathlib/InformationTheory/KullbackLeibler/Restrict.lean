@@ -8,6 +8,8 @@ module
 public import LeanMachineLearning.ForMathlib.MeasureTheory.Measure.Decomposition.Lebesgue
 public import Mathlib.InformationTheory.KullbackLeibler.Basic
 
+import Statlib.Divergence.KullbackLeibler.Basic
+
 /-!
 # The Kullback–Leibler divergence of restrictions of measures
 
@@ -51,16 +53,8 @@ lemma klDiv_restrict_of_ac (hμν : μ.restrict s ≪ ν.restrict s) (hs : Measu
 /-- The divergence is the sum of the divergences of the restrictions to a measurable set and to
 its complement. -/
 lemma klDiv_restrict_add_restrict_compl (hs : MeasurableSet s) :
-    klDiv (μ.restrict s) (ν.restrict s) + klDiv (μ.restrict sᶜ) (ν.restrict sᶜ) = klDiv μ ν := by
-  by_cases hμν : μ ≪ ν
-  · rw [klDiv_restrict_of_ac (hμν.restrict s) hs, klDiv_restrict_of_ac (hμν.restrict sᶜ) hs.compl,
-      klDiv_eq_lintegral_klFun_of_ac hμν, lintegral_add_compl _ hs]
-  · rw [klDiv_of_not_ac hμν, ENNReal.add_eq_top]
-    by_contra! h
-    refine hμν ?_
-    rw [← Measure.restrict_add_restrict_compl (μ := μ) hs,
-      ← Measure.restrict_add_restrict_compl (μ := ν) hs]
-    exact (klDiv_ne_top_iff.1 h.1).1.add (klDiv_ne_top_iff.1 h.2).1
+    klDiv (μ.restrict s) (ν.restrict s) + klDiv (μ.restrict sᶜ) (ν.restrict sᶜ) = klDiv μ ν :=
+  (ProbabilityTheory.klDiv_eq_klDiv_restrict_add_klDiv_restrict_compl μ ν hs).symm
 
 /-- Restricting both measures to a measurable set does not increase the divergence. -/
 lemma klDiv_restrict_le (hs : MeasurableSet s) :
