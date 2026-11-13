@@ -13,7 +13,7 @@ public import Mathlib.MeasureTheory.Measure.SubFinite
 
 ## Main statements
 
-* `Measure.rnDeriv_restrict_restrict`: the Radon-Nikodym derivative of `μ.restrict s` with
+* `Measure.rnDeriv_restrict_restrict'`: the Radon-Nikodym derivative of `μ.restrict s` with
   respect to `ν.restrict s` is `μ.rnDeriv ν`, `ν.restrict s`-almost everywhere.
 * `Measure.sub_apply_eq_rnDeriv_add_singularPart`: for finite measures,
   `(μ - ν) s = ν.withDensity (μ.rnDeriv ν - 1) s + μ.singularPart ν s`.
@@ -28,8 +28,11 @@ namespace MeasureTheory.Measure
 variable {α : Type*} {mα : MeasurableSpace α} {μ ν : Measure α}
 
 /-- The Radon–Nikodym derivative of `μ.restrict s` with respect to `ν.restrict s` is the
-Radon–Nikodym derivative of `μ` with respect to `ν`, `ν.restrict s`-almost everywhere. -/
-lemma rnDeriv_restrict_restrict (μ ν : Measure α) [μ.HaveLebesgueDecomposition ν] [SigmaFinite ν]
+Radon–Nikodym derivative of `μ` with respect to `ν`, `ν.restrict s`-almost everywhere.
+
+This generalizes Statlib's `Measure.rnDeriv_restrict_restrict`, which assumes `μ` s-finite instead
+of `μ.HaveLebesgueDecomposition ν`. -/
+lemma rnDeriv_restrict_restrict' (μ ν : Measure α) [μ.HaveLebesgueDecomposition ν] [SigmaFinite ν]
     {s : Set α} (hs : MeasurableSet s) :
     (μ.restrict s).rnDeriv (ν.restrict s) =ᵐ[ν.restrict s] μ.rnDeriv ν := by
   refine (eq_rnDeriv (s := (μ.singularPart ν).restrict s) (measurable_rnDeriv μ ν)
