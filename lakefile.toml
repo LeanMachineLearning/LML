@@ -9,15 +9,18 @@ relaxedAutoImplicit = false
 # Enable all mathlib linters: automatically matches what mathlib uses.
 weak.linter.mathlibStandardSet = true
 
+# Mathlib comes through Statlib, at the commit Statlib pins. Statlib is required before Verso:
+# Lake gives precedence to later requires for shared dependencies, so Verso's `subverso` pin wins
+# over Statlib's.
+[[require]]
+name = "Statlib"
+git = "https://github.com/stat-lib/statlib"
+rev = "main"
+
 [[require]]
 name = "verso"
 git = "https://github.com/leanprover/verso"
 rev = "v4.36.0-rc2"
-
-[[require]]
-name = "mathlib"
-scope = "leanprover-community"
-rev = "6135ffb78e8bcd3fcc8ec02f3f82ea0b0737358b"
 
 [[lean_lib]]
 name = "LeanMachineLearning"

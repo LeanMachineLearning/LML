@@ -6,9 +6,7 @@ public import LeanMachineLearning.ForMathlib.Analysis.Convex.Integral
 public import LeanMachineLearning.ForMathlib.Analysis.Convex.Subgradient.Basic
 public import LeanMachineLearning.ForMathlib.Analysis.Convex.Subgradient.Deriv
 public import LeanMachineLearning.ForMathlib.Basic.Unique
-public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.ChainRule
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.CompProd
-public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.Convex
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.DataProcessing
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.MapSequence
 public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.Restrict
@@ -46,7 +44,6 @@ public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.Meas
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Composition.WithDensity
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.CondDistrib
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.IonescuTulcea.Traj
-public import LeanMachineLearning.ForMathlib.Probability.Kernel.MeasurableSpace
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.RadonNikodym
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.Sigma
 public import LeanMachineLearning.ForMathlib.Probability.Moments.SubExponential

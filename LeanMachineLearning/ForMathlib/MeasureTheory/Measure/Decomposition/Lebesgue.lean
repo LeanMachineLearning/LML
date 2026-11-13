@@ -13,8 +13,6 @@ public import Mathlib.MeasureTheory.Measure.SubFinite
 
 ## Main statements
 
-* `Measure.rnDeriv_restrict_restrict`: the Radon-Nikodym derivative of `μ.restrict s` with
-  respect to `ν.restrict s` is `μ.rnDeriv ν`, `ν.restrict s`-almost everywhere.
 * `Measure.sub_apply_eq_rnDeriv_add_singularPart`: for finite measures,
   `(μ - ν) s = ν.withDensity (μ.rnDeriv ν - 1) s + μ.singularPart ν s`.
 -/
@@ -26,15 +24,6 @@ open scoped ENNReal
 namespace MeasureTheory.Measure
 
 variable {α : Type*} {mα : MeasurableSpace α} {μ ν : Measure α}
-
-/-- The Radon–Nikodym derivative of `μ.restrict s` with respect to `ν.restrict s` is the
-Radon–Nikodym derivative of `μ` with respect to `ν`, `ν.restrict s`-almost everywhere. -/
-lemma rnDeriv_restrict_restrict (μ ν : Measure α) [μ.HaveLebesgueDecomposition ν] [SigmaFinite ν]
-    {s : Set α} (hs : MeasurableSet s) :
-    (μ.restrict s).rnDeriv (ν.restrict s) =ᵐ[ν.restrict s] μ.rnDeriv ν := by
-  refine (eq_rnDeriv (s := (μ.singularPart ν).restrict s) (measurable_rnDeriv μ ν)
-    (((mutuallySingular_singularPart μ ν).restrict s).mono le_rfl restrict_le_self) ?_).symm
-  rw [← restrict_withDensity hs, ← restrict_add, ← haveLebesgueDecomposition_add μ ν]
 
 lemma sub_apply_eq_rnDeriv_add_singularPart [IsFiniteMeasure μ] [IsFiniteMeasure ν] (s : Set α) :
     (μ - ν) s = ν.withDensity (fun a ↦ μ.rnDeriv ν a - 1) s + μ.singularPart ν s := by

@@ -9,7 +9,7 @@ public import LeanMachineLearning.ForMathlib.Basic.Unique
 public import LeanMachineLearning.ForMathlib.MeasureTheory.MeasurableSpace.Basic
 public import LeanMachineLearning.ForMathlib.MeasureTheory.MeasurableSpace.Instances
 public import LeanMachineLearning.ForMathlib.Probability.Kernel.IonescuTulcea.Traj
-public import LeanMachineLearning.ForMathlib.Probability.Kernel.MeasurableSpace
+public import Statlib.ForMathlib.Probability.Kernel.MeasurableSpace
 
 /-!
 # Algorithms and environments

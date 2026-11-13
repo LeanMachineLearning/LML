@@ -209,7 +209,6 @@ lemma feedback_tendsto_any_const_eval [PseudoMetricSpace 𝓨] [BorelSpace 𝓨]
   refine measure_congr ?_
   let g : ((Iic n) → 𝓨) → ℝ := fun r ↦ (fun i ↦ dist (r i) (f a)).min
   filter_upwards [comp_feedback_ae_eq_eval h g] with ω hω
-  simp only [eq_iff_iff]
   simp [g, hω]
 
 variable {R : ℕ → Ω → ℝ} {f : 𝓐 → ℝ} (hfc : Continuous f) {a : 𝓐}

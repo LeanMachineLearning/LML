@@ -91,7 +91,7 @@ This is the Mathlib lemma `Submartingale.ae_tendsto_limitProcess`.
 
 ```lean
 example {Y : ℕ → Ω → ℝ} (hY : Submartingale Y 𝓕 P)
-    {R : ℝ≥0} (hbdd : ∀ n, eLpNorm (Y n) 1 P ≤ R) :
+    (hbdd : ⨆ n, eLpNorm (Y n) 1 P < ∞) :
     ∀ᵐ ω ∂P, Tendsto (Y · ω) atTop (𝓝 (𝓕.limitProcess Y P ω)) :=
   hY.ae_tendsto_limitProcess hbdd
 ```
