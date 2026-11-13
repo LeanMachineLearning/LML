@@ -146,11 +146,11 @@ lemma ae_forall_memLp_exp_mul (h : HasSubexponentialMGF X V b κ ν) (p : ℝ≥
     continuous_exp.comp_aestronglyMeasurable (hm.const_mul t)
   by_cases hp : p = 0
   · simp [hp, hmeas]
-  rw [memLp_iff, eLpNorm_lt_top_iff_lintegral_rpow_enorm_lt_top (mod_cast hp) (by simp) hmeas,
+  rw [memLp_iff, eLpNorm_lt_top_iff_lintegral_rpow_eNorm_lt_top (mod_cast hp) (by simp) hmeas,
     ENNReal.coe_toReal]
   have hf := (hi (p * t) ht).lintegral_lt_top
   convert! hf using 3 with ω
-  rw [enorm_eq_ofReal (by positivity), ENNReal.ofReal_rpow_of_nonneg (by positivity),
+  rw [eNorm_eq_ofReal (by positivity), ENNReal.ofReal_rpow_of_nonneg (by positivity),
     ← exp_mul, mul_comm, ← mul_assoc]
   positivity
 
@@ -161,12 +161,12 @@ lemma memLp_exp_mul (h : HasSubexponentialMGF X V b κ ν) {t : ℝ} (p : ℝ≥
     continuous_exp.comp_aestronglyMeasurable (h.aestronglyMeasurable.const_mul t)
   by_cases hp0 : p = 0
   · simp [hp0, hmeas]
-  rw [memLp_iff, eLpNorm_lt_top_iff_lintegral_rpow_enorm_lt_top (mod_cast hp0) (by simp) hmeas]
+  rw [memLp_iff, eLpNorm_lt_top_iff_lintegral_rpow_eNorm_lt_top (mod_cast hp0) (by simp) hmeas]
   simp only [ENNReal.coe_toReal]
   have h' := (h.integrable_exp_mul (p * t) ht).2
   rw [hasFiniteIntegral_def] at h'
   convert! h' using 3 with ω
-  rw [enorm_eq_ofReal (by positivity), enorm_eq_ofReal (by positivity),
+  rw [eNorm_eq_ofReal (by positivity), eNorm_eq_ofReal (by positivity),
     ENNReal.ofReal_rpow_of_nonneg (by positivity), ← exp_mul, mul_comm, ← mul_assoc]
   positivity
 
