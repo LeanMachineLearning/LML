@@ -68,7 +68,7 @@ jobs:
       - name: Build the referee site
         id: referee
         if: github.event_name == 'push'
-        uses: LeanTrustBuilders/referee-site@v0.12.0
+        uses: LeanTrustBuilders/referee-site@v0.13.0
         with:
           root: LeanMachineLearning
           # An editorial claim, not a derived fact: it says whoever publishes this site vouches for
