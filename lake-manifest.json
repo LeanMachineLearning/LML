@@ -15,7 +15,7 @@
    "type": "git",
    "subDir": null,
    "scope": "",
-   "rev": "af3496983daa5d0e4cc18bb05f91f07885db94b1",
+   "rev": "60dd66a913e037648c7c12ec870705d2f6012a03",
    "name": "Statlib",
    "manifestFile": "lake-manifest.json",
    "inputRev": "main",
