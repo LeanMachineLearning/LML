@@ -56,6 +56,13 @@ jobs:
           lint: true
           mk_all-check: true
 
+      # Statlib whole, not only the modules LML imports: the referee site's dataset has it as a second
+      # root, so that a review of any Statlib declaration filed in LeanMachineLearning/LML-evidence (the
+      # library site, leanmachinelearning.org/library, sends them there) finds it in LML's dataset.
+      - name: Build Statlib
+        if: github.event_name == 'push'
+        run: lake build Statlib
+
       # The referee site, by referee-site (LeanTrustBuilders). The action extracts the dataset with
       # the newest trust-extract release for this project's lean-toolchain (there is one for each
       # toolchain Mathlib moves to) and publishes it as the release `dataset-<commit12>`; records
@@ -68,9 +75,12 @@ jobs:
       - name: Build the referee site
         id: referee
         if: github.event_name == 'push'
-        uses: LeanTrustBuilders/referee-site@v0.13.0
+        uses: LeanTrustBuilders/referee-site@v0.14.1
         with:
-          root: LeanMachineLearning
+          # Two roots: LML and Statlib extracted as one project (Statlib's reviews are filed in
+          # LML-evidence); the site itself stays LML's, with what its statements rest on (--modules).
+          root: LeanMachineLearning Statlib
+          args: --modules LeanMachineLearning
           # An editorial claim, not a derived fact: it says whoever publishes this site vouches for
           # Mathlib and everything under it. Drop it and every upstream package counts as unaudited.
           trust: mathlib
