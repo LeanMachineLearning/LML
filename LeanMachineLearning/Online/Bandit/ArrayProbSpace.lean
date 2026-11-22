@@ -587,7 +587,7 @@ private lemma indepFun_fst_aux (ν : Kernel 𝓐 𝓡) [IsMarkovKernel ν] (n : 
     refine (iIndepFun_infinitePi fun _ ↦ measurable_id).indepFun_of_measurable_iSup_comap
       (fun _ ↦ measurable_pi_apply _) (S := Set.Iio n) (by simp) ?_
     rw [measurable_iff_comap_le, MeasurableSpace.comap_pi]
-    exact iSup_le fun i ↦ le_iSup₂_of_le (i : ℕ) (Set.mem_Iio.2 i.2) le_rfl
+    exact iSup_le fun i ↦ le_iSup₂_of_le (i : ℕ) (Set.mem_Iio.2 i.isLt) le_rfl
   exact h.fst_prod (ν := streamMeasure ν) (by fun_prop) (by fun_prop)
 
 lemma indepFun_fst_hist [Countable 𝓐] (alg : Algorithm Unit 𝓐 𝓡)

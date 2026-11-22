@@ -104,7 +104,7 @@ lemma IicSuccProd_symm (n : ℕ) :
 
 @[simp]
 lemma IicSuccProd_apply (n : ℕ) (h : Π i : Iic (n + 1), X i) :
-    IicSuccProd X n h = (fun i : Iic n ↦ h ⟨i.1, by grind⟩, h ⟨n + 1, by simp⟩) :=
+    IicSuccProd X n h = (fun i : Iic n ↦ h ⟨i.val, by grind⟩, h ⟨n + 1, by simp⟩) :=
   rfl
 
 lemma coe_prodCongr {α β γ δ : Type*}
@@ -125,8 +125,8 @@ variable {X : ℕ → Type*} [∀ n, MeasurableSpace (X n)]
 /-- Measurable equivalence between `Π i : Fin (n + 1), X i` and `Π i : Iic n, X i`. -/
 def finSuccPiIic (X : ℕ → Type*) [∀ n, MeasurableSpace (X n)] (n : ℕ) :
     (Π i : Fin (n + 1), X i) ≃ᵐ (Π i : Iic n, X i) where
-  toFun h i := h ⟨i.1, Nat.lt_succ_of_le (mem_Iic.mp i.2)⟩
-  invFun h i := h ⟨i.1, mem_Iic.mpr (Nat.le_of_lt_succ i.2)⟩
+  toFun h i := h ⟨i.val, Nat.lt_succ_of_le (mem_Iic.mp i.property)⟩
+  invFun h i := h ⟨i.val, mem_Iic.mpr (Nat.le_of_lt_succ i.isLt)⟩
   left_inv _ := rfl
   right_inv _ := rfl
   measurable_toFun := .of_eval fun _ ↦ measurable_pi_apply _
@@ -134,11 +134,11 @@ def finSuccPiIic (X : ℕ → Type*) [∀ n, MeasurableSpace (X n)] (n : ℕ) :
 
 @[simp]
 lemma finSuccPiIic_apply (n : ℕ) (h : Π i : Fin (n + 1), X i) (i : Iic n) :
-    finSuccPiIic X n h i = h ⟨i.1, Nat.lt_succ_of_le (mem_Iic.mp i.2)⟩ := rfl
+    finSuccPiIic X n h i = h ⟨i.val, Nat.lt_succ_of_le (mem_Iic.mp i.property)⟩ := rfl
 
 @[simp]
 lemma finSuccPiIic_symm_apply (n : ℕ) (h : Π i : Iic n, X i) (i : Fin (n + 1)) :
-    (finSuccPiIic X n).symm h i = h ⟨i.1, mem_Iic.mpr (Nat.le_of_lt_succ i.2)⟩ :=
+    (finSuccPiIic X n).symm h i = h ⟨i.val, mem_Iic.mpr (Nat.le_of_lt_succ i.isLt)⟩ :=
   rfl
 
 lemma finSuccPiIic_symm_comp_frestrictLe (n : ℕ) :

@@ -81,7 +81,7 @@ variable {O : ℕ → Ω → 𝓞} {env : Environment 𝓞 𝓐 𝓨}
 /-- The minimum distance from sampled actions to any point tends to zero. -/
 lemma action_tendsto_any_const (h : IsAlgEnvSeq O A Y (Algorithm.const μ) env P)
     (a : 𝓐) {ε : ℝ} (hε : 0 < ε) :
-    Tendsto (fun i => P {x | ε ≤ (fun (j : Iic i) ↦ dist (A j.1 x) a).min}) atTop (𝓝 0) := by
+    Tendsto (fun i => P {x | ε ≤ (fun (j : Iic i) ↦ dist (A j.val x) a).min}) atTop (𝓝 0) := by
   refine tendsto_nhds_bot_mono' (f := fun n ↦ P (⋂ i ∈ Iic n, {x | ε ≤ dist (A i x) a})) ?_ ?_
   · have inter_prod (n : ℕ) : P (⋂ j ∈ Iic n, {x | ε ≤ dist (A j x) a}) =
         ∏ j ∈ Iic n, P {x | ε ≤ dist (A j x) a} := by
@@ -118,7 +118,7 @@ lemma action_tendsto_any_const (h : IsAlgEnvSeq O A Y (Algorithm.const μ) env P
   · intro n
     refine measure_mono ?_
     simp only [mem_Iic, Set.subset_iInter_iff, Set.ofPred_subset_ofPred]
-    intro i hi ω (hω : ε ≤ (fun (j : Iic n) ↦ dist (A j.1 ω) a).min)
+    intro i hi ω (hω : ε ≤ (fun (j : Iic n) ↦ dist (A j.val ω) a).min)
     simp_all only [univ_eq_attach, le_inf'_iff, mem_attach, forall_const, Subtype.forall, mem_Iic]
 
 /-- The minimum distance from image of actions to any function value tends to zero. -/
@@ -127,7 +127,7 @@ lemma image_action_tendsto_any_const {𝓩 : Type*} [PseudoMetricSpace 𝓩] {f 
     (h : IsAlgEnvSeq O A Y (Algorithm.const μ) env P)
     (a : 𝓐) {ε : ℝ} (hε : 0 < ε) :
     Tendsto (fun i => P {x | ε ≤ (fun (j : Iic i) ↦
-      dist (f (A j.1 x)) (f a)).min}) atTop (𝓝 0) := by
+      dist (f (A j.val x)) (f a)).min}) atTop (𝓝 0) := by
   rw [Metric.continuous_iff] at hfc
   obtain ⟨δ, hδ, hfc⟩ := hfc a ε hε
   refine action_tendsto_any_const h a hδ |> tendsto_nhds_bot_mono' <| ?_
@@ -136,9 +136,9 @@ lemma image_action_tendsto_any_const {𝓩 : Type*} [PseudoMetricSpace 𝓩] {f 
   simp only [Set.ofPred_subset_ofPred]
   intro ω hω
   rw [← argmin_spec]
-  set j := argmin (fun (i : Iic n) ↦ dist (A i.1 ω) a)
+  set j := argmin (fun (i : Iic n) ↦ dist (A i.val ω) a)
   by_contra! h_contra
-  specialize hfc (A j.1 ω) h_contra
+  specialize hfc (A j.val ω) h_contra
   have := (fun (j : Iic n) ↦ dist (f (A (j) ω)) (f a)).min_le j
   linarith
 
@@ -148,7 +148,7 @@ variable {f : 𝓐 → ℝ} {a : 𝓐}
 lemma tendsto_min_action_const (hfc : Continuous f)
     (h : IsAlgEnvSeq O A Y (Algorithm.const μ) env P)
     (hf_min : ∀ x, f a ≤ f x) :
-    TendstoInMeasure P (fun n ω ↦ (fun (i : Iic n) ↦ f (A i.1 ω)).min) atTop (fun _ ↦ f a) := by
+    TendstoInMeasure P (fun n ω ↦ (fun (i : Iic n) ↦ f (A i.val ω)).min) atTop (fun _ ↦ f a) := by
   rw [tendstoInMeasure_iff_dist]
   intro ε hε
   refine image_action_tendsto_any_const hfc h a hε |> tendsto_nhds_bot_mono' <| ?_
@@ -171,7 +171,7 @@ lemma tendsto_min_action_const (hfc : Continuous f)
 lemma tendsto_max_action_const (hfc : Continuous f)
     (h : IsAlgEnvSeq O A Y (Algorithm.const μ) env P)
     (hf_max : ∀ x, f x ≤ f a) :
-    TendstoInMeasure P (fun n ω ↦ (fun (i : Iic n) ↦ f (A i.1 ω)).max) atTop (fun _ ↦ f a) := by
+    TendstoInMeasure P (fun n ω ↦ (fun (i : Iic n) ↦ f (A i.val ω)).max) atTop (fun _ ↦ f a) := by
   rw [tendstoInMeasure_iff_dist]
   intro ε hε
   refine image_action_tendsto_any_const hfc h a hε |> tendsto_nhds_bot_mono' <| ?_
@@ -204,7 +204,7 @@ lemma feedback_tendsto_any_const_eval [PseudoMetricSpace 𝓨] [BorelSpace 𝓨]
     {f : 𝓐 → 𝓨} (hfc : Continuous f)
     (h : IsAlgEnvSeq O A Y (Algorithm.const μ) (Environment.eval f hfc.measurable) P)
     (a : 𝓐) {ε : ℝ} (hε : 0 < ε) :
-    Tendsto (fun i => P {x | ε ≤ (fun (j : Iic i) ↦ dist (Y j.1 x) (f a)).min}) atTop (𝓝 0) := by
+    Tendsto (fun i => P {x | ε ≤ (fun (j : Iic i) ↦ dist (Y j.val x) (f a)).min}) atTop (𝓝 0) := by
   convert image_action_tendsto_any_const hfc h a hε using 2 with n
   refine measure_congr ?_
   let g : ((Iic n) → 𝓨) → ℝ := fun r ↦ (fun i ↦ dist (r i) (f a)).min
@@ -217,7 +217,7 @@ variable {R : ℕ → Ω → ℝ} {f : 𝓐 → ℝ} (hfc : Continuous f) {a : �
 lemma tendsto_min_feedback_const_eval
     (h : IsAlgEnvSeq O A R (Algorithm.const μ) (Environment.eval f hfc.measurable) P)
     (hf_min : ∀ x, f a ≤ f x) :
-    TendstoInMeasure P (fun n ω ↦ (fun (i : Iic n) ↦ R i.1 ω).min) atTop (fun _ ↦ f a) := by
+    TendstoInMeasure P (fun n ω ↦ (fun (i : Iic n) ↦ R i.val ω).min) atTop (fun _ ↦ f a) := by
   refine TendstoInMeasure.congr_left (fun n ↦ ?_) <| tendsto_min_action_const hfc h hf_min
   filter_upwards [comp_feedback_ae_eq_eval h Function.min] with ω hω
   rw [← hω]
@@ -226,7 +226,7 @@ lemma tendsto_min_feedback_const_eval
 lemma tendsto_max_feedback_const_eval
     (h : IsAlgEnvSeq O A R (Algorithm.const μ) (Environment.eval f hfc.measurable) P)
     (hf_max : ∀ x, f x ≤ f a) :
-    TendstoInMeasure P (fun n ω ↦ (fun (i : Iic n) ↦ R i.1 ω).max) atTop (fun _ ↦ f a) := by
+    TendstoInMeasure P (fun n ω ↦ (fun (i : Iic n) ↦ R i.val ω).max) atTop (fun _ ↦ f a) := by
   refine TendstoInMeasure.congr_left (fun n ↦ ?_) <| tendsto_max_action_const hfc h hf_max
   filter_upwards [comp_feedback_ae_eq_eval h Function.max] with ω hω
   rw [← hω]

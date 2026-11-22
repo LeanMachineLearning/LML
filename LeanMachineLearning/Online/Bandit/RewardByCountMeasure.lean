@@ -440,16 +440,16 @@ lemma iIndepFun_rewardByCount_add_one (h : IsAlgEnvSeq O A R alg (Environment.ba
 /-- The rewards by count `rewardByCount A R a m` for `m ≠ 0` are independent over all actions `a`
 and all counts `m`. -/
 lemma iIndepFun_rewardByCount (h : IsAlgEnvSeq O A R alg (Environment.bandit ν) P) :
-    iIndepFun (fun (p : {p : 𝓐 × ℕ // p.2 ≠ 0}) ω ↦ rewardByCount A R p.1.1 p.1.2 ω) 𝔓 := by
-  have h_eq : (fun (p : {p : 𝓐 × ℕ // p.2 ≠ 0}) ω ↦ rewardByCount A R p.1.1 p.1.2 ω)
-      = fun p ω ↦ rewardByCount A R p.1.1 (p.1.2 - 1 + 1) ω := by
+    iIndepFun (fun (p : {p : 𝓐 × ℕ // p.2 ≠ 0}) ω ↦ rewardByCount A R p.val.1 p.val.2 ω) 𝔓 := by
+  have h_eq : (fun (p : {p : 𝓐 × ℕ // p.2 ≠ 0}) ω ↦ rewardByCount A R p.val.1 p.val.2 ω)
+      = fun p ω ↦ rewardByCount A R p.val.1 (p.val.2 - 1 + 1) ω := by
     ext p ω
-    rw [Nat.sub_add_cancel (Nat.pos_of_ne_zero p.2)]
+    rw [Nat.sub_add_cancel (Nat.pos_of_ne_zero p.property)]
   rw [h_eq]
   exact (iIndepFun_rewardByCount_add_one h).precomp
-    (g := fun p : {p : 𝓐 × ℕ // p.2 ≠ 0} ↦ (p.1.1, p.1.2 - 1)) fun p q hpq ↦ by
+    (g := fun p : {p : 𝓐 × ℕ // p.2 ≠ 0} ↦ (p.val.1, p.val.2 - 1)) fun p q hpq ↦ by
       simp only [Prod.mk.injEq] at hpq
-      exact Subtype.ext (Prod.ext hpq.1 (by have := p.2; have := q.2; omega))
+      exact Subtype.ext (Prod.ext hpq.1 (by have := p.property; have := q.property; omega))
 
 /-- For each action `a`, the rewards by count `(rewardByCount A R a (m + 1))_m` are independent
 (and by `hasLaw_rewardByCount_add_one` identically distributed with law `ν a`). -/

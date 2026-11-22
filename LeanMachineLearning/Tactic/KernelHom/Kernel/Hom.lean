@@ -35,25 +35,25 @@ section
 variable {SX SY ST SZ : SFinKer} {ex : SX ≃ᵐ X} {ey : SY ≃ᵐ Y}
 
 /-- Transform a morphism in `SFinKer` into a kernel. -/
-noncomputable def fromHom (κ : SX ⟶ SY) : Kernel X Y := (κ.1.comap ex.symm (by fun_prop)).map ey
+noncomputable def fromHom (κ : SX ⟶ SY) : Kernel X Y := (κ.hom.comap ex.symm (by fun_prop)).map ey
 
 instance {κ : SX ⟶ SY} : IsSFiniteKernel (fromHom (ex := ex) (ey := ey) κ) := by
   simp only [fromHom]
-  have := κ.2
+  have := κ.property
   infer_instance
 
 /-- Transform a kernel into a morphism in `SFinKer`. -/
 noncomputable def hom (κ : Kernel X Y) [IsSFiniteKernel κ] : SX ⟶ SY := by
   refine ⟨(κ.map ey.symm).comap ex (by fun_prop), ?_⟩
-  have := κ.2
+  have := κ.measurable'
   infer_instance
 
 lemma hom_apply (κ : Kernel X Y) [IsSFiniteKernel κ] (a : SX) :
-    (κ.hom (ex := ex) (ey := ey)).1 a = (κ.map ey.symm) (ex a) := rfl
+    (κ.hom (ex := ex) (ey := ey)).hom a = (κ.map ey.symm) (ex a) := rfl
 
 lemma hom_apply' (κ : Kernel X Y) [IsSFiniteKernel κ] (a : SX) {s : Set SY}
     (hs : MeasurableSet s) :
-    (κ.hom (ex := ex) (ey := ey)).1 a s = κ (ex a) (ey '' s) := by
+    (κ.hom (ex := ex) (ey := ey)).hom a s = κ (ex a) (ey '' s) := by
   simp only [hom, coe_comap, Function.comp_apply]
   rw [map_apply' _ ey.symm.measurable _ hs, preimage_symm]
 
