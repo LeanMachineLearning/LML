@@ -112,9 +112,10 @@ lemma iIndepFun_nat_iff_forall_indepFun [IsProbabilityMeasure μ] {X : ℕ → �
           mem_Iic.mpr (Nat.lt_succ_iff.mp (Nat.succ_pred_eq_of_pos hn_pos ▸
             lt_max'_of_mem_erase_max' _ hs hi))
         let t : Set (Iic (s.max' hs - 1) → E) :=
-          {f | ∀ i : s.erase (s.max' hs), f ⟨i.1, hs'_le i.1 i.2⟩ ∈ sets i.1}
+          {f | ∀ i : s.erase (s.max' hs), f ⟨i.val, hs'_le i.val i.property⟩ ∈ sets i.val}
         have ht : MeasurableSet t := by
-          have : t = ⋂ i : s.erase (s.max' hs), (· ⟨i.1, hs'_le i.1 i.2⟩) ⁻¹' sets i.1 := by
+          have : t = ⋂ i : s.erase (s.max' hs),
+              (· ⟨i.val, hs'_le i.val i.property⟩) ⁻¹' sets i.val := by
             ext
             simp [t]
           exact this ▸ .iInter fun ⟨i, hi⟩ =>

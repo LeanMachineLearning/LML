@@ -108,7 +108,7 @@ lemma hasLaw_of_forall_eventually_eq [IsFiniteMeasure P] {κ : Type*} {L : Filte
       filter_upwards [(eventually_all_finset I).2 fun i _ ↦ h_lim' i] with ω hω
       filter_upwards [(eventually_all_finset I).2 hω] with n hn
       simp only [Set.mem_preimage, mem_cylinder]
-      have : I.restrict (Y n ω) = I.restrict (hY'.mk Y' ω) := funext fun i ↦ hn i i.2
+      have : I.restrict (Y n ω) = I.restrict (hY'.mk Y' ω) := funext fun i ↦ hn i i.property
       rw [this]
     have h_const : (fun n ↦ P (Y n ⁻¹' cylinder I S)) = fun _ ↦ μ (cylinder I S) := by
       funext n

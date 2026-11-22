@@ -90,17 +90,17 @@ lemma klDiv_map_trajectory_eq_iSup (hO : ∀ n, Measurable (O n)) (hA : ∀ n, M
     (hY' : ∀ n, Measurable (Y' n)) :
     klDiv (P.map (trajectory O A Y)) (P'.map (trajectory O' A' Y')) =
       ⨆ n, klDiv (P.map (history O A Y n)) (P'.map (history O' A' Y' n)) := by
-  have hg : ∀ n, Measurable fun f : ℕ → Round 𝓞 𝓐 𝓨 ↦ fun i : Fin n ↦ f i.1 := fun n ↦
-    .of_eval fun i ↦ measurable_pi_apply i.1
+  have hg : ∀ n, Measurable fun f : ℕ → Round 𝓞 𝓐 𝓨 ↦ fun i : Fin n ↦ f i.val := fun n ↦
+    .of_eval fun i ↦ measurable_pi_apply i.val
   rw [klDiv_eq_iSup_map hg ?_ MeasurableSpace.iSup_comap_restrictFin]
   · refine iSup_congr fun n ↦ ?_
     rw [Measure.map_map (hg n) (measurable_trajectory hO hA hY),
       Measure.map_map (hg n) (measurable_trajectory hO' hA' hY')]
     rfl
   · intro n m hnm
-    have : (fun f : ℕ → Round 𝓞 𝓐 𝓨 ↦ fun i : Fin n ↦ f i.1) =
+    have : (fun f : ℕ → Round 𝓞 𝓐 𝓨 ↦ fun i : Fin n ↦ f i.val) =
         (fun h : Fin m → Round 𝓞 𝓐 𝓨 ↦ fun i : Fin n ↦ h (Fin.castLE hnm i)) ∘
-          fun f : ℕ → Round 𝓞 𝓐 𝓨 ↦ fun i : Fin m ↦ f i.1 := rfl
+          fun f : ℕ → Round 𝓞 𝓐 𝓨 ↦ fun i : Fin m ↦ f i.val := rfl
     beta_reduce
     rw [this, ← MeasurableSpace.comap_comp]
     exact MeasurableSpace.comap_mono (Measurable.of_eval fun i ↦

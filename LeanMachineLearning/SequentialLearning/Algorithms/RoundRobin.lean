@@ -121,7 +121,7 @@ lemma pullCount_mul (m : ℕ)
   rw [Filter.EventuallyEq]
   simp_rw [pullCount_eq_sum]
   have h_arm (n : range (K * m)) : A n =ᵐ[P] fun _ ↦ nextAction K n :=
-    action_ae_eq n (h.mono (by have := n.2; simp only [mem_range] at this; grind))
+    action_ae_eq n (h.mono (by have := n.property; simp only [mem_range] at this; grind))
   simp_rw [Filter.EventuallyEq, ← ae_all_iff] at h_arm
   filter_upwards [h_arm] with ω h_arm
   have h_arm' {i : ℕ} (hi : i ∈ range (K * m)) : A i ω = nextAction K i := h_arm ⟨i, hi⟩

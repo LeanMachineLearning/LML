@@ -81,7 +81,7 @@ lemma iIndepFun_action_const (h : IsAlgEnvSeq O A Y (Algorithm.const μ) env P) 
   rw [← law_eq, ← indepFun_iff_map_prod_eq_prod_map_map] at map_eq
   · -- the actions before time `n + 1` are a function of the history at time `n + 1`
     change A (n + 1) ⟂ᵢ[P] (fun (p : Hist 𝓞 𝓐 𝓨 (n + 1) × 𝓞) (i : Iic n) ↦
-      (p.1 ⟨i.1, Nat.lt_succ_of_le (mem_Iic.mp i.2)⟩).action) ∘
+      (p.1 ⟨i.val, Nat.lt_succ_of_le (mem_Iic.mp i.property)⟩).action) ∘
       (fun ω ↦ (history O A Y (n + 1) ω, O (n + 1) ω))
     refine map_eq.symm.comp measurable_id (by fun_prop)
   · exact ((h.measurable_history (n + 1)).prodMk (h.measurable_obs (n + 1))).aemeasurable
