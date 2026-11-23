@@ -18,7 +18,8 @@ On a subsingleton, every probability measure is a Dirac mass.
 namespace MeasureTheory.Measure
 
 /-- On a subsingleton, every probability measure is a Dirac mass. -/
-lemma eq_dirac_of_subsingleton {α : Type*} {mα : MeasurableSpace α}
+-- A prime was added to the name for compatibility with Tau Ceti.
+lemma eq_dirac_of_subsingleton' {α : Type*} {mα : MeasurableSpace α}
     [Subsingleton α] (μ : Measure α) [IsProbabilityMeasure μ] (x : α) :
     μ = Measure.dirac x := by
   ext s hs

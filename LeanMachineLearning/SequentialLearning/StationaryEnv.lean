@@ -471,7 +471,7 @@ instance : (Environment.banditSeq ν).IsOblivious :=
 
 @[simp]
 lemma obsLaw_banditSeq (n : ℕ) : (Environment.banditSeq ν).obsLaw n = Measure.dirac () :=
-  Measure.eq_dirac_of_subsingleton _ ()
+  Measure.eq_dirac_of_subsingleton' _ ()
 
 @[simp]
 lemma feedbackCondObsAction_banditSeq (n : ℕ) :
@@ -522,7 +522,7 @@ instance : (Environment.bandit ν).IsOblivious :=
 
 @[simp]
 lemma obsLaw_bandit (n : ℕ) : (Environment.bandit ν).obsLaw n = Measure.dirac () :=
-  Measure.eq_dirac_of_subsingleton _ ()
+  Measure.eq_dirac_of_subsingleton' _ ()
 
 @[simp]
 lemma feedbackCondObsAction_bandit (n : ℕ) :
