@@ -21,6 +21,7 @@ variable {α δ : Type*} [MeasurableSpace δ] [SemilatticeInf α] {m : Measurabl
 attribute [to_dual existing] MeasurableInf₂
 
 /-- Dual version of `Finset.measurable_sup'`. -/
+-- 2 primes were added to the name for compatibility with Tau Ceti.
 @[to_dual existing (attr := fun_prop) Finset.measurable_sup']
 theorem Finset.measurable_inf''' {ι : Type*} {s : Finset ι} (hs : s.Nonempty) {f : ι → δ → α}
     (hf : ∀ n ∈ s, Measurable (f n)) : Measurable (s.inf' hs f) :=
