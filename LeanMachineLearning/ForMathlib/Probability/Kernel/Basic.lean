@@ -31,6 +31,6 @@ lemma eq_const_dirac_of_subsingleton [Subsingleton β] (κ : Kernel α β) [IsMa
     κ = Kernel.const α (Measure.dirac y) := by
   ext a : 1
   rw [Kernel.const_apply]
-  exact (κ a).eq_dirac_of_subsingleton y
+  exact (κ a).eq_dirac_of_subsingleton' y
 
 end ProbabilityTheory.Kernel

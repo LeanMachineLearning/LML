@@ -21,7 +21,7 @@ variable {α δ : Type*} [MeasurableSpace δ] [SemilatticeInf α] {m : Measurabl
 attribute [to_dual existing] MeasurableInf₂
 
 /-- Dual version of `Finset.measurable_sup'`. -/
-@[to_dual existing (attr := fun_prop)]
-theorem Finset.measurable_inf' {ι : Type*} {s : Finset ι} (hs : s.Nonempty) {f : ι → δ → α}
+@[to_dual existing (attr := fun_prop) Finset.measurable_sup']
+theorem Finset.measurable_inf''' {ι : Type*} {s : Finset ι} (hs : s.Nonempty) {f : ι → δ → α}
     (hf : ∀ n ∈ s, Measurable (f n)) : Measurable (s.inf' hs f) :=
   Finset.inf'_induction hs _ (fun _f hf _g hg => hf.inf hg) fun n hn => hf n hn
